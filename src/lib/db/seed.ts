@@ -74,6 +74,7 @@ async function seed() {
       recurring_days TEXT,
       location_id TEXT,
       created_by TEXT NOT NULL,
+      created_by_type TEXT NOT NULL DEFAULT 'arl',
       is_hidden INTEGER NOT NULL DEFAULT 0,
       points INTEGER NOT NULL DEFAULT 10,
       created_at TEXT NOT NULL,

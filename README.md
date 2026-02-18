@@ -62,8 +62,8 @@ DATABASE_PATH=./data/hub.db
 
 1. Push to a Git repository
 2. Connect the repo to Railway
-3. Add a persistent volume mounted at `/app/data`
-4. Set environment variables: `JWT_SECRET`, `DATABASE_PATH=/app/data/hub.db`, `NODE_ENV=production`
+3. Add a persistent volume mounted at `/data`
+4. Set environment variables: `JWT_SECRET`, `DATABASE_PATH=/data/hub.db`, `NODE_ENV=production`
 5. Railway will auto-detect the `railway.toml` config
 
 ## Project Structure
