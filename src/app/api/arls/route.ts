@@ -8,7 +8,11 @@ import { v4 as uuid } from "uuid";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session || session.userType !== "arl") {
+    if (!session) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    // Both ARLs and locations can fetch ARLs (for messaging)
+    if (session.userType !== "arl" && session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
     const arls = db.select({
