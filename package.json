@@ -11,9 +11,11 @@
     "start": "npx tsx src/lib/startup.ts && next start",
     "lint": "eslint",
     "db:seed": "npx tsx src/lib/db/seed.ts",
-    "db:push": "npx drizzle-kit push"
+    "db:push": "npx drizzle-kit push",
+    "push:keys": "npx tsx scripts/generate-vapid-keys.ts"
   },
   "dependencies": {
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
     "class-variance-authority": "^0.7.1",
@@ -31,7 +33,8 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.4.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

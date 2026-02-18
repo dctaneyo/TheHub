@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { sendPushToARL } from "@/lib/push";
 
 // Helper: get unread count for a conversation for the current session user
 function getUnreadCount(conversationId: string, sessionId: string, sessionType: string): number {
@@ -146,6 +147,43 @@ export async function POST(req: NextRequest) {
     db.update(schema.conversations)
       .set({ lastMessageAt: now, lastMessagePreview: content.slice(0, 80) })
       .where(eq(schema.conversations.id, conversationId)).run();
+
+    // Send push notification to ARLs if this is from a location
+    if (session.userType === "location") {
+      // Get conversation details to find ARL participants
+      const conv = db.select().from(schema.conversations)
+        .where(eq(schema.conversations.id, conversationId))
+        .get();
+      
+      if (conv) {
+        // For direct messages, notify the other participant
+        if (conv.type === "direct") {
+          const arlId = conv.participantAId === session.id ? conv.participantBId : conv.participantAId;
+          if (arlId) {
+            await sendPushToARL(arlId, {
+              title: `New message from ${session.name}`,
+              body: content,
+              url: `/arl?tab=messaging&conversation=${conversationId}`,
+              conversationId,
+            });
+          }
+        } else if (conv.type === "global") {
+          // For global chat, notify all ARLs
+          const arls = db.select().from(schema.arls)
+            .where(eq(schema.arls.isActive, true))
+            .all();
+          
+          for (const arl of arls) {
+            await sendPushToARL(arl.id, {
+              title: `Global Chat: ${session.name}`,
+              body: content,
+              url: `/arl?tab=messaging&conversation=${conversationId}`,
+              conversationId,
+            });
+          }
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, message });
   } catch (error) {

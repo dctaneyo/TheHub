@@ -89,6 +89,35 @@ export default function ArlPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Register service worker and subscribe to push notifications
+  useEffect(() => {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.register("/sw.js").then((registration) => {
+        console.log("SW registered");
+
+        // Subscribe to push notifications
+        registration.pushManager
+          .subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          })
+          .then((subscription) => {
+            console.log("Push subscribed:", subscription);
+            // Send subscription to server
+            fetch("/api/push/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(subscription),
+            }).catch(console.error);
+          })
+          .catch((err) => {
+            console.log("Push subscription failed:", err);
+            // Fallback: just register SW for caching
+          });
+      });
+    }
+  }, []);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--background)]">
       {/* Sidebar - always visible on desktop, drawer on mobile/tablet */}

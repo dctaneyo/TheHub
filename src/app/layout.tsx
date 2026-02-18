@@ -16,6 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The Hub",
   description: "All-in-one franchise management dashboard",
+  manifest: "/manifest.json",
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "ARL Hub",
+  },
 };
 
 export default function RootLayout({

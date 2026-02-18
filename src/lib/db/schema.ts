@@ -169,3 +169,14 @@ export const notifications = sqliteTable("notifications", {
   isDismissed: integer("is_dismissed", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Push notification subscriptions
+export const pushSubscriptions = sqliteTable("push_subscriptions", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id").notNull(), // ARL user ID
+  endpoint: text("endpoint").notNull(), // Push endpoint URL
+  p256dh: text("p256dh").notNull(), // Public key
+  auth: text("auth").notNull(), // Auth secret
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
