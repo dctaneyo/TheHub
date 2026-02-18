@@ -12,7 +12,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 export interface TaskItem {
   id: string;
@@ -57,6 +57,9 @@ function formatTime(time: string): string {
 export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: TimelineProps) {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [uncomletingId, setUncompletingId] = useState<string | null>(null);
+  const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
+  const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleComplete = async (taskId: string) => {
     setCompletingId(taskId);
@@ -71,10 +74,100 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     setUncompletingId(null);
   };
 
-  // Find the index of the current/next task based on time
-  const currentIdx = tasks.findIndex(
-    (t) => !t.isCompleted && t.dueTime >= currentTime
-  );
+  const timeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Build unique group keys (same as render logic below)
+  const buildGroups = useCallback(() => {
+    const groups: TaskItem[][] = [];
+    tasks.forEach((task) => {
+      const last = groups[groups.length - 1];
+      if (last && last[0].dueTime === task.dueTime) {
+        last.push(task);
+      } else {
+        groups.push([task]);
+      }
+    });
+    return groups;
+  }, [tasks]);
+
+  const calculateIndicatorTop = useCallback(() => {
+    const groups = buildGroups();
+    if (groups.length === 0) return;
+
+    const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+    // Build an array of { minutes, groupKey, el } for each group
+    const groupData = groups.map((group) => {
+      const key = group.map((t) => t.id).join("-");
+      const el = groupRefs.current.get(key);
+      return { minutes: timeToMinutes(group[0].dueTime), key, el };
+    });
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Find the two groups that bracket the current time
+    let before = groupData[0];
+    let after: typeof groupData[0] | null = null;
+
+    for (let i = 0; i < groupData.length; i++) {
+      if (groupData[i].minutes <= currentMinutes) {
+        before = groupData[i];
+      } else if (after === null) {
+        after = groupData[i];
+        break;
+      }
+    }
+
+    const beforeEl = before.el;
+    if (!beforeEl) return;
+
+    const containerTop = container.getBoundingClientRect().top;
+
+    // Current time is before the first task — place line at top of first group
+    if (currentMinutes < groupData[0].minutes) {
+      const rect = beforeEl.getBoundingClientRect();
+      setIndicatorTop(rect.top - containerTop + container.scrollTop);
+      return;
+    }
+
+    // Current time is at or past the last task — place line at bottom of last group
+    if (after === null) {
+      const rect = beforeEl.getBoundingClientRect();
+      setIndicatorTop(rect.bottom - containerTop + container.scrollTop);
+      return;
+    }
+
+    const afterEl = after.el;
+    if (!afterEl) return;
+
+    // Interpolate between before (bottom edge) and after (top edge) based on time ratio
+    const beforeRect = beforeEl.getBoundingClientRect();
+    const afterRect = afterEl.getBoundingClientRect();
+
+    const beforePx = beforeRect.bottom - containerTop + container.scrollTop;
+    const afterPx = afterRect.top - containerTop + container.scrollTop;
+
+    const timeDiff = after.minutes - before.minutes;
+    const elapsed = currentMinutes - before.minutes;
+    const ratio = timeDiff > 0 ? Math.min(elapsed / timeDiff, 1) : 0;
+
+    setIndicatorTop(beforePx + (afterPx - beforePx) * ratio);
+  }, [buildGroups]);
+
+  // Recalculate on every minute tick and whenever tasks change
+  useEffect(() => {
+    // Small delay to let DOM settle after render
+    const timeout = setTimeout(calculateIndicatorTop, 50);
+    const interval = setInterval(calculateIndicatorTop, 60_000);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [calculateIndicatorTop]);
 
   return (
     <div className="flex h-full flex-col">
@@ -86,22 +179,25 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
+      <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
         <div className="relative pl-8">
           {/* Timeline line */}
           <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-200" />
 
           {/* Current time marker */}
-          {currentIdx >= 0 && (
+          {indicatorTop !== null && (
             <motion.div
-              className="absolute left-0 z-10 flex items-center"
-              style={{ top: `${currentIdx * 100}px` }}
-              initial={false}
-              animate={{ top: `${currentIdx * 100}px` }}
-              transition={{ type: "spring", stiffness: 100 }}
+              className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
+              style={{ top: indicatorTop }}
+              animate={{ top: indicatorTop }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
             >
-              <div className="h-3 w-3 rounded-full bg-[var(--hub-red)] shadow-md shadow-red-200" />
-              <div className="ml-[-1px] h-0.5 w-6 bg-[var(--hub-red)]" />
+              <div className="absolute left-0 right-0 h-0.5 bg-[var(--hub-red)] opacity-40" />
+              <div className="absolute left-0 flex items-center">
+                <div className="rounded-full bg-[var(--hub-red)] px-2 py-1 text-xs font-medium text-white shadow-md shadow-red-200">
+                  {formatTime(new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0'))}
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -109,22 +205,19 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
             <AnimatePresence mode="popLayout">
               {/* Group tasks by dueTime, render same-time tasks side-by-side */}
               {(() => {
-                const groups: TaskItem[][] = [];
-                tasks.forEach((task) => {
-                  const last = groups[groups.length - 1];
-                  if (last && last[0].dueTime === task.dueTime) {
-                    last.push(task);
-                  } else {
-                    groups.push([task]);
-                  }
-                });
+                const groups = buildGroups();
                 let globalIdx = 0;
                 return groups.map((group) => {
                   const groupIdx = globalIdx;
+                  const groupKey = group.map((t) => t.id).join("-");
                   globalIdx += group.length;
                   return (
                     <motion.div
-                      key={group.map((t) => t.id).join("-")}
+                      key={groupKey}
+                      ref={(el) => {
+                        if (el) groupRefs.current.set(groupKey, el);
+                        else groupRefs.current.delete(groupKey);
+                      }}
                       layout
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}

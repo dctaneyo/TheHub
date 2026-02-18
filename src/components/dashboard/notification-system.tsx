@@ -34,6 +34,40 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Load dismissed notifications from database on mount
+  useEffect(() => {
+    const loadDismissedNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications/dismiss');
+        if (response.ok) {
+          const data = await response.json();
+          notifiedRef.current = new Set(data.dismissedIds);
+        }
+      } catch (error) {
+        console.error('Failed to load dismissed notifications:', error);
+      }
+    };
+
+    loadDismissedNotifications();
+  }, []);
+
+  // Save dismissed notifications to database
+  const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
+    try {
+      const response = await fetch('/api/notifications/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationIds }),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save dismissed notifications');
+      }
+    } catch (error) {
+      console.error('Failed to save dismissed notifications:', error);
+    }
+  }, []);
+
   // Initialize audio
   useEffect(() => {
     audioRef.current = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGczIj2markup");
@@ -83,54 +117,121 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
   useEffect(() => {
     if (!currentTime || tasks.length === 0) return;
 
-    const newNotifications: Notification[] = [];
+    const checkAndCreateNotifications = async () => {
+      const newNotifications: Notification[] = [];
 
-    for (const task of tasks) {
-      if (task.isCompleted) continue;
+      for (const task of tasks) {
+        if (task.isCompleted) continue;
 
-      const notifKey = `${task.id}-${currentTime.split(":")[0]}`;
+        const overdueId = `overdue-${task.id}`;
+        const dueId = `due-${task.id}`;
 
-      if (task.isOverdue && !notifiedRef.current.has(`overdue-${task.id}`)) {
-        notifiedRef.current.add(`overdue-${task.id}`);
-        newNotifications.push({
-          id: `overdue-${task.id}`,
-          taskId: task.id,
-          title: task.title,
-          type: "overdue",
-          dueTime: task.dueTime,
-          dismissed: false,
-        });
+        // Check if notification is already dismissed
+        if (notifiedRef.current.has(overdueId) || notifiedRef.current.has(dueId)) {
+          continue;
+        }
+
+        // Create notifications in database
+        if (task.isOverdue) {
+          try {
+            const response = await fetch('/api/notifications/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'task_overdue',
+                title: 'Overdue Task',
+                body: task.title,
+                referenceId: overdueId
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (!data.existing) {
+                newNotifications.push({
+                  id: overdueId,
+                  taskId: task.id,
+                  title: task.title,
+                  type: "overdue",
+                  dueTime: task.dueTime,
+                  dismissed: false,
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to create overdue notification:', error);
+          }
+        }
+
+        if (task.isDueSoon) {
+          try {
+            const response = await fetch('/api/notifications/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'task_due_soon',
+                title: 'Task Due Soon',
+                body: task.title,
+                referenceId: dueId
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (!data.existing) {
+                newNotifications.push({
+                  id: dueId,
+                  taskId: task.id,
+                  title: task.title,
+                  type: "due_soon",
+                  dueTime: task.dueTime,
+                  dismissed: false,
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to create due soon notification:', error);
+          }
+        }
       }
 
-      if (task.isDueSoon && !notifiedRef.current.has(`due-${task.id}`)) {
-        notifiedRef.current.add(`due-${task.id}`);
-        newNotifications.push({
-          id: `due-${task.id}`,
-          taskId: task.id,
-          title: task.title,
-          type: "due_soon",
-          dueTime: task.dueTime,
-          dismissed: false,
-        });
+      if (newNotifications.length > 0) {
+        setNotifications((prev) => [...newNotifications, ...prev]);
+        playNotificationSound();
+        setShowPanel(true);
       }
-    }
+    };
 
-    if (newNotifications.length > 0) {
-      setNotifications((prev) => [...newNotifications, ...prev]);
-      playNotificationSound();
-      setShowPanel(true);
-    }
+    checkAndCreateNotifications();
   }, [tasks, currentTime, playNotificationSound]);
 
-  const dismissNotification = (id: string) => {
+  const dismissNotification = async (id: string) => {
+    // Add to dismissed set and save to database
+    notifiedRef.current.add(id);
+    await saveDismissedNotifications([id]);
+    
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, dismissed: true } : n))
     );
   };
 
-  const dismissAll = () => {
+  const dismissAll = async () => {
+    // Add all current notifications to dismissed set and save to database
+    const notificationIds = notifications.map((n) => n.id);
+    notifications.forEach((n) => notifiedRef.current.add(n.id));
+    await saveDismissedNotifications(notificationIds);
+    
     setNotifications((prev) => prev.map((n) => ({ ...n, dismissed: true })));
     setShowPanel(false);
+  };
+
+  // Wrapper functions for button handlers
+  const handleDismissNotification = (id: string) => {
+    dismissNotification(id);
+  };
+
+  const handleDismissAll = () => {
+    dismissAll();
   };
 
   const activeNotifications = notifications.filter((n) => !n.dismissed);
@@ -187,7 +288,7 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
               <div className="flex items-center gap-2">
                 {hasActive && (
                   <button
-                    onClick={dismissAll}
+                    onClick={handleDismissAll}
                     className="text-[10px] font-medium text-slate-400 hover:text-slate-600"
                   >
                     Dismiss all
@@ -245,7 +346,7 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
                         </p>
                       </div>
                       <button
-                        onClick={() => dismissNotification(notif.id)}
+                        onClick={() => handleDismissNotification(notif.id)}
                         className="shrink-0 text-slate-300 hover:text-slate-500"
                       >
                         <X className="h-3.5 w-3.5" />
