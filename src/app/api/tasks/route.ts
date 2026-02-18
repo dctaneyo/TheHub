@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       isRecurring = false,
       recurringType,
       recurringDays,
+      biweeklyStart,
       locationId,
       points = 10,
     } = body;
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       isRecurring,
       recurringType: recurringType || null,
       recurringDays: recurringDays ? (typeof recurringDays === "string" ? recurringDays : JSON.stringify(recurringDays)) : null,
+      biweeklyStart: biweeklyStart || null,
       locationId: resolvedLocationId,
       isHidden: false,
       createdBy: session.id,

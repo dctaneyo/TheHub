@@ -101,6 +101,7 @@ export function TaskManager() {
   const [recurringType, setRecurringType] = useState("daily");
   const [recurringDays, setRecurringDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
   const [recurringMonthDays, setRecurringMonthDays] = useState<number[]>([1]);
+  const [biweeklyStart, setBiweeklyStart] = useState<"this" | "next">("this");
   // Location assignment: "all" | "single" | "multiple"
   const [assignMode, setAssignMode] = useState<"all" | "single" | "multiple">("all");
   const [locationId, setLocationId] = useState("");
@@ -203,6 +204,7 @@ export function TaskManager() {
           ? null
           : JSON.stringify(recurringDays)
         : null,
+      biweeklyStart: isRecurring && recurringType === "biweekly" ? biweeklyStart : null,
       points,
     };
 
@@ -585,6 +587,37 @@ export function TaskManager() {
                                 {d.label.charAt(0)}
                               </button>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Biweekly: start week selection */}
+                      {recurringType === "biweekly" && (
+                        <div>
+                          <p className="mb-1.5 text-[11px] text-slate-400">First occurrence:</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setBiweeklyStart("this")}
+                              className={cn(
+                                "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                                biweeklyStart === "this"
+                                  ? "bg-[var(--hub-red)] text-white"
+                                  : "bg-slate-100 text-slate-400"
+                              )}
+                            >
+                              This week
+                            </button>
+                            <button
+                              onClick={() => setBiweeklyStart("next")}
+                              className={cn(
+                                "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                                biweeklyStart === "next"
+                                  ? "bg-[var(--hub-red)] text-white"
+                                  : "bg-slate-100 text-slate-400"
+                              )}
+                            >
+                              Next week
+                            </button>
                           </div>
                         </div>
                       )}

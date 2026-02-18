@@ -54,6 +54,7 @@ export const tasks = sqliteTable("tasks", {
   isRecurring: integer("is_recurring", { mode: "boolean" }).notNull().default(false),
   recurringType: text("recurring_type"), // 'daily' | 'weekly' | 'biweekly' | 'monthly'
   recurringDays: text("recurring_days"), // JSON array of days for weekly: ["mon","tue",...] or day-of-month for monthly
+  biweeklyStart: text("biweekly_start"), // 'this' | 'next' for biweekly tasks
   locationId: text("location_id"), // null = all locations
   createdBy: text("created_by").notNull(), // ARL id or location id who created it
   createdByType: text("created_by_type").notNull().default("arl"), // 'arl' | 'location'

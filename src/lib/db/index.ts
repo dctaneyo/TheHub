@@ -51,3 +51,4 @@ try {
     updated_at TEXT NOT NULL
   )`);
 } catch {}
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN biweekly_start TEXT`); } catch {}

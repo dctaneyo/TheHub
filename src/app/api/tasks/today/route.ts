@@ -128,7 +128,13 @@ function taskAppliesToDate(
       // Use ISO week number parity
       const startOfYear = new Date(date.getFullYear(), 0, 1);
       const weekNum = Math.ceil(((date.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-      return weekNum % 2 === 0;
+      const isEvenWeek = weekNum % 2 === 0;
+      
+      // If biweeklyStart is "next", invert the parity
+      if ((task as any).biweeklyStart === "next") {
+        return !isEvenWeek;
+      }
+      return isEvenWeek;
     } catch { return false; }
   }
   if (rType === "monthly") {
