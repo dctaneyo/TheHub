@@ -18,13 +18,6 @@ sqlite.pragma("foreign_keys = ON");
 const db = drizzle(sqlite, { schema });
 
 async function seed() {
-  // Idempotent: skip if already seeded
-  const existing = sqlite.prepare("SELECT COUNT(*) as count FROM arls").get() as { count: number };
-  if (existing.count > 0) {
-    console.log("✅ Database already seeded, skipping.");
-    return;
-  }
-
   console.log("🌱 Seeding database...");
 
   // Create tables manually via raw SQL (Drizzle push would be better but this works for seed)
