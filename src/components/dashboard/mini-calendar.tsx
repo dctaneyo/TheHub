@@ -73,9 +73,9 @@ export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
                 : "bg-slate-50/50"
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               {/* Date badge */}
-              <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-100">
+              <div className="flex h-10 w-10 shrink-0 flex-col items-start justify-start rounded-xl bg-slate-100 p-1">
                 <span className="text-[10px] font-semibold uppercase text-slate-500">
                   {day.dayName}
                 </span>
@@ -85,7 +85,7 @@ export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
               </div>
 
               {/* Tasks for this day */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 mt-0.5">
                 {day.tasks.length === 0 ? (
                   <p className="text-xs text-slate-400">No tasks scheduled</p>
                 ) : (
