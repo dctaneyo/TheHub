@@ -97,6 +97,7 @@ export function TaskManager() {
   const [type, setType] = useState("task");
   const [priority, setPriority] = useState("normal");
   const [dueTime, setDueTime] = useState("09:00");
+  const [dueDate, setDueDate] = useState("");
   const [isRecurring, setIsRecurring] = useState(true);
   const [recurringType, setRecurringType] = useState("daily");
   const [recurringDays, setRecurringDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
@@ -139,10 +140,12 @@ export function TaskManager() {
     setType("task");
     setPriority("normal");
     setDueTime("09:00");
+    setDueDate("");
     setIsRecurring(true);
     setRecurringType("daily");
     setRecurringDays(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
     setRecurringMonthDays([1]);
+    setBiweeklyStart("this");
     setAssignMode("all");
     setLocationId("");
     setSelectedLocationIds([]);
@@ -162,6 +165,7 @@ export function TaskManager() {
     setType(task.type);
     setPriority(task.priority);
     setDueTime(task.dueTime);
+    setDueDate(task.dueDate || "");
     setIsRecurring(task.isRecurring);
     const rType = task.recurringType || "daily";
     setRecurringType(rType);
@@ -195,6 +199,7 @@ export function TaskManager() {
       type,
       priority,
       dueTime: isReminder && !dueTime ? "00:00" : dueTime,
+      dueDate: isRecurring ? null : (dueDate || null),
       isRecurring,
       recurringType: isRecurring ? recurringType : null,
       recurringDays: isRecurring
@@ -363,6 +368,12 @@ export function TaskManager() {
                     <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{task.description}</p>
                   )}
                   <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
+                    {!task.isRecurring && task.dueDate && (
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
                     {task.type !== "reminder" && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -509,8 +520,19 @@ export function TaskManager() {
                   </div>
                 </div>
 
-                {/* Due Time + Points */}
+                {/* Due Date + Time + Points */}
                 <div className="flex gap-3">
+                  {!isRecurring && (
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">Due Date</label>
+                      <Input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="rounded-xl"
+                      />
+                    </div>
+                  )}
                   {!isReminder && (
                     <div className="flex-1">
                       <label className="mb-1 block text-xs font-semibold text-slate-600">Due Time</label>
