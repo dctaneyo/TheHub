@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="120" fill="#dc2626"/>
+  
+  <!-- HUB text -->
+  <text x="256" y="320" 
+        font-family="Arial, sans-serif" 
+        font-size="180" 
+        font-weight="bold" 
+        text-anchor="middle" 
+        fill="white">HUB</text>
+</svg>
