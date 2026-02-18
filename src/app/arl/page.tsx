@@ -20,6 +20,8 @@ import {
   SprayCan,
   Repeat,
   Radio,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -70,6 +72,8 @@ export default function ArlPage() {
   const [activeView, setActiveView] = useState<ArlView>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null);
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
 
@@ -89,31 +93,85 @@ export default function ArlPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Register service worker and subscribe to push notifications
+  // Request notification permission and subscribe to push
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      alert("This browser doesn't support notifications");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission === "granted") {
+      // Register service worker and subscribe
+      if ("serviceWorker" in navigator && "PushManager" in window) {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        console.log("SW registered");
+
+        try {
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          });
+
+          console.log("Push subscribed:", subscription);
+          setPushSubscription(subscription);
+
+          // Send subscription to server
+          await fetch("/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(subscription),
+          });
+
+          alert("Notifications enabled! You'll receive alerts for new messages.");
+        } catch (err) {
+          console.error("Push subscription failed:", err);
+          alert("Failed to enable push notifications. Check console for details.");
+        }
+      }
+    } else {
+      alert("Notification permission denied. You won't receive message alerts.");
+    }
+  };
+
+  // Check notification permission and existing subscription
   useEffect(() => {
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
     if ("serviceWorker" in navigator && "PushManager" in window) {
       navigator.serviceWorker.register("/sw.js").then((registration) => {
         console.log("SW registered");
 
-        // Subscribe to push notifications
-        registration.pushManager
-          .subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-          })
-          .then((subscription) => {
-            console.log("Push subscribed:", subscription);
-            // Send subscription to server
-            fetch("/api/push/subscribe", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(subscription),
-            }).catch(console.error);
-          })
-          .catch((err) => {
-            console.log("Push subscription failed:", err);
-            // Fallback: just register SW for caching
-          });
+        // Check existing subscription
+        registration.pushManager.getSubscription().then((subscription) => {
+          if (subscription) {
+            console.log("Existing push subscription found");
+            setPushSubscription(subscription);
+          } else if (Notification.permission === "granted") {
+            // Try to subscribe if permission granted but no subscription
+            registration.pushManager
+              .subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+              })
+              .then((sub) => {
+                console.log("Push subscribed:", sub);
+                setPushSubscription(sub);
+                fetch("/api/push/subscribe", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(sub),
+                }).catch(console.error);
+              })
+              .catch((err) => {
+                console.log("Push subscription failed:", err);
+              });
+          }
+        });
       });
     }
   }, []);
@@ -237,7 +295,30 @@ export default function ArlPage() {
               {navItems.find((n) => n.id === activeView)?.label ?? ""}
             </h2>
           </div>
-          <ConnectionStatus />
+          <div className="flex items-center gap-3">
+            {/* Notification Status */}
+            {pushSubscription ? (
+              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1">
+                <Bell className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs font-medium text-emerald-700">On</span>
+              </div>
+            ) : notificationPermission === "denied" ? (
+              <div className="flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1">
+                <BellOff className="h-3.5 w-3.5 text-red-600" />
+                <span className="text-xs font-medium text-red-700">Off</span>
+              </div>
+            ) : (
+              <button
+                onClick={requestNotificationPermission}
+                className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 hover:bg-slate-200 transition-colors"
+                title="Enable push notifications"
+              >
+                <Bell className="h-3.5 w-3.5 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Enable</span>
+              </button>
+            )}
+            <ConnectionStatus />
+          </div>
         </header>
 
         {/* Content area */}
