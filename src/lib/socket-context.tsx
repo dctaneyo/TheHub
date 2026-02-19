@@ -70,9 +70,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    s.on("session:force-redirect", (data: { token: string; redirectTo: string }) => {
+    s.on("session:force-redirect", async (data: { token: string; redirectTo: string }) => {
       console.log("🔌 Force redirect received →", data.redirectTo);
-      window.location.href = `/api/auth/force-apply?token=${encodeURIComponent(data.token)}&redirect=${encodeURIComponent(data.redirectTo)}`;
+      try {
+        await fetch("/api/auth/force-apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: data.token }),
+        });
+      } catch {}
+      window.location.href = data.redirectTo;
     });
 
     socketRef.current = s;

@@ -130,7 +130,12 @@ export default function ArlPage() {
             await fetch("/api/auth/logout", { method: "POST" });
             window.location.href = "/login";
           } else if (data.force === "redirect" && data.token && data.redirectTo) {
-            window.location.href = `/api/auth/force-apply?token=${encodeURIComponent(data.token)}&redirect=${encodeURIComponent(data.redirectTo)}`;
+            await fetch("/api/auth/force-apply", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: data.token }),
+            });
+            window.location.href = data.redirectTo;
           }
         }
       } catch {}
