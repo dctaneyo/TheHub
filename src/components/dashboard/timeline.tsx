@@ -98,7 +98,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const groups = buildGroups();
     if (groups.length === 0) return;
 
-    const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+    const [ch, cm] = currentTime.split(':').map(Number);
+    const currentMinutes = ch * 60 + cm;
 
     // Build an array of { minutes, groupKey, el } for each group
     const groupData = groups.map((group) => {
@@ -163,18 +164,14 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const ratio = timeDiff > 0 ? Math.min(elapsed / timeDiff, 1) : 0;
 
     setIndicatorTop(beforePx + (afterPx - beforePx) * ratio);
-  }, [buildGroups]);
+  }, [buildGroups, currentTime]);
 
-  // Recalculate on every minute tick and whenever tasks change
+  // Recalculate whenever currentTime changes (every second from parent) or tasks change
   useEffect(() => {
     // Small delay to let DOM settle after render
     const timeout = setTimeout(calculateIndicatorTop, 50);
-    const interval = setInterval(calculateIndicatorTop, 60_000);
-    return () => {
-      clearTimeout(timeout);
-      clearInterval(interval);
-    };
-  }, [calculateIndicatorTop]);
+    return () => clearTimeout(timeout);
+  }, [calculateIndicatorTop, currentTime]);
 
   return (
     <div ref={outerRef} className="flex h-full flex-col relative">
@@ -193,7 +190,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
           <div className="absolute left-0 right-0 h-0.5 bg-[var(--hub-red)] opacity-40" />
           <div className="absolute left-0 flex items-center pl-8">
             <div className="rounded-full bg-[var(--hub-red)] px-2 py-1 text-xs font-medium text-white shadow-md shadow-red-200">
-              {formatTime(new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0'))}
+              {formatTime(currentTime)}
             </div>
           </div>
         </motion.div>
