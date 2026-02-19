@@ -163,7 +163,7 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div className="group relative overflow-hidden rounded-xl">
       {/* Delete button revealed behind — only for non-global conversations */}
       {canDelete && (
         <motion.div
