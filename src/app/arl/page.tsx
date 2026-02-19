@@ -46,18 +46,34 @@ type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login";
 
 function useDeviceType(): DeviceType {
+  const getDevice = (w: number): DeviceType => {
+    if (w < 640) return "mobile";
+    if (w < 1024) return "tablet";
+    return "desktop";
+  };
+
   const [device, setDevice] = useState<DeviceType>("desktop");
+  const lastWidthRef = useRef<number>(0);
 
   useEffect(() => {
+    lastWidthRef.current = window.innerWidth;
+    setDevice(getDevice(window.innerWidth));
+
+    let timer: ReturnType<typeof setTimeout>;
     const check = () => {
+      // Only re-evaluate when WIDTH changes — ignore height-only changes
+      // (iOS Safari fires resize on scroll when address bar collapses)
       const w = window.innerWidth;
-      if (w < 640) setDevice("mobile");
-      else if (w < 1024) setDevice("tablet");
-      else setDevice("desktop");
+      if (w === lastWidthRef.current) return;
+      lastWidthRef.current = w;
+      clearTimeout(timer);
+      timer = setTimeout(() => setDevice(getDevice(w)), 100);
     };
-    check();
     window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    return () => {
+      window.removeEventListener("resize", check);
+      clearTimeout(timer);
+    };
   }, []);
 
   return device;
@@ -325,7 +341,7 @@ export default function ArlPage() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[var(--background)]">
+    <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]">
       {/* Sidebar - always visible on desktop, drawer on mobile/tablet */}
       {isMobileOrTablet && sidebarOpen && (
         <motion.div
