@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Download, FolderOpen, X } from "lucide-react";
+import { FileText, Download, FolderOpen, X, Mail, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -49,6 +49,9 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
   const [forms, setForms] = useState<Form[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCat, setFilterCat] = useState<string>("all");
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sentId, setSentId] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const fetchForms = useCallback(async () => {
     try {
@@ -62,6 +65,31 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
   }, []);
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
+
+  const handleEmailSelf = async (form: Form) => {
+    setSendingId(form.id);
+    setEmailError(null);
+    try {
+      const res = await fetch("/api/forms/email-self", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId: form.id }),
+      });
+      if (res.ok) {
+        setSentId(form.id);
+        setTimeout(() => setSentId(null), 3000);
+      } else {
+        const d = await res.json();
+        setEmailError(d.error || "Failed to send");
+        setTimeout(() => setEmailError(null), 3000);
+      }
+    } catch {
+      setEmailError("Failed to send");
+      setTimeout(() => setEmailError(null), 3000);
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   const filtered = filterCat === "all" ? forms : forms.filter((f) => f.category === filterCat);
 
@@ -149,15 +177,34 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                     {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
                   </p>
                 </div>
-                <a
-                  href={`/api/forms/download?id=${form.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--hub-red)]/10 text-[var(--hub-red)] hover:bg-[var(--hub-red)]/20 transition-colors"
-                  title="Download PDF"
-                >
-                  <Download className="h-4 w-4" />
-                </a>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => handleEmailSelf(form)}
+                    disabled={sendingId === form.id}
+                    title={sentId === form.id ? "Sent!" : "Email to my restaurant"}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
+                      sentId === form.id
+                        ? "bg-green-100 text-green-600"
+                        : "bg-blue-50 text-blue-500 hover:bg-blue-100"
+                    )}
+                  >
+                    {sendingId === form.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                  </button>
+                  <a
+                    href={`/api/forms/download?id=${form.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--hub-red)]/10 text-[var(--hub-red)] hover:bg-[var(--hub-red)]/20 transition-colors"
+                    title="Download PDF"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                </div>
               </motion.div>
             ))}
           </div>

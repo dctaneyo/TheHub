@@ -59,7 +59,7 @@ export async function GET() {
 
     // Include ARLs online status (ARL-only)
     let arlsWithStatus: Array<{
-      id: string; name: string; userId: string; role: string;
+      id: string; name: string; email: string | null; userId: string; role: string;
       isOnline: boolean; lastSeen: string | null; deviceType: string | null;
       sessionCode: string | null; userKind: "arl";
     }> = [];
@@ -88,6 +88,7 @@ export async function GET() {
         return {
           id: arl.id,
           name: arl.name,
+          email: arl.email || null,
           userId: arl.userId,
           role: arl.role,
           isOnline: latestArlSession?.isOnline && !isArlStale ? true : false,
