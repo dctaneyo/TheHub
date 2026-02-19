@@ -59,10 +59,18 @@ export default function DashboardPage() {
   const [showFireworks, setShowFireworks] = useState(false);
   const playConfettiSound = useConfettiSound();
 
+  const localTimeParams = () => {
+    const now = new Date();
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const localDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
+    return `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`;
+  };
+
   const fetchTasks = useCallback(async () => {
     try {
       const [todayRes, upcomingRes] = await Promise.all([
-        fetch("/api/tasks/today"),
+        fetch(`/api/tasks/today?${localTimeParams()}`),
         fetch("/api/tasks/upcoming"),
       ]);
       if (todayRes.ok) {
@@ -194,7 +202,7 @@ export default function DashboardPage() {
         setConfettiPoints(pts);
         playConfettiSound();
         // Check if all tasks are now complete
-        const updatedRes = await fetch("/api/tasks/today");
+        const updatedRes = await fetch(`/api/tasks/today?${localTimeParams()}`);
         if (updatedRes.ok) {
           const updated = await updatedRes.json();
           const allDone = (updated.tasks || []).length > 0 && (updated.tasks || []).every((t: any) => t.isCompleted);

@@ -3,16 +3,23 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Use client-supplied local date/time to avoid UTC vs local timezone mismatch.
+    // The kiosk sends its local values; server UTC would give wrong overdue results.
+    const { searchParams } = new URL(req.url);
+    const localDate = searchParams.get("localDate"); // YYYY-MM-DD
+    const localTime = searchParams.get("localTime"); // HH:mm
+    const localDay = searchParams.get("localDay");   // sun|mon|...
+
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
-    const dayOfWeek = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
+    const todayStr = localDate || today.toISOString().split("T")[0];
+    const dayOfWeek = localDay || ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
 
     // Get all tasks for this location (or all locations if locationId is null)
     const locationId = session.userType === "location" ? session.id : null;
@@ -73,7 +80,7 @@ export async function GET() {
     // Sort today's tasks by due time
     todayTasks.sort((a, b) => a.dueTime.localeCompare(b.dueTime));
 
-    const now = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+    const now = localTime || `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
 
     const tasksWithStatus = todayTasks.map((task) => ({
       ...task,
