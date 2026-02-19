@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users } from "lucide-react";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
@@ -26,6 +26,51 @@ export default function LoginPage() {
   const [isOnline] = useState(true);
   const userIdRef = useRef("");
   const pinRef = useRef("");
+
+  // Pending session for remote login
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const [remoteActivating, setRemoteActivating] = useState(false);
+
+  // Generate pending session on mount
+  useEffect(() => {
+    fetch("/api/session/pending", { method: "POST" })
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          setPendingId(data.id);
+          setPendingCode(data.code);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Poll for remote activation
+  useEffect(() => {
+    if (!pendingId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/session/pending/status?id=${pendingId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "activated" && data.redirectTo) {
+            setRemoteActivating(true);
+            window.location.href = data.redirectTo;
+          } else if (data.status === "expired") {
+            // Regenerate a new pending session
+            const newRes = await fetch("/api/session/pending", { method: "POST" });
+            if (newRes.ok) {
+              const newData = await newRes.json();
+              setPendingId(newData.id);
+              setPendingCode(newData.code);
+            }
+          }
+        }
+      } catch {}
+    };
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [pendingId]);
 
   const currentValue = step === "userId" ? userId : pin;
   const maxLength = 6;
@@ -147,20 +192,46 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8]">
-      {/* Connection indicator */}
-      <div className="absolute right-6 top-6 flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
-        {isOnline ? (
-          <>
-            <Wifi className="h-4 w-4 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-600">Connected</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="h-4 w-4 text-[var(--hub-red)]" />
-            <span className="text-xs font-medium text-[var(--hub-red)]">Offline</span>
-          </>
+      {/* Top bar: connection + session ID */}
+      <div className="absolute right-6 top-6 flex items-center gap-3">
+        {pendingCode && (
+          <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
+            <Monitor className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-[10px] font-medium text-slate-400">Session ID</span>
+            <span className="text-sm font-black tracking-widest text-slate-700">{pendingCode}</span>
+          </div>
         )}
+        <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
+          {isOnline ? (
+            <>
+              <Wifi className="h-4 w-4 text-emerald-500" />
+              <span className="text-xs font-medium text-emerald-600">Connected</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="h-4 w-4 text-[var(--hub-red)]" />
+              <span className="text-xs font-medium text-[var(--hub-red)]">Offline</span>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Remote activation overlay */}
+      <AnimatePresence>
+        {remoteActivating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm"
+          >
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-[var(--hub-red)]" />
+              <p className="mt-3 text-sm font-semibold text-slate-700">Logging you in remotely...</p>
+              <p className="text-xs text-slate-400">Please wait</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Card container */}
       <motion.div

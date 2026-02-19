@@ -23,6 +23,7 @@ import {
   Bell,
   BellOff,
   Trophy,
+  Monitor,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -34,10 +35,11 @@ import { FormsRepository } from "@/components/arl/forms-repository";
 import { UserManagement } from "@/components/arl/user-management";
 import { EmergencyBroadcast } from "@/components/arl/emergency-broadcast";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
+import { RemoteLogin } from "@/components/arl/remote-login";
 import { cn } from "@/lib/utils";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login";
 
 function useDeviceType(): DeviceType {
   const [device, setDevice] = useState<DeviceType>("desktop");
@@ -67,6 +69,7 @@ const navItems = [
   { id: "forms" as const, label: "Forms", icon: FileText },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },
+  { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
 ];
 
 export default function ArlPage() {
@@ -347,6 +350,7 @@ export default function ArlPage() {
               <Leaderboard />
             </div>
           )}
+          {activeView === "remote-login" && <RemoteLogin />}
         </main>
       </div>
     </div>

@@ -177,6 +177,23 @@ export const notifications = sqliteTable("notifications", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Pending sessions - pre-login session IDs shown on login screen
+export const pendingSessions = sqliteTable("pending_sessions", {
+  id: text("id").primaryKey(), // UUID
+  code: text("code").notNull().unique(), // 6-digit code shown on login screen
+  status: text("status").notNull().default("pending"), // 'pending' | 'activated'
+  // Filled in by ARL when activating:
+  assignedUserType: text("assigned_user_type"), // 'location' | 'arl'
+  assignedUserId: text("assigned_user_id"), // references locations.id or arls.id
+  activatedBy: text("activated_by"), // ARL id who activated
+  token: text("token"), // JWT token set when activated
+  redirectTo: text("redirect_to"), // '/dashboard' | '/arl'
+  userAgent: text("user_agent"), // from the login page request
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  activatedAt: text("activated_at"),
+  expiresAt: text("expires_at").notNull(), // pending sessions expire after 15 min
+});
+
 // Push notification subscriptions
 export const pushSubscriptions = sqliteTable("push_subscriptions", {
   id: text("id").primaryKey(), // UUID

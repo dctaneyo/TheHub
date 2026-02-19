@@ -73,6 +73,22 @@ function runMigrations() {
   try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_7day INTEGER NOT NULL DEFAULT 1`); } catch {}
   try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_calendar INTEGER NOT NULL DEFAULT 1`); } catch {}
   try { s.exec(`ALTER TABLE task_completions ADD COLUMN bonus_points INTEGER NOT NULL DEFAULT 0`); } catch {}
+  try {
+    s.exec(`CREATE TABLE IF NOT EXISTS pending_sessions (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'pending',
+      assigned_user_type TEXT,
+      assigned_user_id TEXT,
+      activated_by TEXT,
+      token TEXT,
+      redirect_to TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL,
+      activated_at TEXT,
+      expires_at TEXT NOT NULL
+    )`);
+  } catch {}
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

@@ -25,6 +25,7 @@ export function middleware(request: NextRequest) {
     publicPaths.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/session/pending") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
