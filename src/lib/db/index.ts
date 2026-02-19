@@ -66,6 +66,7 @@ function runMigrations() {
       updated_at TEXT NOT NULL
     )`);
   } catch {}
+  try { s.exec(`ALTER TABLE locations ADD COLUMN sound_muted INTEGER NOT NULL DEFAULT 0`); } catch {}
   try { s.exec(`ALTER TABLE tasks ADD COLUMN biweekly_start TEXT`); } catch {}
   try { s.exec(`ALTER TABLE forms ADD COLUMN file_content BLOB`); } catch {}
   try { s.exec(`ALTER TABLE tasks ADD COLUMN allow_early_complete INTEGER NOT NULL DEFAULT 0`); } catch {}

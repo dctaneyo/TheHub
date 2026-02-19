@@ -10,6 +10,7 @@ export const locations = sqliteTable("locations", {
   userId: text("user_id").notNull().unique(), // 6-digit login ID
   pinHash: text("pin_hash").notNull(), // hashed 6-digit PIN
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

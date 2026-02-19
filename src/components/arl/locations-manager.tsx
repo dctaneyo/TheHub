@@ -10,6 +10,8 @@ import {
   MapPin,
   Mail,
   Monitor,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -27,11 +29,13 @@ interface LocationWithStatus {
   isOnline: boolean;
   lastSeen: string | null;
   deviceType: string | null;
+  soundMuted: boolean;
 }
 
 export function LocationsManager() {
   const [locations, setLocations] = useState<LocationWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -47,6 +51,25 @@ export function LocationsManager() {
     }
   }, []);
 
+  const handleSoundToggle = async (loc: LocationWithStatus) => {
+    const next = !loc.soundMuted;
+    setTogglingId(loc.id);
+    // Optimistic update
+    setLocations((prev) => prev.map((l) => l.id === loc.id ? { ...l, soundMuted: next } : l));
+    try {
+      await fetch("/api/locations/sound", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId: loc.id, muted: next }),
+      });
+    } catch {
+      // Revert on failure
+      setLocations((prev) => prev.map((l) => l.id === loc.id ? { ...l, soundMuted: loc.soundMuted } : l));
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -55,9 +78,18 @@ export function LocationsManager() {
 
   useEffect(() => {
     if (!socket) return;
-    const handler = () => fetchLocations();
-    socket.on("presence:update", handler);
-    return () => { socket.off("presence:update", handler); };
+    const handlePresence = () => fetchLocations();
+    const handleSoundUpdate = (data: { locationId: string; muted: boolean }) => {
+      setLocations((prev) => prev.map((l) =>
+        l.id === data.locationId ? { ...l, soundMuted: data.muted } : l
+      ));
+    };
+    socket.on("presence:update", handlePresence);
+    socket.on("location:sound-toggle", handleSoundUpdate);
+    return () => {
+      socket.off("presence:update", handlePresence);
+      socket.off("location:sound-toggle", handleSoundUpdate);
+    };
   }, [socket, fetchLocations]);
 
   if (loading) {
@@ -118,25 +150,44 @@ export function LocationsManager() {
                   <p className="text-xs text-slate-400">Store #{loc.storeNumber}</p>
                 </div>
               </div>
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "text-[10px]",
-                  loc.isOnline
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-100 text-slate-500"
-                )}
-              >
-                {loc.isOnline ? (
-                  <span className="flex items-center gap-1">
-                    <Wifi className="h-2.5 w-2.5" /> Online
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <WifiOff className="h-2.5 w-2.5" /> Offline
-                  </span>
-                )}
-              </Badge>
+              <div className="flex items-center gap-1.5">
+                {/* Sound mute toggle */}
+                <button
+                  onClick={() => handleSoundToggle(loc)}
+                  disabled={togglingId === loc.id}
+                  title={loc.soundMuted ? "Audio muted — click to unmute" : "Audio on — click to mute"}
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                    loc.soundMuted
+                      ? "bg-red-50 text-red-400 hover:bg-red-100"
+                      : "bg-slate-100 text-slate-400 hover:bg-slate-200",
+                    togglingId === loc.id && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {loc.soundMuted
+                    ? <VolumeX className="h-3.5 w-3.5" />
+                    : <Volume2 className="h-3.5 w-3.5" />}
+                </button>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px]",
+                    loc.isOnline
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-slate-100 text-slate-500"
+                  )}
+                >
+                  {loc.isOnline ? (
+                    <span className="flex items-center gap-1">
+                      <Wifi className="h-2.5 w-2.5" /> Online
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <WifiOff className="h-2.5 w-2.5" /> Offline
+                    </span>
+                  )}
+                </Badge>
+              </div>
             </div>
 
             <div className="mt-4 space-y-2">

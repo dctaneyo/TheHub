@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bell, X, AlertTriangle, Clock, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type TaskItem } from "./timeline";
+import { useSocket } from "@/lib/socket-context";
 
 interface NotificationSystemProps {
   tasks: TaskItem[];
@@ -33,23 +34,28 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
   const [showPanel, setShowPanel] = useState(false);
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { socket } = useSocket();
 
-  // Load dismissed notifications from database on mount
+  // Load mute state + dismissed notifications from DB on mount
   useEffect(() => {
-    const loadDismissedNotifications = async () => {
-      try {
-        const response = await fetch('/api/notifications/dismiss');
-        if (response.ok) {
-          const data = await response.json();
-          notifiedRef.current = new Set(data.dismissedIds);
-        }
-      } catch (error) {
-        console.error('Failed to load dismissed notifications:', error);
-      }
-    };
+    fetch('/api/locations/sound')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSoundEnabled(!d.muted); })
+      .catch(() => {});
 
-    loadDismissedNotifications();
+    fetch('/api/notifications/dismiss')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) notifiedRef.current = new Set(d.dismissedIds); })
+      .catch(() => {});
   }, []);
+
+  // Listen for ARL-driven sound toggle
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { muted: boolean }) => setSoundEnabled(!data.muted);
+    socket.on('location:sound-toggle', handler);
+    return () => { socket.off('location:sound-toggle', handler); };
+  }, [socket]);
 
   // Save dismissed notifications to database
   const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
@@ -369,7 +375,15 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
 
       {/* Sound toggle */}
       <button
-        onClick={() => setSoundEnabled(!soundEnabled)}
+        onClick={() => {
+          const next = !soundEnabled;
+          setSoundEnabled(next);
+          fetch('/api/locations/sound', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ muted: !next }),
+          }).catch(() => {});
+        }}
         className={cn(
           "flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
           soundEnabled

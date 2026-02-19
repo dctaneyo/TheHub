@@ -52,6 +52,7 @@ export async function GET() {
         email: loc.email,
         userId: loc.userId,
         isActive: loc.isActive,
+        soundMuted: loc.soundMuted ?? false,
         isOnline: latestSession != null,
         lastSeen: latestSession?.lastSeen || null,
         deviceType: latestSession?.deviceType || null,

@@ -129,6 +129,13 @@ export function broadcastPing(pendingId: string) {
   emitToLoginWatchers("session:ping", { pendingId });
 }
 
+// ── Sound mute toggle ──
+export function broadcastSoundToggle(locationId: string, muted: boolean) {
+  if (!isAvailable()) return;
+  emitToLocation(locationId, "location:sound-toggle", { muted });
+  emitToArls("location:sound-toggle", { locationId, muted });
+}
+
 // ── Read receipts ──
 export function broadcastMessageRead(conversationId: string, readerId: string) {
   if (!isAvailable()) return;
