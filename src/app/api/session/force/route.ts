@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate } from "@/lib/socket-emit";
+import { setPendingForceAction } from "@/lib/socket-server";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -82,13 +83,17 @@ export async function POST(req: NextRequest) {
 
     // ── FORCE LOGOUT ──
     if (action === "logout") {
-      // Mark session offline
-      db.update(schema.sessions)
-        .set({ isOnline: false, lastSeen: new Date().toISOString() })
+      // Store pending force action so heartbeat fallback can detect it
+      if (targetSession.token) {
+        setPendingForceAction(targetSession.token, { action: "logout" });
+      }
+
+      // Delete the session record so heartbeat can't revive it
+      db.delete(schema.sessions)
         .where(eq(schema.sessions.id, sessionId))
         .run();
 
-      // Emit socket event to force client redirect to login
+      // Emit socket event to force client redirect to login (primary / instant)
       broadcastForceLogout(targetSession.userId, targetSession.userType);
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
 
@@ -103,12 +108,6 @@ export async function POST(req: NextRequest) {
       if (!["location", "arl"].includes(assignToType)) {
         return NextResponse.json({ error: "assignToType must be 'location' or 'arl'" }, { status: 400 });
       }
-
-      // Mark old session offline
-      db.update(schema.sessions)
-        .set({ isOnline: false, lastSeen: new Date().toISOString() })
-        .where(eq(schema.sessions.id, sessionId))
-        .run();
 
       // Create new token + session for the target account
       let token: string;
@@ -150,6 +149,16 @@ export async function POST(req: NextRequest) {
         redirectTo = "/arl";
         targetName = arl.name;
       }
+
+      // Store pending force action so heartbeat fallback can detect it
+      if (targetSession.token) {
+        setPendingForceAction(targetSession.token, { action: "redirect", token, redirectTo });
+      }
+
+      // Delete old session so heartbeat can't revive it
+      db.delete(schema.sessions)
+        .where(eq(schema.sessions.id, sessionId))
+        .run();
 
       // Create new session record
       db.insert(schema.sessions).values({

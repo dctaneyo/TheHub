@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { consumePendingForceAction } from "@/lib/socket-server";
 
 export async function POST() {
   try {
@@ -17,14 +18,36 @@ export async function POST() {
       return NextResponse.json({ error: "No token" }, { status: 401 });
     }
 
-    db.update(schema.sessions)
-      .set({ isOnline: true, lastSeen: new Date().toISOString() })
+    // Check if an ARL force-terminated this session
+    const forceAction = consumePendingForceAction(myToken);
+    if (forceAction) {
+      return NextResponse.json({
+        success: false,
+        force: forceAction.action,
+        token: forceAction.token,
+        redirectTo: forceAction.redirectTo,
+      });
+    }
+
+    // Also check if the session record still exists (it's deleted on force actions)
+    const existing = db.select({ id: schema.sessions.id })
+      .from(schema.sessions)
       .where(
         and(
           eq(schema.sessions.token, myToken),
           eq(schema.sessions.userId, session.id)
         )
       )
+      .get();
+
+    if (!existing) {
+      // Session was deleted (force-terminated) — tell client to logout
+      return NextResponse.json({ success: false, force: "logout" });
+    }
+
+    db.update(schema.sessions)
+      .set({ isOnline: true, lastSeen: new Date().toISOString() })
+      .where(eq(schema.sessions.id, existing.id))
       .run();
 
     return NextResponse.json({ success: true });

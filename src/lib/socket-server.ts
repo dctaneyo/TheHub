@@ -151,3 +151,29 @@ function parseCookie(cookieHeader: string, name: string): string | undefined {
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : undefined;
 }
+
+// ── Pending force actions (in-memory, survives across module reloads via globalThis) ──
+interface ForceAction {
+  action: "logout" | "redirect";
+  token?: string;
+  redirectTo?: string;
+}
+
+const g = globalThis as any;
+if (!g.__hubPendingForceActions) {
+  g.__hubPendingForceActions = new Map<string, ForceAction>();
+}
+const pendingForceActions: Map<string, ForceAction> = g.__hubPendingForceActions;
+
+export function setPendingForceAction(sessionToken: string, forceAction: ForceAction) {
+  pendingForceActions.set(sessionToken, forceAction);
+}
+
+export function consumePendingForceAction(sessionToken: string): ForceAction | null {
+  const action = pendingForceActions.get(sessionToken);
+  if (action) {
+    pendingForceActions.delete(sessionToken);
+    return action;
+  }
+  return null;
+}

@@ -108,11 +108,24 @@ export default function DashboardPage() {
     };
   }, [socket, fetchTasks]);
 
-  // Heartbeat to keep session alive (every 2 minutes)
+  // Heartbeat to keep session alive (every 30s — also detects force logout/reassign)
   useEffect(() => {
-    const ping = () => fetch("/api/session/heartbeat", { method: "POST" }).catch(() => {});
+    const ping = async () => {
+      try {
+        const res = await fetch("/api/session/heartbeat", { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.force === "logout") {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.href = "/login";
+          } else if (data.force === "redirect" && data.token && data.redirectTo) {
+            window.location.href = `/api/auth/force-apply?token=${encodeURIComponent(data.token)}&redirect=${encodeURIComponent(data.redirectTo)}`;
+          }
+        }
+      } catch {}
+    };
     ping();
-    const interval = setInterval(ping, 120000);
+    const interval = setInterval(ping, 30000);
     return () => clearInterval(interval);
   }, []);
 
