@@ -51,11 +51,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionDelayMax: 5000,
     });
 
+    // Track whether this is the very first connect or a reconnect
+    let firstConnect = true;
+
     s.on("connect", () => {
       console.log("🔌 Socket connected:", s.id);
       setIsConnected(true);
       // Emit immediately on connect so lastSeen is fresh right away
       s.emit("client:heartbeat");
+      firstConnect = false;
+    });
+
+    // Server sends its build ID on every connect.
+    // On a reconnect (firstConnect already false when this fires after the
+    // first connect cycle), compare against the ID baked into this bundle.
+    // If they differ the server has been redeployed — reload to get the new code.
+    s.on("build:id", ({ buildId }: { buildId: string }) => {
+      const clientBuildId = process.env.NEXT_PUBLIC_BUILD_ID;
+      if (!firstConnect && clientBuildId && buildId !== clientBuildId) {
+        console.log(`🔄 New build detected (${clientBuildId} → ${buildId}), reloading…`);
+        window.location.reload();
+      }
     });
 
     s.on("disconnect", (reason) => {

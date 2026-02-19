@@ -27,8 +27,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
   });
   _g.__hubSocketIO = io;
 
+  // Baked in at build time via next.config.ts
+  const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
+
   io.on("connection", (socket) => {
     let user: AuthPayload | null = null;
+
+    // Tell the client which build is running — used for stale-client detection
+    socket.emit("build:id", { buildId: BUILD_ID });
 
     // Authenticate on connect
     const token =
