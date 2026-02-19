@@ -37,6 +37,31 @@ export function broadcastTaskCompleted(locationId: string, taskId: string, taskT
 }
 
 // ── Message events ──
+
+// Helper: emit to all members of a conversation via their user rooms
+// (not just the conversation room, which users only join when viewing it)
+function emitToConversationMembers(conversationId: string, event: string, data: any) {
+  const io = getIO();
+  if (!io) return;
+  // Always emit to the conversation room (for users actively viewing it)
+  emitToConversation(conversationId, event, data);
+  // Also emit to each member's user room so they get notified even on the conversation list
+  try {
+    const { db, schema } = require("@/lib/db");
+    const { eq } = require("drizzle-orm");
+    const members = db.select().from(schema.conversationMembers)
+      .where(eq(schema.conversationMembers.conversationId, conversationId))
+      .all();
+    for (const m of members) {
+      if (m.memberType === "location") {
+        emitToLocation(m.memberId, event, data);
+      } else {
+        emitToArl(m.memberId, event, data);
+      }
+    }
+  } catch {}
+}
+
 export function broadcastNewMessage(conversationId: string, message: {
   id: string;
   senderId: string;
@@ -46,13 +71,12 @@ export function broadcastNewMessage(conversationId: string, message: {
   createdAt: string;
 }) {
   if (!isAvailable()) return;
-  emitToConversation(conversationId, "message:new", { conversationId, ...message });
+  emitToConversationMembers(conversationId, "message:new", { conversationId, ...message });
 }
 
 export function broadcastConversationUpdate(conversationId: string) {
   if (!isAvailable()) return;
-  // Tell everyone in the conversation to refresh their conversation list
-  emitToConversation(conversationId, "conversation:updated", { conversationId });
+  emitToConversationMembers(conversationId, "conversation:updated", { conversationId });
 }
 
 // ── Emergency events ──

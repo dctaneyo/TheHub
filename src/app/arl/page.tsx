@@ -145,17 +145,21 @@ export default function ArlPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const { socket } = useSocket();
+  const { socket, updateActivity } = useSocket();
 
-  // Fetch initial online count + cache location names
+  // Activity tracking — report which section the ARL is viewing
   useEffect(() => {
+    updateActivity(activeView);
+  }, [activeView, updateActivity]);
+
+  // Fetch online count + cache location names
+  const fetchOnlineCount = useCallback(() => {
     fetch("/api/locations").then(async (r) => {
       if (r.ok) {
         const d = await r.json();
         const locs = d.locations || [];
         const arls = d.arls || [];
-        const online = locs.filter((l: any) => l.isOnline).length + arls.filter((a: any) => a.isOnline).length;
-        setOnlineCount(online);
+        setOnlineCount(locs.filter((l: any) => l.isOnline).length + arls.filter((a: any) => a.isOnline).length);
         const map = new Map<string, string>();
         for (const l of locs) map.set(l.id, l.name);
         for (const a of arls) map.set(a.id, a.name);
@@ -163,6 +167,8 @@ export default function ArlPage() {
       }
     }).catch(() => {});
   }, []);
+
+  useEffect(() => { fetchOnlineCount(); }, [fetchOnlineCount]);
 
   // Listen for task completions → toast + chime
   useEffect(() => {
@@ -186,16 +192,13 @@ export default function ArlPage() {
     return () => { socket.off("task:completed", handleTaskCompleted); };
   }, [socket, playTaskChime]);
 
-  // Track online count via presence updates
+  // Re-fetch actual online count on presence changes (avoids stale delta tracking)
   useEffect(() => {
     if (!socket) return;
-    const handlePresence = (data: { isOnline: boolean; userId: string; name: string }) => {
-      if (data.name) locationNamesRef.current.set(data.userId, data.name);
-      setOnlineCount((prev) => data.isOnline ? prev + 1 : Math.max(0, prev - 1));
-    };
+    const handlePresence = () => fetchOnlineCount();
     socket.on("presence:update", handlePresence);
     return () => { socket.off("presence:update", handlePresence); };
-  }, [socket]);
+  }, [socket, fetchOnlineCount]);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -517,6 +520,7 @@ function OverviewContent() {
   const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
   const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userActivities, setUserActivities] = useState<Map<string, string>>(new Map());
   const { socket } = useSocket();
 
   const load = useCallback(() => Promise.all([
@@ -539,12 +543,18 @@ function OverviewContent() {
     socket.on("conversation:updated", handler);
     socket.on("task:updated", handler);
     socket.on("task:completed", handler);
+    // Track user activities
+    const activityHandler = (data: { userId: string; page: string }) => {
+      setUserActivities((prev) => new Map(prev).set(data.userId, data.page));
+    };
+    socket.on("activity:update", activityHandler);
     return () => {
       socket.off("presence:update", handler);
       socket.off("message:new", handler);
       socket.off("conversation:updated", handler);
       socket.off("task:updated", handler);
       socket.off("task:completed", handler);
+      socket.off("activity:update", activityHandler);
     };
   }, [socket, load]);
 
@@ -602,6 +612,9 @@ function OverviewContent() {
                     <div>
                       <span className="text-sm font-medium text-slate-700">{arl.name}</span>
                       <span className="ml-2 text-[10px] text-slate-400">ARL</span>
+                      {userActivities.get(arl.id) && (
+                        <span className="ml-2 text-[10px] font-medium text-sky-500">· {userActivities.get(arl.id)}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -629,6 +642,9 @@ function OverviewContent() {
                     <div>
                       <span className="text-sm font-medium text-slate-700">{loc.name}</span>
                       <span className="ml-2 text-[10px] text-slate-400">#{loc.storeNumber}</span>
+                      {userActivities.get(loc.id) && (
+                        <span className="ml-2 text-[10px] font-medium text-emerald-500">· {userActivities.get(loc.id)}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

@@ -58,7 +58,11 @@ export async function GET(req: NextRequest) {
       const convIds = memberships.map((m) => m.conversationId);
 
       const allConvs = db.select().from(schema.conversations).all()
-        .filter((c) => convIds.includes(c.id));
+        .filter((c) => convIds.includes(c.id))
+        .filter((c) => {
+          const deletedBy: string[] = JSON.parse(c.deletedBy || "[]");
+          return !deletedBy.includes(session.id);
+        });
 
       const locations = db.select().from(schema.locations).all();
       const arls = db.select().from(schema.arls).all();
@@ -217,12 +221,12 @@ export async function PUT(req: NextRequest) {
 
     if (type === "direct") {
       const [otherId, otherType] = [memberIds[0], memberTypes[0]];
-      // Check if direct conv already exists between these two
+      // Check if direct conv already exists between these two (that neither has deleted)
       const existing = db.select().from(schema.conversations).all().find(
         (c) => c.type === "direct" && (
           (c.participantAId === session.id && c.participantBId === otherId) ||
           (c.participantAId === otherId && c.participantBId === session.id)
-        )
+        ) && !JSON.parse(c.deletedBy || "[]").includes(session.id)
       );
       if (existing) return NextResponse.json({ conversation: existing });
 

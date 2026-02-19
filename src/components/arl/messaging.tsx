@@ -15,6 +15,7 @@ import {
   Plus,
   X,
   Hash,
+  Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ export function Messaging() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevUnreadRef = useRef<number>(0);
   const initializedRef = useRef(false);
+  const knownMessageIdsRef = useRef<Set<string>>(new Set());
 
   const playMessageChime = useCallback(() => {
     try {
@@ -195,6 +197,8 @@ export function Messaging() {
       const res = await fetch(`/api/messages?conversationId=${convId}`);
       if (res.ok) {
         const data = await res.json();
+        // Track known IDs so only truly new messages animate
+        for (const m of data.messages) knownMessageIdsRef.current.add(m.id);
         setMessages(data.messages);
         const unreadIds = data.messages
           .filter((m: Message) => m.reads.length === 0 && m.senderId !== user?.id)
@@ -264,6 +268,7 @@ export function Messaging() {
   // Join/leave conversation rooms
   useEffect(() => {
     if (activeConvo) {
+      knownMessageIdsRef.current.clear();
       setShowAllMessages(false);
       fetchMessages(activeConvo.id);
       joinConversation(activeConvo.id);
@@ -352,6 +357,20 @@ export function Messaging() {
       }
       return { ...prev, memberIds: [...prev.memberIds, p.id], memberTypes: [...prev.memberTypes, p.type] };
     });
+  };
+
+  const deleteConversation = async (convId: string) => {
+    try {
+      const res = await fetch("/api/messages/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: convId }),
+      });
+      if (res.ok) {
+        setConversations((prev) => prev.filter((c) => c.id !== convId));
+        if (activeConvo?.id === convId) setActiveConvo(null);
+      }
+    } catch {}
   };
 
   const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
@@ -531,40 +550,50 @@ export function Messaging() {
 
         <div className="space-y-1">
           {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
-            <button
-              key={convo.id}
-              onClick={() => setActiveConvo(convo)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
-                convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
-              )}
-            >
-              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
-                {convIcon(convo.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
+            <div key={convo.id} className="group relative">
+              <button
+                onClick={() => setActiveConvo(convo)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
+                  convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
+                )}
+              >
+                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
+                  {convIcon(convo.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
+                    {convo.lastMessage && (
+                      <span className="shrink-0 text-[10px] text-slate-400">
+                        {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400">{convo.subtitle}</p>
                   {convo.lastMessage && (
-                    <span className="shrink-0 text-[10px] text-slate-400">
-                      {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
-                    </span>
+                    <p className="mt-0.5 truncate text-xs text-slate-500">
+                      <span className="text-slate-400">{convo.lastMessage.senderName}: </span>
+                      {convo.lastMessage.content}
+                    </p>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400">{convo.subtitle}</p>
-                {convo.lastMessage && (
-                  <p className="mt-0.5 truncate text-xs text-slate-500">
-                    <span className="text-slate-400">{convo.lastMessage.senderName}: </span>
-                    {convo.lastMessage.content}
-                  </p>
+                {convo.unreadCount > 0 && (
+                  <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
+                    {convo.unreadCount}
+                  </span>
                 )}
-              </div>
-              {convo.unreadCount > 0 && (
-                <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
-                  {convo.unreadCount}
-                </span>
+              </button>
+              {convo.type !== "global" && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
+                  className="absolute right-2 top-2 hidden h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 group-hover:flex"
+                  title="Delete conversation"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
               )}
-            </button>
+            </div>
           ))}
 
           {conversations.length === 0 && (
@@ -634,7 +663,9 @@ export function Messaging() {
             const receiptDetail = isGroup && isMe ? getReceiptDetail(msg, activeConvo) : null;
             const showPopover = receiptPopover === msg.id;
             return (
-              <motion.div key={msg.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={msg.id}
+                initial={knownMessageIdsRef.current.has(msg.id) ? false : { opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (

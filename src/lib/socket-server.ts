@@ -97,6 +97,18 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Activity tracking (which page/section a user is on) ──
+    socket.on("activity:update", (data: { page: string }) => {
+      if (!user) return;
+      io!.to("arls").emit("activity:update", {
+        userId: user.id,
+        userType: user.userType,
+        name: user.name,
+        storeNumber: user.userType === "location" ? user.storeNumber : undefined,
+        page: data.page,
+      });
+    });
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {

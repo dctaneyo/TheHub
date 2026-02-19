@@ -92,7 +92,7 @@ export default function DashboardPage() {
   }, []);
 
   // Fetch tasks on mount + listen for instant WebSocket updates
-  const { socket } = useSocket();
+  const { socket, updateActivity } = useSocket();
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -107,6 +107,12 @@ export default function DashboardPage() {
       socket.off("task:completed", handleTaskUpdate);
     };
   }, [socket, fetchTasks]);
+
+  // Activity tracking — report which section the location is viewing
+  useEffect(() => {
+    const page = chatOpen ? "Chat" : calOpen ? "Calendar" : formsOpen ? "Forms" : "Dashboard";
+    updateActivity(page);
+  }, [chatOpen, calOpen, formsOpen, updateActivity]);
 
   // Heartbeat to keep session alive (every 30s — also detects force logout/reassign)
   useEffect(() => {

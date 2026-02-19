@@ -14,6 +14,8 @@ interface SocketContextValue {
   // Typing
   startTyping: (conversationId: string) => void;
   stopTyping: (conversationId: string) => void;
+  // Activity tracking
+  updateActivity: (page: string) => void;
 }
 
 const SocketContext = createContext<SocketContextValue>({
@@ -24,6 +26,7 @@ const SocketContext = createContext<SocketContextValue>({
   leaveConversation: () => {},
   startTyping: () => {},
   stopTyping: () => {},
+  updateActivity: () => {},
 });
 
 export function useSocket() {
@@ -111,8 +114,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socketRef.current?.emit("typing:stop", { conversationId });
   }, []);
 
+  const updateActivity = useCallback((page: string) => {
+    socketRef.current?.emit("activity:update", { page });
+  }, []);
+
   return (
-    <SocketContext.Provider value={{ socket, isConnected, emit, joinConversation, leaveConversation, startTyping, stopTyping }}>
+    <SocketContext.Provider value={{ socket, isConnected, emit, joinConversation, leaveConversation, startTyping, stopTyping, updateActivity }}>
       {children}
     </SocketContext.Provider>
   );

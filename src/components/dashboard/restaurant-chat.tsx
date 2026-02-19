@@ -17,6 +17,7 @@ import {
   Maximize2,
   Minimize2,
   Keyboard,
+  Trash2,
 } from "lucide-react";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevUnreadRef = useRef<number>(0);
   const initializedRef = useRef(false);
+  const knownMessageIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isOpen) {
@@ -239,6 +241,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       const res = await fetch(`/api/messages?conversationId=${convId}`);
       if (res.ok) {
         const data = await res.json();
+        // Track known IDs so only truly new messages animate
+        for (const m of data.messages) knownMessageIdsRef.current.add(m.id);
         setMessages(data.messages);
         // Mark unread as read
         const unreadIds = data.messages
@@ -308,6 +312,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   // Join/leave conversation rooms
   useEffect(() => {
     if (activeConvo) {
+      knownMessageIdsRef.current.clear();
       setShowAllMessages(false);
       fetchMessages(activeConvo.id);
       joinConversation(activeConvo.id);
@@ -338,6 +343,20 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       }
     } catch {}
     setSending(false);
+  };
+
+  const deleteConversation = async (convId: string) => {
+    try {
+      const res = await fetch("/api/messages/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: convId }),
+      });
+      if (res.ok) {
+        setConversations((prev) => prev.filter((c) => c.id !== convId));
+        if (activeConvo?.id === convId) setActiveConvo(null);
+      }
+    } catch {}
   };
 
   const isGroup = activeConvo?.type === "group" || activeConvo?.type === "global";
@@ -531,33 +550,43 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                   </div>
                 )}
                 {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
-                  <button
-                    key={convo.id}
-                    onClick={() => setActiveConvo(convo)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
-                      convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
-                    )}
-                  >
-                    <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
-                      {convIcon(convo.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
-                        {convo.unreadCount > 0 && (
-                          <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
-                            {convo.unreadCount}
-                          </span>
+                  <div key={convo.id} className="group relative">
+                    <button
+                      onClick={() => setActiveConvo(convo)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
+                        convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
+                      )}
+                    >
+                      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
+                        {convIcon(convo.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
+                          {convo.unreadCount > 0 && (
+                            <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
+                              {convo.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        {convo.lastMessage && (
+                          <p className="truncate text-[11px] text-slate-400">
+                            {convo.lastMessage.senderName}: {convo.lastMessage.content}
+                          </p>
                         )}
                       </div>
-                      {convo.lastMessage && (
-                        <p className="truncate text-[11px] text-slate-400">
-                          {convo.lastMessage.senderName}: {convo.lastMessage.content}
-                        </p>
-                      )}
-                    </div>
-                  </button>
+                    </button>
+                    {convo.type !== "global" && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
+                        className="absolute right-2 top-2 hidden h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 group-hover:flex"
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -580,6 +609,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             typingUsers={typingUsers}
             onTyping={() => startTyping(activeConvo.id)}
             onStopTyping={() => stopTyping(activeConvo.id)}
+            knownMessageIds={knownMessageIdsRef.current}
           />}
         </motion.div>
       )}
@@ -603,13 +633,14 @@ interface ActiveConvoViewProps {
   typingUsers: Map<string, string>;
   onTyping: () => void;
   onStopTyping: () => void;
+  knownMessageIds: Set<string>;
 }
 
 function ActiveConvoView({
   messages, showAllMessages, setShowAllMessages, isGroup,
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
-  typingUsers, onTyping, onStopTyping,
+  typingUsers, onTyping, onStopTyping, knownMessageIds,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -655,7 +686,9 @@ function ActiveConvoView({
             const isMe = msg.senderType === "location";
             const hasBeenRead = msg.reads.length > 0;
             return (
-              <motion.div key={msg.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={msg.id}
+                initial={knownMessageIds.has(msg.id) ? false : { opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (

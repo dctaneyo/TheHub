@@ -105,6 +105,7 @@ export const conversations = sqliteTable("conversations", {
   lastMessageAt: text("last_message_at"),
   lastMessagePreview: text("last_message_preview"),
   createdBy: text("created_by"), // arl.id who created group/global
+  deletedBy: text("deleted_by").notNull().default("[]"), // JSON array of user IDs who hid this thread
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
