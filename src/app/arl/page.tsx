@@ -498,7 +498,7 @@ export default function ArlPage() {
         <main className={cn(
           "flex-1",
           activeView === "messages"
-            ? "flex flex-col overflow-hidden"
+            ? "flex flex-col overflow-hidden p-5"
             : "overflow-y-auto p-5"
         )}>
           {activeView === "overview" && <OverviewContent />}
