@@ -118,12 +118,16 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
     setConfirming(false);
   }, [x]);
 
+  const canDelete = convo.type !== "global";
+
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!canDelete) return;
     startXRef.current = e.touches[0].clientX;
     isDraggingRef.current = false;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!canDelete) return;
     const dx = e.touches[0].clientX - startXRef.current;
     if (Math.abs(dx) > 5) isDraggingRef.current = true;
     // Only allow left swipe (negative dx)
@@ -132,7 +136,7 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
   };
 
   const handleTouchEnd = () => {
-    if (!isDraggingRef.current) return;
+    if (!canDelete || !isDraggingRef.current) return;
     const cur = x.get();
     if (cur < -SWIPE_THRESHOLD) {
       snapOpen();
@@ -160,22 +164,24 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
 
   return (
     <div className="relative overflow-hidden rounded-xl">
-      {/* Delete button revealed behind */}
-      <motion.div
-        style={{ opacity: deleteOpacity, width: DELETE_WIDTH }}
-        className="absolute inset-y-0 right-0 flex items-center justify-end"
-      >
-        <button
-          onClick={handleDeleteClick}
-          className={cn(
-            "flex h-full w-full items-center justify-center gap-1 rounded-xl text-white text-xs font-bold transition-colors",
-            confirming ? "bg-red-700" : "bg-red-500"
-          )}
+      {/* Delete button revealed behind — only for non-global conversations */}
+      {canDelete && (
+        <motion.div
+          style={{ opacity: deleteOpacity, width: DELETE_WIDTH }}
+          className="absolute inset-y-0 right-0 flex items-center justify-end"
         >
-          <Trash2 className="h-4 w-4" />
-          {confirming ? "Sure?" : "Delete"}
-        </button>
-      </motion.div>
+          <button
+            onClick={handleDeleteClick}
+            className={cn(
+              "flex h-full w-full items-center justify-center gap-1 rounded-xl text-white text-xs font-bold transition-colors",
+              confirming ? "bg-red-700" : "bg-red-500"
+            )}
+          >
+            <Trash2 className="h-4 w-4" />
+            {confirming ? "Sure?" : "Delete"}
+          </button>
+        </motion.div>
+      )}
 
       {/* Swipeable row */}
       <motion.div
