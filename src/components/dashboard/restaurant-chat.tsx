@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -78,6 +78,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -231,6 +232,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
 
   const fetchMessages = useCallback(async (convId: string) => {
     try {
+      // Purge old messages (>2 weeks) silently
+      fetch("/api/messages/purge", { method: "POST" }).catch(() => {});
       const res = await fetch(`/api/messages?conversationId=${convId}`);
       if (res.ok) {
         const data = await res.json();
@@ -259,6 +262,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
 
   useEffect(() => {
     if (activeConvo) {
+      setShowAllMessages(false);
       fetchMessages(activeConvo.id);
       const interval = setInterval(() => fetchMessages(activeConvo.id), 4000);
       return () => clearInterval(interval);
@@ -511,89 +515,147 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
           )}
 
           {/* Messages view */}
-          {activeConvo && (
-            <>
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-3">
-                  {messages.length === 0 && (
-                    <div className="flex h-40 items-center justify-center">
-                      <p className="text-xs text-slate-400">No messages yet</p>
-                    </div>
-                  )}
-                  {messages.map((msg) => {
-                    const isMe = msg.senderType === "location";
-                    const hasBeenRead = msg.reads.length > 0;
-                    return (
-                      <motion.div key={msg.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                        className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
-                      >
-                        {isGroup && !isMe && (
-                          <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
-                        )}
-                        <div className={cn("max-w-[80%] rounded-2xl px-3.5 py-2",
-                          isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
-                        )}>
-                          <p className="text-sm">{msg.content}</p>
-                          <div className={cn("mt-0.5 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                            <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
-                              {format(new Date(msg.createdAt), "h:mm a")}
-                            </span>
-                            {isMe && (hasBeenRead
-                              ? <CheckCheck className="h-3 w-3 text-white/80" />
-                              : <Check className="h-3 w-3 text-white/50" />
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Floating onscreen keyboard portal */}
-              {showKeyboard && (
-                <OnscreenKeyboard
-                  value={newMessage}
-                  onChange={setNewMessage}
-                  onSubmit={newMessage.trim() && !sending ? handleSend : undefined}
-                  onDismiss={() => setShowKeyboard(false)}
-                  placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
-                />
-              )}
-
-              <div className="border-t border-slate-200">
-                <div className="flex gap-2 p-3">
-                  <button
-                    onClick={() => setShowKeyboard((k) => !k)}
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
-                      showKeyboard
-                        ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    )}
-                    title="Onscreen keyboard"
-                  >
-                    <Keyboard className="h-4 w-4" />
-                  </button>
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                    placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
-                    className="flex-1 rounded-xl"
-                  />
-                  <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
-                    className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+          {activeConvo && <ActiveConvoView
+            messages={messages}
+            showAllMessages={showAllMessages}
+            setShowAllMessages={setShowAllMessages}
+            isGroup={isGroup}
+            messagesEndRef={messagesEndRef}
+            showKeyboard={showKeyboard}
+            setShowKeyboard={setShowKeyboard}
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            sending={sending}
+            handleSend={handleSend}
+            convoType={activeConvo.type}
+          />}
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+interface ActiveConvoViewProps {
+  messages: Message[];
+  showAllMessages: boolean;
+  setShowAllMessages: (v: boolean) => void;
+  isGroup: boolean;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  showKeyboard: boolean;
+  setShowKeyboard: (fn: (k: boolean) => boolean) => void;
+  newMessage: string;
+  setNewMessage: (v: string) => void;
+  sending: boolean;
+  handleSend: () => void;
+  convoType: string;
+}
+
+function ActiveConvoView({
+  messages, showAllMessages, setShowAllMessages, isGroup,
+  messagesEndRef, showKeyboard, setShowKeyboard,
+  newMessage, setNewMessage, sending, handleSend, convoType,
+}: ActiveConvoViewProps) {
+  const todayStr = new Date().toDateString();
+  const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+  const visibleMessages = showAllMessages
+    ? messages
+    : messages.filter((m) => {
+        const d = new Date(m.createdAt).toDateString();
+        return d === todayStr || d === yesterdayStr;
+      });
+  const hasPast = messages.some((m) => {
+    const d = new Date(m.createdAt).toDateString();
+    return d !== todayStr && d !== yesterdayStr;
+  });
+
+  return (
+    <>
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-3">
+          {!showAllMessages && hasPast && (
+            <div className="flex justify-center pb-1">
+              <button
+                onClick={() => setShowAllMessages(true)}
+                className="rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                View Past Messages
+              </button>
+            </div>
+          )}
+          {visibleMessages.length === 0 && (
+            <div className="flex h-40 items-center justify-center">
+              <p className="text-xs text-slate-400">No messages yet</p>
+            </div>
+          )}
+          {visibleMessages.map((msg) => {
+            const isMe = msg.senderType === "location";
+            const hasBeenRead = msg.reads.length > 0;
+            return (
+              <motion.div key={msg.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
+              >
+                {isGroup && !isMe && (
+                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
+                )}
+                <div className={cn("max-w-[80%] rounded-2xl px-3.5 py-2",
+                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+                )}>
+                  <p className="text-sm">{msg.content}</p>
+                  <div className={cn("mt-0.5 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
+                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
+                      {format(new Date(msg.createdAt), "h:mm a")}
+                    </span>
+                    {isMe && (hasBeenRead
+                      ? <CheckCheck className="h-3 w-3 text-white/80" />
+                      : <Check className="h-3 w-3 text-white/50" />
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+
+      {showKeyboard && (
+        <OnscreenKeyboard
+          value={newMessage}
+          onChange={setNewMessage}
+          onSubmit={newMessage.trim() && !sending ? handleSend : undefined}
+          onDismiss={() => setShowKeyboard((k) => !k)}
+          placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
+        />
+      )}
+
+      <div className="border-t border-slate-200">
+        <div className="flex gap-2 p-3">
+          <button
+            onClick={() => setShowKeyboard((k) => !k)}
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+              showKeyboard
+                ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+            )}
+            title="Onscreen keyboard"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
+            className="flex-1 rounded-xl"
+          />
+          <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
+            className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }

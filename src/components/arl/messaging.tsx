@@ -87,6 +87,7 @@ export function Messaging() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -185,9 +186,10 @@ export function Messaging() {
     } catch {}
   }, []);
 
-  const fetchMessages = useCallback(async (conversationId: string) => {
+  const fetchMessages = useCallback(async (convId: string) => {
     try {
-      const res = await fetch(`/api/messages?conversationId=${conversationId}`);
+      fetch("/api/messages/purge", { method: "POST" }).catch(() => {});
+      const res = await fetch(`/api/messages?conversationId=${convId}`);
       if (res.ok) {
         const data = await res.json();
         setMessages(data.messages);
@@ -217,8 +219,9 @@ export function Messaging() {
 
   useEffect(() => {
     if (activeConvo) {
+      setShowAllMessages(false);
       fetchMessages(activeConvo.id);
-      const interval = setInterval(() => fetchMessages(activeConvo.id), 4000);
+      const interval = setInterval(() => fetchMessages(activeConvo.id), 5000);
       return () => clearInterval(interval);
     }
   }, [activeConvo, fetchMessages]);
@@ -547,13 +550,37 @@ export function Messaging() {
       </div>
 
       <ScrollArea className="flex-1 p-4">
+        {(() => {
+          const todayStr = new Date().toDateString();
+          const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+          const visibleMessages = showAllMessages
+            ? messages
+            : messages.filter((m) => {
+                const d = new Date(m.createdAt).toDateString();
+                return d === todayStr || d === yesterdayStr;
+              });
+          const hasPast = messages.some((m) => {
+            const d = new Date(m.createdAt).toDateString();
+            return d !== todayStr && d !== yesterdayStr;
+          });
+          return (
         <div className="space-y-3">
-          {messages.length === 0 && (
+          {!showAllMessages && hasPast && (
+            <div className="flex justify-center pb-1">
+              <button
+                onClick={() => setShowAllMessages(true)}
+                className="rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                View Past Messages
+              </button>
+            </div>
+          )}
+          {visibleMessages.length === 0 && (
             <div className="flex h-40 items-center justify-center">
               <p className="text-sm text-slate-400">No messages yet. Start the conversation!</p>
             </div>
           )}
-          {messages.map((msg) => {
+          {visibleMessages.map((msg) => {
             const isMe = msg.senderType === "arl";
             const hasBeenRead = msg.reads.length > 0;
             const receiptDetail = isGroup && isMe ? getReceiptDetail(msg, activeConvo) : null;
@@ -640,6 +667,8 @@ export function Messaging() {
           })}
           <div ref={messagesEndRef} />
         </div>
+          );
+        })()}
       </ScrollArea>
 
       <div className="border-t border-slate-200 p-3">
