@@ -86,9 +86,50 @@ export async function DELETE(req: NextRequest) {
     }
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-    // Permanently delete ARL and their conversation memberships
+
+    // Prevent self-deletion
+    if (id === session.id) {
+      return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
+    }
+
+    // 1. Delete sessions
+    db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
+
+    // 2. Find and delete direct conversations (1:1) involving this ARL
+    const directConvos = db.select().from(schema.conversations).all().filter(
+      (c) => c.type === "direct" && (c.participantAId === id || c.participantBId === id)
+    );
+    for (const conv of directConvos) {
+      const msgIds = db.select({ id: schema.messages.id }).from(schema.messages)
+        .where(eq(schema.messages.conversationId, conv.id)).all().map((m) => m.id);
+      for (const msgId of msgIds) {
+        db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
+      }
+      db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
+      db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
+      db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
+    }
+
+    // 3. Delete this ARL's messages in group/global conversations
+    const userMsgs = db.select({ id: schema.messages.id }).from(schema.messages)
+      .where(eq(schema.messages.senderId, id)).all();
+    for (const msg of userMsgs) {
+      db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
+    }
+    db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
+
+    // 4. Delete read receipts by this ARL
+    db.delete(schema.messageReads).where(eq(schema.messageReads.readerId, id)).run();
+
+    // 5. Remove from remaining group conversation memberships
     db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
+
+    // 6. Delete push notification subscriptions
+    db.delete(schema.pushSubscriptions).where(eq(schema.pushSubscriptions.userId, id)).run();
+
+    // 7. Delete the ARL record
     db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete ARL error:", error);

@@ -204,7 +204,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE permanently remove a location
+// DELETE permanently remove a location and all associated data
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getSession();
@@ -214,9 +214,54 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    // Remove conversation memberships and the location record
+    // 1. Delete tasks assigned only to this location
+    db.delete(schema.tasks).where(eq(schema.tasks.locationId, id)).run();
+
+    // 2. Delete task completions for this location
+    db.delete(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, id)).run();
+
+    // 3. Delete gamification scores
+    db.delete(schema.locationScores).where(eq(schema.locationScores.locationId, id)).run();
+
+    // 4. Delete notifications
+    db.delete(schema.notifications).where(eq(schema.notifications.locationId, id)).run();
+
+    // 5. Delete sessions
+    db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
+
+    // 6. Find and delete direct conversations (1:1) involving this user
+    const directConvos = db.select().from(schema.conversations).all().filter(
+      (c) => c.type === "direct" && (c.participantAId === id || c.participantBId === id)
+    );
+    for (const conv of directConvos) {
+      // Delete all messages in the direct conversation
+      const msgIds = db.select({ id: schema.messages.id }).from(schema.messages)
+        .where(eq(schema.messages.conversationId, conv.id)).all().map((m) => m.id);
+      for (const msgId of msgIds) {
+        db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
+      }
+      db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
+      db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
+      db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
+    }
+
+    // 7. Delete this user's messages in group/global conversations
+    const userMsgs = db.select({ id: schema.messages.id }).from(schema.messages)
+      .where(eq(schema.messages.senderId, id)).all();
+    for (const msg of userMsgs) {
+      db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
+    }
+    db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
+
+    // 8. Delete read receipts by this user
+    db.delete(schema.messageReads).where(eq(schema.messageReads.readerId, id)).run();
+
+    // 9. Remove from remaining group conversation memberships
     db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
+
+    // 10. Delete the location record
     db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete location error:", error);
