@@ -199,9 +199,10 @@ export default function LoginPage() {
   const padButtons = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "action", "0", "delete"];
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8]">
-      {/* Top bar: connection + session ID */}
-      <div className="absolute right-6 top-6 flex items-center gap-3">
+    <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center py-6 px-4">
+
+      {/* Top bar: connection + session ID — hidden on mobile (shown inside card instead) */}
+      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
         {pendingCode && (
           <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
             <Monitor className="h-3.5 w-3.5 text-slate-400" />
@@ -233,7 +234,6 @@ export default function LoginPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
-            {/* Ripple rings */}
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
@@ -243,7 +243,6 @@ export default function LoginPage() {
                 transition={{ duration: 1.2, delay: i * 0.3, ease: "easeOut" }}
               />
             ))}
-            {/* Center burst */}
             <motion.div
               initial={{ scale: 0, rotate: -20 }}
               animate={{ scale: [0, 1.3, 1], rotate: [-20, 10, 0] }}
@@ -289,20 +288,43 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-8 py-10 flex flex-col items-center"
+        className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
+        {/* Mobile-only: session ID + connection status inside card */}
+        <div className="flex sm:hidden w-full justify-between items-center mb-4">
+          <div className="flex items-center gap-1.5">
+            {isOnline ? (
+              <>
+                <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-[11px] font-medium text-emerald-600">Connected</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3.5 w-3.5 text-[var(--hub-red)]" />
+                <span className="text-[11px] font-medium text-[var(--hub-red)]">Offline</span>
+              </>
+            )}
+          </div>
+          {pendingCode && (
+            <div className="flex items-center gap-1.5">
+              <Monitor className="h-3 w-3 text-slate-400" />
+              <span className="text-[10px] font-medium text-slate-400">Session</span>
+              <span className="text-xs font-black tracking-widest text-slate-700">{pendingCode}</span>
+            </div>
+          )}
+        </div>
+
         {/* Icon + Title */}
         <motion.div
-          className="mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+          className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
           whileHover={{ scale: 1.05 }}
         >
-          <span className="text-2xl font-black text-white">H</span>
+          <span className="text-xl sm:text-2xl font-black text-white">H</span>
         </motion.div>
-        <h1 className="mt-3 text-2xl font-bold text-slate-800">The Hub</h1>
+        <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">The Hub</h1>
 
-        {/* Fixed-height zone: step label + user name + dots + error — no layout jump */}
-        <div className="mt-6 w-full" style={{ minHeight: 148 }}>
-          {/* Step label */}
+        {/* Step label + dots + error */}
+        <div className="mt-4 sm:mt-6 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -315,10 +337,8 @@ export default function LoginPage() {
               <p className="text-sm font-semibold text-slate-600">
                 {step === "userId" ? "Enter your User ID" : "Enter your PIN"}
               </p>
-
-              {/* Validated user name shown on PIN screen */}
               {step === "pin" && validatedUser && (
-                <div className="mt-2 flex items-center justify-center gap-1.5">
+                <div className="mt-1.5 flex items-center justify-center gap-1.5">
                   {validatedUser.userType === "location"
                     ? <Store className="h-3.5 w-3.5 text-slate-400" />
                     : <Users className="h-3.5 w-3.5 text-slate-400" />
@@ -336,10 +356,10 @@ export default function LoginPage() {
           </AnimatePresence>
 
           {/* Dots */}
-          <div className="mt-5 flex justify-center gap-3">{dots}</div>
+          <div className="mt-4 flex justify-center gap-3">{dots}</div>
 
-          {/* Error — fixed height slot so nothing shifts */}
-          <div className="mt-4 h-10 flex items-center justify-center">
+          {/* Error */}
+          <div className="mt-3 h-9 flex items-center justify-center">
             <AnimatePresence mode="wait">
               {error ? (
                 <motion.div
@@ -359,10 +379,9 @@ export default function LoginPage() {
         </div>
 
         {/* PinPad */}
-        <div className="grid w-full grid-cols-3 gap-3 mt-1">
+        <div className="grid w-full grid-cols-3 gap-2 sm:gap-3 mt-1">
           {padButtons.map((btn) => {
             if (btn === "action") {
-              // On userId screen: Clear. On PIN screen: Back (arrow)
               if (step === "pin") {
                 return (
                   <motion.button
@@ -370,7 +389,7 @@ export default function LoginPage() {
                     whileTap={{ scale: 0.92 }}
                     onClick={handleClearOrBack}
                     disabled={loading || validating}
-                    className="flex h-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm transition-colors hover:bg-slate-200 active:bg-slate-300 disabled:opacity-50"
+                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm transition-colors hover:bg-slate-200 active:bg-slate-300 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </motion.button>
@@ -382,7 +401,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleClearOrBack}
                   disabled={loading || validating}
-                  className="flex h-16 items-center justify-center rounded-2xl bg-white/60 text-sm font-semibold text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white/60 text-sm font-semibold text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
                 >
                   Clear
                 </motion.button>
@@ -395,13 +414,12 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleDelete}
                   disabled={loading || validating}
-                  className="flex h-16 items-center justify-center rounded-2xl bg-white/60 text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white/60 text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
                 >
                   <Delete className="h-5 w-5" />
                 </motion.button>
               );
             }
-            // Number button
             const isLastDigit =
               (step === "userId" && userId.length === maxLength - 1 && btn === userId[maxLength - 1]) ||
               (step === "pin" && pin.length === maxLength);
@@ -413,7 +431,7 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.92 }}
                 onClick={() => handleDigit(btn)}
                 disabled={loading || validating}
-                className="flex h-16 items-center justify-center rounded-2xl bg-white text-xl font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
+                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white text-xl font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
               >
                 {showSpinner && isLastDigit ? (
                   <Loader2 className="h-5 w-5 animate-spin text-[var(--hub-red)]" />
@@ -426,7 +444,7 @@ export default function LoginPage() {
         </div>
 
         {/* Loading state below pad */}
-        <div className="mt-4 h-6 flex items-center justify-center">
+        <div className="mt-3 h-6 flex items-center justify-center">
           {(loading || validating) && (
             <motion.div
               initial={{ opacity: 0 }}
