@@ -130,7 +130,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     // Current time is before the first task — place line at top of first group
     if (currentMinutes < groupData[0].minutes) {
       const rect = beforeEl.getBoundingClientRect();
-      setIndicatorTop(rect.top - containerTop + container.scrollTop);
+      setIndicatorTop(Math.max(0, rect.top - containerTop + container.scrollTop));
       return;
     }
 
@@ -175,7 +175,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
         <h2 className="text-lg font-bold text-slate-800">Today&apos;s Tasks</h2>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
+      <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin overflow-x-hidden">
         <div className="relative pl-8">
           {/* Timeline line */}
           <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-200" />
