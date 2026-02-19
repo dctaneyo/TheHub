@@ -1,17 +1,38 @@
-const CACHE_NAME = "the-hub-v1";
-const urlsToCache = ["/", "/arl", "/login", "/api/health"];
+const CACHE_NAME = "the-hub-v2";
 
 self.addEventListener("install", (event) => {
+  // Skip waiting so the new SW activates immediately
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) =>
+      // Only cache static assets — never page URLs that go through middleware redirects
+      cache.addAll(["/icon-192.png", "/icon-512.png"])
+    )
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  // Clear old caches (removes the v1 cache that had /, /arl, /login cached)
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  // Never intercept navigation requests — let them go straight to the network
+  // so middleware redirects work correctly in all browsers (fixes Safari WebKit bug)
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // For non-navigation requests, use cache-first for static assets
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    caches.match(request).then((cached) => cached || fetch(request))
   );
 });
 
