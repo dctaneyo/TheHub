@@ -207,11 +207,15 @@ export function LocationsManager() {
                 <Monitor className="h-3 w-3 shrink-0" />
                 <span>User ID: {loc.userId}</span>
               </div>
-              {loc.lastSeen && (
+              {(loc.isOnline || loc.lastSeen) && (
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Clock className="h-3 w-3 shrink-0" />
                   <span>
-                    Last seen {formatDistanceToNow(new Date(loc.lastSeen), { addSuffix: true })}
+                    {loc.isOnline
+                      ? "Active now"
+                      : loc.lastSeen
+                        ? `Last seen ${formatDistanceToNow(new Date(loc.lastSeen), { addSuffix: true })}`
+                        : null}
                   </span>
                 </div>
               )}

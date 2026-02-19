@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { consumePendingForceAction } from "@/lib/socket-server";
+import { broadcastPresenceUpdate } from "@/lib/socket-emit";
 
 export async function POST() {
   try {
@@ -45,10 +46,22 @@ export async function POST() {
       return NextResponse.json({ success: false, force: "logout" });
     }
 
+    const now = new Date().toISOString();
     db.update(schema.sessions)
-      .set({ isOnline: true, lastSeen: new Date().toISOString() })
+      .set({ isOnline: true, lastSeen: now })
       .where(eq(schema.sessions.id, existing.id))
       .run();
+
+    // Emit presence:update so ARL hub sees a live lastSeen on every heartbeat
+    if (session.userType === "location") {
+      const loc = db.select({ name: schema.locations.name, storeNumber: schema.locations.storeNumber })
+        .from(schema.locations).where(eq(schema.locations.id, session.userId)).get();
+      if (loc) broadcastPresenceUpdate(session.userId, "location", loc.name, true, loc.storeNumber);
+    } else {
+      const arl = db.select({ name: schema.arls.name })
+        .from(schema.arls).where(eq(schema.arls.id, session.userId)).get();
+      if (arl) broadcastPresenceUpdate(session.userId, "arl", arl.name, true);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
