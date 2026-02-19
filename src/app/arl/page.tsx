@@ -581,11 +581,11 @@ function ArlCalendar() {
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
                         isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
                       )}>{format(date, "d")}</span>
-                      <div className="mt-0.5 space-y-0.5 overflow-hidden">
+                      <div className="mt-0.5 w-full space-y-0.5 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
-                            <div key={task.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium truncate",
+                            <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium",
                               task.priority === "urgent" ? "bg-red-100 text-red-700" : task.priority === "high" ? "bg-orange-100 text-orange-700" :
                               task.type === "cleaning" ? "bg-purple-100 text-purple-700" : task.type === "reminder" ? "bg-sky-100 text-sky-700" : "bg-blue-100 text-blue-700"
                             )}>

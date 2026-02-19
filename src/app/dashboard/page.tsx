@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import {
   LogOut,
@@ -85,10 +85,23 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch tasks on mount and every 2 minutes
+  // Fetch tasks on mount, then poll a lightweight version endpoint every 10s
+  const lastVersionRef = useRef("");
   useEffect(() => {
     fetchTasks();
-    const interval = setInterval(fetchTasks, 120000);
+    const checkVersion = async () => {
+      try {
+        const res = await fetch("/api/tasks/version");
+        if (res.ok) {
+          const { version } = await res.json();
+          if (version && version !== lastVersionRef.current) {
+            lastVersionRef.current = version;
+            fetchTasks();
+          }
+        }
+      } catch {}
+    };
+    const interval = setInterval(checkVersion, 10000);
     return () => clearInterval(interval);
   }, [fetchTasks]);
 

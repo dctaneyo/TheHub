@@ -99,7 +99,7 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
   // Shared key style — light, rectangular, subtle shadow like iPadOS light theme
   const K = "flex items-center justify-center select-none rounded-[6px] bg-white text-slate-800 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-200 transition-colors cursor-pointer text-[15px] font-medium";
   const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer";
-  const KDarkL = "flex items-start justify-start pl-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer text-[11px] font-semibold pt-2";
+  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer text-[11px] font-semibold pb-2";
   const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer text-[11px] font-semibold pb-2";
   const KRed = "flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] transition-colors cursor-pointer";
 
@@ -152,7 +152,7 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
                 className={cn(KDarkR, H, "w-16")}>
-                <Delete className="h-4 w-4" />
+                delete
               </button>
             </div>
 
@@ -235,8 +235,8 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
-                className={cn(KDark, H, "w-16")}>
-                <Delete className="h-4 w-4" />
+                className={cn(KDarkR, H, "w-16")}>
+                delete
               </button>
             </div>
             <div className="flex gap-1">
@@ -247,13 +247,13 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); press("\n"); }}
-                className={cn(KDark, H, "w-16 text-[11px] font-semibold gap-1")}>
+                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold gap-1")}>
                 return
               </button>
             </div>
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); setMode(mode === "numbers" ? "symbols" : "numbers"); }}
-                className={cn(KDark, H, "w-16 text-[11px] font-bold")}>
+                className={cn(KDarkL, H, "w-16 text-[11px] font-bold")}>
                 {mode === "numbers" ? "#+="  : ".?123"}
               </button>
               {(mode === "numbers" ? NUM_ROW3 : SYM_ROW3).map((key) => (
@@ -263,8 +263,8 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
-                className={cn(KDark, H, "w-16")}>
-                <Delete className="h-4 w-4" />
+                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold")}>
+                delete
               </button>
             </div>
             <div className="flex gap-1">

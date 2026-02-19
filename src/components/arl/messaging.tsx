@@ -483,17 +483,17 @@ export function Messaging() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
             <button
               key={convo.id}
               onClick={() => setActiveConvo(convo)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm transition-all hover:shadow-md",
-                convo.unreadCount > 0 ? "border-[var(--hub-red)]/20 bg-red-50/30" : "border-slate-200"
+                "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
+                convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
               )}
             >
-              <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
+              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
                 {convIcon(convo.type)}
               </div>
               <div className="flex-1 min-w-0">
@@ -514,18 +514,18 @@ export function Messaging() {
                 )}
               </div>
               {convo.unreadCount > 0 && (
-                <Badge className="shrink-0 bg-[var(--hub-red)] text-white text-[10px] h-5 min-w-5 px-1 flex items-center justify-center rounded-full">
+                <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
                   {convo.unreadCount}
-                </Badge>
+                </span>
               )}
             </button>
           ))}
 
           {conversations.length === 0 && (
-            <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-200">
+            <div className="flex h-40 items-center justify-center">
               <div className="text-center">
-                <MessageCircle className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="mt-2 text-sm text-slate-400">No conversations yet</p>
+                <MessageCircle className="mx-auto h-8 w-8 text-slate-200" />
+                <p className="mt-2 text-xs text-slate-400">No conversations yet</p>
               </div>
             </div>
           )}
@@ -537,7 +537,7 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
+    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ArrowLeft className="h-4 w-4" />
