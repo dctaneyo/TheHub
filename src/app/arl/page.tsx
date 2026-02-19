@@ -670,6 +670,7 @@ interface CalTask {
   id: string; title: string; type: string; priority: string;
   dueTime: string; dueDate: string | null; isRecurring: boolean;
   recurringType: string | null; recurringDays: string | null; locationId: string | null;
+  createdAt?: string;
 }
 
 const CAL_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -680,6 +681,11 @@ function calTaskApplies(task: CalTask, date: Date): boolean {
   const dateStr = format(date, "yyyy-MM-dd");
   const dayKey = CAL_DAY_KEYS[date.getDay()];
   if (!task.isRecurring) return task.dueDate === dateStr;
+  // Never show a recurring task on a date before it was created
+  if (task.createdAt) {
+    const createdDateStr = task.createdAt.split("T")[0];
+    if (dateStr < createdDateStr) return false;
+  }
   const rType = task.recurringType || "weekly";
   if (rType === "daily") return true;
   if (rType === "weekly") { try { return (JSON.parse(task.recurringDays!) as string[]).includes(dayKey); } catch { return false; } }
