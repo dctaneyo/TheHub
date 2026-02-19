@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap } from "lucide-react";
+import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -12,6 +12,18 @@ interface PendingSession {
   userAgent: string;
   createdAt: string;
   expiresAt: string;
+}
+
+interface ActiveSession {
+  id: string;
+  sessionCode: string | null;
+  userType: string;
+  userId: string;
+  name: string;
+  storeNumber: string | null;
+  deviceType: string | null;
+  lastSeen: string;
+  createdAt: string;
 }
 
 interface Location {
@@ -28,6 +40,7 @@ interface ArlUser {
 
 export function RemoteLogin() {
   const [pendingSessions, setPendingSessions] = useState<PendingSession[]>([]);
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [arls, setArls] = useState<ArlUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +49,19 @@ export function RemoteLogin() {
   const [activating, setActivating] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  // Force session management
+  const [forceTarget, setForceTarget] = useState<ActiveSession | null>(null);
+  const [forceAction, setForceAction] = useState<"reassign" | "logout" | null>(null);
+  const [forceAssignType, setForceAssignType] = useState<"location" | "arl">("location");
+  const [forcing, setForcing] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [sessRes, locRes, arlRes] = await Promise.all([
+      const [sessRes, locRes, arlRes, activeRes] = await Promise.all([
         fetch("/api/session/pending"),
         fetch("/api/locations"),
         fetch("/api/arls"),
+        fetch("/api/session/force"),
       ]);
       if (sessRes.ok) {
         const d = await sessRes.json();
@@ -55,6 +74,10 @@ export function RemoteLogin() {
       if (arlRes.ok) {
         const d = await arlRes.json();
         setArls(d.arls || []);
+      }
+      if (activeRes.ok) {
+        const d = await activeRes.json();
+        setActiveSessions(d.activeSessions || []);
       }
     } catch {}
     setLoading(false);
@@ -109,6 +132,65 @@ export function RemoteLogin() {
       setErrorMsg("Network error. Please try again.");
     }
     setActivating(false);
+  };
+
+  const handleForceLogout = async (sess: ActiveSession) => {
+    setForcing(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch("/api/session/force", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout", sessionId: sess.id }),
+      });
+      if (res.ok) {
+        setSuccessMsg(`Force logged out ${sess.name} successfully`);
+        setForceTarget(null);
+        setForceAction(null);
+        setTimeout(() => setSuccessMsg(""), 5000);
+        fetchData();
+      } else {
+        const d = await res.json();
+        setErrorMsg(d.error || "Failed to force logout");
+      }
+    } catch {
+      setErrorMsg("Network error. Please try again.");
+    }
+    setForcing(false);
+  };
+
+  const handleForceReassign = async (assignToId: string) => {
+    if (!forceTarget) return;
+    setForcing(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch("/api/session/force", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reassign",
+          sessionId: forceTarget.id,
+          assignToType: forceAssignType,
+          assignToId,
+        }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setSuccessMsg(`Reassigned to ${d.targetName} → ${d.redirectTo}`);
+        setForceTarget(null);
+        setForceAction(null);
+        setTimeout(() => setSuccessMsg(""), 5000);
+        fetchData();
+      } else {
+        const d = await res.json();
+        setErrorMsg(d.error || "Failed to reassign session");
+      }
+    } catch {
+      setErrorMsg("Network error. Please try again.");
+    }
+    setForcing(false);
   };
 
   const getDeviceHint = (ua: string) => {
@@ -293,6 +375,180 @@ export function RemoteLogin() {
           )}
         </div>
       )}
+
+      {/* Active Sessions — Force Management */}
+      <div>
+        <h3 className="mb-3 text-sm font-bold text-slate-700">
+          Active Sessions
+          {activeSessions.length > 0 && (
+            <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+              {activeSessions.length}
+            </span>
+          )}
+        </h3>
+
+        {activeSessions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 py-8 text-center">
+            <Wifi className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm text-slate-400">No active sessions</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {activeSessions.map((sess) => {
+              const isForceTarget = forceTarget?.id === sess.id;
+              return (
+                <div key={sess.id}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border p-4 transition-all",
+                      isForceTarget
+                        ? "border-amber-300 bg-amber-50/50 ring-2 ring-amber-200/50"
+                        : "border-slate-200 bg-white"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                      sess.userType === "location" ? "bg-emerald-100 text-emerald-600" : "bg-purple-100 text-purple-600"
+                    )}>
+                      {sess.userType === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{sess.name}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {sess.userType === "location" ? `Store #${sess.storeNumber}` : "ARL"}
+                        {sess.sessionCode && <> · <span className="font-mono font-bold">{sess.sessionCode}</span></>}
+                        {sess.deviceType && <> · {sess.deviceType}</>}
+                        {" · "}
+                        {formatDistanceToNow(new Date(sess.lastSeen), { addSuffix: true })}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => { setForceTarget(isForceTarget ? null : sess); setForceAction(isForceTarget ? null : "reassign"); }}
+                        className={cn(
+                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                          isForceTarget && forceAction === "reassign"
+                            ? "bg-amber-200 text-amber-800"
+                            : "bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-700"
+                        )}
+                        title="Force reassign to another account"
+                      >
+                        <ArrowRightLeft className="h-3 w-3" />
+                        Reassign
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (isForceTarget && forceAction === "logout") {
+                            handleForceLogout(sess);
+                          } else {
+                            setForceTarget(sess);
+                            setForceAction("logout");
+                          }
+                        }}
+                        disabled={forcing}
+                        className={cn(
+                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                          isForceTarget && forceAction === "logout"
+                            ? "bg-red-500 text-white"
+                            : "bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-700"
+                        )}
+                        title={isForceTarget && forceAction === "logout" ? "Click again to confirm" : "Force logout to login screen"}
+                      >
+                        <LogOut className="h-3 w-3" />
+                        {isForceTarget && forceAction === "logout" ? "Confirm" : "Logout"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Force reassign panel */}
+                  {isForceTarget && forceAction === "reassign" && (
+                    <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50/30 p-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-bold text-amber-800">
+                          Reassign {sess.name} to a different account
+                        </span>
+                      </div>
+
+                      {/* Type tabs */}
+                      <div className="mb-3 flex gap-1 rounded-xl bg-white p-1">
+                        <button
+                          onClick={() => setForceAssignType("location")}
+                          className={cn(
+                            "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                            forceAssignType === "location"
+                              ? "bg-slate-100 text-slate-800 shadow-sm"
+                              : "text-slate-500 hover:text-slate-700"
+                          )}
+                        >
+                          <Store className="mr-1 inline h-3 w-3" />
+                          Location
+                        </button>
+                        <button
+                          onClick={() => setForceAssignType("arl")}
+                          className={cn(
+                            "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                            forceAssignType === "arl"
+                              ? "bg-slate-100 text-slate-800 shadow-sm"
+                              : "text-slate-500 hover:text-slate-700"
+                          )}
+                        >
+                          <Users className="mr-1 inline h-3 w-3" />
+                          ARL
+                        </button>
+                      </div>
+
+                      <div className="max-h-48 space-y-1 overflow-y-auto">
+                        {forceAssignType === "location" ? (
+                          locations.map((loc) => (
+                            <button
+                              key={loc.id}
+                              onClick={() => handleForceReassign(loc.id)}
+                              disabled={forcing}
+                              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              <Store className="h-3.5 w-3.5 text-slate-400" />
+                              <span className="flex-1 text-xs font-medium text-slate-700">{loc.name}</span>
+                              <span className="text-[10px] text-slate-400">#{loc.storeNumber}</span>
+                            </button>
+                          ))
+                        ) : (
+                          arls.map((arl) => (
+                            <button
+                              key={arl.id}
+                              onClick={() => handleForceReassign(arl.id)}
+                              disabled={forcing}
+                              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              <Users className="h-3.5 w-3.5 text-purple-400" />
+                              <span className="flex-1 text-xs font-medium text-slate-700">{arl.name}</span>
+                              <span className="text-[10px] text-slate-400">{arl.role === "admin" ? "Admin" : "ARL"}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+
+                      {forcing && (
+                        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Reassigning...
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => { setForceTarget(null); setForceAction(null); }}
+                        className="mt-2 w-full rounded-lg py-1.5 text-[10px] font-medium text-slate-400 hover:bg-white hover:text-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* How it works */}
       <div className="rounded-2xl bg-slate-50 p-5">

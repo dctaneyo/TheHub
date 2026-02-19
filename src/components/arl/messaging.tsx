@@ -370,8 +370,10 @@ export function Messaging() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+        </div>
       </div>
     );
   }
@@ -379,7 +381,7 @@ export function Messaging() {
   // New group modal
   if (showNewGroup) {
     return (
-      <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
             <ArrowLeft className="h-4 w-4" />
@@ -450,7 +452,7 @@ export function Messaging() {
       (p.storeNumber && p.storeNumber.includes(directSearch))
     );
     return (
-      <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
             <ArrowLeft className="h-4 w-4" />
@@ -503,7 +505,7 @@ export function Messaging() {
   // Conversation list
   if (!activeConvo) {
     return (
-      <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-800">Messages</h3>
@@ -581,7 +583,7 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden" onClick={() => setReceiptPopover(null)}>
+    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ArrowLeft className="h-4 w-4" />

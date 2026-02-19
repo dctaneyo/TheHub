@@ -1,9 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
+import { v4 as uuid } from "uuid";
+import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate } from "@/lib/socket-emit";
 
-// POST - ARL forces a session code onto a location's active session
+function genSessionCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+// GET - list all active sessions (for ARL management UI)
+export async function GET() {
+  try {
+    const session = await getSession();
+    if (!session || session.userType !== "arl") {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
+
+    const activeSessions = db
+      .select()
+      .from(schema.sessions)
+      .where(eq(schema.sessions.isOnline, true))
+      .orderBy(desc(schema.sessions.lastSeen))
+      .all();
+
+    // Enrich with user names
+    const enriched = activeSessions.map((s) => {
+      let name = "Unknown";
+      let storeNumber: string | null = null;
+      if (s.userType === "location") {
+        const loc = db.select().from(schema.locations).where(eq(schema.locations.id, s.userId)).get();
+        if (loc) { name = loc.name; storeNumber = loc.storeNumber; }
+      } else {
+        const arl = db.select().from(schema.arls).where(eq(schema.arls.id, s.userId)).get();
+        if (arl) { name = arl.name; }
+      }
+      return {
+        id: s.id,
+        sessionCode: s.sessionCode,
+        userType: s.userType,
+        userId: s.userId,
+        name,
+        storeNumber,
+        deviceType: s.deviceType,
+        lastSeen: s.lastSeen,
+        createdAt: s.createdAt,
+      };
+    });
+
+    return NextResponse.json({ activeSessions: enriched });
+  } catch (error) {
+    console.error("Get active sessions error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// POST - force logout or reassign an active session
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
@@ -11,51 +63,116 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { locationId, sessionCode } = await req.json();
-    if (!locationId || !sessionCode) {
-      return NextResponse.json({ error: "locationId and sessionCode are required" }, { status: 400 });
+    const { action, sessionId, assignToType, assignToId } = await req.json();
+
+    if (!action || !sessionId) {
+      return NextResponse.json({ error: "action and sessionId are required" }, { status: 400 });
     }
 
-    // Validate session code format (6 digits)
-    if (!/^\d{6}$/.test(sessionCode)) {
-      return NextResponse.json({ error: "Session code must be 6 digits" }, { status: 400 });
-    }
-
-    // Find the location
-    const location = db.select().from(schema.locations).where(eq(schema.locations.id, locationId)).get();
-    if (!location) {
-      return NextResponse.json({ error: "Location not found" }, { status: 404 });
-    }
-
-    // Update all active sessions for this location with the new code
-    const sessions = db
+    // Find the active session
+    const targetSession = db
       .select()
       .from(schema.sessions)
-      .where(
-        and(
-          eq(schema.sessions.userId, locationId),
-          eq(schema.sessions.isOnline, true)
-        )
-      )
-      .all();
+      .where(eq(schema.sessions.id, sessionId))
+      .get();
 
-    if (sessions.length === 0) {
-      return NextResponse.json({ error: "No active sessions found for this location" }, { status: 404 });
+    if (!targetSession) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    for (const s of sessions) {
+    // ── FORCE LOGOUT ──
+    if (action === "logout") {
+      // Mark session offline
       db.update(schema.sessions)
-        .set({ sessionCode })
-        .where(eq(schema.sessions.id, s.id))
+        .set({ isOnline: false, lastSeen: new Date().toISOString() })
+        .where(eq(schema.sessions.id, sessionId))
         .run();
+
+      // Emit socket event to force client redirect to login
+      broadcastForceLogout(targetSession.userId, targetSession.userType);
+      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+
+      return NextResponse.json({ success: true, action: "logout" });
     }
 
-    return NextResponse.json({
-      success: true,
-      locationName: location.name,
-      sessionCode,
-      sessionsUpdated: sessions.length,
-    });
+    // ── FORCE REASSIGN ──
+    if (action === "reassign") {
+      if (!assignToType || !assignToId) {
+        return NextResponse.json({ error: "assignToType and assignToId required for reassign" }, { status: 400 });
+      }
+      if (!["location", "arl"].includes(assignToType)) {
+        return NextResponse.json({ error: "assignToType must be 'location' or 'arl'" }, { status: 400 });
+      }
+
+      // Mark old session offline
+      db.update(schema.sessions)
+        .set({ isOnline: false, lastSeen: new Date().toISOString() })
+        .where(eq(schema.sessions.id, sessionId))
+        .run();
+
+      // Create new token + session for the target account
+      let token: string;
+      let redirectTo: string;
+      let targetName: string;
+      const sessionCode = genSessionCode();
+
+      if (assignToType === "location") {
+        const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
+        if (!location) return NextResponse.json({ error: "Location not found" }, { status: 404 });
+        if (!location.isActive) return NextResponse.json({ error: "Location is deactivated" }, { status: 403 });
+
+        const payload: AuthPayload = {
+          id: location.id,
+          userType: "location",
+          userId: location.userId,
+          name: location.name,
+          locationId: location.id,
+          storeNumber: location.storeNumber,
+          sessionCode,
+        };
+        token = signToken(payload);
+        redirectTo = "/dashboard";
+        targetName = location.name;
+      } else {
+        const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
+        if (!arl) return NextResponse.json({ error: "ARL not found" }, { status: 404 });
+        if (!arl.isActive) return NextResponse.json({ error: "ARL account is deactivated" }, { status: 403 });
+
+        const payload: AuthPayload = {
+          id: arl.id,
+          userType: "arl",
+          userId: arl.userId,
+          name: arl.name,
+          role: arl.role,
+          sessionCode,
+        };
+        token = signToken(payload);
+        redirectTo = "/arl";
+        targetName = arl.name;
+      }
+
+      // Create new session record
+      db.insert(schema.sessions).values({
+        id: uuid(),
+        sessionCode,
+        userType: assignToType,
+        userId: assignToId,
+        token,
+        isOnline: true,
+        lastSeen: new Date().toISOString(),
+        deviceType: targetSession.deviceType || "kiosk",
+        createdAt: new Date().toISOString(),
+        expiresAt: getTokenExpiry(),
+      }).run();
+
+      // Emit socket event to force client to apply new token and redirect
+      broadcastForceRedirect(targetSession.userId, targetSession.userType, token, redirectTo);
+      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+
+      return NextResponse.json({ success: true, action: "reassign", targetName, redirectTo });
+    }
+
+    return NextResponse.json({ error: "action must be 'logout' or 'reassign'" }, { status: 400 });
   } catch (error) {
     console.error("Force session error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

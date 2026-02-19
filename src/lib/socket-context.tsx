@@ -62,6 +62,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       console.log("🔌 Socket connection error:", err.message);
     });
 
+    // Force session management — ARL can remotely logout or reassign this device
+    s.on("session:force-logout", () => {
+      console.log("🔌 Force logout received");
+      fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+        window.location.href = "/login";
+      });
+    });
+
+    s.on("session:force-redirect", (data: { token: string; redirectTo: string }) => {
+      console.log("🔌 Force redirect received →", data.redirectTo);
+      window.location.href = `/api/auth/force-apply?token=${encodeURIComponent(data.token)}&redirect=${encodeURIComponent(data.redirectTo)}`;
+    });
+
     socketRef.current = s;
     setSocket(s);
 

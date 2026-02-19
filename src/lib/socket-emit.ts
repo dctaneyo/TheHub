@@ -98,3 +98,22 @@ export function broadcastMessageRead(conversationId: string, readerId: string) {
   if (!isAvailable()) return;
   emitToConversation(conversationId, "message:read", { conversationId, readerId });
 }
+
+// ── Force session management ──
+export function broadcastForceLogout(userId: string, userType: string) {
+  if (!isAvailable()) return;
+  if (userType === "location") {
+    emitToLocation(userId, "session:force-logout", {});
+  } else {
+    emitToArl(userId, "session:force-logout", {});
+  }
+}
+
+export function broadcastForceRedirect(userId: string, userType: string, token: string, redirectTo: string) {
+  if (!isAvailable()) return;
+  if (userType === "location") {
+    emitToLocation(userId, "session:force-redirect", { token, redirectTo });
+  } else {
+    emitToArl(userId, "session:force-redirect", { token, redirectTo });
+  }
+}
