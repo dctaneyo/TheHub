@@ -124,6 +124,11 @@ export function broadcastSessionActivated(pendingId: string) {
   emitToArls("session:pending:refresh", {});
 }
 
+export function broadcastPing(pendingId: string) {
+  if (!isAvailable()) return;
+  emitToLoginWatchers("session:ping", { pendingId });
+}
+
 // ── Read receipts ──
 export function broadcastMessageRead(conversationId: string, readerId: string) {
   if (!isAvailable()) return;

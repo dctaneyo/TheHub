@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle } from "lucide-react";
+import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -54,6 +54,7 @@ export function RemoteLogin() {
   const [forceAction, setForceAction] = useState<"reassign" | "logout" | null>(null);
   const [forceAssignType, setForceAssignType] = useState<"location" | "arl">("location");
   const [forcing, setForcing] = useState(false);
+  const [pingingId, setPingingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -132,6 +133,18 @@ export function RemoteLogin() {
       setErrorMsg("Network error. Please try again.");
     }
     setActivating(false);
+  };
+
+  const handlePing = async (pendingId: string) => {
+    setPingingId(pendingId);
+    try {
+      await fetch("/api/session/ping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingId }),
+      });
+    } catch {}
+    setTimeout(() => setPingingId(null), 2000);
   };
 
   const handleForceLogout = async (sess: ActiveSession) => {
@@ -262,23 +275,38 @@ export function RemoteLogin() {
             {pendingSessions.map((ps) => {
               const isSelected = selectedSession?.id === ps.id;
               return (
-                <button
-                  key={ps.id}
-                  onClick={() => setSelectedSession(isSelected ? null : ps)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
-                    isSelected
-                      ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20 shadow-md"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-                  )}
-                >
-                  <Monitor className={cn("h-6 w-6", isSelected ? "text-[var(--hub-red)]" : "text-slate-400")} />
-                  <span className="text-2xl font-black tracking-[0.2em] text-slate-800">{ps.code}</span>
-                  <div className="text-[10px] text-slate-400">
-                    <p>{getDeviceHint(ps.userAgent)}</p>
-                    <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
-                  </div>
-                </button>
+                <div key={ps.id} className={cn(
+                  "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
+                  isSelected
+                    ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20 shadow-md"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                )}>
+                  <button
+                    onClick={() => setSelectedSession(isSelected ? null : ps)}
+                    className="flex flex-col items-center gap-2 w-full"
+                  >
+                    <Monitor className={cn("h-6 w-6", isSelected ? "text-[var(--hub-red)]" : "text-slate-400")} />
+                    <span className="text-2xl font-black tracking-[0.2em] text-slate-800">{ps.code}</span>
+                    <div className="text-[10px] text-slate-400">
+                      <p>{getDeviceHint(ps.userAgent)}</p>
+                      <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handlePing(ps.id)}
+                    disabled={pingingId === ps.id}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all",
+                      pingingId === ps.id
+                        ? "bg-amber-400 text-white scale-95"
+                        : "bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-700"
+                    )}
+                    title="Send a visual ping to this device to confirm it's the right one"
+                  >
+                    <Bell className={cn("h-3 w-3", pingingId === ps.id && "animate-bounce")} />
+                    {pingingId === ps.id ? "Pinged!" : "Ping"}
+                  </button>
+                </div>
               );
             })}
           </div>

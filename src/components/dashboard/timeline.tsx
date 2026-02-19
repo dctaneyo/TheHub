@@ -60,6 +60,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
   const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
 
   const handleComplete = async (taskId: string) => {
     setCompletingId(taskId);
@@ -107,7 +108,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     });
 
     const container = containerRef.current;
-    if (!container) return;
+    const outer = outerRef.current;
+    if (!container || !outer) return;
 
     // Find the two groups that bracket the current time
     let before = groupData[0];
@@ -125,19 +127,24 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const beforeEl = before.el;
     if (!beforeEl) return;
 
-    const containerTop = container.getBoundingClientRect().top;
+    // Measure relative to the outer wrapper (not the scroll container)
+    // so the indicator is positioned correctly even when scrolled
+    const outerTop = outer.getBoundingClientRect().top;
+    const containerScrollTop = container.scrollTop;
+    const containerOffsetTop = container.getBoundingClientRect().top - outerTop;
 
     // Current time is before the first task — place line at top of first group
     if (currentMinutes < groupData[0].minutes) {
       const rect = beforeEl.getBoundingClientRect();
-      setIndicatorTop(Math.max(0, rect.top - containerTop + container.scrollTop));
+      const pos = rect.top - outerTop + containerScrollTop;
+      setIndicatorTop(Math.max(containerOffsetTop, pos));
       return;
     }
 
     // Current time is at or past the last task — place line at bottom of last group
     if (after === null) {
       const rect = beforeEl.getBoundingClientRect();
-      setIndicatorTop(rect.bottom - containerTop + container.scrollTop);
+      setIndicatorTop(rect.bottom - outerTop + containerScrollTop);
       return;
     }
 
@@ -148,8 +155,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const beforeRect = beforeEl.getBoundingClientRect();
     const afterRect = afterEl.getBoundingClientRect();
 
-    const beforePx = beforeRect.bottom - containerTop + container.scrollTop;
-    const afterPx = afterRect.top - containerTop + container.scrollTop;
+    const beforePx = beforeRect.bottom - outerTop + containerScrollTop;
+    const afterPx = afterRect.top - outerTop + containerScrollTop;
 
     const timeDiff = after.minutes - before.minutes;
     const elapsed = currentMinutes - before.minutes;
@@ -170,32 +177,32 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   }, [calculateIndicatorTop]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div ref={outerRef} className="flex h-full flex-col relative">
       <div className="mb-4 px-1">
         <h2 className="text-lg font-bold text-slate-800">Today&apos;s Tasks</h2>
       </div>
+
+      {/* Current time marker — lives outside scroll container so it's never clipped by header */}
+      {indicatorTop !== null && (
+        <motion.div
+          className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
+          style={{ top: indicatorTop }}
+          animate={{ top: indicatorTop }}
+          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+        >
+          <div className="absolute left-0 right-0 h-0.5 bg-[var(--hub-red)] opacity-40" />
+          <div className="absolute left-0 flex items-center pl-8">
+            <div className="rounded-full bg-[var(--hub-red)] px-2 py-1 text-xs font-medium text-white shadow-md shadow-red-200">
+              {formatTime(new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0'))}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin overflow-x-hidden">
         <div className="relative pl-8">
           {/* Timeline line */}
           <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-200" />
-
-          {/* Current time marker */}
-          {indicatorTop !== null && (
-            <motion.div
-              className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
-              style={{ top: indicatorTop }}
-              animate={{ top: indicatorTop }}
-              transition={{ type: "spring", stiffness: 120, damping: 20 }}
-            >
-              <div className="absolute left-0 right-0 h-0.5 bg-[var(--hub-red)] opacity-40" />
-              <div className="absolute left-0 flex items-center">
-                <div className="rounded-full bg-[var(--hub-red)] px-2 py-1 text-xs font-medium text-white shadow-md shadow-red-200">
-                  {formatTime(new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0'))}
-                </div>
-              </div>
-            </motion.div>
-          )}
 
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">

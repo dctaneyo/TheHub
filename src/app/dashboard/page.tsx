@@ -92,7 +92,12 @@ export default function DashboardPage() {
       const now = new Date();
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       setCurrentTime(hhmm);
-      setDisplayTime(`${hhmm}:${String(now.getSeconds()).padStart(2, "0")}`);
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+      const ampm = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 || 12;
+      setDisplayTime(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${ampm}`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);

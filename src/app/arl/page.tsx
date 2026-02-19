@@ -86,7 +86,19 @@ interface TaskToast {
 export default function ArlPage() {
   const { user, logout } = useAuth();
   const device = useDeviceType();
-  const [activeView, setActiveView] = useState<ArlView>("overview");
+  const [activeView, setActiveView] = useState<ArlView>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
+      if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login"].includes(saved)) return saved;
+    }
+    return "overview";
+  });
+
+  // Persist active view so it survives unexpected remounts
+  useEffect(() => {
+    sessionStorage.setItem("arl-active-view", activeView);
+  }, [activeView]);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");

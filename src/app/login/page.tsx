@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [remoteActivating, setRemoteActivating] = useState(false);
+  const [pinged, setPinged] = useState(false);
 
   // Generate pending session on mount
   useEffect(() => {
@@ -65,8 +66,18 @@ export default function LoginPage() {
         } catch {}
       }
     };
+    const handlePing = (data: { pendingId: string }) => {
+      if (data.pendingId === pendingId) {
+        setPinged(true);
+        setTimeout(() => setPinged(false), 3000);
+      }
+    };
     socket.on("session:activated", handleActivated);
-    return () => { socket.off("session:activated", handleActivated); };
+    socket.on("session:ping", handlePing);
+    return () => {
+      socket.off("session:activated", handleActivated);
+      socket.off("session:ping", handlePing);
+    };
   }, [socket, pendingId]);
 
   const currentValue = step === "userId" ? userId : pin;
@@ -212,6 +223,49 @@ export default function LoginPage() {
           )}
         </div>
       </div>
+
+      {/* Ping animation overlay */}
+      <AnimatePresence>
+        {pinged && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          >
+            {/* Ripple rings */}
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full border-4 border-[var(--hub-red)]"
+                initial={{ width: 80, height: 80, opacity: 0.8 }}
+                animate={{ width: 500, height: 500, opacity: 0 }}
+                transition={{ duration: 1.2, delay: i * 0.3, ease: "easeOut" }}
+              />
+            ))}
+            {/* Center burst */}
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: [0, 1.3, 1], rotate: [-20, 10, 0] }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="relative flex flex-col items-center gap-3"
+            >
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-2xl shadow-red-300">
+                <span className="text-4xl">👋</span>
+              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-2xl bg-white px-6 py-3 shadow-xl text-center"
+              >
+                <p className="text-lg font-black text-slate-800">Hey, that&apos;s you!</p>
+                <p className="text-sm text-slate-500">Your ARL is confirming your session</p>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Remote activation overlay */}
       <AnimatePresence>
