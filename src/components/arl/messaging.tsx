@@ -612,7 +612,7 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ArrowLeft className="h-4 w-4" />

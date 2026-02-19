@@ -495,7 +495,12 @@ export default function ArlPage() {
         </header>
 
         {/* Content area */}
-        <main className="flex-1 overflow-y-auto p-5">
+        <main className={cn(
+          "flex-1",
+          activeView === "messages"
+            ? "flex flex-col overflow-hidden"
+            : "overflow-y-auto p-5"
+        )}>
           {activeView === "overview" && <OverviewContent />}
           {activeView === "messages" && <Messaging />}
           {activeView === "tasks" && <TaskManager />}
