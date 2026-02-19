@@ -12,6 +12,8 @@ import {
   emitToLoginWatchers,
   getIO,
 } from "./socket-server";
+import { db, schema } from "./db";
+import { eq } from "drizzle-orm";
 
 function isAvailable(): boolean {
   return getIO() !== null;
@@ -47,8 +49,6 @@ function emitToConversationMembers(conversationId: string, event: string, data: 
   emitToConversation(conversationId, event, data);
   // Also emit to each member's user room so they get notified even on the conversation list
   try {
-    const { db, schema } = require("@/lib/db");
-    const { eq } = require("drizzle-orm");
     const members = db.select().from(schema.conversationMembers)
       .where(eq(schema.conversationMembers.conversationId, conversationId))
       .all();
@@ -59,7 +59,9 @@ function emitToConversationMembers(conversationId: string, event: string, data: 
         emitToArl(m.memberId, event, data);
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error("emitToConversationMembers DB lookup failed:", err);
+  }
 }
 
 export function broadcastNewMessage(conversationId: string, message: {

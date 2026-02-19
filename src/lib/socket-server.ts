@@ -5,17 +5,19 @@ import type { AuthPayload } from "./auth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
 
-// Global singleton so API routes can access the io instance
-let io: SocketIOServer | null = null;
+// Global singleton via globalThis so the io instance is shared between
+// the custom server (Node.js module) AND webpack-bundled API routes.
+// Without globalThis, API routes get their own module scope where io === null.
+const _g = globalThis as any;
 
 export function getIO(): SocketIOServer | null {
-  return io;
+  return _g.__hubSocketIO || null;
 }
 
 export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
-  if (io) return io;
+  if (_g.__hubSocketIO) return _g.__hubSocketIO;
 
-  io = new SocketIOServer(httpServer, {
+  const io = new SocketIOServer(httpServer, {
     path: "/api/socketio",
     addTrailingSlash: false,
     cors: { origin: "*" },
@@ -23,6 +25,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     pingTimeout: 20000,
     transports: ["websocket", "polling"],
   });
+  _g.__hubSocketIO = io;
 
   io.on("connection", (socket) => {
     let user: AuthPayload | null = null;
@@ -131,31 +134,31 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 // ── Helper: emit to specific targets ──
 
 export function emitToAll(event: string, data: any) {
-  io?.to("all").emit(event, data);
+  getIO()?.to("all").emit(event, data);
 }
 
 export function emitToLocations(event: string, data: any) {
-  io?.to("locations").emit(event, data);
+  getIO()?.to("locations").emit(event, data);
 }
 
 export function emitToArls(event: string, data: any) {
-  io?.to("arls").emit(event, data);
+  getIO()?.to("arls").emit(event, data);
 }
 
 export function emitToLocation(locationId: string, event: string, data: any) {
-  io?.to(`location:${locationId}`).emit(event, data);
+  getIO()?.to(`location:${locationId}`).emit(event, data);
 }
 
 export function emitToArl(arlId: string, event: string, data: any) {
-  io?.to(`arl:${arlId}`).emit(event, data);
+  getIO()?.to(`arl:${arlId}`).emit(event, data);
 }
 
 export function emitToConversation(conversationId: string, event: string, data: any) {
-  io?.to(`conversation:${conversationId}`).emit(event, data);
+  getIO()?.to(`conversation:${conversationId}`).emit(event, data);
 }
 
 export function emitToLoginWatchers(event: string, data: any) {
-  io?.to("login-watchers").emit(event, data);
+  getIO()?.to("login-watchers").emit(event, data);
 }
 
 // Parse a cookie value from a cookie header string
@@ -171,11 +174,10 @@ interface ForceAction {
   redirectTo?: string;
 }
 
-const g = globalThis as any;
-if (!g.__hubPendingForceActions) {
-  g.__hubPendingForceActions = new Map<string, ForceAction>();
+if (!_g.__hubPendingForceActions) {
+  _g.__hubPendingForceActions = new Map<string, ForceAction>();
 }
-const pendingForceActions: Map<string, ForceAction> = g.__hubPendingForceActions;
+const pendingForceActions: Map<string, ForceAction> = _g.__hubPendingForceActions;
 
 export function setPendingForceAction(sessionToken: string, forceAction: ForceAction) {
   pendingForceActions.set(sessionToken, forceAction);

@@ -159,7 +159,7 @@ export default function ArlPage() {
         const d = await r.json();
         const locs = d.locations || [];
         const arls = d.arls || [];
-        setOnlineCount(locs.filter((l: any) => l.isOnline).length + arls.filter((a: any) => a.isOnline).length);
+        setOnlineCount(locs.filter((l: any) => l.isOnline).length);
         const map = new Map<string, string>();
         for (const l of locs) map.set(l.id, l.name);
         for (const a of arls) map.set(a.id, a.name);

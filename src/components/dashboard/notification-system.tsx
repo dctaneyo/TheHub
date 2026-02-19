@@ -235,10 +235,120 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
   };
 
   const activeNotifications = notifications.filter((n) => !n.dismissed);
+  const overdueNotifications = activeNotifications.filter((n) => n.type === "overdue");
   const hasActive = activeNotifications.length > 0;
+
+  // ── Fullscreen overdue alarm ──
+  const overdueAlarmRef = useRef<NodeJS.Timeout | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const playOverdueAlarm = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = ctx;
+      const t = ctx.currentTime;
+      // Loud, attention-grabbing 3-tone alarm
+      [[880, 0, 0.2, 0.4], [660, 0.25, 0.2, 0.4], [880, 0.5, 0.2, 0.4],
+       [660, 0.75, 0.2, 0.4], [1100, 1.0, 0.35, 0.5]].forEach(([freq, delay, dur, vol]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "square";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(vol, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
+        osc.start(t + delay);
+        osc.stop(t + delay + dur);
+      });
+    } catch {}
+  }, [soundEnabled]);
+
+  // Start/stop repeating alarm when overdue notifications appear/disappear
+  useEffect(() => {
+    if (overdueNotifications.length > 0) {
+      playOverdueAlarm();
+      overdueAlarmRef.current = setInterval(playOverdueAlarm, 5000);
+    } else {
+      if (overdueAlarmRef.current) {
+        clearInterval(overdueAlarmRef.current);
+        overdueAlarmRef.current = null;
+      }
+    }
+    return () => {
+      if (overdueAlarmRef.current) {
+        clearInterval(overdueAlarmRef.current);
+        overdueAlarmRef.current = null;
+      }
+    };
+  }, [overdueNotifications.length, playOverdueAlarm]);
+
+  const handleDismissOverdue = () => {
+    const ids = overdueNotifications.map((n) => n.id);
+    ids.forEach((id) => notifiedRef.current.add(id));
+    saveDismissedNotifications(ids);
+    setNotifications((prev) => prev.map((n) => n.type === "overdue" ? { ...n, dismissed: true } : n));
+  };
 
   return (
     <>
+      {/* ── FULLSCREEN OVERDUE OVERLAY ── */}
+      <AnimatePresence>
+        {overdueNotifications.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9998] flex items-center justify-center"
+            style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+          >
+            <motion.div
+              animate={{ boxShadow: ["0 0 0 0 rgba(220,38,38,0.7)", "0 0 0 20px rgba(220,38,38,0)", "0 0 0 0 rgba(220,38,38,0)"] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-full max-w-lg mx-4 rounded-3xl bg-white overflow-hidden"
+            >
+              {/* Red header */}
+              <div className="bg-[var(--hub-red)] px-6 py-5 flex items-center gap-3">
+                <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </motion.div>
+                <div>
+                  <h2 className="text-xl font-black text-white tracking-wide">OVERDUE TASKS</h2>
+                  <p className="text-[11px] text-red-100 mt-0.5">{overdueNotifications.length} task{overdueNotifications.length > 1 ? "s" : ""} past due</p>
+                </div>
+              </div>
+
+              {/* Task list */}
+              <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">
+                {overdueNotifications.map((notif) => (
+                  <div key={notif.id} className="flex items-center gap-3 rounded-xl bg-red-50 p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100">
+                      <Clock className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800">{notif.title}</p>
+                      <p className="text-xs text-red-500">Due at {formatTime12(notif.dueTime)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dismiss button */}
+              <div className="px-6 pb-6">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleDismissOverdue}
+                  className="w-full rounded-2xl border-2 border-slate-200 py-4 text-base font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Acknowledge &amp; Dismiss
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Notification bell with count */}
       <button
         onClick={() => setShowPanel(!showPanel)}
@@ -274,9 +384,9 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
         )}
       </button>
 
-      {/* Notification panel */}
+      {/* Notification panel (due-soon only when overdue overlay is not showing) */}
       <AnimatePresence>
-        {showPanel && (
+        {showPanel && overdueNotifications.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
