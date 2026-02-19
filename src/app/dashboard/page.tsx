@@ -27,10 +27,11 @@ import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { NotificationSystem } from "@/components/dashboard/notification-system";
-import { Confetti } from "@/components/confetti";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
+import { GamificationBar } from "@/components/dashboard/gamification-bar";
+import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -52,6 +53,10 @@ export default function DashboardPage() {
   const [chatUnread, setChatUnread] = useState(0);
   const [calOpen, setCalOpen] = useState(false);
   const [formsOpen, setFormsOpen] = useState(false);
+  const [showCoinRain, setShowCoinRain] = useState(false);
+  const [coinRainAmount, setCoinRainAmount] = useState(0);
+  const [showFireworks, setShowFireworks] = useState(false);
+  const playConfettiSound = useConfettiSound();
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -123,8 +128,15 @@ export default function DashboardPage() {
       if (res.ok) {
         const result = await res.json();
         setConfettiPoints(result.pointsEarned || 0);
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2800);
+        if (result.bonusPoints > 0) {
+          setCoinRainAmount(result.bonusPoints);
+          setShowCoinRain(true);
+          setTimeout(() => setShowCoinRain(false), 3000);
+        } else {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 2800);
+        }
+        playConfettiSound();
         await fetchTasks();
       }
     } catch (err) {
@@ -156,36 +168,27 @@ export default function DashboardPage() {
       if (res.ok) {
         const result = await res.json();
         // Show confetti animation
-        setConfettiPoints(result.pointsEarned || 0);
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2800);
-        // Play completion sound via Web Audio API
-        try {
-          const ctx = new AudioContext();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.value = 660;
-          osc.type = "sine";
-          gain.gain.value = 0.12;
-          osc.start();
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-          osc.stop(ctx.currentTime + 0.3);
-          setTimeout(() => {
-            try {
-              const o2 = ctx.createOscillator();
-              const g2 = ctx.createGain();
-              o2.connect(g2); g2.connect(ctx.destination);
-              o2.frequency.value = 880; o2.type = "sine"; g2.gain.value = 0.12;
-              o2.start();
-              g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-              o2.stop(ctx.currentTime + 0.3);
-            } catch {}
-          }, 150);
-        } catch {}
-        // Refresh tasks
-        await fetchTasks();
+        const pts = result.pointsEarned || 0;
+        setConfettiPoints(pts);
+        playConfettiSound();
+        // Check if all tasks are now complete
+        const updatedRes = await fetch("/api/tasks/today");
+        if (updatedRes.ok) {
+          const updated = await updatedRes.json();
+          const allDone = (updated.tasks || []).length > 0 && (updated.tasks || []).every((t: any) => t.isCompleted);
+          if (allDone) {
+            setShowFireworks(true);
+            setTimeout(() => setShowFireworks(false), 3500);
+          } else {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 2800);
+          }
+          setData(updated);
+        } else {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 2800);
+          await fetchTasks();
+        }
       }
     } catch (err) {
       console.error("Failed to complete task:", err);
@@ -212,6 +215,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <GamificationBar />
           <div className="mr-2 text-right">
             <p className="text-xl font-black tabular-nums tracking-tight text-slate-800">
               {displayTime}
@@ -291,8 +295,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Confetti celebration */}
-      <Confetti isActive={showConfetti} pointsEarned={confettiPoints} />
+      {/* Celebrations */}
+      <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />
+      <CoinRain active={showCoinRain} amount={coinRainAmount} onComplete={() => setShowCoinRain(false)} />
+      <Fireworks active={showFireworks} onComplete={() => setShowFireworks(false)} />
 
       {/* Full Calendar Modal */}
       {calOpen && <CalendarModal onClose={() => setCalOpen(false)} locationId={user?.id} />}
