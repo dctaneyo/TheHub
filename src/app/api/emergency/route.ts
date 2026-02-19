@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastEmergency, broadcastEmergencyDismissed } from "@/lib/socket-emit";
+import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed } from "@/lib/socket-emit";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -152,6 +152,9 @@ export async function PATCH(req: NextRequest) {
     db.update(schema.emergencyMessages)
       .set({ viewedBy: JSON.stringify(viewedBy), isActive: shouldArchive ? false : msg.isActive })
       .where(eq(schema.emergencyMessages.id, messageId)).run();
+
+    // Notify ARLs in real-time that this location viewed the message
+    broadcastEmergencyViewed(messageId, session.id, session.name);
 
     return NextResponse.json({ success: true, archived: shouldArchive });
   } catch (error) {

@@ -99,6 +99,11 @@ export function broadcastEmergencyDismissed() {
   emitToAll("emergency:dismissed", {});
 }
 
+export function broadcastEmergencyViewed(messageId: string, locationId: string, locationName: string) {
+  if (!isAvailable()) return;
+  emitToArls("emergency:viewed", { messageId, locationId, locationName });
+}
+
 // ── Presence events ──
 export function broadcastPresenceUpdate(userId: string, userType: string, name: string, isOnline: boolean, storeNumber?: string) {
   if (!isAvailable()) return;

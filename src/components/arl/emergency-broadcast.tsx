@@ -71,13 +71,23 @@ export function EmergencyBroadcast() {
   useEffect(() => {
     if (!socket) return;
     const handler = () => fetchMessage();
+    // Real-time viewed-by update: patch in-place without full refetch
+    const handleViewed = (data: { messageId: string; locationId: string }) => {
+      setActiveMessage((prev) => {
+        if (!prev || prev.id !== data.messageId) return prev;
+        if (prev.viewedBy.includes(data.locationId)) return prev;
+        return { ...prev, viewedBy: [...prev.viewedBy, data.locationId] };
+      });
+    };
     socket.on("emergency:broadcast", handler);
     socket.on("emergency:dismissed", handler);
     socket.on("emergency:updated", handler);
+    socket.on("emergency:viewed", handleViewed);
     return () => {
       socket.off("emergency:broadcast", handler);
       socket.off("emergency:dismissed", handler);
       socket.off("emergency:updated", handler);
+      socket.off("emergency:viewed", handleViewed);
     };
   }, [socket, fetchMessage]);
 
