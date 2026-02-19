@@ -202,26 +202,26 @@ export default function CalendarPage() {
                       key={date.toISOString()}
                       onClick={() => setSelectedDate(date)}
                       className={cn(
-                        "relative border-r border-slate-100 p-2 text-left transition-colors last:border-0",
+                        "flex flex-col border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 overflow-hidden",
                         !inMonth && "bg-slate-50/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-slate-50"
                       )}
                     >
                       <span className={cn(
-                        "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold self-start",
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                         todayDate ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
                       )}>
                         {format(date, "d")}
                       </span>
-                      <div className="mt-1 space-y-0.5">
-                        {dayTasks.slice(0, 3).map((task) => {
+                      <div className="mt-0.5 flex flex-col gap-0.5 overflow-hidden">
+                        {dayTasks.map((task) => {
                           const Icon = typeIcons[task.type] || ClipboardList;
                           return (
                             <div
                               key={task.id}
                               className={cn(
-                                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium truncate",
+                                "flex items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium truncate",
                                 task.priority === "urgent" ? "bg-red-100 text-red-700" :
                                 task.priority === "high" ? "bg-orange-100 text-orange-700" :
                                 task.type === "cleaning" ? "bg-purple-100 text-purple-700" :
@@ -229,14 +229,11 @@ export default function CalendarPage() {
                                 "bg-blue-100 text-blue-700"
                               )}
                             >
-                              <Icon className="h-2.5 w-2.5 shrink-0" />
+                              <Icon className="h-2 w-2 shrink-0" />
                               <span className="truncate">{task.title}</span>
                             </div>
                           );
                         })}
-                        {dayTasks.length > 3 && (
-                          <p className="pl-1 text-[10px] text-slate-400">+{dayTasks.length - 3} more</p>
-                        )}
                       </div>
                     </button>
                   );

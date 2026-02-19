@@ -479,7 +479,7 @@ export function Messaging() {
         </div>
 
         <div className="space-y-2">
-          {conversations.map((convo) => (
+          {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
             <button
               key={convo.id}
               onClick={() => setActiveConvo(convo)}

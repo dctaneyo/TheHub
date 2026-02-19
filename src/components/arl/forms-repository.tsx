@@ -11,6 +11,10 @@ import {
   X,
   Loader2,
   FolderOpen,
+  Mail,
+  CheckSquare,
+  Square,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +31,13 @@ interface Form {
   fileSize: number;
   uploadedBy: string;
   createdAt: string;
+}
+
+interface Recipient {
+  id: string;
+  name: string;
+  email: string | null;
+  kind: "location" | "arl";
 }
 
 const CATEGORIES = ["general", "hr", "operations", "safety", "training", "finance"];
@@ -64,6 +75,13 @@ export function FormsRepository() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Email state
+  const [emailForm, setEmailForm] = useState<Form | null>(null);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
 
   const fetchForms = useCallback(async () => {
     try {
@@ -112,6 +130,67 @@ export function FormsRepository() {
       await fetch("/api/forms", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
       setForms((prev) => prev.filter((f) => f.id !== id));
     } catch {}
+  };
+
+  const fetchRecipients = useCallback(async () => {
+    try {
+      const res = await fetch("/api/locations");
+      if (res.ok) {
+        const data = await res.json();
+        const locs: Recipient[] = (data.locations || []).map((l: { id: string; name: string; email: string | null }) => ({
+          id: l.id, name: l.name, email: l.email, kind: "location" as const,
+        }));
+        const arls: Recipient[] = (data.arls || []).map((a: { id: string; name: string; email: string | null }) => ({
+          id: a.id, name: a.name, email: a.email, kind: "arl" as const,
+        }));
+        setRecipients([...locs, ...arls]);
+      }
+    } catch {}
+  }, []);
+
+  const openEmailModal = (form: Form) => {
+    setEmailForm(form);
+    setSelectedRecipients(new Set());
+    setEmailSuccess(null);
+    fetchRecipients();
+  };
+
+  const toggleRecipient = (id: string) => {
+    setSelectedRecipients((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailForm || selectedRecipients.size === 0) return;
+    setSending(true);
+    try {
+      const chosen = recipients.filter((r) => selectedRecipients.has(r.id) && r.email);
+      const emails = chosen.map((r) => r.email as string);
+      if (emails.length === 0) {
+        setEmailSuccess("No valid email addresses for selected recipients.");
+        return;
+      }
+      const res = await fetch("/api/forms/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId: emailForm.id, recipientEmails: emails }),
+      });
+      if (res.ok) {
+        setEmailSuccess(`Sent to ${emails.length} recipient${emails.length > 1 ? "s" : ""}!`);
+        setTimeout(() => { setEmailForm(null); setEmailSuccess(null); }, 2000);
+      } else {
+        const d = await res.json();
+        setEmailSuccess(d.error || "Failed to send.");
+      }
+    } catch {
+      setEmailSuccess("Failed to send.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -203,6 +282,13 @@ export function FormsRepository() {
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() => openEmailModal(form)}
+                title="Email to restaurant/ARL"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-500"
+              >
+                <Mail className="h-4 w-4" />
+              </button>
               <a
                 href={`/api/forms/download?id=${form.id}`}
                 target="_blank"
@@ -221,6 +307,98 @@ export function FormsRepository() {
           </motion.div>
         ))}
       </div>
+
+      {/* Email modal */}
+      <AnimatePresence>
+        {emailForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Email Form</h3>
+                  <p className="text-xs text-slate-400 truncate max-w-[260px]">{emailForm.title}</p>
+                </div>
+                <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {emailSuccess ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <Send className="h-5 w-5 text-green-600" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">{emailSuccess}</p>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-3 text-xs font-medium text-slate-500">Select recipients to send this form to:</p>
+                  <div className="max-h-72 overflow-y-auto space-y-1 rounded-2xl border border-slate-100 p-2">
+                    {recipients.length === 0 && (
+                      <div className="flex h-16 items-center justify-center">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+                      </div>
+                    )}
+                    {recipients.map((r) => {
+                      const checked = selectedRecipients.has(r.id);
+                      const hasEmail = !!r.email;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => hasEmail && toggleRecipient(r.id)}
+                          disabled={!hasEmail}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+                            checked ? "bg-blue-50" : "hover:bg-slate-50",
+                            !hasEmail && "opacity-40 cursor-not-allowed"
+                          )}
+                        >
+                          {checked ? (
+                            <CheckSquare className="h-4 w-4 shrink-0 text-blue-500" />
+                          ) : (
+                            <Square className="h-4 w-4 shrink-0 text-slate-300" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-700">{r.name}</p>
+                            <p className="truncate text-[10px] text-slate-400">
+                              {r.email || "No email on file"} · {r.kind === "location" ? "Restaurant" : "ARL"}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    <p className="text-xs text-slate-400">{selectedRecipients.size} selected</p>
+                    <Button
+                      onClick={handleSendEmail}
+                      disabled={selectedRecipients.size === 0 || sending}
+                      className="rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
+                      size="sm"
+                    >
+                      {sending ? (
+                        <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending...</>
+                      ) : (
+                        <><Send className="mr-1.5 h-3.5 w-3.5" /> Send Email</>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Upload modal */}
       <AnimatePresence>

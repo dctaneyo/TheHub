@@ -15,6 +15,7 @@
     "push:keys": "npx tsx scripts/generate-vapid-keys.ts"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
