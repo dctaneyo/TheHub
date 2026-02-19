@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor } from "lucide-react";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
@@ -34,18 +34,25 @@ export default function LoginPage() {
   const [remoteActivating, setRemoteActivating] = useState(false);
   const [pinged, setPinged] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const generateSession = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const r = await fetch("/api/session/pending", { method: "POST" });
+      if (r.ok) {
+        const data = await r.json();
+        setPendingId(data.id);
+        setPendingCode(data.code);
+      }
+    } catch {}
+    setRefreshing(false);
+  }, []);
+
   // Generate pending session on mount
   useEffect(() => {
-    fetch("/api/session/pending", { method: "POST" })
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json();
-          setPendingId(data.id);
-          setPendingCode(data.code);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    generateSession();
+  }, [generateSession]);
 
   // Instant remote activation via WebSocket
   const { socket } = useSocket();
@@ -208,6 +215,14 @@ export default function LoginPage() {
             <Monitor className="h-3.5 w-3.5 text-slate-400" />
             <span className="text-[10px] font-medium text-slate-400">Session ID</span>
             <span className="text-sm font-black tracking-widest text-slate-700">{pendingCode}</span>
+            <button
+              onClick={generateSession}
+              disabled={refreshing}
+              title="Refresh session"
+              className="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
           </div>
         )}
         <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
@@ -310,6 +325,14 @@ export default function LoginPage() {
               <Monitor className="h-3 w-3 text-slate-400" />
               <span className="text-[10px] font-medium text-slate-400">Session</span>
               <span className="text-xs font-black tracking-widest text-slate-700">{pendingCode}</span>
+              <button
+                onClick={generateSession}
+                disabled={refreshing}
+                title="Refresh session"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 active:bg-slate-100 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
             </div>
           )}
         </div>
