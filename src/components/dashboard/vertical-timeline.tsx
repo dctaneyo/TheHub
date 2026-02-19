@@ -12,7 +12,6 @@ import {
   Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 
 export interface TaskItem {
   id: string;
@@ -63,17 +62,9 @@ function timeToMinutes(time: string): number {
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 8); // 8 to 23
 
 export function VerticalTimeline({ tasks, onComplete, onUncomplete, currentTime }: VerticalTimelineProps) {
-  const [currentMinutes, setCurrentMinutes] = useState(0);
-
-  useEffect(() => {
-    const updateCurrentTime = () => {
-      const now = new Date();
-      setCurrentMinutes(now.getHours() * 60 + now.getMinutes());
-    };
-    updateCurrentTime();
-    const interval = setInterval(updateCurrentTime, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
+  // Derive currentMinutes directly from the prop — the dashboard parent
+  // updates currentTime every second so the red line is always in sync.
+  const currentMinutes = timeToMinutes(currentTime || "00:00");
 
   
   // Calculate position of current time indicator (0-100%)
