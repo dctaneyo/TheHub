@@ -54,6 +54,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     s.on("connect", () => {
       console.log("🔌 Socket connected:", s.id);
       setIsConnected(true);
+      // Emit immediately on connect so lastSeen is fresh right away
+      s.emit("client:heartbeat");
     });
 
     s.on("disconnect", (reason) => {
@@ -85,10 +87,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       window.location.href = data.redirectTo;
     });
 
+    // Emit client:heartbeat every 30s over the socket — updates lastSeen in DB
+    // and emits presence:update to ARLs without an HTTP round-trip
+    const heartbeatInterval = setInterval(() => {
+      if (s.connected) s.emit("client:heartbeat");
+    }, 30000);
+
     socketRef.current = s;
     setSocket(s);
 
     return () => {
+      clearInterval(heartbeatInterval);
       s.disconnect();
       socketRef.current = null;
     };

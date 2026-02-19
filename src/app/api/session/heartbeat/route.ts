@@ -4,8 +4,9 @@ import { db, schema } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { consumePendingForceAction } from "@/lib/socket-server";
-import { broadcastPresenceUpdate } from "@/lib/socket-emit";
 
+// Lightweight force-action check only.
+// lastSeen updates + presence:update are handled by the client:heartbeat socket event.
 export async function POST() {
   try {
     const session = await getSession();
@@ -30,7 +31,7 @@ export async function POST() {
       });
     }
 
-    // Also check if the session record still exists (it's deleted on force actions)
+    // Check if the session record still exists (deleted on force actions)
     const existing = db.select({ id: schema.sessions.id })
       .from(schema.sessions)
       .where(
@@ -42,25 +43,7 @@ export async function POST() {
       .get();
 
     if (!existing) {
-      // Session was deleted (force-terminated) — tell client to logout
       return NextResponse.json({ success: false, force: "logout" });
-    }
-
-    const now = new Date().toISOString();
-    db.update(schema.sessions)
-      .set({ isOnline: true, lastSeen: now })
-      .where(eq(schema.sessions.id, existing.id))
-      .run();
-
-    // Emit presence:update so ARL hub sees a live lastSeen on every heartbeat
-    if (session.userType === "location") {
-      const loc = db.select({ name: schema.locations.name, storeNumber: schema.locations.storeNumber })
-        .from(schema.locations).where(eq(schema.locations.id, session.userId)).get();
-      if (loc) broadcastPresenceUpdate(session.userId, "location", loc.name, true, loc.storeNumber);
-    } else {
-      const arl = db.select({ name: schema.arls.name })
-        .from(schema.arls).where(eq(schema.arls.id, session.userId)).get();
-      if (arl) broadcastPresenceUpdate(session.userId, "arl", arl.name, true);
     }
 
     return NextResponse.json({ success: true });
