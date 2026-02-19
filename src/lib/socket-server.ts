@@ -1,7 +1,19 @@
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
 import type { AuthPayload } from "./auth";
+
+// Read the build ID written by `npm run build` — the only reliable way
+// to pass a build-time value into the custom Node server at runtime.
+function readBuildId(): string {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), "build-id.txt"), "utf8").trim();
+  } catch {
+    return "dev";
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
 
@@ -27,8 +39,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
   });
   _g.__hubSocketIO = io;
 
-  // Baked in at build time via next.config.ts
-  const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
+  const BUILD_ID = readBuildId();
 
   io.on("connection", (socket) => {
     let user: AuthPayload | null = null;

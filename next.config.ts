@@ -1,12 +1,19 @@
 import type { NextConfig } from "next";
+import fs from "fs";
+import path from "path";
 
-// Bake the current build's identity into the client bundle.
-// Railway sets RAILWAY_GIT_COMMIT_SHA automatically; fall back to a
-// timestamp so local dev always gets a unique value too.
-const BUILD_ID =
-  process.env.RAILWAY_GIT_COMMIT_SHA ||
-  process.env.VERCEL_GIT_COMMIT_SHA ||
-  String(Date.now());
+// Read the build ID written by the build script (package.json "build" command).
+// Both the client bundle and the custom Node server read from this same file,
+// so they always agree on the current build's identity.
+function readBuildId(): string {
+  try {
+    return fs.readFileSync(path.join(__dirname, "build-id.txt"), "utf8").trim();
+  } catch {
+    return String(Date.now());
+  }
+}
+
+const BUILD_ID = readBuildId();
 
 const nextConfig: NextConfig = {
   reactCompiler: true,

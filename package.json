@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node -e \"require('fs').writeFileSync('build-id.txt', process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now()))\" && next build",
     "start": "npx tsx src/lib/startup.ts && npx tsx server.ts",
     "lint": "eslint",
     "db:seed": "npx tsx src/lib/db/seed.ts",
