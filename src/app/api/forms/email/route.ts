@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }
 
-    const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "data", "uploads");
-    const filePath = path.join(UPLOADS_DIR, form.fileName);
+    const FORMS_DIR = path.join(process.cwd(), "data", "forms");
+    const filePath = path.join(FORMS_DIR, form.filePath);
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: "File not found on server" }, { status: 404 });
     }
