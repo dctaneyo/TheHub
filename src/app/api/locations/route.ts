@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { db, schema } from "@/lib/db";
+import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { hashSync } from "bcryptjs";
@@ -19,8 +19,15 @@ export async function GET() {
 
     const allLocations = db.select().from(schema.locations).all();
 
-    const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+    // 3 minutes: heartbeat fires every 2 min, so 1 missed beat = stale
+    const STALE_THRESHOLD_MS = 3 * 60 * 1000;
     const now = Date.now();
+    const staleTimestamp = new Date(now - STALE_THRESHOLD_MS).toISOString();
+
+    // Proactively mark stale sessions offline so they don't accumulate
+    sqlite.prepare(
+      `UPDATE sessions SET is_online = 0 WHERE is_online = 1 AND last_seen < ?`
+    ).run(staleTimestamp);
 
     const locationsWithStatus = allLocations.map((loc) => {
       const latestSession = db
@@ -37,10 +44,6 @@ export async function GET() {
         .limit(1)
         .get();
 
-      const isStale = latestSession?.lastSeen
-        ? now - new Date(latestSession.lastSeen).getTime() > STALE_THRESHOLD_MS
-        : true;
-
       return {
         id: loc.id,
         name: loc.name,
@@ -49,7 +52,7 @@ export async function GET() {
         email: loc.email,
         userId: loc.userId,
         isActive: loc.isActive,
-        isOnline: latestSession?.isOnline && !isStale ? true : false,
+        isOnline: latestSession != null,
         lastSeen: latestSession?.lastSeen || null,
         deviceType: latestSession?.deviceType || null,
         sessionCode: latestSession?.sessionCode || null,
@@ -81,17 +84,13 @@ export async function GET() {
           .limit(1)
           .get();
 
-        const isArlStale = latestArlSession?.lastSeen
-          ? now - new Date(latestArlSession.lastSeen).getTime() > STALE_THRESHOLD_MS
-          : true;
-
         return {
           id: arl.id,
           name: arl.name,
           email: arl.email || null,
           userId: arl.userId,
           role: arl.role,
-          isOnline: latestArlSession?.isOnline && !isArlStale ? true : false,
+          isOnline: latestArlSession != null,
           lastSeen: latestArlSession?.lastSeen || null,
           deviceType: latestArlSession?.deviceType || null,
           sessionCode: latestArlSession?.sessionCode || null,

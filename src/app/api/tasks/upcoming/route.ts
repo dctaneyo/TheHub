@@ -47,8 +47,17 @@ export async function GET() {
   }
 }
 
+function startOfWeekMonday(d: Date): Date {
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(d);
+  m.setDate(m.getDate() + diff);
+  m.setHours(0, 0, 0, 0);
+  return m;
+}
+
 function taskAppliesToDate(
-  task: { isRecurring: boolean; recurringType: string | null; recurringDays: string | null; dueDate: string | null },
+  task: { isRecurring: boolean; recurringType: string | null; recurringDays: string | null; dueDate: string | null; createdAt?: string },
   date: Date,
   dateStr: string,
   dayOfWeek: string
@@ -65,15 +74,12 @@ function taskAppliesToDate(
     try {
       const days = JSON.parse(task.recurringDays) as string[];
       if (!days.includes(dayOfWeek)) return false;
-      const startOfYear = new Date(date.getFullYear(), 0, 1);
-      const weekNum = Math.ceil(((date.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-      const isEvenWeek = weekNum % 2 === 0;
-      
-      // If biweeklyStart is "next", invert the parity
-      if ((task as any).biweeklyStart === "next") {
-        return !isEvenWeek;
-      }
-      return isEvenWeek;
+      const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
+      const anchorWeek = startOfWeekMonday(anchorDate);
+      const targetWeek = startOfWeekMonday(date);
+      const weeksDiff = Math.round((targetWeek.getTime() - anchorWeek.getTime()) / (7 * 86400000));
+      const isEvenInterval = weeksDiff % 2 === 0;
+      return (task as any).biweeklyStart === "next" ? !isEvenInterval : isEvenInterval;
     } catch { return false; }
   }
   if (rType === "monthly") {

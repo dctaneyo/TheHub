@@ -67,6 +67,7 @@ function runMigrations() {
     )`);
   } catch {}
   try { s.exec(`ALTER TABLE tasks ADD COLUMN biweekly_start TEXT`); } catch {}
+  try { s.exec(`ALTER TABLE forms ADD COLUMN file_content BLOB`); } catch {}
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

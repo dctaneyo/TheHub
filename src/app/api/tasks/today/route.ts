@@ -105,8 +105,18 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
 }
 
+// Returns the Monday of the week containing `d` (week anchor for biweekly math)
+function startOfWeekMonday(d: Date): Date {
+  const day = d.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const diff = (day === 0 ? -6 : 1 - day); // days back to Monday
+  const m = new Date(d);
+  m.setDate(m.getDate() + diff);
+  m.setHours(0, 0, 0, 0);
+  return m;
+}
+
 function taskAppliesToDate(
-  task: { isRecurring: boolean; recurringType: string | null; recurringDays: string | null; dueDate: string | null },
+  task: { isRecurring: boolean; recurringType: string | null; recurringDays: string | null; dueDate: string | null; createdAt?: string },
   date: Date,
   dateStr: string,
   dayOfWeek: string
@@ -125,20 +135,18 @@ function taskAppliesToDate(
     try {
       const days = JSON.parse(task.recurringDays) as string[];
       if (!days.includes(dayOfWeek)) return false;
-      // Use ISO week number parity
-      const startOfYear = new Date(date.getFullYear(), 0, 1);
-      const weekNum = Math.ceil(((date.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-      const isEvenWeek = weekNum % 2 === 0;
-      
-      // If biweeklyStart is "next", invert the parity
-      if ((task as any).biweeklyStart === "next") {
-        return !isEvenWeek;
-      }
-      return isEvenWeek;
+      // Anchor to the week the task was created (or epoch if missing)
+      const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
+      const anchorWeek = startOfWeekMonday(anchorDate);
+      const targetWeek = startOfWeekMonday(date);
+      const weeksDiff = Math.round((targetWeek.getTime() - anchorWeek.getTime()) / (7 * 86400000));
+      // biweeklyStart='this': fire on even intervals (0,2,4,...)
+      // biweeklyStart='next': fire on odd intervals (1,3,5,...)
+      const isEvenInterval = weeksDiff % 2 === 0;
+      return (task as any).biweeklyStart === "next" ? !isEvenInterval : isEvenInterval;
     } catch { return false; }
   }
   if (rType === "monthly") {
-    // recurringDays stores day-of-month as JSON number array e.g. [1, 15]
     if (!task.recurringDays) return false;
     try {
       const days = JSON.parse(task.recurringDays) as number[];

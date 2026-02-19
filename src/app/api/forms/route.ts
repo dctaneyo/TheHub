@@ -41,12 +41,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Only PDF files allowed" }, { status: 400 });
     }
 
-    await mkdir(FORMS_DIR, { recursive: true });
-    const fileName = `${uuid()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const filePath = join(FORMS_DIR, fileName);
     const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
+    const fileBuffer = Buffer.from(bytes);
 
+    // Also write to disk as fallback (may not persist on Railway)
+    try {
+      await mkdir(FORMS_DIR, { recursive: true });
+      const fileName = `${uuid()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      await writeFile(join(FORMS_DIR, fileName), fileBuffer);
+    } catch {}
+
+    const fileName = `${uuid()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const now = new Date().toISOString();
     const form = {
       id: uuid(),
@@ -55,6 +60,7 @@ export async function POST(req: NextRequest) {
       category: category || "general",
       fileName: file.name,
       filePath: fileName,
+      fileContent: fileBuffer, // stored in DB — survives redeployments
       fileSize: file.size,
       uploadedBy: session.id,
       createdAt: now,

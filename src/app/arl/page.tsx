@@ -482,7 +482,7 @@ function calTaskApplies(task: CalTask, date: Date): boolean {
   const rType = task.recurringType || "weekly";
   if (rType === "daily") return true;
   if (rType === "weekly") { try { return (JSON.parse(task.recurringDays!) as string[]).includes(dayKey); } catch { return false; } }
-  if (rType === "biweekly") { try { const days = JSON.parse(task.recurringDays!) as string[]; if (!days.includes(dayKey)) return false; const s = new Date(date.getFullYear(), 0, 1); const w = Math.ceil(((date.getTime() - s.getTime()) / 86400000 + s.getDay() + 1) / 7); return w % 2 === 0; } catch { return false; } }
+  if (rType === "biweekly") { try { const days = JSON.parse(task.recurringDays!) as string[]; if (!days.includes(dayKey)) return false; const anchorDate = (task as any).createdAt ? new Date((task as any).createdAt) : new Date(0); const anchorDay = anchorDate.getDay(); const anchorMon = new Date(anchorDate); anchorMon.setDate(anchorDate.getDate() + (anchorDay === 0 ? -6 : 1 - anchorDay)); anchorMon.setHours(0,0,0,0); const targetDay = date.getDay(); const targetMon = new Date(date); targetMon.setDate(date.getDate() + (targetDay === 0 ? -6 : 1 - targetDay)); targetMon.setHours(0,0,0,0); const weeksDiff = Math.round((targetMon.getTime() - anchorMon.getTime()) / (7 * 86400000)); const isEven = weeksDiff % 2 === 0; return (task as any).biweeklyStart === "next" ? !isEven : isEven; } catch { return false; } }
   if (rType === "monthly") { try { return (JSON.parse(task.recurringDays!) as number[]).includes(date.getDate()); } catch { return false; } }
   return false;
 }
@@ -561,18 +561,18 @@ function ArlCalendar() {
                   const isSelected = selectedDate && isSameDay(date, selectedDate);
                   const inMonth = isSameMonth(date, currentMonth);
                   return (
-                    <button key={date.toISOString()} onClick={() => setSelectedDate(date)}
-                      className={cn("relative border-r border-slate-100 p-1.5 text-left transition-colors last:border-0",
+                    <div key={date.toISOString()} role="button" tabIndex={0}
+                      onClick={() => setSelectedDate(date)}
+                      onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
+                      className={cn("flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
                         !inMonth && "bg-slate-50/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-slate-50"
                       )}>
-                      <div className="flex items-start justify-between">
-                        <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold",
-                          isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
-                        )}>{format(date, "d")}</span>
-                      </div>
-                      <div className="mt-0.5 space-y-0.5">
+                      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                        isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
+                      )}>{format(date, "d")}</span>
+                      <div className="mt-0.5 space-y-0.5 w-full overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
@@ -586,7 +586,7 @@ function ArlCalendar() {
                         })}
                         {dayTasks.length > 2 && <p className="pl-0.5 text-[9px] text-slate-400">+{dayTasks.length - 2}</p>}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

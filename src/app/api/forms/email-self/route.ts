@@ -49,14 +49,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No email address on file for this account" }, { status: 400 });
     }
 
-    const FORMS_DIR = path.join(process.cwd(), "data", "forms");
-    const filePath = path.join(FORMS_DIR, form.filePath);
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: "File not found on server" }, { status: 404 });
+    let base64Content: string;
+    if (form.fileContent) {
+      const raw = form.fileContent as Buffer | Uint8Array | ArrayBuffer;
+      const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
+      base64Content = buf.toString("base64");
+    } else {
+      const FORMS_DIR = path.join(process.cwd(), "data", "forms");
+      const filePath = path.join(FORMS_DIR, form.filePath);
+      if (!fs.existsSync(filePath)) {
+        return NextResponse.json({ error: "File not found on server" }, { status: 404 });
+      }
+      base64Content = fs.readFileSync(filePath).toString("base64");
     }
-
-    const fileBuffer = fs.readFileSync(filePath);
-    const base64Content = fileBuffer.toString("base64");
 
     await sgMail.send({
       to: recipientEmail,

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, blob } from "drizzle-orm/sqlite-core";
 
 // Locations (restaurants)
 export const locations = sqliteTable("locations", {
@@ -128,7 +128,8 @@ export const forms = sqliteTable("forms", {
   description: text("description"),
   category: text("category").notNull().default("general"),
   fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(), // path to stored PDF
+  filePath: text("file_path").notNull(), // kept for backwards compat
+  fileContent: blob("file_content"), // PDF bytes stored in DB (survives redeployments)
   fileSize: integer("file_size").notNull(),
   uploadedBy: text("uploaded_by").notNull(), // ARL id
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),

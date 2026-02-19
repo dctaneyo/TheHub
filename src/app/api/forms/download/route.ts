@@ -19,14 +19,23 @@ export async function GET(req: NextRequest) {
     const form = db.select().from(schema.forms).where(eq(schema.forms.id, id)).get();
     if (!form) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const filePath = join(FORMS_DIR, form.filePath);
-    const bytes = await readFile(filePath);
+    let bodyBuffer: Buffer;
+    if (form.fileContent) {
+      // Prefer DB-stored blob (survives Railway redeployments)
+      const raw = form.fileContent as Buffer | Uint8Array | ArrayBuffer;
+      bodyBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
+    } else {
+      // Fall back to disk
+      const filePath = join(FORMS_DIR, form.filePath);
+      bodyBuffer = await readFile(filePath);
+    }
 
-    return new NextResponse(bytes, {
+    return new Response(bodyBuffer.toString("base64"), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${form.fileName}"`,
-        "Content-Length": String(bytes.length),
+        "Content-Length": String(bodyBuffer.length),
+        "Content-Transfer-Encoding": "base64",
       },
     });
   } catch (error) {

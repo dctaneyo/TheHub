@@ -27,6 +27,7 @@ type TargetMode = "all" | "select";
 
 export function EmergencyBroadcast() {
   const [activeMessage, setActiveMessage] = useState<EmergencyMessage | null>(null);
+  const [history, setHistory] = useState<EmergencyMessage[]>([]);
   const [draftMessage, setDraftMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -35,6 +36,7 @@ export function EmergencyBroadcast() {
   const [targetMode, setTargetMode] = useState<TargetMode>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showViewers, setShowViewers] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const fetchMessage = useCallback(async () => {
     try {
@@ -42,6 +44,7 @@ export function EmergencyBroadcast() {
       if (res.ok) {
         const data = await res.json();
         setActiveMessage(data.message || null);
+        setHistory(data.history || []);
       }
     } catch {}
     setLoading(false);
@@ -348,6 +351,62 @@ export function EmergencyBroadcast() {
           Emergency broadcasts immediately interrupt restaurant dashboards with a full-screen overlay and repeating audible alarm until the message is viewed. Use only for genuine emergencies.
         </p>
       </div>
+
+      {/* Broadcast History */}
+      {history.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex w-full items-center justify-between px-5 py-4"
+          >
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-slate-400" />
+              <span className="text-sm font-semibold text-slate-700">Broadcast History</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{history.length}</span>
+            </div>
+            {showHistory ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          </button>
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="divide-y divide-slate-100 border-t border-slate-100">
+                  {history.map((msg) => {
+                    const targets = msg.targetLocationIds ?? locations.map((l) => l.id);
+                    const viewedCount = targets.filter((id) => msg.viewedBy.includes(id)).length;
+                    return (
+                      <div key={msg.id} className="px-5 py-3 space-y-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-sm text-slate-700 whitespace-pre-wrap flex-1">{msg.message}</p>
+                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Archived</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                          <span>By {msg.sentByName}</span>
+                          <span>·</span>
+                          <span>{format(new Date(msg.createdAt), "MMM d, h:mm a")}</span>
+                          <span>·</span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-2.5 w-2.5" />
+                            {viewedCount}/{targets.length} viewed
+                          </span>
+                          {msg.targetLocationIds
+                            ? <span>{msg.targetLocationIds.length} targeted</span>
+                            : <span>All locations</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
