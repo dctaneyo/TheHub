@@ -2,8 +2,6 @@ import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import type { AuthPayload } from "./auth";
-import { db, schema } from "./db";
-import { and, eq } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
 
@@ -102,38 +100,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
-    // ── Client heartbeat — updates lastSeen in DB + notifies ARLs, no HTTP needed ──
+    // ── Client heartbeat — purely broadcasts presence to ARLs via socket ──
+    // DB lastSeen update is handled by the HTTP heartbeat route
     socket.on("client:heartbeat", () => {
       if (!user) return;
-      try {
-        const now = new Date().toISOString();
-        // Update the most recent online session for this user
-        const session = db
-          .select({ id: schema.sessions.id })
-          .from(schema.sessions)
-          .where(
-            and(
-              eq(schema.sessions.userId, user.id),
-              eq(schema.sessions.userType, user.userType),
-              eq(schema.sessions.isOnline, true)
-            )
-          )
-          .get();
-        if (session) {
-          db.update(schema.sessions)
-            .set({ isOnline: true, lastSeen: now })
-            .where(eq(schema.sessions.id, session.id))
-            .run();
-        }
-        // Emit presence:update to all ARLs
-        io!.to("arls").emit("presence:update", {
-          userId: user.id,
-          userType: user.userType,
-          name: user.name,
-          storeNumber: user.userType === "location" ? user.storeNumber : undefined,
-          isOnline: true,
-        });
-      } catch {}
+      io!.to("arls").emit("presence:update", {
+        userId: user.id,
+        userType: user.userType,
+        name: user.name,
+        storeNumber: user.userType === "location" ? user.storeNumber : undefined,
+        isOnline: true,
+      });
     });
 
     // ── Activity tracking (which page/section a user is on) ──

@@ -46,6 +46,11 @@ export async function POST() {
       return NextResponse.json({ success: false, force: "logout" });
     }
 
+    db.update(schema.sessions)
+      .set({ isOnline: true, lastSeen: new Date().toISOString() })
+      .where(eq(schema.sessions.id, existing.id))
+      .run();
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Heartbeat error:", error);
