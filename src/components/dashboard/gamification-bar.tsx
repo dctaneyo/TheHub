@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket-context";
 
 interface StreakData {
   current: number;
@@ -40,12 +41,29 @@ interface GamificationData {
 export function GamificationBar() {
   const [data, setData] = useState<GamificationData | null>(null);
   const [showBadges, setShowBadges] = useState(false);
+  const { socket } = useSocket();
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch("/api/gamification")
       .then(async (r) => { if (r.ok) setData(await r.json()); })
       .catch(() => {});
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Live refresh when tasks are completed or leaderboard changes
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchData();
+    socket.on("task:completed", handler);
+    socket.on("task:updated", handler);
+    socket.on("leaderboard:updated", handler);
+    return () => {
+      socket.off("task:completed", handler);
+      socket.off("task:updated", handler);
+      socket.off("leaderboard:updated", handler);
+    };
+  }, [socket, fetchData]);
 
   if (!data) return null;
 

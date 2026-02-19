@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LogOut,
   MessageCircle,
@@ -24,6 +24,9 @@ import {
   BellOff,
   Trophy,
   Monitor,
+  Zap,
+  CheckCircle2,
+  Wifi,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -73,6 +76,13 @@ const navItems = [
   { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
 ];
 
+interface TaskToast {
+  id: string;
+  locationName: string;
+  taskTitle: string;
+  pointsEarned: number;
+}
+
 export default function ArlPage() {
   const { user, logout } = useAuth();
   const device = useDeviceType();
@@ -81,8 +91,33 @@ export default function ArlPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null);
+  const [toasts, setToasts] = useState<TaskToast[]>([]);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const locationNamesRef = useRef<Map<string, string>>(new Map());
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
+
+  // Play a cheerful chime for task completions
+  const playTaskChime = useCallback(() => {
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = ctx;
+      const t = ctx.currentTime;
+      [[523, 0, 0.1], [659, 0.08, 0.1], [784, 0.16, 0.12], [1047, 0.26, 0.2]].forEach(([freq, delay, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
+        osc.start(t + delay);
+        osc.stop(t + delay + dur);
+      });
+    } catch {}
+  }, []);
 
   // Heartbeat to keep ARL session alive (every 2 minutes)
   useEffect(() => {
@@ -93,6 +128,56 @@ export default function ArlPage() {
   }, []);
 
   const { socket } = useSocket();
+
+  // Fetch initial online count + cache location names
+  useEffect(() => {
+    fetch("/api/locations").then(async (r) => {
+      if (r.ok) {
+        const d = await r.json();
+        const locs = d.locations || [];
+        const arls = d.arls || [];
+        const online = locs.filter((l: any) => l.isOnline).length + arls.filter((a: any) => a.isOnline).length;
+        setOnlineCount(online);
+        const map = new Map<string, string>();
+        for (const l of locs) map.set(l.id, l.name);
+        for (const a of arls) map.set(a.id, a.name);
+        locationNamesRef.current = map;
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Listen for task completions → toast + chime
+  useEffect(() => {
+    if (!socket) return;
+    const handleTaskCompleted = (data: { locationId: string; taskId: string; taskTitle: string; pointsEarned: number }) => {
+      const locName = locationNamesRef.current.get(data.locationId) || "A location";
+      const toast: TaskToast = {
+        id: `${data.taskId}-${Date.now()}`,
+        locationName: locName,
+        taskTitle: data.taskTitle,
+        pointsEarned: data.pointsEarned,
+      };
+      setToasts((prev) => [...prev, toast]);
+      playTaskChime();
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+      }, 5000);
+    };
+    socket.on("task:completed", handleTaskCompleted);
+    return () => { socket.off("task:completed", handleTaskCompleted); };
+  }, [socket, playTaskChime]);
+
+  // Track online count via presence updates
+  useEffect(() => {
+    if (!socket) return;
+    const handlePresence = (data: { isOnline: boolean; userId: string; name: string }) => {
+      if (data.name) locationNamesRef.current.set(data.userId, data.name);
+      setOnlineCount((prev) => data.isOnline ? prev + 1 : Math.max(0, prev - 1));
+    };
+    socket.on("presence:update", handlePresence);
+    return () => { socket.off("presence:update", handlePresence); };
+  }, [socket]);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -266,6 +351,7 @@ export default function ArlPage() {
           {navItems.map((item) => {
             const isActive = activeView === item.id;
             const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
+            const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;
             return (
               <button
                 key={item.id}
@@ -289,6 +375,14 @@ export default function ArlPage() {
                     isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
                   )}>
                     {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
+                {onlineBadge > 0 && (
+                  <span className={cn(
+                    "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                    isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {onlineBadge}
                   </span>
                 )}
               </button>
@@ -368,6 +462,34 @@ export default function ArlPage() {
           )}
           {activeView === "remote-login" && <RemoteLogin />}
         </main>
+      </div>
+
+      {/* Task completion toasts */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 80, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 80, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-lg"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{toast.locationName}</p>
+                <p className="text-xs text-slate-500 truncate">Completed: {toast.taskTitle}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-1">
+                <Zap className="h-3 w-3 text-amber-500" />
+                <span className="text-xs font-bold text-amber-700">+{toast.pointsEarned}</span>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastTaskCompleted } from "@/lib/socket-emit";
+import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Broadcast instant update via WebSocket
     broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints);
+    broadcastLeaderboardUpdate(session.id);
 
     return NextResponse.json({
       success: true,

@@ -99,6 +99,12 @@ export function broadcastMessageRead(conversationId: string, readerId: string) {
   emitToConversation(conversationId, "message:read", { conversationId, readerId });
 }
 
+// ── Leaderboard / gamification events ──
+export function broadcastLeaderboardUpdate(locationId: string) {
+  if (!isAvailable()) return;
+  emitToAll("leaderboard:updated", { locationId });
+}
+
 // ── Force session management ──
 export function broadcastForceLogout(userId: string, userType: string) {
   if (!isAvailable()) return;

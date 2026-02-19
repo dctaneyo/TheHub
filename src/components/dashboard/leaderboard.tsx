@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Trophy, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket-context";
 
 interface LeaderboardEntry {
   locationId: string;
@@ -149,13 +150,28 @@ interface LeaderboardProps {
 export function Leaderboard({ currentLocationId, compact = false }: LeaderboardProps) {
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { socket } = useSocket();
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch("/api/leaderboard")
       .then(async (r) => { if (r.ok) setData(await r.json()); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Live refresh when leaderboard changes
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchData();
+    socket.on("leaderboard:updated", handler);
+    socket.on("task:completed", handler);
+    return () => {
+      socket.off("leaderboard:updated", handler);
+      socket.off("task:completed", handler);
+    };
+  }, [socket, fetchData]);
 
   if (loading) {
     return (
