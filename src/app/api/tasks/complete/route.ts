@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId, notes } = await req.json();
+    const { taskId, notes, completedDate: requestedDate } = await req.json();
 
     const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).get();
     if (!task) {
@@ -19,13 +19,19 @@ export async function POST(req: NextRequest) {
     }
 
     const todayStr = new Date().toISOString().split("T")[0];
+    const targetDate = requestedDate || todayStr;
+
+    // If completing for a future date, check allowEarlyComplete
+    if (targetDate > todayStr && !task.allowEarlyComplete) {
+      return NextResponse.json({ error: "This task cannot be completed early" }, { status: 403 });
+    }
 
     const completion = {
       id: uuid(),
       taskId,
       locationId: session.id,
       completedAt: new Date().toISOString(),
-      completedDate: todayStr,
+      completedDate: targetDate,
       notes: notes || null,
       pointsEarned: task.points,
     };

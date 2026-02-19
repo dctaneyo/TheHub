@@ -19,9 +19,10 @@ export async function GET() {
 
     const allTasks = db.select().from(schema.tasks).all();
 
-    // Filter tasks that apply today (exclude hidden)
+    // Filter tasks that apply today (exclude hidden and showInToday=false)
     const todayTasks = allTasks.filter((task) => {
       if (task.isHidden) return false;
+      if (!task.showInToday) return false;
       if (locationId && task.locationId && task.locationId !== locationId) return false;
       return taskAppliesToDate(task, today, todayStr, dayOfWeek);
     });

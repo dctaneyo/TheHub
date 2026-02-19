@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format, isSameDay } from "date-fns";
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UpcomingTask {
@@ -11,10 +11,13 @@ interface UpcomingTask {
   dueTime: string;
   type: string;
   priority: string;
+  allowEarlyComplete?: boolean;
+  isCompleted?: boolean;
 }
 
 interface DayData {
   date: Date;
+  dateStr: string;
   dayName: string;
   dayNum: string;
   month: string;
@@ -23,6 +26,7 @@ interface DayData {
 
 interface MiniCalendarProps {
   upcomingTasks?: Record<string, UpcomingTask[]>; // keyed by YYYY-MM-DD
+  onEarlyComplete?: (taskId: string, dateStr: string) => void;
 }
 
 function formatTime12(time: string): string {
@@ -39,7 +43,8 @@ const priorityDots: Record<string, string> = {
   low: "bg-slate-400",
 };
 
-export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
+export function MiniCalendar({ upcomingTasks = {}, onEarlyComplete }: MiniCalendarProps) {
+  const [completing, setCompleting] = useState<string | null>(null);
   const days: DayData[] = useMemo(() => {
     const today = new Date();
     return Array.from({ length: 7 }, (_, i) => {
@@ -47,6 +52,7 @@ export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
       const dateStr = format(date, "yyyy-MM-dd");
       return {
         date,
+        dateStr,
         dayName: format(date, "EEE"),
         dayNum: format(date, "d"),
         month: format(date, "MMM"),
@@ -54,6 +60,16 @@ export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
       };
     });
   }, [upcomingTasks]);
+
+  const handleEarlyComplete = async (taskId: string, dateStr: string) => {
+    if (completing) return;
+    setCompleting(taskId + dateStr);
+    try {
+      if (onEarlyComplete) onEarlyComplete(taskId, dateStr);
+    } finally {
+      setCompleting(null);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -92,13 +108,27 @@ export function MiniCalendar({ upcomingTasks = {} }: MiniCalendarProps) {
                   <div className="space-y-1">
                     {day.tasks.slice(0, 3).map((task) => (
                       <div key={task.id} className="flex items-center gap-1.5">
-                        <div
-                          className={cn(
-                            "h-1.5 w-1.5 shrink-0 rounded-full",
-                            priorityDots[task.priority] || priorityDots.normal
-                          )}
-                        />
-                        <span className="truncate text-xs font-medium text-slate-700">
+                        {task.allowEarlyComplete ? (
+                          <button
+                            onClick={() => !task.isCompleted && handleEarlyComplete(task.id, day.dateStr)}
+                            className="shrink-0"
+                            title={task.isCompleted ? "Completed early" : "Complete early"}
+                          >
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <Circle className={cn("h-3.5 w-3.5 transition-colors", completing === task.id + day.dateStr ? "text-emerald-400 animate-pulse" : "text-slate-300 hover:text-emerald-400")} />
+                            )}
+                          </button>
+                        ) : (
+                          <div
+                            className={cn(
+                              "h-1.5 w-1.5 shrink-0 rounded-full",
+                              priorityDots[task.priority] || priorityDots.normal
+                            )}
+                          />
+                        )}
+                        <span className={cn("truncate text-xs font-medium", task.isCompleted ? "text-slate-400 line-through" : "text-slate-700")}>
                           {task.title}
                         </span>
                         <span className="shrink-0 text-[10px] text-slate-400">

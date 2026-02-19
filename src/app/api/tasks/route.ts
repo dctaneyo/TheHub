@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
       biweeklyStart,
       locationId,
       points = 10,
+      allowEarlyComplete = false,
+      showInToday = true,
+      showIn7Day = true,
+      showInCalendar = true,
     } = body;
 
     if (!title || !dueTime) {
@@ -69,6 +73,10 @@ export async function POST(req: NextRequest) {
       biweeklyStart: biweeklyStart || null,
       locationId: resolvedLocationId,
       isHidden: false,
+      allowEarlyComplete,
+      showInToday,
+      showIn7Day,
+      showInCalendar,
       createdBy: session.id,
       createdByType: session.userType,
       points: session.userType === "location" ? 0 : points,
@@ -117,6 +125,10 @@ export async function PUT(req: NextRequest) {
     if (updates.recurringDays !== undefined) updateData.recurringDays = typeof updates.recurringDays === "string" ? updates.recurringDays : JSON.stringify(updates.recurringDays);
     if (updates.locationId !== undefined) updateData.locationId = updates.locationId;
     if (updates.isHidden !== undefined) updateData.isHidden = updates.isHidden;
+    if (updates.allowEarlyComplete !== undefined) updateData.allowEarlyComplete = updates.allowEarlyComplete;
+    if (updates.showInToday !== undefined) updateData.showInToday = updates.showInToday;
+    if (updates.showIn7Day !== undefined) updateData.showIn7Day = updates.showIn7Day;
+    if (updates.showInCalendar !== undefined) updateData.showInCalendar = updates.showInCalendar;
     if (updates.points !== undefined) updateData.points = updates.points;
 
     db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();

@@ -59,6 +59,10 @@ export const tasks = sqliteTable("tasks", {
   createdBy: text("created_by").notNull(), // ARL id or location id who created it
   createdByType: text("created_by_type").notNull().default("arl"), // 'arl' | 'location'
   isHidden: integer("is_hidden", { mode: "boolean" }).notNull().default(false), // hide from dashboard/calendar
+  allowEarlyComplete: integer("allow_early_complete", { mode: "boolean" }).notNull().default(false), // can be completed before due date
+  showInToday: integer("show_in_today", { mode: "boolean" }).notNull().default(true), // show in Today's Tasks timeline
+  showIn7Day: integer("show_in_7day", { mode: "boolean" }).notNull().default(true), // show in 7-day upcoming view
+  showInCalendar: integer("show_in_calendar", { mode: "boolean" }).notNull().default(true), // show in full calendar
   points: integer("points").notNull().default(10), // gamification points
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),

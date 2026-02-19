@@ -77,6 +77,14 @@ export default function ArlPage() {
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
 
+  // Heartbeat to keep ARL session alive (every 2 minutes)
+  useEffect(() => {
+    const ping = () => fetch("/api/session/heartbeat", { method: "POST" }).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchUnread = async () => {
       try {
@@ -510,7 +518,7 @@ function ArlCalendar() {
     : tasks.filter((t) => t.locationId === null || t.locationId === filterLocationId);
 
   const getTasksForDate = (date: Date) =>
-    filteredTasks.filter((t) => calTaskApplies(t, date)).sort((a, b) => a.dueTime.localeCompare(b.dueTime));
+    filteredTasks.filter((t) => (t as any).showInCalendar !== false && calTaskApplies(t, date)).sort((a, b) => a.dueTime.localeCompare(b.dueTime));
 
   const monthStart = startOfMonth(currentMonth);
   const gridStart = startOfWeek(monthStart);

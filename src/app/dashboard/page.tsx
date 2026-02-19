@@ -97,6 +97,25 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleEarlyComplete = async (taskId: string, dateStr: string) => {
+    try {
+      const res = await fetch("/api/tasks/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, completedDate: dateStr }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setConfettiPoints(result.pointsEarned || 0);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2800);
+        await fetchTasks();
+      }
+    } catch (err) {
+      console.error("Failed to early-complete task:", err);
+    }
+  };
+
   const handleUncompleteTask = async (taskId: string) => {
     try {
       await fetch("/api/tasks/uncomplete", {
@@ -252,7 +271,7 @@ export default function DashboardPage() {
 
         {/* Right Column - Mini Calendar (hidden on small screens) */}
         <div className="hidden lg:block w-[300px] shrink-0 border-l border-slate-200 bg-white p-4">
-          <MiniCalendar upcomingTasks={upcomingTasks} />
+          <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} />
         </div>
       </div>
 
@@ -368,7 +387,7 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
   };
 
   const getTasksForDate = (date: Date) =>
-    tasks.filter((t) => (!t.locationId || t.locationId === locationId) && calModalTaskApplies(t, date))
+    tasks.filter((t) => (!t.locationId || t.locationId === locationId) && (t as any).showInCalendar !== false && calModalTaskApplies(t, date))
       .sort((a, b) => a.dueTime.localeCompare(b.dueTime));
 
   const monthStart = startOfMonth(currentMonth);

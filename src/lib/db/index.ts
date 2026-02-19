@@ -68,6 +68,10 @@ function runMigrations() {
   } catch {}
   try { s.exec(`ALTER TABLE tasks ADD COLUMN biweekly_start TEXT`); } catch {}
   try { s.exec(`ALTER TABLE forms ADD COLUMN file_content BLOB`); } catch {}
+  try { s.exec(`ALTER TABLE tasks ADD COLUMN allow_early_complete INTEGER NOT NULL DEFAULT 0`); } catch {}
+  try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_today INTEGER NOT NULL DEFAULT 1`); } catch {}
+  try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_7day INTEGER NOT NULL DEFAULT 1`); } catch {}
+  try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_calendar INTEGER NOT NULL DEFAULT 1`); } catch {}
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

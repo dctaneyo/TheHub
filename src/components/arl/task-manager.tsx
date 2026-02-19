@@ -35,6 +35,10 @@ interface Task {
   recurringDays: string | null;
   locationId: string | null;
   isHidden: boolean;
+  allowEarlyComplete: boolean;
+  showInToday: boolean;
+  showIn7Day: boolean;
+  showInCalendar: boolean;
   points: number;
   createdAt: string;
 }
@@ -108,6 +112,10 @@ export function TaskManager() {
   const [locationId, setLocationId] = useState("");
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [points, setPoints] = useState(10);
+  const [allowEarlyComplete, setAllowEarlyComplete] = useState(false);
+  const [showInToday, setShowInToday] = useState(true);
+  const [showIn7Day, setShowIn7Day] = useState(true);
+  const [showInCalendar, setShowInCalendar] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
@@ -150,6 +158,10 @@ export function TaskManager() {
     setLocationId("");
     setSelectedLocationIds([]);
     setPoints(10);
+    setAllowEarlyComplete(false);
+    setShowInToday(true);
+    setShowIn7Day(true);
+    setShowInCalendar(true);
     setEditingTask(null);
   };
 
@@ -185,6 +197,10 @@ export function TaskManager() {
     }
     setSelectedLocationIds([]);
     setPoints(task.points);
+    setAllowEarlyComplete(task.allowEarlyComplete ?? false);
+    setShowInToday(task.showInToday ?? true);
+    setShowIn7Day(task.showIn7Day ?? true);
+    setShowInCalendar(task.showInCalendar ?? true);
     setShowForm(true);
   };
 
@@ -211,6 +227,10 @@ export function TaskManager() {
         : null,
       biweeklyStart: isRecurring && recurringType === "biweekly" ? biweeklyStart : null,
       points,
+      allowEarlyComplete,
+      showInToday,
+      showIn7Day,
+      showInCalendar,
     };
 
     // Build list of locationIds to save individually
@@ -361,6 +381,16 @@ export function TaskManager() {
                       <Badge variant="outline" className="gap-1 text-[10px]">
                         <Repeat className="h-2.5 w-2.5" />
                         Recurring
+                      </Badge>
+                    )}
+                    {task.allowEarlyComplete && (
+                      <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700">
+                        Early OK
+                      </Badge>
+                    )}
+                    {(!task.showInToday || !task.showIn7Day || !task.showInCalendar) && (
+                      <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
+                        {[!task.showInToday && "Today", !task.showIn7Day && "7-Day", !task.showInCalendar && "Cal"].filter(Boolean).join("/")} hidden
                       </Badge>
                     )}
                   </div>
@@ -732,6 +762,51 @@ export function TaskManager() {
                       Will create {selectedLocationIds.length} separate task{selectedLocationIds.length > 1 ? "s" : ""}, one per location.
                     </p>
                   )}
+                </div>
+
+                {/* Options */}
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Options</p>
+
+                  <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allowEarlyComplete}
+                      onChange={(e) => setAllowEarlyComplete(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="font-medium">Allow early completion</span>
+                    <span className="text-[10px] text-slate-400">(can be completed before due date)</span>
+                  </label>
+
+                  <div>
+                    <p className="mb-1.5 text-[11px] text-slate-400">Show this task in:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
+                        { key: "showIn7Day", label: "7-Day View", value: showIn7Day, set: setShowIn7Day },
+                        { key: "showInCalendar", label: "Calendar", value: showInCalendar, set: setShowInCalendar },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.key}
+                          onClick={() => opt.set(!opt.value)}
+                          className={cn(
+                            "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                            opt.value
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-white text-slate-400"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {(!showInToday || !showIn7Day || !showInCalendar) && (
+                      <p className="mt-1 text-[10px] text-amber-600">
+                        Hidden from: {[!showInToday && "Today's Tasks", !showIn7Day && "7-Day View", !showInCalendar && "Calendar"].filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Submit */}

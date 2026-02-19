@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { addDays, format } from "date-fns";
 
 export async function GET() {
@@ -12,9 +13,12 @@ export async function GET() {
 
     const locationId = session.userType === "location" ? session.id : null;
     const allTasks = db.select().from(schema.tasks).all();
+    const allCompletions = locationId
+      ? db.select().from(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, locationId)).all()
+      : [];
     const today = new Date();
 
-    const upcoming: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>> = {};
+    const upcoming: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete: boolean; isCompleted: boolean }>> = {};
 
     for (let i = 1; i <= 7; i++) {
       const date = addDays(today, i);
@@ -23,6 +27,7 @@ export async function GET() {
 
       const dayTasks = allTasks.filter((task) => {
         if (task.isHidden) return false;
+        if (!task.showIn7Day) return false;
         if (locationId && task.locationId && task.locationId !== locationId) return false;
         return taskAppliesToDate(task, date, dateStr, dayOfWeek);
       });
@@ -36,6 +41,8 @@ export async function GET() {
             dueTime: t.dueTime,
             type: t.type,
             priority: t.priority,
+            allowEarlyComplete: t.allowEarlyComplete,
+            isCompleted: allCompletions.some((c) => c.taskId === t.id && c.completedDate === dateStr),
           }));
       }
     }
