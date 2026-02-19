@@ -126,6 +126,27 @@ export default function ArlPage() {
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
 
+  // Play alert chime for new messages (fires from any view)
+  const playMessageChime = useCallback(() => {
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = ctx;
+      const t = ctx.currentTime;
+      [[880, 0, 0.18], [1100, 0.22, 0.18], [880, 0.44, 0.18], [1100, 0.66, 0.18], [1320, 0.88, 0.25]].forEach(([freq, delay, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "square";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.5, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
+        osc.start(t + delay);
+        osc.stop(t + delay + dur);
+      });
+    } catch {}
+  }, []);
+
   // Play a cheerful chime for task completions
   const playTaskChime = useCallback(() => {
     try {
@@ -243,19 +264,27 @@ export default function ArlPage() {
     fetchUnread();
   }, [fetchUnread]);
 
-  // Instant unread count update via WebSocket
+  // Instant unread count update via WebSocket + chime when not on messages view
+  const activeViewRef = useRef(activeView);
+  useEffect(() => { activeViewRef.current = activeView; }, [activeView]);
+
   useEffect(() => {
     if (!socket) return;
+    const handleNew = () => {
+      fetchUnread();
+      // Only chime here when Messaging component isn't mounted (it handles its own chime)
+      if (activeViewRef.current !== "messages") playMessageChime();
+    };
     const handler = () => fetchUnread();
-    socket.on("message:new", handler);
+    socket.on("message:new", handleNew);
     socket.on("conversation:updated", handler);
     socket.on("message:read", handler);
     return () => {
-      socket.off("message:new", handler);
+      socket.off("message:new", handleNew);
       socket.off("conversation:updated", handler);
       socket.off("message:read", handler);
     };
-  }, [socket, fetchUnread]);
+  }, [socket, fetchUnread, playMessageChime]);
 
   // Request notification permission and subscribe to push
   const requestNotificationPermission = async () => {
