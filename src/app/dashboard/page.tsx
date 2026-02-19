@@ -250,17 +250,14 @@ export default function DashboardPage() {
 
       {/* Main Content - 3 column layout, no scrolling */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Column - Completed/Missed + Points + Leaderboard (hidden on small screens) */}
-        <div className="hidden md:flex md:flex-col w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 overflow-hidden">
+        {/* Left Column - Completed/Missed + Points (hidden on small screens) */}
+        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4">
           <CompletedMissed
             completedToday={completedTasks}
             missedYesterday={data?.missedYesterday || []}
             pointsToday={data?.pointsToday || 0}
             totalToday={data?.totalToday || 0}
           />
-          <div className="mt-4 border-t border-slate-100 pt-4 flex-1 overflow-y-auto min-h-0">
-            <Leaderboard currentLocationId={user?.id} compact />
-          </div>
         </div>
 
         {/* Center Column - Main Timeline */}
@@ -275,9 +272,9 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right Column - Mini Calendar (hidden on small screens) */}
-        <div className="hidden lg:block w-[300px] shrink-0 border-l border-slate-200 bg-white p-4">
-          <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} />
+        {/* Right Column - Mini Calendar + Leaderboard tabs (hidden on small screens) */}
+        <div className="hidden lg:flex lg:flex-col w-[300px] shrink-0 border-l border-slate-200 bg-white overflow-hidden">
+          <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
         </div>
       </div>
 
@@ -300,6 +297,43 @@ export default function DashboardPage() {
         unreadCount={chatUnread}
         onUnreadChange={setChatUnread}
       />
+    </div>
+  );
+}
+
+function RightPanel({
+  upcomingTasks,
+  onEarlyComplete,
+  currentLocationId,
+}: {
+  upcomingTasks: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete?: boolean; isCompleted?: boolean }>>;
+  onEarlyComplete: (taskId: string, dateStr: string) => void;
+  currentLocationId?: string;
+}) {
+  const [tab, setTab] = useState<"calendar" | "leaderboard">("calendar");
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex shrink-0 border-b border-slate-100">
+        <button
+          onClick={() => setTab("calendar")}
+          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "calendar" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-slate-400 hover:text-slate-600"}`}
+        >
+          Upcoming
+        </button>
+        <button
+          onClick={() => setTab("leaderboard")}
+          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "leaderboard" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-slate-400 hover:text-slate-600"}`}
+        >
+          🏆 Leaderboard
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
+        {tab === "calendar" ? (
+          <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
+        ) : (
+          <Leaderboard currentLocationId={currentLocationId} compact />
+        )}
+      </div>
     </div>
   );
 }
@@ -474,11 +508,11 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
                       <div key={date.toISOString()} role="button" tabIndex={0} onClick={() => setSelectedDate(date)} onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
                         className={`flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 cursor-pointer ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
                         <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-slate-700":"text-slate-300"}`}>{format(date,"d")}</span>
-                        <div className="mt-0.5 space-y-0.5">
+                        <div className="mt-0.5 w-full space-y-0.5">
                           {dayTasks.slice(0,2).map((task) => {
                             const Icon = calModalTypeIcons[task.type]||ClipboardList;
                             return (
-                              <div key={task.id} className={`flex items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium truncate ${task.priority==="urgent"?"bg-red-100 text-red-700":task.priority==="high"?"bg-orange-100 text-orange-700":task.type==="cleaning"?"bg-purple-100 text-purple-700":task.type==="reminder"?"bg-sky-100 text-sky-700":"bg-blue-100 text-blue-700"}`}>
+                              <div key={task.id} className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium ${task.priority==="urgent"?"bg-red-100 text-red-700":task.priority==="high"?"bg-orange-100 text-orange-700":task.type==="cleaning"?"bg-purple-100 text-purple-700":task.type==="reminder"?"bg-sky-100 text-sky-700":"bg-blue-100 text-blue-700"}`}>
                                 <Icon className="h-2 w-2 shrink-0" /><span className="truncate">{task.title}</span>
                               </div>
                             );

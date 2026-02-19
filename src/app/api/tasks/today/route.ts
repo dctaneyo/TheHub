@@ -122,6 +122,11 @@ function taskAppliesToDate(
   dateStr: string,
   dayOfWeek: string
 ): boolean {
+  // Never show a recurring task on a date before it was created
+  if (task.isRecurring && task.createdAt) {
+    const createdDateStr = task.createdAt.split("T")[0];
+    if (dateStr < createdDateStr) return false;
+  }
   if (!task.isRecurring) {
     return task.dueDate === dateStr;
   }

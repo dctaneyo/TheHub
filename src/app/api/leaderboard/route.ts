@@ -22,6 +22,10 @@ function taskAppliesToDate(
 ): boolean {
   if (task.isHidden) return false;
   if (!task.showInToday) return false;
+  if (task.isRecurring && task.createdAt) {
+    const createdDateStr = (task.createdAt as string).split("T")[0];
+    if (dateStr < createdDateStr) return false;
+  }
   if (!task.isRecurring) return task.dueDate === dateStr;
   const rType = task.recurringType || "weekly";
   if (rType === "daily") return true;

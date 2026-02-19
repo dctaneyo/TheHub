@@ -22,6 +22,7 @@ import {
   Radio,
   Bell,
   BellOff,
+  Trophy,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -36,7 +37,7 @@ import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { cn } from "@/lib/utils";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard";
 
 function useDeviceType(): DeviceType {
   const [device, setDevice] = useState<DeviceType>("desktop");
@@ -61,6 +62,7 @@ const navItems = [
   { id: "messages" as const, label: "Messages", icon: MessageCircle },
   { id: "tasks" as const, label: "Tasks & Reminders", icon: ClipboardList },
   { id: "calendar" as const, label: "Calendar", icon: CalendarDays },
+  { id: "leaderboard" as const, label: "Leaderboard", icon: Trophy },
   { id: "locations" as const, label: "Locations", icon: Store },
   { id: "forms" as const, label: "Forms", icon: FileText },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
@@ -340,6 +342,11 @@ export default function ArlPage() {
           {activeView === "forms" && <FormsRepository />}
           {activeView === "emergency" && <EmergencyBroadcast />}
           {activeView === "users" && <UserManagement />}
+          {activeView === "leaderboard" && (
+            <div className="max-w-3xl mx-auto">
+              <Leaderboard />
+            </div>
+          )}
         </main>
       </div>
     </div>
@@ -349,27 +356,21 @@ export default function ArlPage() {
 function OverviewContent() {
   const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
   const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
-  const [taskCount, setTaskCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [formCount, setFormCount] = useState(0);
 
   useEffect(() => {
     const load = () => Promise.all([
       fetch("/api/locations").then((r) => r.ok ? r.json() : { locations: [], arls: [] }),
-      fetch("/api/tasks").then((r) => r.ok ? r.json() : { tasks: [] }),
       fetch("/api/messages").then((r) => r.ok ? r.json() : { conversations: [] }),
-      fetch("/api/forms").then((r) => r.ok ? r.json() : { forms: [] }),
-    ]).then(([locData, taskData, msgData, formData]) => {
+    ]).then(([locData, msgData]) => {
       setLocations(locData.locations || []);
       setArls(locData.arls || []);
-      setTaskCount((taskData.tasks || []).length);
       setUnreadCount((msgData.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0));
-      setFormCount((formData.forms || []).length);
     });
     load();
     const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [])
 
   const onlineLocations = locations.filter((l) => l.isOnline);
   const onlineArls = arls.filter((a) => a.isOnline);
@@ -377,9 +378,7 @@ function OverviewContent() {
   const stats = [
     { label: "Locations Online", value: `${onlineLocations.length}/${locations.length}`, color: "bg-emerald-50 text-emerald-700", icon: Store },
     { label: "ARLs Online", value: `${onlineArls.length}/${arls.length}`, color: "bg-sky-50 text-sky-700", icon: Users },
-    { label: "Tasks Today", value: String(taskCount), color: "bg-blue-50 text-blue-700", icon: ClipboardList },
     { label: "Unread Messages", value: String(unreadCount), color: "bg-purple-50 text-purple-700", icon: MessageCircle },
-    { label: "Forms Available", value: String(formCount), color: "bg-amber-50 text-amber-700", icon: FileText },
   ];
 
   return (
@@ -471,10 +470,6 @@ function OverviewContent() {
         )}
       </div>
 
-      {/* Weekly Leaderboard */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <Leaderboard />
-      </div>
     </div>
   );
 }
