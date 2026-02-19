@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface Conversation {
   id: string;
@@ -212,21 +213,64 @@ export function Messaging() {
     }
   }, [fetchConversations]);
 
+  // WebSocket for instant updates
+  const { socket, joinConversation, leaveConversation, startTyping, stopTyping } = useSocket();
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
+  const typingTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
     fetchConversations();
     fetchMemberInfo();
-    const interval = setInterval(fetchConversations, 8000);
-    return () => clearInterval(interval);
   }, [fetchConversations, fetchMemberInfo]);
 
+  // Socket listeners
+  useEffect(() => {
+    if (!socket) return;
+    const handleConvoUpdate = () => fetchConversations();
+    const handleNewMessage = (data: { conversationId: string }) => {
+      fetchConversations();
+      if (activeConvo && data.conversationId === activeConvo.id) {
+        fetchMessages(activeConvo.id);
+      }
+    };
+    const handleMessageRead = () => fetchConversations();
+    const handleTypingStart = (data: { conversationId: string; userId: string; userName: string }) => {
+      if (activeConvo && data.conversationId === activeConvo.id) {
+        setTypingUsers((prev) => new Map(prev).set(data.userId, data.userName));
+        const existing = typingTimeoutsRef.current.get(data.userId);
+        if (existing) clearTimeout(existing);
+        typingTimeoutsRef.current.set(data.userId, setTimeout(() => {
+          setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
+        }, 3000));
+      }
+    };
+    const handleTypingStop = (data: { userId: string }) => {
+      setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
+    };
+    socket.on("conversation:updated", handleConvoUpdate);
+    socket.on("message:new", handleNewMessage);
+    socket.on("message:read", handleMessageRead);
+    socket.on("typing:start", handleTypingStart);
+    socket.on("typing:stop", handleTypingStop);
+    return () => {
+      socket.off("conversation:updated", handleConvoUpdate);
+      socket.off("message:new", handleNewMessage);
+      socket.off("message:read", handleMessageRead);
+      socket.off("typing:start", handleTypingStart);
+      socket.off("typing:stop", handleTypingStop);
+    };
+  }, [socket, fetchConversations, fetchMessages, activeConvo]);
+
+  // Join/leave conversation rooms
   useEffect(() => {
     if (activeConvo) {
       setShowAllMessages(false);
       fetchMessages(activeConvo.id);
-      const interval = setInterval(() => fetchMessages(activeConvo.id), 5000);
-      return () => clearInterval(interval);
+      joinConversation(activeConvo.id);
+      setTypingUsers(new Map());
+      return () => { leaveConversation(activeConvo.id); };
     }
-  }, [activeConvo, fetchMessages]);
+  }, [activeConvo, fetchMessages, joinConversation, leaveConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -671,14 +715,35 @@ export function Messaging() {
         </div>
           );
         })()}
+        {(() => {
+          const typingNames = Array.from(typingUsers.values());
+          if (typingNames.length === 0) return null;
+          return (
+            <div className="px-2 pb-1">
+              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
+                <div className="flex gap-0.5">
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
+                </span>
+              </motion.div>
+            </div>
+          );
+        })()}
       </ScrollArea>
 
       <div className="border-t border-slate-200 p-3">
         <div className="flex gap-2">
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              if (activeConvo) startTyping(activeConvo.id);
+            }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { if (activeConvo) stopTyping(activeConvo.id); handleSend(); } }}
             placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
             className="flex-1 rounded-xl"
           />

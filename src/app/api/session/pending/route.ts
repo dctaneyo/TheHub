@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and, gt } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastPendingSession } from "@/lib/socket-emit";
 
 function genCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -44,6 +45,15 @@ export async function POST(req: NextRequest) {
     };
 
     db.insert(schema.pendingSessions).values(pending).run();
+
+    // Notify ARLs instantly
+    broadcastPendingSession({
+      id: pending.id,
+      code: pending.code,
+      userAgent: ua,
+      createdAt: pending.createdAt,
+      expiresAt,
+    });
 
     return NextResponse.json({ id: pending.id, code: pending.code, expiresAt });
   } catch (error) {

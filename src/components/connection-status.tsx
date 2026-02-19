@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wifi, WifiOff, RefreshCw, Hash, Monitor, Smartphone, Tablet, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface SessionInfo {
   id: string;
@@ -75,11 +76,25 @@ export function ConnectionStatus() {
     }, 5000);
   };
 
+  const { socket, isConnected: socketConnected } = useSocket();
+
+  // Use WebSocket connection state as primary online indicator
+  useEffect(() => {
+    setIsOnline(socketConnected);
+    if (!socketConnected && !isReconnecting) {
+      startReconnect();
+    } else if (socketConnected) {
+      setIsReconnecting(false);
+      if (reconnectTimer.current) {
+        clearInterval(reconnectTimer.current);
+        reconnectTimer.current = null;
+      }
+    }
+  }, [socketConnected]);
+
   useEffect(() => {
     checkConnection();
     fetchSessionCode();
-    checkInterval.current = setInterval(checkConnection, 30000);
-    const sessionInterval = setInterval(fetchSessionCode, 15000);
 
     const handleOnline = () => checkConnection();
     const handleOffline = () => { setIsOnline(false); startReconnect(); };
@@ -90,7 +105,6 @@ export function ConnectionStatus() {
     return () => {
       if (checkInterval.current) clearInterval(checkInterval.current);
       if (reconnectTimer.current) clearInterval(reconnectTimer.current);
-      clearInterval(sessionInterval);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };

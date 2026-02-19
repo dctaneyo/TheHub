@@ -6,6 +6,7 @@ import { AlertTriangle, Send, Trash2, Radio, Eye, EyeOff, Store, Check, ChevronD
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface Location {
   id: string;
@@ -60,12 +61,25 @@ export function EmergencyBroadcast() {
     } catch {}
   }, []);
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchMessage();
     fetchLocations();
-    const interval = setInterval(fetchMessage, 5000);
-    return () => clearInterval(interval);
   }, [fetchMessage, fetchLocations]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchMessage();
+    socket.on("emergency:broadcast", handler);
+    socket.on("emergency:dismissed", handler);
+    socket.on("emergency:updated", handler);
+    return () => {
+      socket.off("emergency:broadcast", handler);
+      socket.off("emergency:dismissed", handler);
+      socket.off("emergency:updated", handler);
+    };
+  }, [socket, fetchMessage]);
 
   const toggleLocation = (id: string) => {
     setSelectedIds((prev) =>

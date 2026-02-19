@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface LocationWithStatus {
   id: string;
@@ -46,11 +47,18 @@ export function LocationsManager() {
     }
   }, []);
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchLocations();
-    const interval = setInterval(fetchLocations, 15000);
-    return () => clearInterval(interval);
   }, [fetchLocations]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchLocations();
+    socket.on("presence:update", handler);
+    return () => { socket.off("presence:update", handler); };
+  }, [socket, fetchLocations]);
 
   if (loading) {
     return (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface PendingSession {
   id: string;
@@ -59,11 +60,23 @@ export function RemoteLogin() {
     setLoading(false);
   }, []);
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Instant updates via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchData();
+    socket.on("session:pending", handler);
+    socket.on("session:pending:refresh", handler);
+    return () => {
+      socket.off("session:pending", handler);
+      socket.off("session:pending:refresh", handler);
+    };
+  }, [socket, fetchData]);
 
   const handleActivate = async (assignToId: string) => {
     if (!selectedSession) return;

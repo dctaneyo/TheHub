@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
+import { broadcastTaskUpdate } from "@/lib/socket-emit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
     db.delete(schema.taskCompletions)
       .where(eq(schema.taskCompletions.id, completion.id))
       .run();
+
+    broadcastTaskUpdate(session.id);
 
     return NextResponse.json({ success: true, pointsRevoked: completion.pointsEarned });
   } catch (error) {

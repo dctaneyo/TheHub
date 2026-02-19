@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastMessageRead } from "@/lib/socket-emit";
 
 // POST mark messages as read
 export async function POST(req: NextRequest) {
@@ -42,6 +43,16 @@ export async function POST(req: NextRequest) {
           readAt: now,
         }).run();
       }
+    }
+
+    // Get conversation IDs for these messages to broadcast read receipts
+    const conversationIds = new Set<string>();
+    for (const messageId of messageIds) {
+      const msg = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
+      if (msg) conversationIds.add(msg.conversationId);
+    }
+    for (const convId of conversationIds) {
+      broadcastMessageRead(convId, session.id);
     }
 
     return NextResponse.json({ success: true });

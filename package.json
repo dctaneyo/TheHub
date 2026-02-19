@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "npx tsx src/lib/startup.ts && next start",
+    "start": "npx tsx src/lib/startup.ts && npx tsx server.ts",
     "lint": "eslint",
     "db:seed": "npx tsx src/lib/db/seed.ts",
     "db:push": "npx drizzle-kit push",

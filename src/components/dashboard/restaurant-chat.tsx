@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
 
 interface Message {
   id: string;
@@ -255,20 +256,67 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
     } catch {}
   }, [fetchConversations]);
 
+  // WebSocket for instant updates
+  const { socket, joinConversation, leaveConversation, startTyping, stopTyping } = useSocket();
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
+  const typingTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 8000);
-    return () => clearInterval(interval);
   }, [fetchConversations]);
 
+  // Socket listeners for conversations and messages
+  useEffect(() => {
+    if (!socket) return;
+    const handleConvoUpdate = () => fetchConversations();
+    const handleNewMessage = (data: { conversationId: string }) => {
+      fetchConversations();
+      if (activeConvo && data.conversationId === activeConvo.id) {
+        fetchMessages(activeConvo.id);
+      }
+    };
+    const handleMessageRead = () => fetchConversations();
+    const handleTypingStart = (data: { conversationId: string; userId: string; userName: string }) => {
+      if (activeConvo && data.conversationId === activeConvo.id) {
+        setTypingUsers((prev) => new Map(prev).set(data.userId, data.userName));
+        // Auto-clear after 3s
+        const existing = typingTimeouts.current.get(data.userId);
+        if (existing) clearTimeout(existing);
+        typingTimeouts.current.set(data.userId, setTimeout(() => {
+          setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
+        }, 3000));
+      }
+    };
+    const handleTypingStop = (data: { userId: string }) => {
+      setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
+    };
+
+    socket.on("conversation:updated", handleConvoUpdate);
+    socket.on("message:new", handleNewMessage);
+    socket.on("message:read", handleMessageRead);
+    socket.on("typing:start", handleTypingStart);
+    socket.on("typing:stop", handleTypingStop);
+    return () => {
+      socket.off("conversation:updated", handleConvoUpdate);
+      socket.off("message:new", handleNewMessage);
+      socket.off("message:read", handleMessageRead);
+      socket.off("typing:start", handleTypingStart);
+      socket.off("typing:stop", handleTypingStop);
+    };
+  }, [socket, fetchConversations, fetchMessages, activeConvo]);
+
+  // Join/leave conversation rooms
   useEffect(() => {
     if (activeConvo) {
       setShowAllMessages(false);
       fetchMessages(activeConvo.id);
-      const interval = setInterval(() => fetchMessages(activeConvo.id), 4000);
-      return () => clearInterval(interval);
+      joinConversation(activeConvo.id);
+      setTypingUsers(new Map());
+      return () => {
+        leaveConversation(activeConvo.id);
+      };
     }
-  }, [activeConvo, fetchMessages]);
+  }, [activeConvo, fetchMessages, joinConversation, leaveConversation]);
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -529,6 +577,9 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             sending={sending}
             handleSend={handleSend}
             convoType={activeConvo.type}
+            typingUsers={typingUsers}
+            onTyping={() => startTyping(activeConvo.id)}
+            onStopTyping={() => stopTyping(activeConvo.id)}
           />}
         </motion.div>
       )}
@@ -549,13 +600,25 @@ interface ActiveConvoViewProps {
   sending: boolean;
   handleSend: () => void;
   convoType: string;
+  typingUsers: Map<string, string>;
+  onTyping: () => void;
+  onStopTyping: () => void;
 }
 
 function ActiveConvoView({
   messages, showAllMessages, setShowAllMessages, isGroup,
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
+  typingUsers, onTyping, onStopTyping,
 }: ActiveConvoViewProps) {
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const handleInputChange = (value: string) => {
+    setNewMessage(value);
+    onTyping();
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(onStopTyping, 2000);
+  };
+  const typingNames = Array.from(typingUsers.values());
   const todayStr = new Date().toDateString();
   const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
   const visibleMessages = showAllMessages
@@ -617,6 +680,20 @@ function ActiveConvoView({
           })}
           <div ref={messagesEndRef} />
         </div>
+        {typingNames.length > 0 && (
+          <div className="px-2 pb-1">
+            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
+              <div className="flex gap-0.5">
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-[11px] text-slate-400">
+                {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
+              </span>
+            </motion.div>
+          </div>
+        )}
       </ScrollArea>
 
       {showKeyboard && (
@@ -645,8 +722,8 @@ function ActiveConvoView({
           </button>
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
             placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
             className="flex-1 rounded-xl"
           />

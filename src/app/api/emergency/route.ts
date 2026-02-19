@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastEmergency, broadcastEmergencyDismissed } from "@/lib/socket-emit";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -97,6 +98,14 @@ export async function POST(req: NextRequest) {
       createdAt: now,
     }).run();
 
+    // Broadcast instantly via WebSocket
+    broadcastEmergency({
+      id,
+      message: message.trim(),
+      sentByName: session.name,
+      targetLocationIds: targetLocationIds && targetLocationIds.length > 0 ? targetLocationIds : null,
+    });
+
     return NextResponse.json({ success: true, id });
   } catch (error) {
     console.error("Send emergency error:", error);
@@ -162,6 +171,8 @@ export async function DELETE() {
     db.update(schema.emergencyMessages)
       .set({ isActive: false })
       .where(eq(schema.emergencyMessages.isActive, true)).run();
+
+    broadcastEmergencyDismissed();
 
     return NextResponse.json({ success: true });
   } catch (error) {

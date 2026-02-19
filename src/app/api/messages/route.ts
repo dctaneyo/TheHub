@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { sendPushToARL } from "@/lib/push";
+import { broadcastNewMessage, broadcastConversationUpdate } from "@/lib/socket-emit";
 
 // Helper: get unread count for a conversation for the current session user
 function getUnreadCount(conversationId: string, sessionId: string, sessionType: string): number {
@@ -184,6 +185,10 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+
+    // Broadcast via WebSocket for instant delivery
+    broadcastNewMessage(conversationId, message);
+    broadcastConversationUpdate(conversationId);
 
     return NextResponse.json({ success: true, message });
   } catch (error) {

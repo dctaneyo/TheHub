@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
+import { useSocket } from "@/lib/socket-context";
 
 interface EmergencyMessage {
   id: string;
@@ -90,14 +91,31 @@ export function EmergencyOverlay() {
     } catch {}
   }, [dismissed, startRepeatingAlarm, stopAlarm]);
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchMessage();
-    pollRef.current = setInterval(fetchMessage, 5000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      stopAlarm();
-    };
+    return () => { stopAlarm(); };
   }, [fetchMessage, stopAlarm]);
+
+  // Instant emergency broadcast via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+    const handleBroadcast = () => fetchMessage();
+    const handleDismissed = () => {
+      stopAlarm();
+      setActiveMessage(null);
+      setRevealed(false);
+      revealedRef.current = false;
+      lastIdRef.current = null;
+    };
+    socket.on("emergency:broadcast", handleBroadcast);
+    socket.on("emergency:dismissed", handleDismissed);
+    return () => {
+      socket.off("emergency:broadcast", handleBroadcast);
+      socket.off("emergency:dismissed", handleDismissed);
+    };
+  }, [socket, fetchMessage, stopAlarm]);
 
   const handleReveal = async () => {
     revealedRef.current = true;

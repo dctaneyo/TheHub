@@ -3,6 +3,7 @@ import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/a
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastSessionActivated } from "@/lib/socket-emit";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -127,6 +128,9 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(schema.pendingSessions.id, pendingId))
       .run();
+
+    // Instantly notify login page watcher + ARLs
+    broadcastSessionActivated(pendingId);
 
     return NextResponse.json({
       success: true,

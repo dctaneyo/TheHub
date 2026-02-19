@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -45,32 +46,28 @@ export default function LoginPage() {
       .catch(() => {});
   }, []);
 
-  // Poll for remote activation
+  // Instant remote activation via WebSocket
+  const { socket } = useSocket();
   useEffect(() => {
-    if (!pendingId) return;
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/session/pending/status?id=${pendingId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === "activated" && data.redirectTo) {
-            setRemoteActivating(true);
-            window.location.href = data.redirectTo;
-          } else if (data.status === "expired") {
-            // Regenerate a new pending session
-            const newRes = await fetch("/api/session/pending", { method: "POST" });
-            if (newRes.ok) {
-              const newData = await newRes.json();
-              setPendingId(newData.id);
-              setPendingCode(newData.code);
+    if (!socket || !pendingId) return;
+    const handleActivated = async (data: { pendingId: string }) => {
+      if (data.pendingId === pendingId) {
+        // Fetch the redirect info
+        try {
+          const res = await fetch(`/api/session/pending/status?id=${pendingId}`);
+          if (res.ok) {
+            const d = await res.json();
+            if (d.status === "activated" && d.redirectTo) {
+              setRemoteActivating(true);
+              window.location.href = d.redirectTo;
             }
           }
-        }
-      } catch {}
+        } catch {}
+      }
     };
-    const interval = setInterval(poll, 3000);
-    return () => clearInterval(interval);
-  }, [pendingId]);
+    socket.on("session:activated", handleActivated);
+    return () => { socket.off("session:activated", handleActivated); };
+  }, [socket, pendingId]);
 
   const currentValue = step === "userId" ? userId : pin;
   const maxLength = 6;

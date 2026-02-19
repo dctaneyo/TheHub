@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSocket } from "@/lib/socket-context";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import {
   LogOut,
@@ -90,25 +91,22 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch tasks on mount, then poll a lightweight version endpoint every 10s
-  const lastVersionRef = useRef("");
+  // Fetch tasks on mount + listen for instant WebSocket updates
+  const { socket } = useSocket();
   useEffect(() => {
     fetchTasks();
-    const checkVersion = async () => {
-      try {
-        const res = await fetch("/api/tasks/version");
-        if (res.ok) {
-          const { version } = await res.json();
-          if (version && version !== lastVersionRef.current) {
-            lastVersionRef.current = version;
-            fetchTasks();
-          }
-        }
-      } catch {}
-    };
-    const interval = setInterval(checkVersion, 10000);
-    return () => clearInterval(interval);
   }, [fetchTasks]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleTaskUpdate = () => fetchTasks();
+    socket.on("task:updated", handleTaskUpdate);
+    socket.on("task:completed", handleTaskUpdate);
+    return () => {
+      socket.off("task:updated", handleTaskUpdate);
+      socket.off("task:completed", handleTaskUpdate);
+    };
+  }, [socket, fetchTasks]);
 
   // Heartbeat to keep session alive (every 2 minutes)
   useEffect(() => {

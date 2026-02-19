@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   LogOut,
@@ -37,6 +37,7 @@ import { EmergencyBroadcast } from "@/components/arl/emergency-broadcast";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { RemoteLogin } from "@/components/arl/remote-login";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket-context";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login";
@@ -91,21 +92,36 @@ export default function ArlPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const res = await fetch("/api/messages");
-        if (res.ok) {
-          const data = await res.json();
-          const total = (data.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0);
-          setUnreadCount(total);
-        }
-      } catch {}
-    };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
-    return () => clearInterval(interval);
+  const { socket } = useSocket();
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await fetch("/api/messages");
+      if (res.ok) {
+        const data = await res.json();
+        const total = (data.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0);
+        setUnreadCount(total);
+      }
+    } catch {}
   }, []);
+
+  useEffect(() => {
+    fetchUnread();
+  }, [fetchUnread]);
+
+  // Instant unread count update via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchUnread();
+    socket.on("message:new", handler);
+    socket.on("conversation:updated", handler);
+    socket.on("message:read", handler);
+    return () => {
+      socket.off("message:new", handler);
+      socket.off("conversation:updated", handler);
+      socket.off("message:read", handler);
+    };
+  }, [socket, fetchUnread]);
 
   // Request notification permission and subscribe to push
   const requestNotificationPermission = async () => {
@@ -361,20 +377,36 @@ function OverviewContent() {
   const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
   const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { socket } = useSocket();
 
+  const load = useCallback(() => Promise.all([
+    fetch("/api/locations").then((r) => r.ok ? r.json() : { locations: [], arls: [] }),
+    fetch("/api/messages").then((r) => r.ok ? r.json() : { conversations: [] }),
+  ]).then(([locData, msgData]) => {
+    setLocations(locData.locations || []);
+    setArls(locData.arls || []);
+    setUnreadCount((msgData.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0));
+  }), []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Instant updates via WebSocket
   useEffect(() => {
-    const load = () => Promise.all([
-      fetch("/api/locations").then((r) => r.ok ? r.json() : { locations: [], arls: [] }),
-      fetch("/api/messages").then((r) => r.ok ? r.json() : { conversations: [] }),
-    ]).then(([locData, msgData]) => {
-      setLocations(locData.locations || []);
-      setArls(locData.arls || []);
-      setUnreadCount((msgData.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0));
-    });
-    load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, [])
+    if (!socket) return;
+    const handler = () => load();
+    socket.on("presence:update", handler);
+    socket.on("message:new", handler);
+    socket.on("conversation:updated", handler);
+    socket.on("task:updated", handler);
+    socket.on("task:completed", handler);
+    return () => {
+      socket.off("presence:update", handler);
+      socket.off("message:new", handler);
+      socket.off("conversation:updated", handler);
+      socket.off("task:updated", handler);
+      socket.off("task:completed", handler);
+    };
+  }, [socket, load]);
 
   const onlineLocations = locations.filter((l) => l.isOnline);
   const onlineArls = arls.filter((a) => a.isOnline);
