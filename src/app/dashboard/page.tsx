@@ -411,8 +411,8 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
                     const inMonth = isSameMonth(date, currentMonth);
                     return (
                       <button key={date.toISOString()} onClick={() => setSelectedDate(date)}
-                        className={`relative border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-slate-700":"text-slate-300"}`}>{format(date,"d")}</span>
+                        className={`flex h-full w-full flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-slate-700":"text-slate-300"}`}>{format(date,"d")}</span>
                         <div className="mt-0.5 space-y-0.5">
                           {dayTasks.slice(0,2).map((task) => {
                             const Icon = calModalTypeIcons[task.type]||ClipboardList;
