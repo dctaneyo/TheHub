@@ -201,54 +201,59 @@ export default function DashboardPage() {
   return (
     <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)]">
       {/* Top Bar */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
-            <span className="text-sm font-black text-white">H</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
+            <span className="text-base font-black text-white">H</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-800">The Hub</h1>
-            <p className="text-[10px] text-slate-400">
+            <h1 className="text-base font-bold text-slate-800">The Hub</h1>
+            <p className="text-[11px] text-slate-400">
               {user?.name} &middot; Store #{user?.storeNumber}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Gamification */}
           <GamificationBar />
-          <div className="mr-2 text-right">
-            <p className="text-xl font-black tabular-nums tracking-tight text-slate-800">
+
+          {/* Connection status */}
+          <ConnectionStatus />
+
+          {/* Clock */}
+          <div className="mx-1 text-right">
+            <p className="text-2xl font-black tabular-nums tracking-tight text-slate-800">
               {displayTime}
             </p>
-            <p className="text-[10px] font-medium text-slate-400">
+            <p className="text-[11px] font-medium text-slate-400">
               {format(new Date(), "EEE, MMM d yyyy")}
             </p>
           </div>
 
-          <ConnectionStatus />
-
+          {/* Action buttons */}
           <button
             onClick={() => setFormsOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
             title="Forms"
           >
-            <FileText className="h-4 w-4" />
+            <FileText className="h-[18px] w-[18px]" />
           </button>
 
           <button
             onClick={() => setCalOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
           >
-            <CalendarDays className="h-4 w-4" />
+            <CalendarDays className="h-[18px] w-[18px]" />
           </button>
 
           <button
             onClick={() => setChatOpen(!chatOpen)}
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageCircle className="h-[18px] w-[18px]" />
             {chatUnread > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--hub-red)] text-[9px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--hub-red)] text-[10px] font-bold text-white">
                 {chatUnread}
               </span>
             )}
@@ -258,9 +263,9 @@ export default function DashboardPage() {
 
           <button
             onClick={logout}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-500"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-[18px] w-[18px]" />
           </button>
         </div>
       </header>

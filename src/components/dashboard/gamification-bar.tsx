@@ -58,7 +58,7 @@ export function GamificationBar() {
       <div className="flex items-center gap-3">
         {/* Streak */}
         <motion.div
-          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 px-3 py-1.5 cursor-default"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 px-3.5 py-2 cursor-default"
           whileHover={{ scale: 1.05 }}
           title={streak.current > 0
             ? `${streak.current}-day streak${streak.currentMilestone ? ` (${streak.currentMilestone.name})` : ""}${streak.nextMilestone ? ` — ${streak.daysToNext} days to ${streak.nextMilestone.name}` : ""}`
@@ -66,14 +66,14 @@ export function GamificationBar() {
           }
         >
           <motion.span
-            className="text-lg leading-none"
+            className="text-xl leading-none"
             animate={streak.current >= 3 ? { scale: [1, 1.2, 1] } : {}}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
           >
             {streak.current >= 30 ? "🔥" : streak.current >= 7 ? "⚡" : streak.current >= 3 ? "🔥" : "🔥"}
           </motion.span>
           <span className={cn(
-            "text-sm font-black tabular-nums",
+            "text-base font-black tabular-nums",
             streak.current >= 7 ? "text-orange-600" : streak.current >= 3 ? "text-orange-500" : "text-slate-400"
           )}>
             {streak.current}
@@ -82,15 +82,15 @@ export function GamificationBar() {
 
         {/* Level */}
         <motion.div
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 px-3 py-1.5 cursor-default"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 px-3.5 py-2 cursor-default"
           whileHover={{ scale: 1.05 }}
           title={`Level ${level.level}: ${level.title} — ${level.totalXP} XP${level.nextLevel ? ` (${level.xpToNext} to Level ${level.nextLevel.level})` : ""}`}
         >
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Lv</span>
-            <span className="text-sm font-black text-purple-700 tabular-nums">{level.level}</span>
+            <span className="text-[11px] font-bold text-purple-500 uppercase tracking-wider">Lv</span>
+            <span className="text-base font-black text-purple-700 tabular-nums">{level.level}</span>
           </div>
-          <div className="w-16 h-1.5 rounded-full bg-purple-200/60 overflow-hidden">
+          <div className="w-20 h-2 rounded-full bg-purple-200/60 overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
               initial={{ width: 0 }}
@@ -102,13 +102,13 @@ export function GamificationBar() {
 
         {/* Badges */}
         <motion.button
-          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 px-3 py-1.5"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 px-3.5 py-2"
           whileHover={{ scale: 1.05 }}
           onClick={() => setShowBadges(true)}
           title="View badges"
         >
-          <span className="text-lg leading-none">🏅</span>
-          <span className="text-sm font-black text-amber-700 tabular-nums">{earnedBadges.length}/{badges.length}</span>
+          <span className="text-xl leading-none">🏅</span>
+          <span className="text-base font-black text-amber-700 tabular-nums">{earnedBadges.length}/{badges.length}</span>
         </motion.button>
       </div>
 
