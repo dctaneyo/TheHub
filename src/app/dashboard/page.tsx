@@ -89,6 +89,14 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchTasks]);
 
+  // Heartbeat to keep session alive (every 2 minutes)
+  useEffect(() => {
+    const ping = () => fetch("/api/session/heartbeat", { method: "POST" }).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleUncompleteTask = async (taskId: string) => {
     try {
       await fetch("/api/tasks/uncomplete", {

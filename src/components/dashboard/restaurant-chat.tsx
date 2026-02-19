@@ -394,11 +394,12 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                 <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
                   <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                   <input
-                    autoFocus={newChatMode === "direct"}
                     value={participantSearch}
                     onChange={(e) => setParticipantSearch(e.target.value)}
                     placeholder="Search locations & ARLs..."
                     className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
+                    tabIndex={-1}
+                    onMouseDown={(e) => { e.currentTarget.tabIndex = 0; e.currentTarget.focus(); }}
                   />
                 </div>
               </div>
@@ -476,7 +477,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                     </div>
                   </div>
                 )}
-                {conversations.map((convo) => (
+                {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
                   <button
                     key={convo.id}
                     onClick={() => setActiveConvo(convo)}

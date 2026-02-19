@@ -209,7 +209,7 @@ export default function CalendarPage() {
                       )}
                     >
                       <span className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
+                        "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold self-start",
                         todayDate ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
                       )}>
                         {format(date, "d")}

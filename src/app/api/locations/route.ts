@@ -19,6 +19,9 @@ export async function GET() {
 
     const allLocations = db.select().from(schema.locations).all();
 
+    const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+    const now = Date.now();
+
     const locationsWithStatus = allLocations.map((loc) => {
       const latestSession = db
         .select()
@@ -26,12 +29,17 @@ export async function GET() {
         .where(
           and(
             eq(schema.sessions.userId, loc.id),
-            eq(schema.sessions.userType, "location")
+            eq(schema.sessions.userType, "location"),
+            eq(schema.sessions.isOnline, true)
           )
         )
-        .orderBy(desc(schema.sessions.createdAt))
+        .orderBy(desc(schema.sessions.lastSeen))
         .limit(1)
         .get();
+
+      const isStale = latestSession?.lastSeen
+        ? now - new Date(latestSession.lastSeen).getTime() > STALE_THRESHOLD_MS
+        : true;
 
       return {
         id: loc.id,
@@ -41,7 +49,7 @@ export async function GET() {
         email: loc.email,
         userId: loc.userId,
         isActive: loc.isActive,
-        isOnline: latestSession?.isOnline || false,
+        isOnline: latestSession?.isOnline && !isStale ? true : false,
         lastSeen: latestSession?.lastSeen || null,
         deviceType: latestSession?.deviceType || null,
         sessionCode: latestSession?.sessionCode || null,
@@ -65,19 +73,24 @@ export async function GET() {
           .where(
             and(
               eq(schema.sessions.userId, arl.id),
-              eq(schema.sessions.userType, "arl")
+              eq(schema.sessions.userType, "arl"),
+              eq(schema.sessions.isOnline, true)
             )
           )
-          .orderBy(desc(schema.sessions.createdAt))
+          .orderBy(desc(schema.sessions.lastSeen))
           .limit(1)
           .get();
+
+        const isArlStale = latestArlSession?.lastSeen
+          ? now - new Date(latestArlSession.lastSeen).getTime() > STALE_THRESHOLD_MS
+          : true;
 
         return {
           id: arl.id,
           name: arl.name,
           userId: arl.userId,
           role: arl.role,
-          isOnline: latestArlSession?.isOnline || false,
+          isOnline: latestArlSession?.isOnline && !isArlStale ? true : false,
           lastSeen: latestArlSession?.lastSeen || null,
           deviceType: latestArlSession?.deviceType || null,
           sessionCode: latestArlSession?.sessionCode || null,

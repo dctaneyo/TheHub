@@ -46,4 +46,56 @@ if (needsSeed) {
   });
 } else {
   console.log("✅ Database already initialized, skipping seed");
+
+  // Ensure Global Chat exists and all locations/ARLs are members
+  try {
+    const sqlite = new Database(DB_PATH);
+    const { v4: uuid } = require("uuid");
+    const now = new Date().toISOString();
+
+    // Check if global chat exists
+    let globalConv = sqlite.prepare("SELECT id FROM conversations WHERE type = 'global' LIMIT 1").get() as { id: string } | undefined;
+
+    if (!globalConv) {
+      console.log("🌐 Creating Global Chat...");
+      const globalConvId = uuid();
+      sqlite.prepare(
+        "INSERT INTO conversations (id, type, name, created_at) VALUES (?, 'global', 'Global Chat', ?)"
+      ).run(globalConvId, now);
+      globalConv = { id: globalConvId };
+    }
+
+    const globalConvId = globalConv.id;
+
+    // Ensure all locations are members
+    const locations = sqlite.prepare("SELECT id FROM locations").all() as { id: string }[];
+    for (const loc of locations) {
+      const existing = sqlite.prepare(
+        "SELECT id FROM conversation_members WHERE conversation_id = ? AND member_id = ? AND member_type = 'location'"
+      ).get(globalConvId, loc.id);
+      if (!existing) {
+        sqlite.prepare(
+          "INSERT INTO conversation_members (id, conversation_id, member_id, member_type, joined_at) VALUES (?, ?, ?, 'location', ?)"
+        ).run(uuid(), globalConvId, loc.id, now);
+      }
+    }
+
+    // Ensure all ARLs are members
+    const arls = sqlite.prepare("SELECT id FROM arls").all() as { id: string }[];
+    for (const arl of arls) {
+      const existing = sqlite.prepare(
+        "SELECT id FROM conversation_members WHERE conversation_id = ? AND member_id = ? AND member_type = 'arl'"
+      ).get(globalConvId, arl.id);
+      if (!existing) {
+        sqlite.prepare(
+          "INSERT INTO conversation_members (id, conversation_id, member_id, member_type, joined_at) VALUES (?, ?, ?, 'arl', ?)"
+        ).run(uuid(), globalConvId, arl.id, now);
+      }
+    }
+
+    sqlite.close();
+    console.log("✅ Global Chat migration complete");
+  } catch (err) {
+    console.error("Global Chat migration error:", err);
+  }
 }
