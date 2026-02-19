@@ -10,12 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId } = await req.json();
+    const { taskId, completedDate: requestedDate } = await req.json();
     if (!taskId) return NextResponse.json({ error: "taskId required" }, { status: 400 });
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const targetDate = requestedDate || new Date().toISOString().split("T")[0];
 
-    // Only allow undoing completions from today
     const completion = db
       .select()
       .from(schema.taskCompletions)
@@ -23,13 +22,13 @@ export async function POST(req: NextRequest) {
         and(
           eq(schema.taskCompletions.taskId, taskId),
           eq(schema.taskCompletions.locationId, session.id),
-          eq(schema.taskCompletions.completedDate, todayStr)
+          eq(schema.taskCompletions.completedDate, targetDate)
         )
       )
       .get();
 
     if (!completion) {
-      return NextResponse.json({ error: "No completion found for today" }, { status: 404 });
+      return NextResponse.json({ error: "No completion found for this date" }, { status: 404 });
     }
 
     db.delete(schema.taskCompletions)

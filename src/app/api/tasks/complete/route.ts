@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This task cannot be completed early" }, { status: 403 });
     }
 
+    // Early bird bonus: +25% when completing ahead of due date
+    const isEarly = targetDate > todayStr;
+    const bonusPoints = isEarly ? Math.round(task.points * 0.25) : 0;
+
     const completion = {
       id: uuid(),
       taskId,
@@ -34,6 +38,7 @@ export async function POST(req: NextRequest) {
       completedDate: targetDate,
       notes: notes || null,
       pointsEarned: task.points,
+      bonusPoints,
     };
 
     db.insert(schema.taskCompletions).values(completion).run();
@@ -41,6 +46,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       pointsEarned: task.points,
+      bonusPoints,
+      totalPoints: task.points + bonusPoints,
+      isEarly,
       completion,
     });
   } catch (error) {

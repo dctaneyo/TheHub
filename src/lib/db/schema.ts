@@ -77,6 +77,7 @@ export const taskCompletions = sqliteTable("task_completions", {
   completedDate: text("completed_date").notNull(), // YYYY-MM-DD for easy querying
   notes: text("notes"),
   pointsEarned: integer("points_earned").notNull().default(0),
+  bonusPoints: integer("bonus_points").notNull().default(0), // early bird bonus
 });
 
 // Messages - instant messaging

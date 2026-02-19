@@ -17,6 +17,8 @@ import {
   Plus,
   Trash2,
   AlertCircle,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -28,6 +30,7 @@ import { NotificationSystem } from "@/components/dashboard/notification-system";
 import { Confetti } from "@/components/confetti";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
+import { Leaderboard } from "@/components/dashboard/leaderboard";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -247,14 +250,17 @@ export default function DashboardPage() {
 
       {/* Main Content - 3 column layout, no scrolling */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Column - Completed/Missed + Points (hidden on small screens) */}
-        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4">
+        {/* Left Column - Completed/Missed + Points + Leaderboard (hidden on small screens) */}
+        <div className="hidden md:flex md:flex-col w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 overflow-hidden">
           <CompletedMissed
             completedToday={completedTasks}
             missedYesterday={data?.missedYesterday || []}
             pointsToday={data?.pointsToday || 0}
             totalToday={data?.totalToday || 0}
           />
+          <div className="mt-4 border-t border-slate-100 pt-4 flex-1 overflow-y-auto min-h-0">
+            <Leaderboard currentLocationId={user?.id} compact />
+          </div>
         </div>
 
         {/* Center Column - Main Timeline */}
@@ -302,8 +308,9 @@ interface CalModalTask {
   id: string; title: string; type: string; priority: string;
   dueTime: string; dueDate: string | null; isRecurring: boolean;
   recurringType: string | null; recurringDays: string | null; locationId: string | null;
-  createdByType?: string; createdBy?: string;
+  createdByType?: string; createdBy?: string; allowEarlyComplete?: boolean;
 }
+interface CalCompletion { taskId: string; completedDate: string; }
 const CAL_DAYS_H = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const CAL_DAY_KEYS_H = ["sun","mon","tue","wed","thu","fri","sat"];
 const calModalTypeIcons: Record<string, typeof ClipboardList> = { task: ClipboardList, cleaning: SprayCan, reminder: Clock };
@@ -334,21 +341,56 @@ const EMPTY_TASK_FORM: NewTaskForm = { title: "", type: "task", dueTime: "09:00"
 function CalendarModal({ onClose, locationId }: { onClose: () => void; locationId?: string }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [tasks, setTasks] = useState<CalModalTask[]>([]);
+  const [completions, setCompletions] = useState<CalCompletion[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTask, setNewTask] = useState<NewTaskForm>(EMPTY_TASK_FORM);
   const [savingTask, setSavingTask] = useState(false);
   const [taskError, setTaskError] = useState("");
+  const [completing, setCompleting] = useState<string | null>(null);
 
   const fetchTasks = () => {
-    fetch("/api/tasks").then(async (r) => {
-      if (r.ok) { const d = await r.json(); setTasks(d.tasks || []); }
+    Promise.all([
+      fetch("/api/tasks"),
+      fetch("/api/tasks/completions"),
+    ]).then(async ([tr, cr]) => {
+      if (tr.ok) { const d = await tr.json(); setTasks(d.tasks || []); }
+      if (cr.ok) { const d = await cr.json(); setCompletions(d.completions || []); }
       setLoading(false);
     });
   };
 
   useEffect(() => { fetchTasks(); }, []);
+
+  const isTaskCompleted = (taskId: string, dateStr: string) =>
+    completions.some((c) => c.taskId === taskId && c.completedDate === dateStr);
+
+  const handleCalComplete = async (taskId: string, dateStr: string) => {
+    setCompleting(taskId + dateStr);
+    try {
+      const res = await fetch("/api/tasks/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, completedDate: dateStr }),
+      });
+      if (res.ok) fetchTasks();
+    } catch {}
+    setCompleting(null);
+  };
+
+  const handleCalUncomplete = async (taskId: string, dateStr: string) => {
+    setCompleting(taskId + dateStr);
+    try {
+      const res = await fetch("/api/tasks/uncomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, completedDate: dateStr }),
+      });
+      if (res.ok) fetchTasks();
+    } catch {}
+    setCompleting(null);
+  };
 
   const handleAddTask = async () => {
     if (!newTask.title.trim() || !newTask.dueTime) { setTaskError("Title and time are required"); return; }
@@ -523,19 +565,42 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
               {selectedTasks.map((task) => {
                 const Icon = calModalTypeIcons[task.type]||ClipboardList;
                 const isOwned = (task as CalModalTask & { createdByType?: string }).createdByType === "location";
+                const selDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+                const todayStr = format(new Date(), "yyyy-MM-dd");
+                const completed = isTaskCompleted(task.id, selDateStr);
+                const isFuture = selDateStr > todayStr;
+                const canComplete = !isFuture || task.allowEarlyComplete;
+                const isProcessing = completing === task.id + selDateStr;
                 return (
-                  <div key={task.id} className={`rounded-xl border p-3 ${task.priority==="urgent"?"border-red-200 bg-red-50":task.priority==="high"?"border-orange-200 bg-orange-50":"border-slate-200 bg-slate-50"}`}>
+                  <div key={task.id} className={`rounded-xl border p-3 transition-all ${completed ? "border-emerald-200 bg-emerald-50/50" : task.priority==="urgent"?"border-red-200 bg-red-50":task.priority==="high"?"border-orange-200 bg-orange-50":"border-slate-200 bg-slate-50"}`}>
                     <div className="flex items-start gap-2">
-                      <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${task.type==="cleaning"?"bg-purple-100 text-purple-600":task.type==="reminder"?"bg-sky-100 text-sky-600":"bg-blue-100 text-blue-600"}`}><Icon className="h-3 w-3" /></div>
+                      {canComplete ? (
+                        <button
+                          onClick={() => completed ? handleCalUncomplete(task.id, selDateStr) : handleCalComplete(task.id, selDateStr)}
+                          className="mt-0.5 shrink-0"
+                          title={completed ? "Undo completion" : (isFuture ? "Complete early" : "Mark complete")}
+                          disabled={isProcessing}
+                        >
+                          {completed ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <Circle className={`h-5 w-5 transition-colors ${isProcessing ? "text-emerald-400 animate-pulse" : "text-slate-300 hover:text-emerald-400"}`} />
+                          )}
+                        </button>
+                      ) : (
+                        <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${task.type==="cleaning"?"bg-purple-100 text-purple-600":task.type==="reminder"?"bg-sky-100 text-sky-600":"bg-blue-100 text-blue-600"}`}><Icon className="h-3 w-3" /></div>
+                      )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-800 truncate">{task.title}</p>
+                        <p className={`text-xs font-semibold truncate ${completed ? "text-slate-400 line-through" : "text-slate-800"}`}>{task.title}</p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
                           <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{calModalTime12(task.dueTime)}</span>
                           {task.isRecurring && <span className="flex items-center gap-0.5"><Repeat className="h-2.5 w-2.5" />Recurring</span>}
                           {isOwned && <span className="rounded bg-emerald-100 px-1 text-[9px] font-medium text-emerald-700">Mine</span>}
+                          {completed && isFuture && <span className="rounded bg-amber-100 px-1 text-[9px] font-medium text-amber-700">Early +25%</span>}
+                          {completed && <span className="rounded bg-emerald-100 px-1 text-[9px] font-medium text-emerald-700">Done</span>}
                         </div>
                       </div>
-                      {isOwned && (
+                      {isOwned && !completed && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
                           className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"

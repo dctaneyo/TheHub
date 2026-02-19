@@ -32,6 +32,7 @@ import { Messaging } from "@/components/arl/messaging";
 import { FormsRepository } from "@/components/arl/forms-repository";
 import { UserManagement } from "@/components/arl/user-management";
 import { EmergencyBroadcast } from "@/components/arl/emergency-broadcast";
+import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { cn } from "@/lib/utils";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
@@ -469,6 +470,11 @@ function OverviewContent() {
           </>
         )}
       </div>
+
+      {/* Weekly Leaderboard */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <Leaderboard />
+      </div>
     </div>
   );
 }
@@ -580,7 +586,7 @@ function ArlCalendar() {
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
                         isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
                       )}>{format(date, "d")}</span>
-                      <div className="mt-0.5 space-y-0.5 w-full overflow-hidden">
+                      <div className="mt-0.5 space-y-0.5 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
