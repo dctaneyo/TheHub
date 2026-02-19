@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [pinged, setPinged] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
 
   const generateSession = useCallback(async () => {
     setRefreshing(true);
@@ -181,6 +182,7 @@ export default function LoginPage() {
       }
     } else {
       setError(result.error || "Incorrect PIN. Please try again.");
+      setShakeKey((k) => k + 1);
       pinRef.current = "";
       setPin("");
       setLoading(false);
@@ -190,16 +192,27 @@ export default function LoginPage() {
   const dots = Array.from({ length: maxLength }, (_, i) => {
     const filled = i < currentValue.length;
     return (
-      <motion.div
-        key={i}
-        className={`h-5 w-5 rounded-full border-2 transition-colors duration-200 ${
-          filled
-            ? "border-[var(--hub-red)] bg-[var(--hub-red)]"
-            : "border-slate-300 bg-white"
-        }`}
-        animate={filled ? { scale: [1, 1.3, 1] } : {}}
-        transition={{ duration: 0.15 }}
-      />
+      <div key={i} className="relative flex items-center justify-center">
+        {/* Ripple ring when dot fills */}
+        {filled && (
+          <motion.div
+            key={`ripple-${i}-${currentValue.length}`}
+            className="absolute rounded-full border-2 border-[var(--hub-red)]"
+            initial={{ width: 20, height: 20, opacity: 0.7 }}
+            animate={{ width: 36, height: 36, opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        )}
+        <motion.div
+          className={`h-5 w-5 rounded-full border-2 transition-colors duration-200 ${
+            filled
+              ? "border-[var(--hub-red)] bg-[var(--hub-red)]"
+              : "border-slate-300 bg-white"
+          }`}
+          animate={filled ? { scale: [1, 1.3, 1] } : {}}
+          transition={{ duration: 0.15 }}
+        />
+      </div>
     );
   });
 
@@ -378,8 +391,13 @@ export default function LoginPage() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Dots */}
-          <div className="mt-4 flex justify-center gap-3">{dots}</div>
+          {/* Dots — shake on wrong PIN */}
+          <motion.div
+            key={shakeKey}
+            className="mt-4 flex justify-center gap-3"
+            animate={shakeKey > 0 ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : {}}
+            transition={{ duration: 0.45, ease: "easeInOut" }}
+          >{dots}</motion.div>
 
           {/* Error */}
           <div className="mt-3 h-9 flex items-center justify-center">

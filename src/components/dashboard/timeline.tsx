@@ -54,16 +54,25 @@ function formatTime(time: string): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+interface FlyupItem { id: string; points: number; }
+
 export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: TimelineProps) {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [uncomletingId, setUncompletingId] = useState<string | null>(null);
   const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
+  const [flyups, setFlyups] = useState<FlyupItem[]>([]);
   const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
 
   const handleComplete = async (taskId: string) => {
     setCompletingId(taskId);
+    const task = tasks.find((t) => t.id === taskId);
+    if (task && task.points > 0) {
+      const flyId = `${taskId}-${Date.now()}`;
+      setFlyups((prev) => [...prev, { id: flyId, points: task.points }]);
+      setTimeout(() => setFlyups((prev) => prev.filter((f) => f.id !== flyId)), 1200);
+    }
     await onComplete(taskId);
     setTimeout(() => setCompletingId(null), 1500);
   };
@@ -232,6 +241,21 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                         const isPast = task.dueTime < currentTime;
                         return (
                           <div key={task.id} className={cn("relative", group.length > 1 ? "flex-1 min-w-0" : "")}>
+                            {/* Points flyup */}
+                            <AnimatePresence>
+                              {flyups.filter((f) => f.id.startsWith(task.id)).map((f) => (
+                                <motion.div
+                                  key={f.id}
+                                  initial={{ opacity: 1, y: 0, scale: 1 }}
+                                  animate={{ opacity: 0, y: -48, scale: 1.2 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 1.0, ease: "easeOut" }}
+                                  className="pointer-events-none absolute right-3 top-2 z-20 flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-xs font-black text-white shadow-lg shadow-amber-200"
+                                >
+                                  <Sparkles className="h-3 w-3" />+{f.points} pts
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                             {/* Timeline dot — only show on first card in group */}
                             {group.indexOf(task) === 0 && (
                               <div className="absolute -left-8 top-4">

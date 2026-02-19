@@ -525,25 +525,38 @@ export default function ArlPage() {
 
         {/* Content area */}
         <main className={cn(
-          "flex-1",
+          "flex-1 relative",
           activeView === "messages"
             ? "flex flex-col overflow-hidden p-5"
             : "overflow-y-auto p-5"
         )}>
-          {activeView === "overview" && <OverviewContent />}
-          {activeView === "messages" && <Messaging />}
-          {activeView === "tasks" && <TaskManager />}
-          {activeView === "calendar" && <ArlCalendar />}
-          {activeView === "locations" && <LocationsManager />}
-          {activeView === "forms" && <FormsRepository />}
-          {activeView === "emergency" && <EmergencyBroadcast />}
-          {activeView === "users" && <UserManagement />}
-          {activeView === "leaderboard" && (
-            <div className="max-w-3xl mx-auto">
-              <Leaderboard />
-            </div>
-          )}
-          {activeView === "remote-login" && <RemoteLogin />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className={cn(
+                activeView === "messages" ? "flex flex-col h-full" : "h-full"
+              )}
+            >
+              {activeView === "overview" && <OverviewContent />}
+              {activeView === "messages" && <Messaging />}
+              {activeView === "tasks" && <TaskManager />}
+              {activeView === "calendar" && <ArlCalendar />}
+              {activeView === "locations" && <LocationsManager />}
+              {activeView === "forms" && <FormsRepository />}
+              {activeView === "emergency" && <EmergencyBroadcast />}
+              {activeView === "users" && <UserManagement />}
+              {activeView === "leaderboard" && (
+                <div className="max-w-3xl mx-auto">
+                  <Leaderboard />
+                </div>
+              )}
+              {activeView === "remote-login" && <RemoteLogin />}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
@@ -553,11 +566,11 @@ export default function ArlPage() {
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 80, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 80, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-lg"
+              initial={{ opacity: 0, y: 24, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 500, damping: 28 }}
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-xl shadow-emerald-100"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />

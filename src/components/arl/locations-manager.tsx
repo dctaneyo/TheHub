@@ -94,8 +94,33 @@ export function LocationsManager() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1.5">
+            <div className="h-4 w-40 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} /></div>
+            <div className="h-3 w-24 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} /></div>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-slate-200 overflow-hidden shrink-0">
+                  <motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3.5 w-28 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} /></div>
+                  <div className="h-3 w-16 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.1 }} /></div>
+                </div>
+                <div className="h-6 w-16 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.15 }} /></div>
+              </div>
+              <div className="space-y-2 pt-1">
+                <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.2 }} /></div>
+                <div className="h-3 w-3/4 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.25 }} /></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -137,13 +162,22 @@ export function LocationsManager() {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div
-                  className={cn(
+                <div className="relative flex h-10 w-10 items-center justify-center">
+                  {loc.isOnline && [0, 1].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute rounded-xl border-2 border-emerald-400"
+                      initial={{ width: 40, height: 40, opacity: 0.6 }}
+                      animate={{ width: 64, height: 64, opacity: 0 }}
+                      transition={{ duration: 1.8, delay: i * 0.9, repeat: Infinity, ease: "easeOut" }}
+                    />
+                  ))}
+                  <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-xl",
                     loc.isOnline ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
-                  )}
-                >
-                  <Store className="h-5 w-5" />
+                  )}>
+                    <Store className="h-5 w-5" />
+                  </div>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-800">{loc.name}</h4>
