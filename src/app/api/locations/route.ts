@@ -111,8 +111,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.userType !== "arl" || session.role !== "admin") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session || session.userType !== "arl") {
+      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
 
     const { name, storeNumber, address, email, userId, pin } = await req.json();
@@ -201,6 +201,26 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update location error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// DELETE permanently remove a location
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.userType !== "arl") {
+      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+    }
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    // Remove conversation memberships and the location record
+    db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
+    db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete location error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

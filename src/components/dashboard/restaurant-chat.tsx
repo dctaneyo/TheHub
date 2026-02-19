@@ -197,15 +197,16 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       const ctx = audioCtxRef.current ?? new AudioContext();
       audioCtxRef.current = ctx;
       const t = ctx.currentTime;
-      [[660, 0, 0.12], [880, 0.15, 0.12]].forEach(([freq, delay, dur]) => {
+      // Loud triple-tone alert for noisy kitchen environments
+      [[880, 0, 0.18], [1100, 0.22, 0.18], [880, 0.44, 0.18], [1100, 0.66, 0.18], [1320, 0.88, 0.25]].forEach(([freq, delay, dur]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = "sine";
+        osc.type = "square";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.18, t + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
+        gain.gain.setValueAtTime(0.5, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
         osc.start(t + delay);
         osc.stop(t + delay + dur);
       });
@@ -302,7 +303,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
           exit={{ x: "100%" }}
           transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
           style={{ width: isFullscreen ? "100%" : 360, left: isFullscreen ? 0 : "auto" }}
-          className="fixed right-0 top-0 z-40 flex h-screen flex-col border-l border-slate-200 bg-white shadow-xl"
+          className="fixed right-0 top-0 z-40 flex h-dvh flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl"
         >
           {/* Header */}
           <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">
@@ -570,7 +571,7 @@ function ActiveConvoView({
 
   return (
     <>
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-3">
           {!showAllMessages && hasPast && (
             <div className="flex justify-center pb-1">

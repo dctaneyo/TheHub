@@ -126,7 +126,6 @@ export function VerticalTimeline({ tasks, onComplete, onUncomplete, currentTime 
 
   return (
     <div className="flex h-full flex-col">
-      <div className="text-xs text-red-500 mb-2">DEBUG: Rendering timeline with {tasks.length} tasks</div>
       <div className="flex-1 rounded-2xl border border-slate-200 bg-white overflow-hidden relative">
         {/* Tasks */}
         <div className="absolute inset-0 pointer-events-none">

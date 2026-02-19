@@ -161,7 +161,7 @@ export default function DashboardPage() {
   const allTasks = data?.tasks || [];
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)]">
+    <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)]">
       {/* Top Bar */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5">
         <div className="flex items-center gap-3">
@@ -228,8 +228,8 @@ export default function DashboardPage() {
 
       {/* Main Content - 3 column layout, no scrolling */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Column - Completed/Missed + Points */}
-        <div className="w-[280px] shrink-0 border-r border-slate-200 bg-white p-4">
+        {/* Left Column - Completed/Missed + Points (hidden on small screens) */}
+        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4">
           <CompletedMissed
             completedToday={completedTasks}
             missedYesterday={data?.missedYesterday || []}
@@ -250,8 +250,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right Column - Mini Calendar */}
-        <div className="w-[300px] shrink-0 border-l border-slate-200 bg-white p-4">
+        {/* Right Column - Mini Calendar (hidden on small screens) */}
+        <div className="hidden lg:block w-[300px] shrink-0 border-l border-slate-200 bg-white p-4">
           <MiniCalendar upcomingTasks={upcomingTasks} />
         </div>
       </div>
@@ -410,8 +410,8 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
                     const isSelected = selectedDate && isSameDay(date, selectedDate);
                     const inMonth = isSameMonth(date, currentMonth);
                     return (
-                      <button key={date.toISOString()} onClick={() => setSelectedDate(date)}
-                        className={`flex h-full w-full flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
+                      <div key={date.toISOString()} role="button" tabIndex={0} onClick={() => setSelectedDate(date)} onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
+                        className={`flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 cursor-pointer ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
                         <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-slate-700":"text-slate-300"}`}>{format(date,"d")}</span>
                         <div className="mt-0.5 space-y-0.5">
                           {dayTasks.slice(0,2).map((task) => {
@@ -424,7 +424,7 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
                           })}
                           {dayTasks.length>2 && <p className="pl-0.5 text-[9px] text-slate-400">+{dayTasks.length-2}</p>}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

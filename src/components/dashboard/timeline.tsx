@@ -171,12 +171,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between px-1">
+      <div className="mb-4 px-1">
         <h2 className="text-lg font-bold text-slate-800">Today&apos;s Tasks</h2>
-        <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm">
-          <Clock className="h-3.5 w-3.5 text-[var(--hub-red)]" />
-          <span className="text-sm font-semibold text-slate-700">{formatTime(currentTime)}</span>
-        </div>
       </div>
 
       <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin">

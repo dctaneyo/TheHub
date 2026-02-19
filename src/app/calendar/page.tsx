@@ -198,11 +198,14 @@ export default function CalendarPage() {
                   const todayDate = isToday(date);
 
                   return (
-                    <button
+                    <div
                       key={date.toISOString()}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedDate(date)}
+                      onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
                       className={cn(
-                        "flex h-full w-full flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 overflow-hidden",
+                        "flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 overflow-hidden cursor-pointer",
                         !inMonth && "bg-slate-50/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-slate-50"
@@ -235,7 +238,7 @@ export default function CalendarPage() {
                           );
                         })}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

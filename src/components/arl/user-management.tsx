@@ -165,9 +165,17 @@ export function UserManagement() {
     } catch {}
   };
 
-  const handleDelete = async (item: ArlUser | Location) => {
-    if (!confirm(`Deactivate ${item.name}?`)) return;
-    await handleToggleActive(item);
+  const handlePermanentDelete = async (item: ArlUser | Location) => {
+    if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
+    try {
+      const endpoint = tab === "arls" ? "/api/arls" : "/api/locations";
+      await fetch(endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id }),
+      });
+      await fetchData();
+    } catch {}
   };
 
   if (loading) {
@@ -266,8 +274,16 @@ export function UserManagement() {
                   className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                     item.isActive ? "text-slate-400 hover:bg-red-50 hover:text-red-500" : "text-slate-400 hover:bg-green-50 hover:text-green-500"
                   )}
+                  title={item.isActive ? "Disable" : "Enable"}
                 >
                   {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => handlePermanentDelete(item)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  title="Permanently delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             </motion.div>

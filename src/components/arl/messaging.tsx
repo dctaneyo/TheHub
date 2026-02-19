@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -84,6 +85,7 @@ function convIconBg(type: ConvType) {
 }
 
 export function Messaging() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -110,16 +112,16 @@ export function Messaging() {
       const ctx = audioCtxRef.current ?? new AudioContext();
       audioCtxRef.current = ctx;
       const t = ctx.currentTime;
-      // Two soft ascending tones
-      [[660, 0, 0.12], [880, 0.15, 0.12]].forEach(([freq, delay, dur]) => {
+      // Loud triple-tone alert for noisy kitchen environments
+      [[880, 0, 0.18], [1100, 0.22, 0.18], [880, 0.44, 0.18], [1100, 0.66, 0.18], [1320, 0.88, 0.25]].forEach(([freq, delay, dur]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = "sine";
+        osc.type = "square";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.18, t + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
+        gain.gain.setValueAtTime(0.5, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
         osc.start(t + delay);
         osc.stop(t + delay + dur);
       });
@@ -194,7 +196,7 @@ export function Messaging() {
         const data = await res.json();
         setMessages(data.messages);
         const unreadIds = data.messages
-          .filter((m: Message) => m.reads.length === 0 && m.senderType !== "arl")
+          .filter((m: Message) => m.reads.length === 0 && m.senderId !== user?.id)
           .map((m: Message) => m.id);
         if (unreadIds.length > 0) {
           await fetch("/api/messages/read", {
@@ -535,7 +537,7 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
+    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ArrowLeft className="h-4 w-4" />
@@ -549,7 +551,7 @@ export function Messaging() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
         {(() => {
           const todayStr = new Date().toDateString();
           const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
@@ -581,7 +583,7 @@ export function Messaging() {
             </div>
           )}
           {visibleMessages.map((msg) => {
-            const isMe = msg.senderType === "arl";
+            const isMe = msg.senderId === user?.id;
             const hasBeenRead = msg.reads.length > 0;
             const receiptDetail = isGroup && isMe ? getReceiptDetail(msg, activeConvo) : null;
             const showPopover = receiptPopover === msg.id;
