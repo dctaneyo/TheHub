@@ -168,32 +168,6 @@ export default function ArlPage() {
     } catch {}
   }, []);
 
-  // Heartbeat to keep ARL session alive (every 30s — also detects force logout/reassign)
-  useEffect(() => {
-    const ping = async () => {
-      try {
-        const res = await fetch("/api/session/heartbeat", { method: "POST" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.force === "logout") {
-            await fetch("/api/auth/logout", { method: "POST" });
-            window.location.href = "/login";
-          } else if (data.force === "redirect" && data.token && data.redirectTo) {
-            await fetch("/api/auth/force-apply", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token: data.token }),
-            });
-            window.location.href = data.redirectTo;
-          }
-        }
-      } catch {}
-    };
-    ping();
-    const interval = setInterval(ping, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const { socket, updateActivity } = useSocket();
 
   // Activity tracking — report which section the ARL is viewing
