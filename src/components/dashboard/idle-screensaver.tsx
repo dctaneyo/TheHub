@@ -86,7 +86,7 @@ function ClockDigit({ value, label }: { value: string; label?: string }) {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="font-black tabular-nums leading-none"
             style={{
-              fontSize: "clamp(4rem, 10vw, 8rem)",
+              fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
               fontVariantNumeric: "tabular-nums",
               background: "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
               WebkitBackgroundClip: "text",
@@ -112,8 +112,8 @@ function ColonSeparator({ pulse }: { pulse: boolean }) {
     <motion.div
       animate={{ opacity: pulse ? [1, 0.2, 1] : 1 }}
       transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-      className="font-black text-white/60 leading-none pb-4 select-none"
-      style={{ fontSize: "clamp(3rem, 8vw, 6rem)" }}
+      className="font-black text-white/60 leading-none pb-3 select-none"
+      style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
     >
       :
     </motion.div>
@@ -139,16 +139,16 @@ function ColorCard({
   current?: boolean;
 }) {
   const sizeClasses = {
-    sm: "px-4 py-2 rounded-xl",
-    md: "px-5 py-3 rounded-2xl",
-    lg: "px-6 py-4 rounded-2xl",
+    sm: "px-5 py-3 rounded-xl",
+    md: "px-6 py-4 rounded-2xl",
+    lg: "px-7 py-5 rounded-2xl",
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`flex flex-col items-center gap-1 ${sizeClasses[size]}`}
+      className={`flex flex-col items-center gap-1.5 ${sizeClasses[size]}`}
       style={{
         background: expired
           ? "rgba(255,255,255,0.04)"
@@ -158,20 +158,20 @@ function ColorCard({
         border: `1px solid ${expired ? "rgba(255,255,255,0.08)" : upcoming ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.2)"}`,
       }}
     >
-      <div className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+      <div className="text-[11px] font-bold uppercase tracking-widest text-white/40">
         {label}
       </div>
       <motion.div
-        className="rounded-lg flex items-center justify-center font-black"
+        className="rounded-xl flex items-center justify-center font-black"
         style={{
           background: color.bg,
           color: color.text,
           border: color.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
-          width: size === "sm" ? 56 : size === "md" ? 72 : 88,
-          height: size === "sm" ? 28 : size === "md" ? 36 : 44,
+          width: size === "sm" ? 80 : size === "md" ? 100 : 120,
+          height: size === "sm" ? 42 : size === "md" ? 52 : 60,
           boxShadow: expired ? "none" : `0 0 ${current ? 24 : 12}px ${color.glow}`,
           opacity: expired ? 0.4 : 1,
-          fontSize: size === "sm" ? 11 : 13,
+          fontSize: size === "sm" ? 13 : 15,
         }}
         animate={current ? { boxShadow: [`0 0 16px ${color.glow}`, `0 0 36px ${color.glow}`, `0 0 16px ${color.glow}`] } : {}}
         transition={current ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : {}}
@@ -179,7 +179,7 @@ function ColorCard({
         {color.name}
       </motion.div>
       {sublabel && (
-        <div className="text-[10px] font-semibold text-white/50">{sublabel}</div>
+        <div className="text-[11px] font-semibold text-white/50">{sublabel}</div>
       )}
     </motion.div>
   );
@@ -193,18 +193,18 @@ function HoldColumnCard({ col, now }: { col: typeof HOLD_COLUMNS[0]; now: Date }
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center gap-2 rounded-2xl px-4 py-3"
+      className="flex flex-col items-center gap-2 rounded-2xl px-5 py-4"
       style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
-      <div className="text-[11px] font-bold uppercase tracking-widest text-white/50">{col.label}</div>
+      <div className="text-[12px] font-bold uppercase tracking-widest text-white/50">{col.label}</div>
       <motion.div
-        className="rounded-xl flex items-center justify-center font-black text-sm"
+        className="rounded-xl flex items-center justify-center font-black text-base"
         style={{
           background: color.bg,
           color: color.text,
           border: color.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
-          width: 80,
-          height: 40,
+          width: 110,
+          height: 54,
           boxShadow: `0 0 18px ${color.glow}`,
         }}
         animate={{ boxShadow: [`0 0 12px ${color.glow}`, `0 0 28px ${color.glow}`, `0 0 12px ${color.glow}`] }}
@@ -212,10 +212,10 @@ function HoldColumnCard({ col, now }: { col: typeof HOLD_COLUMNS[0]; now: Date }
       >
         {color.name}
       </motion.div>
-      <div className="text-[10px] font-semibold text-white/60">exp {expireStr}</div>
+      <div className="text-[11px] font-semibold text-white/60">exp {expireStr}</div>
       <div className="flex flex-col items-center gap-0.5">
         {col.products.map((p) => (
-          <div key={p} className="text-[9px] text-white/35 font-medium">{p}</div>
+          <div key={p} className="text-[10px] text-white/35 font-medium">{p}</div>
         ))}
       </div>
     </motion.div>
@@ -310,8 +310,8 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
 
       {/* Radial glow behind clock */}
       <motion.div
-        className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ width: 600, height: 300, background: `radial-gradient(ellipse, ${currentColor.glow} 0%, transparent 70%)` }}
+        className="pointer-events-none absolute top-1/5 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ width: 500, height: 220, background: `radial-gradient(ellipse, ${currentColor.glow} 0%, transparent 70%)` }}
         animate={{ opacity: [0.4, 0.8, 0.4] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -336,8 +336,8 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
           <ColonSeparator pulse={false} />
           <ClockDigit value={sStr} label="sec" />
           <motion.div
-            className="mb-5 ml-2 font-black text-white/60 leading-none"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2.5rem)" }}
+            className="mb-4 ml-2 font-black text-white/60 leading-none"
+            style={{ fontSize: "clamp(1rem, 2vw, 1.5rem)" }}
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -347,7 +347,7 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
 
         {/* Next slot countdown */}
         <motion.div
-          className="flex items-center gap-2 rounded-full px-4 py-1.5"
+          className="flex items-center gap-2 rounded-full px-5 py-2"
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
           animate={{ opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -375,29 +375,29 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
 
           {/* Current — larger, glowing */}
           <motion.div
-            className="flex flex-col items-center gap-1 px-6 py-4 rounded-2xl"
+            className="flex flex-col items-center gap-2 px-8 py-5 rounded-2xl"
             style={{
               background: "rgba(255,255,255,0.1)",
               border: `1px solid ${currentColor.bg}55`,
               boxShadow: `0 0 40px ${currentColor.glow}`,
             }}
           >
-            <div className="text-[11px] font-bold uppercase tracking-widest text-white/60">Discard Now</div>
+            <div className="text-[12px] font-bold uppercase tracking-widest text-white/60">Discard Now</div>
             <motion.div
-              className="rounded-xl flex items-center justify-center font-black text-base"
+              className="rounded-xl flex items-center justify-center font-black text-lg"
               style={{
                 background: currentColor.bg,
                 color: currentColor.text,
                 border: currentColor.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
-                width: 100,
-                height: 50,
+                width: 130,
+                height: 64,
               }}
               animate={{ boxShadow: [`0 0 20px ${currentColor.glow}`, `0 0 50px ${currentColor.glow}`, `0 0 20px ${currentColor.glow}`] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             >
               {currentColor.name}
             </motion.div>
-            <div className="text-[10px] font-semibold text-white/50">exp {getExpireTimeStr(now, 0)}</div>
+            <div className="text-[12px] font-semibold text-white/50">exp {getExpireTimeStr(now, 0)}</div>
           </motion.div>
 
           <ColorCard color={upcomingColor} label="Up Next" sublabel={getExpireTimeStr(now, 1)} size="sm" upcoming />

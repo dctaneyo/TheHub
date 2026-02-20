@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, AlertTriangle, Clock, Volume2, VolumeX } from "lucide-react";
+import { Bell, X, AlertTriangle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type TaskItem } from "./timeline";
 import { useSocket } from "@/lib/socket-context";
@@ -10,6 +10,8 @@ import { useSocket } from "@/lib/socket-context";
 interface NotificationSystemProps {
   tasks: TaskItem[];
   currentTime: string;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
 }
 
 interface Notification {
@@ -35,34 +37,20 @@ function timeToMinutes(t: string): number {
   return h * 60 + m;
 }
 
-export function NotificationSystem({ tasks, currentTime }: NotificationSystemProps) {
+export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleSound }: NotificationSystemProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [showPanel, setShowPanel] = useState(false);
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { socket } = useSocket();
 
-  // Load mute state + dismissed notifications from DB on mount
+  // Load dismissed notifications from DB on mount
   useEffect(() => {
-    fetch('/api/locations/sound')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setSoundEnabled(!d.muted); })
-      .catch(() => {});
-
     fetch('/api/notifications/dismiss')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) notifiedRef.current = new Set(d.dismissedIds); })
       .catch(() => {});
   }, []);
-
-  // Listen for ARL-driven sound toggle
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (data: { muted: boolean }) => setSoundEnabled(!data.muted);
-    socket.on('location:sound-toggle', handler);
-    return () => { socket.off('location:sound-toggle', handler); };
-  }, [socket]);
 
   // Cross-kiosk dismiss sync — when another kiosk at this location dismisses, mirror it here
   useEffect(() => {
@@ -371,31 +359,6 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
           <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--hub-red)] text-[9px] font-bold text-white">
             {activeNotifications.length}
           </span>
-        )}
-      </button>
-
-      {/* Sound toggle */}
-      <button
-        onClick={() => {
-          const next = !soundEnabled;
-          setSoundEnabled(next);
-          fetch('/api/locations/sound', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ muted: !next }),
-          }).catch(() => {});
-        }}
-        className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
-          soundEnabled
-            ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            : "bg-red-50 text-red-400"
-        )}
-      >
-        {soundEnabled ? (
-          <Volume2 className="h-4 w-4" />
-        ) : (
-          <VolumeX className="h-4 w-4" />
         )}
       </button>
 

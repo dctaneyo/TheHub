@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import {
@@ -21,7 +21,14 @@ import {
   AlertCircle,
   CheckCircle2,
   Circle,
+  Settings,
+  Volume2,
+  VolumeX,
+  MonitorOff,
+  Monitor,
+  Play,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { ConnectionStatus } from "@/components/connection-status";
 import { Timeline, type TaskItem } from "@/components/dashboard/timeline";
@@ -45,7 +52,52 @@ interface TasksResponse {
 }
 
 export default function DashboardPage() {
-  const { idle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
+  const [screensaverEnabled, setScreensaverEnabled] = useState(true);
+  const [forceIdle, setForceIdle] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  const { idle: autoIdle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
+  const idle = screensaverEnabled && (autoIdle || forceIdle);
+
+  // Load sound state from server on mount; listen for ARL-driven toggle
+  const { socket: socketForSound } = useSocket();
+  useEffect(() => {
+    fetch('/api/locations/sound')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSoundEnabled(!d.muted); })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!socketForSound) return;
+    const handler = (data: { muted: boolean }) => setSoundEnabled(!data.muted);
+    socketForSound.on('location:sound-toggle', handler);
+    return () => { socketForSound.off('location:sound-toggle', handler); };
+  }, [socketForSound]);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    fetch('/api/locations/sound', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ muted: !next }),
+    }).catch(() => {});
+  };
+
+  // Close settings popover on outside click
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
   const { user, logout } = useAuth();
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
@@ -313,7 +365,110 @@ export default function DashboardPage() {
             )}
           </button>
 
-          <NotificationSystem tasks={allTasks} currentTime={currentTime} />
+          <NotificationSystem
+            tasks={allTasks}
+            currentTime={currentTime}
+            soundEnabled={soundEnabled}
+            onToggleSound={toggleSound}
+          />
+
+          {/* Settings cog */}
+          <div className="relative" ref={settingsRef}>
+            <button
+              onClick={() => setSettingsOpen((v) => !v)}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
+                settingsOpen ? "bg-slate-200 text-slate-800" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+              title="Settings"
+            >
+              <Settings className="h-[18px] w-[18px]" />
+            </button>
+
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+                >
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dashboard Settings</p>
+                  </div>
+
+                  <div className="p-2 space-y-1">
+                    {/* Sound toggle */}
+                    <button
+                      onClick={toggleSound}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        soundEnabled ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"
+                      )}>
+                        {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">Notification Sound</p>
+                        <p className="text-[11px] text-slate-400">{soundEnabled ? "Sounds on" : "Muted"}</p>
+                      </div>
+                      <div className={cn(
+                        "h-5 w-9 rounded-full transition-colors relative",
+                        soundEnabled ? "bg-emerald-500" : "bg-slate-200"
+                      )}>
+                        <div className={cn(
+                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                          soundEnabled ? "translate-x-4" : "translate-x-0.5"
+                        )} />
+                      </div>
+                    </button>
+
+                    {/* Screensaver toggle */}
+                    <button
+                      onClick={() => setScreensaverEnabled((v) => !v)}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        screensaverEnabled ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-400"
+                      )}>
+                        {screensaverEnabled ? <Monitor className="h-4 w-4" /> : <MonitorOff className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">Screensaver</p>
+                        <p className="text-[11px] text-slate-400">{screensaverEnabled ? "Auto after 2 min" : "Disabled"}</p>
+                      </div>
+                      <div className={cn(
+                        "h-5 w-9 rounded-full transition-colors relative",
+                        screensaverEnabled ? "bg-blue-500" : "bg-slate-200"
+                      )}>
+                        <div className={cn(
+                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                          screensaverEnabled ? "translate-x-4" : "translate-x-0.5"
+                        )} />
+                      </div>
+                    </button>
+
+                    {/* Manual invoke */}
+                    <button
+                      onClick={() => { setForceIdle(true); setSettingsOpen(false); }}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                        <Play className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">Show Screensaver</p>
+                        <p className="text-[11px] text-slate-400">Preview now</p>
+                      </div>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <button
             onClick={logout}
