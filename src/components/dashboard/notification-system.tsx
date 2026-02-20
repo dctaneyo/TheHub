@@ -211,6 +211,9 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
 
             if (response.ok) {
               const data = await response.json();
+              // Mark as notified regardless of existing — prevents re-triggering
+              // sound on subsequent tasks prop changes (e.g. after a completion)
+              notifiedRef.current.add(overdueId);
               if (!data.existing) {
                 newNotifications.push({
                   id: overdueId,
@@ -242,6 +245,8 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
 
             if (response.ok) {
               const data = await response.json();
+              // Mark as notified regardless of existing
+              notifiedRef.current.add(dueId);
               if (!data.existing) {
                 newNotifications.push({
                   id: dueId,

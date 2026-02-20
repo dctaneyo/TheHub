@@ -64,8 +64,12 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
+  // Ref-based guard prevents double-tap firing onComplete twice before state updates
+  const completingIdsRef = useRef<Set<string>>(new Set());
 
   const handleComplete = async (taskId: string) => {
+    if (completingIdsRef.current.has(taskId)) return;
+    completingIdsRef.current.add(taskId);
     setCompletingId(taskId);
     const task = tasks.find((t) => t.id === taskId);
     if (task && task.points > 0) {
@@ -74,7 +78,10 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       setTimeout(() => setFlyups((prev) => prev.filter((f) => f.id !== flyId)), 1200);
     }
     await onComplete(taskId);
-    setTimeout(() => setCompletingId(null), 1500);
+    setTimeout(() => {
+      setCompletingId(null);
+      completingIdsRef.current.delete(taskId);
+    }, 1500);
   };
 
   const handleUncomplete = async (taskId: string, e: React.MouseEvent) => {

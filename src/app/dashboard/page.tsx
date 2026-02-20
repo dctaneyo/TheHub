@@ -67,12 +67,12 @@ export default function DashboardPage() {
     return `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`;
   };
 
-  // Tracks whether a completion is in-flight — suppresses socket-triggered
-  // fetchTasks during that window to prevent the optimistic update being overwritten.
-  const completingRef = useRef(false);
+  // Timestamp of last completion — suppresses socket-triggered fetchTasks
+  // for 3s after a completion to prevent the optimistic update being overwritten.
+  const completingRef = useRef(0);
 
   const fetchTasks = useCallback(async () => {
-    if (completingRef.current) return;
+    if (Date.now() - completingRef.current < 3000) return;
     try {
       const [todayRes, upcomingRes] = await Promise.all([
         fetch(`/api/tasks/today?${localTimeParams()}`),
@@ -200,9 +200,10 @@ export default function DashboardPage() {
   };
 
   const handleCompleteTask = async (taskId: string) => {
-    completingRef.current = true;
+    // Record completion time — suppresses socket-triggered fetchTasks for 3s
+    completingRef.current = Date.now();
+
     // Optimistic update — immediately mark completed so the UI never reverts
-    // due to a race between the socket-triggered fetchTasks and our own fetch.
     setData((prev) => {
       if (!prev) return prev;
       return {
@@ -223,8 +224,7 @@ export default function DashboardPage() {
 
       if (res.ok) {
         const result = await res.json();
-        const pts = result.pointsEarned || 0;
-        setConfettiPoints(pts);
+        setConfettiPoints(result.pointsEarned || 0);
         playConfettiSound();
         // Fetch confirmed state to check all-done and update points
         const updatedRes = await fetch(`/api/tasks/today?${localTimeParams()}`);
@@ -242,21 +242,16 @@ export default function DashboardPage() {
         } else {
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 2800);
-          await fetchTasks();
         }
       } else {
-        // Revert optimistic update on failure
-        completingRef.current = false;
+        // Revert optimistic update on failure — bypass the lock
+        completingRef.current = 0;
         await fetchTasks();
       }
     } catch (err) {
       console.error("Failed to complete task:", err);
-      completingRef.current = false;
+      completingRef.current = 0;
       await fetchTasks();
-    } finally {
-      // Always clear the lock after a short delay so the confirmed setData(updated)
-      // has settled before socket events can trigger another fetch
-      setTimeout(() => { completingRef.current = false; }, 1500);
     }
   };
 
