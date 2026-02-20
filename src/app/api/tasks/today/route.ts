@@ -17,8 +17,10 @@ export async function GET(req: Request) {
     const localTime = searchParams.get("localTime"); // HH:mm
     const localDay = searchParams.get("localDay");   // sun|mon|...
 
-    const today = new Date();
-    const todayStr = localDate || today.toISOString().split("T")[0];
+    // Build today's date from the client-supplied localDate to avoid UTC vs local mismatch.
+    // Appending T12:00:00 avoids DST edge cases when constructing a Date from a date-only string.
+    const todayStr = localDate || new Date().toISOString().split("T")[0];
+    const today = new Date(`${todayStr}T12:00:00`);
     const dayOfWeek = localDay || ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
 
     // Get all tasks for this location (or all locations if locationId is null)
@@ -50,10 +52,10 @@ export async function GET(req: Request) {
 
     const completedTaskIds = new Set(completions.map((c) => c.taskId));
 
-    // Get yesterday's missed tasks
-    const yesterday = new Date(today);
+    // Get yesterday's missed tasks — derive from localDate so it's always the day before the client's today.
+    const yesterday = new Date(`${todayStr}T12:00:00`);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
     const yesterdayDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][yesterday.getDay()];
 
     const yesterdayTasks = allTasks.filter((task) => {

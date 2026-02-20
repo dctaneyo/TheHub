@@ -91,10 +91,13 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Update current time every second for display; task logic still uses HH:mm
+  // Update current time every second for display; task logic still uses HH:mm.
+  // Also detects midnight rollover and immediately re-fetches tasks for the new day.
+  const currentDateRef = useRef<string>("");
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       setCurrentTime(hhmm);
       const h = now.getHours();
@@ -103,11 +106,17 @@ export default function DashboardPage() {
       const ampm = h >= 12 ? "PM" : "AM";
       const h12 = h % 12 || 12;
       setDisplayTime(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${ampm}`);
+      // Detect date rollover (midnight) and immediately refresh tasks for the new day
+      if (currentDateRef.current && currentDateRef.current !== dateStr) {
+        completingRef.current = 0; // clear suppression so fetchTasks runs
+        fetchTasks();
+      }
+      currentDateRef.current = dateStr;
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchTasks]);
 
   // Fetch tasks on mount + every 60s + listen for instant WebSocket updates
   const { socket, updateActivity } = useSocket();
