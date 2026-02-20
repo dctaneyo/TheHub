@@ -109,13 +109,25 @@ export function EmergencyOverlay() {
       revealedRef.current = false;
       lastIdRef.current = null;
     };
+    const handleViewedLocal = (data: { messageId: string }) => {
+      // Another kiosk at this location acknowledged — dismiss here too
+      if (activeMessage && data.messageId === activeMessage.id) {
+        stopAlarm();
+        setDismissed(data.messageId);
+        setActiveMessage(null);
+        setRevealed(false);
+        revealedRef.current = false;
+      }
+    };
     socket.on("emergency:broadcast", handleBroadcast);
     socket.on("emergency:dismissed", handleDismissed);
+    socket.on("emergency:viewed-local", handleViewedLocal);
     return () => {
       socket.off("emergency:broadcast", handleBroadcast);
       socket.off("emergency:dismissed", handleDismissed);
+      socket.off("emergency:viewed-local", handleViewedLocal);
     };
-  }, [socket, fetchMessage, stopAlarm]);
+  }, [socket, fetchMessage, stopAlarm, activeMessage]);
 
   const handleReveal = async () => {
     revealedRef.current = true;

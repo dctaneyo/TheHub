@@ -64,6 +64,19 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
     return () => { socket.off('location:sound-toggle', handler); };
   }, [socket]);
 
+  // Cross-kiosk dismiss sync — when another kiosk at this location dismisses, mirror it here
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { notificationIds: string[] }) => {
+      data.notificationIds.forEach((id) => notifiedRef.current.add(id));
+      setNotifications((prev) =>
+        prev.map((n) => data.notificationIds.includes(n.id) ? { ...n, dismissed: true } : n)
+      );
+    };
+    socket.on('notification:dismissed', handler);
+    return () => { socket.off('notification:dismissed', handler); };
+  }, [socket]);
+
   // Save dismissed notifications to database
   const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
     try {
@@ -136,35 +149,20 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
   }, [tasks]);
 
   // ── Server-pushed exact-time notifications ──
-  const fireNotification = useCallback(async (
+  // Dedup is purely client-side via notifiedRef — no DB write needed on receive.
+  const fireNotification = useCallback((
     type: "due_soon" | "overdue",
     data: { taskId: string; title: string; dueTime: string }
   ) => {
     const id = `${type === "due_soon" ? "due" : "overdue"}-${data.taskId}`;
     if (notifiedRef.current.has(id)) return;
-    try {
-      const res = await fetch('/api/notifications/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: type === "due_soon" ? 'task_due_soon' : 'task_overdue',
-          title: type === "due_soon" ? 'Task Due Soon' : 'Overdue Task',
-          body: data.title,
-          referenceId: id,
-        }),
-      });
-      if (res.ok) {
-        const d = await res.json();
-        if (!d.existing) {
-          setNotifications((prev) => [{
-            id, taskId: data.taskId, title: data.title,
-            type, dueTime: data.dueTime, dismissed: false,
-          }, ...prev]);
-          playNotificationSound();
-          setShowPanel(true);
-        }
-      }
-    } catch {}
+    notifiedRef.current.add(id);
+    setNotifications((prev) => [{
+      id, taskId: data.taskId, title: data.title,
+      type, dueTime: data.dueTime, dismissed: false,
+    }, ...prev]);
+    playNotificationSound();
+    setShowPanel(true);
   }, [playNotificationSound]);
 
   useEffect(() => {
@@ -181,109 +179,38 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
     };
   }, [socket, fireNotification]);
 
-  // Check for due-soon and overdue tasks (fallback: fires if server push missed due to reconnect)
+  // Fallback: catch any due-soon/overdue tasks that the server push may have missed
+  // (e.g. reconnect after a brief disconnect). Purely client-side dedup via notifiedRef.
   useEffect(() => {
     if (!currentTime || tasks.length === 0) return;
+    const nowMinutes = timeToMinutes(currentTime);
+    const newNotifications: Notification[] = [];
 
-    const checkAndCreateNotifications = async () => {
-      const newNotifications: Notification[] = [];
-      const nowMinutes = timeToMinutes(currentTime);
+    for (const task of tasks) {
+      if (task.isCompleted) continue;
+      const taskMinutes = timeToMinutes(task.dueTime);
+      const isOverdue = taskMinutes < nowMinutes;
+      const isDueSoon = !isOverdue && taskMinutes <= nowMinutes + DUE_SOON_MINUTES;
+      const overdueId = `overdue-${task.id}`;
+      const dueId = `due-${task.id}`;
 
-      for (const task of tasks) {
-        if (task.isCompleted) continue;
-
-        const taskMinutes = timeToMinutes(task.dueTime);
-        const isOverdue = taskMinutes < nowMinutes;
-        const isDueSoon = !isOverdue && taskMinutes <= nowMinutes + DUE_SOON_MINUTES;
-
-        const overdueId = `overdue-${task.id}`;
-        const dueId = `due-${task.id}`;
-
-        // Check if notification is already dismissed
-        if (notifiedRef.current.has(overdueId) || notifiedRef.current.has(dueId)) {
-          continue;
-        }
-
-        // Create notifications in database
-        if (isOverdue) {
-          try {
-            const response = await fetch('/api/notifications/create', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'task_overdue',
-                title: 'Overdue Task',
-                body: task.title,
-                referenceId: overdueId
-              }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              // Mark as notified regardless of existing — prevents re-triggering
-              // sound on subsequent tasks prop changes (e.g. after a completion)
-              notifiedRef.current.add(overdueId);
-              if (!data.existing) {
-                newNotifications.push({
-                  id: overdueId,
-                  taskId: task.id,
-                  title: task.title,
-                  type: "overdue",
-                  dueTime: task.dueTime,
-                  dismissed: false,
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Failed to create overdue notification:', error);
-          }
-        }
-
-        if (isDueSoon) {
-          try {
-            const response = await fetch('/api/notifications/create', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'task_due_soon',
-                title: 'Task Due Soon',
-                body: task.title,
-                referenceId: dueId
-              }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              // Mark as notified regardless of existing
-              notifiedRef.current.add(dueId);
-              if (!data.existing) {
-                newNotifications.push({
-                  id: dueId,
-                  taskId: task.id,
-                  title: task.title,
-                  type: "due_soon",
-                  dueTime: task.dueTime,
-                  dismissed: false,
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Failed to create due soon notification:', error);
-          }
-        }
+      if (isOverdue && !notifiedRef.current.has(overdueId)) {
+        notifiedRef.current.add(overdueId);
+        newNotifications.push({ id: overdueId, taskId: task.id, title: task.title, type: "overdue", dueTime: task.dueTime, dismissed: false });
       }
-
-      if (newNotifications.length > 0) {
-        setNotifications((prev) => [...newNotifications, ...prev]);
-        playNotificationSound();
-        setShowPanel(true);
+      if (isDueSoon && !notifiedRef.current.has(dueId)) {
+        notifiedRef.current.add(dueId);
+        newNotifications.push({ id: dueId, taskId: task.id, title: task.title, type: "due_soon", dueTime: task.dueTime, dismissed: false });
       }
-    };
+    }
 
-    checkAndCreateNotifications();
+    if (newNotifications.length > 0) {
+      setNotifications((prev) => [...newNotifications, ...prev]);
+      playNotificationSound();
+      setShowPanel(true);
+    }
   }, [tasks, currentTime, playNotificationSound]);
-  // NOTE: currentTime is HH:mm — it only changes once per minute, so this
-  // effect fires at most once per minute per tasks change. That is correct.
+  // NOTE: currentTime is HH:mm — changes once per minute, so this fires at most once per minute.
 
   const dismissNotification = async (id: string) => {
     // Add to dismissed set and save to database

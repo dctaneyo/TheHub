@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
+import { broadcastNotificationDismissed } from "@/lib/socket-emit";
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
             )
           );
       }
+    }
+
+    // Broadcast to other kiosks at the same location so they sync immediately
+    if (notificationIds.length > 0 && session.locationId) {
+      broadcastNotificationDismissed(session.locationId, notificationIds);
     }
 
     return NextResponse.json({ success: true });

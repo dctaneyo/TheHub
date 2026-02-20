@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed } from "@/lib/socket-emit";
+import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed, broadcastEmergencyViewedLocal } from "@/lib/socket-emit";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -155,6 +155,8 @@ export async function PATCH(req: NextRequest) {
 
     // Notify ARLs in real-time that this location viewed the message
     broadcastEmergencyViewed(messageId, session.id, session.name);
+    // Notify sibling kiosks at this location so they also dismiss the overlay
+    broadcastEmergencyViewedLocal(session.id, messageId);
 
     return NextResponse.json({ success: true, archived: shouldArchive });
   } catch (error) {

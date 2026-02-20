@@ -104,6 +104,11 @@ export function broadcastEmergencyViewed(messageId: string, locationId: string, 
   emitToArls("emergency:viewed", { messageId, locationId, locationName });
 }
 
+export function broadcastEmergencyViewedLocal(locationId: string, messageId: string) {
+  if (!isAvailable()) return;
+  emitToLocation(locationId, "emergency:viewed-local", { messageId });
+}
+
 // ── Presence events ──
 export function broadcastPresenceUpdate(userId: string, userType: string, name: string, isOnline: boolean, storeNumber?: string) {
   if (!isAvailable()) return;
@@ -135,6 +140,12 @@ export function broadcastSessionActivated(pendingId: string) {
 export function broadcastPing(pendingId: string) {
   if (!isAvailable()) return;
   emitToLoginWatchers("session:ping", { pendingId });
+}
+
+// ── Notification dismiss sync (multi-kiosk) ──
+export function broadcastNotificationDismissed(locationId: string, notificationIds: string[]) {
+  if (!isAvailable()) return;
+  emitToLocation(locationId, "notification:dismissed", { notificationIds });
 }
 
 // ── Sound mute toggle ──
