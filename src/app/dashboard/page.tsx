@@ -90,6 +90,24 @@ export default function DashboardPage() {
   const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ── Shared AudioContext — created on first user gesture so it's never suspended ──
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    const resume = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      } else if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+    };
+    window.addEventListener('pointerdown', resume, { once: true });
+    window.addEventListener('keydown', resume, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', resume);
+      window.removeEventListener('keydown', resume);
+    };
+  }, []);
+
   // ── Voice announcements: speak 5 min before each color slot boundary ──
   const voiceAnnouncedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -124,29 +142,36 @@ export default function DashboardPage() {
 
     function playChime(onDone: () => void) {
       try {
-        const ctx = new AudioContext();
-        // Rising 3-note chime: C5 → E5 → G5 (major triad, airport/train style)
-        const notes = [
-          { freq: 523.25, start: 0,    dur: 0.55 },  // C5
-          { freq: 659.25, start: 0.35, dur: 0.55 },  // E5
-          { freq: 783.99, start: 0.70, dur: 0.90 },  // G5
-        ];
-        const totalDur = 1.65;
-        notes.forEach(({ freq, start, dur }) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          // Slight sine + triangle blend for a bell-like tone
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0, ctx.currentTime + start);
-          gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + start);
-          osc.stop(ctx.currentTime + start + dur);
-        });
-        setTimeout(onDone, totalDur * 1000 + 150);
+        // Reuse the shared AudioContext; create one now if the user somehow
+        // hasn't interacted yet (fallback — should already exist after login click)
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new AudioContext();
+        }
+        const ctx = audioCtxRef.current;
+        const resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+        resume.then(() => {
+          // Rising 3-note chime: C5 → E5 → G5 (major triad, airport/train style)
+          const notes = [
+            { freq: 523.25, start: 0,    dur: 0.55 },  // C5
+            { freq: 659.25, start: 0.35, dur: 0.55 },  // E5
+            { freq: 783.99, start: 0.70, dur: 0.90 },  // G5
+          ];
+          const totalDur = 1.65;
+          notes.forEach(({ freq, start, dur }) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, ctx.currentTime + start);
+            gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + start);
+            osc.stop(ctx.currentTime + start + dur);
+          });
+          setTimeout(onDone, totalDur * 1000 + 150);
+        }).catch(() => onDone());
       } catch {
         onDone();
       }
