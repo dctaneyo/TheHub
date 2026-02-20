@@ -126,6 +126,15 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
     } catch {}
   }, [soundEnabled]);
 
+  // Auto-dismiss notifications for tasks that are now completed
+  useEffect(() => {
+    const completedIds = new Set(tasks.filter((t) => t.isCompleted).map((t) => t.id));
+    if (completedIds.size === 0) return;
+    setNotifications((prev) =>
+      prev.map((n) => (completedIds.has(n.taskId) ? { ...n, dismissed: true } : n))
+    );
+  }, [tasks]);
+
   // ── Server-pushed exact-time notifications ──
   const fireNotification = useCallback(async (
     type: "due_soon" | "overdue",

@@ -12,15 +12,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId, notes, completedDate: requestedDate } = await req.json();
+    const { taskId, notes, completedDate: requestedDate, localDate } = await req.json();
 
     const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).get();
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
+    // Prefer client-supplied localDate (avoids UTC vs local timezone mismatch on Railway).
+    // Fall back to requestedDate (early-complete from calendar), then server UTC.
     const todayStr = new Date().toISOString().split("T")[0];
-    const targetDate = requestedDate || todayStr;
+    const targetDate = requestedDate || localDate || todayStr;
 
     // If completing for a future date, check allowEarlyComplete
     if (targetDate > todayStr && !task.allowEarlyComplete) {

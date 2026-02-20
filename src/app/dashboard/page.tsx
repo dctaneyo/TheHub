@@ -216,10 +216,12 @@ export default function DashboardPage() {
     });
 
     try {
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const res = await fetch("/api/tasks/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId }),
+        body: JSON.stringify({ taskId, localDate }),
       });
 
       if (res.ok) {
