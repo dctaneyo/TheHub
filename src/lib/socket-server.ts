@@ -257,12 +257,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         storeNumber: user.userType === "location" ? user.storeNumber : undefined,
         isOnline: true,
       });
-      // Update lastSeen in DB so the HTTP heartbeat route only needs to check force actions
+      // Update lastSeen for THIS session only (by sessionCode, not userId)
+      // Using userId would revive all old stale sessions for the same user.
       try {
-        db.update(schema.sessions)
-          .set({ isOnline: true, lastSeen: new Date().toISOString() })
-          .where(eq(schema.sessions.userId, user.id))
-          .run();
+        if (user.sessionCode) {
+          db.update(schema.sessions)
+            .set({ isOnline: true, lastSeen: new Date().toISOString() })
+            .where(eq(schema.sessions.sessionCode, user.sessionCode))
+            .run();
+        }
       } catch {}
     });
 

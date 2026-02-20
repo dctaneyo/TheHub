@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId, completedDate: requestedDate } = await req.json();
+    const { taskId, completedDate: requestedDate, localDate } = await req.json();
     if (!taskId) return NextResponse.json({ error: "taskId required" }, { status: 400 });
 
-    const targetDate = requestedDate || new Date().toISOString().split("T")[0];
+    const targetDate = requestedDate || localDate || new Date().toISOString().split("T")[0];
 
     const completion = db
       .select()
