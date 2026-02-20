@@ -282,11 +282,10 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
   const mStr = String(m).padStart(2, "0");
   const sStr = String(s).padStart(2, "0");
 
-  const applyNowColor  = getColorAtOffset(now, 1);  // tag to put ON product right now (expires 30 min from now)
-  const discardNowColor = getColorAtOffset(now, 0);  // tag to REMOVE from product right now
-  const expiredColor1   = getColorAtOffset(now, -1);
-  const expiredColor2   = getColorAtOffset(now, -2);
-  const upcomingColor   = getColorAtOffset(now, 2);  // next tag after applyNow
+  const currentColor  = getColorAtOffset(now, 0);  // tag to DISCARD right now
+  const expiredColor1  = getColorAtOffset(now, -1);
+  const expiredColor2  = getColorAtOffset(now, -2);
+  const upcomingColor  = getColorAtOffset(now, 1);  // next color
 
   const secsToNext = minutesToNextSlot(now);
   const minsToNext = Math.floor(secsToNext / 60);
@@ -314,7 +313,7 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
       {/* Radial glow behind clock */}
       <motion.div
         className="pointer-events-none absolute top-1/5 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ width: 500, height: 220, background: `radial-gradient(ellipse, ${applyNowColor.glow} 0%, transparent 70%)` }}
+        style={{ width: 500, height: 220, background: `radial-gradient(ellipse, ${currentColor.glow} 0%, transparent 70%)` }}
         animate={{ opacity: [0.4, 0.8, 0.4] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -357,7 +356,7 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
         >
           <div
             className="h-2.5 w-2.5 rounded-full"
-            style={{ background: applyNowColor.bg, boxShadow: `0 0 8px ${applyNowColor.glow}` }}
+            style={{ background: currentColor.bg, boxShadow: `0 0 8px ${currentColor.glow}` }}
           />
           <span className="text-xs font-semibold text-white/60">
             Color changes in{" "}
@@ -371,7 +370,7 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
       {/* Color time tags section */}
       <div className="w-full max-w-5xl px-6 flex flex-col items-center gap-5">
 
-        {/* ── Hero strip: expired → apply now → discard now → up next ── */}
+        {/* ── Hero strip: expired → discard now → up next ── */}
         <div className="flex items-center gap-3 justify-center">
 
           {/* Last 2 expired — dimmed, small */}
@@ -383,75 +382,41 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
           {/* Arrow */}
           <div className="text-white/20 text-2xl font-thin px-1">›</div>
 
-          {/* APPLY NOW — primary action, green accent */}
+          {/* DISCARD NOW — hero */}
           <motion.div
-            className="flex flex-col items-center gap-2 px-7 py-5 rounded-2xl"
+            className="flex flex-col items-center gap-2 px-8 py-5 rounded-2xl"
             style={{
               background: "rgba(255,255,255,0.1)",
-              border: `1px solid ${applyNowColor.bg}66`,
-              boxShadow: `0 0 50px ${applyNowColor.glow}`,
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[12px] font-black uppercase tracking-widest text-emerald-300">Apply Now</span>
-            </div>
-            <motion.div
-              className="rounded-xl flex items-center justify-center font-black text-xl"
-              style={{
-                background: applyNowColor.bg,
-                color: applyNowColor.text,
-                border: applyNowColor.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
-                width: 140,
-                height: 68,
-              }}
-              animate={{ boxShadow: [`0 0 20px ${applyNowColor.glow}`, `0 0 55px ${applyNowColor.glow}`, `0 0 20px ${applyNowColor.glow}`] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              {applyNowColor.name}
-            </motion.div>
-            <div className="text-[11px] font-semibold text-white/50">expires {getExpireTimeStr(now, 1)}</div>
-          </motion.div>
-
-          {/* Divider */}
-          <div className="h-20 w-px mx-1" style={{ background: "rgba(255,255,255,0.1)" }} />
-
-          {/* DISCARD NOW — secondary action, red accent */}
-          <motion.div
-            className="flex flex-col items-center gap-2 px-7 py-5 rounded-2xl"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: `1px solid ${discardNowColor.bg}44`,
-              boxShadow: `0 0 30px ${discardNowColor.glow}`,
+              border: `1px solid ${currentColor.bg}55`,
+              boxShadow: `0 0 40px ${currentColor.glow}`,
             }}
           >
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-red-400" />
-              <span className="text-[12px] font-bold uppercase tracking-widest text-red-300/80">Discard Now</span>
+              <span className="text-[12px] font-bold uppercase tracking-widest text-white/60">Discard Now</span>
             </div>
             <motion.div
-              className="rounded-xl flex items-center justify-center font-black text-lg"
+              className="rounded-xl flex items-center justify-center font-black text-xl"
               style={{
-                background: discardNowColor.bg,
-                color: discardNowColor.text,
-                border: discardNowColor.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
-                width: 120,
-                height: 58,
-                opacity: 0.85,
+                background: currentColor.bg,
+                color: currentColor.text,
+                border: currentColor.border ? "2px solid rgba(0,0,0,0.15)" : undefined,
+                width: 130,
+                height: 64,
               }}
-              animate={{ boxShadow: [`0 0 12px ${discardNowColor.glow}`, `0 0 28px ${discardNowColor.glow}`, `0 0 12px ${discardNowColor.glow}`] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              animate={{ boxShadow: [`0 0 20px ${currentColor.glow}`, `0 0 50px ${currentColor.glow}`, `0 0 20px ${currentColor.glow}`] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             >
-              {discardNowColor.name}
+              {currentColor.name}
             </motion.div>
-            <div className="text-[11px] font-semibold text-white/40">expired {getExpireTimeStr(now, 0)}</div>
+            <div className="text-[12px] font-semibold text-white/50">exp {getExpireTimeStr(now, 0)}</div>
           </motion.div>
 
           {/* Arrow */}
           <div className="text-white/20 text-2xl font-thin px-1">›</div>
 
           {/* Up next — small */}
-          <ColorCard color={upcomingColor} label="Up Next" sublabel={getExpireTimeStr(now, 2)} size="sm" upcoming />
+          <ColorCard color={upcomingColor} label="Up Next" sublabel={getExpireTimeStr(now, 1)} size="sm" upcoming />
         </div>
 
         {/* Divider */}

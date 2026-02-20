@@ -86,6 +86,71 @@ export default function DashboardPage() {
     }).catch(() => {});
   };
 
+  // ── Voice announcements: speak 5 min before each color slot boundary ──
+  const voiceAnnouncedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const COLOR_NAMES = ["Red","Orange","Yellow","Green","Blue","Purple","Brown","Grey","White"];
+    const ANCHOR_MINUTES = 10 * 60;
+    const SLOT_MINS = 30;
+    const ANNOUNCE_BEFORE_SECS = 5 * 60; // 5 minutes
+
+    function getSlotIndex(now: Date) {
+      const mins = now.getHours() * 60 + now.getMinutes();
+      const delta = ((mins - ANCHOR_MINUTES) % (9 * SLOT_MINS) + 9 * SLOT_MINS) % (9 * SLOT_MINS);
+      return Math.floor(delta / SLOT_MINS);
+    }
+
+    function secsToNextBoundary(now: Date) {
+      const totalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const secsIntoSlot = totalSecs % (SLOT_MINS * 60);
+      return SLOT_MINS * 60 - secsIntoSlot;
+    }
+
+    function speak(text: string) {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.rate = 0.92;
+      utt.pitch = 1.05;
+      utt.volume = 1;
+
+      // Prefer a natural-sounding voice: Google US English, Samantha, or similar
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        /google us english/i.test(v.name) ||
+        /samantha/i.test(v.name) ||
+        /karen/i.test(v.name) ||
+        /daniel/i.test(v.name) ||
+        /moira/i.test(v.name)
+      ) ?? voices.find(v => v.lang === 'en-US') ?? voices[0];
+      if (preferred) utt.voice = preferred;
+
+      window.speechSynthesis.speak(utt);
+    }
+
+    const interval = setInterval(() => {
+      if (!soundEnabled) return;
+      const now = new Date();
+      const secs = secsToNextBoundary(now);
+      // Fire in the window 5:00–4:55 before boundary (5-second window to avoid double-firing)
+      if (secs > ANNOUNCE_BEFORE_SECS || secs <= ANNOUNCE_BEFORE_SECS - 5) return;
+
+      const slotIdx = getSlotIndex(now);
+      // The color that is about to expire is the current slot color
+      const expiringColor = COLOR_NAMES[slotIdx];
+      // Key by slot boundary minute so we only fire once per boundary
+      const boundaryMin = Math.floor((now.getHours() * 60 + now.getMinutes() + 5) / SLOT_MINS) * SLOT_MINS;
+      const key = `${boundaryMin}`;
+      if (voiceAnnouncedRef.current.has(key)) return;
+      voiceAnnouncedRef.current.add(key);
+
+      speak(`Heads up — ${expiringColor} is expiring in 5 minutes.`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [soundEnabled]);
+
   // Close settings popover on outside click
   useEffect(() => {
     if (!settingsOpen) return;
