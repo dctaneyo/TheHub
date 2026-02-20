@@ -149,17 +149,28 @@ export async function POST(req: NextRequest) {
     };
 
     db.insert(schema.messages).values(message).run();
+
+    // Un-hide the conversation for any member who had soft-deleted it
+    // (a new incoming message should resurface the thread for them)
+    const conv = db.select().from(schema.conversations)
+      .where(eq(schema.conversations.id, conversationId)).get();
+    if (conv) {
+      const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
+      // Remove everyone except the sender — their own hide stays intact
+      const updatedDeletedBy = deletedBy.filter((id) => id === session.id);
+      if (updatedDeletedBy.length !== deletedBy.length) {
+        db.update(schema.conversations)
+          .set({ deletedBy: JSON.stringify(updatedDeletedBy) })
+          .where(eq(schema.conversations.id, conversationId)).run();
+      }
+    }
+
     db.update(schema.conversations)
       .set({ lastMessageAt: now, lastMessagePreview: content.slice(0, 80) })
       .where(eq(schema.conversations.id, conversationId)).run();
 
     // Send push notification to ARLs if this is from a location
     if (session.userType === "location") {
-      // Get conversation details to find ARL participants
-      const conv = db.select().from(schema.conversations)
-        .where(eq(schema.conversations.id, conversationId))
-        .get();
-      
       if (conv) {
         // For direct messages, notify the other participant
         if (conv.type === "direct") {
@@ -173,11 +184,9 @@ export async function POST(req: NextRequest) {
             });
           }
         } else if (conv.type === "global") {
-          // For global chat, notify all ARLs
           const arls = db.select().from(schema.arls)
             .where(eq(schema.arls.isActive, true))
             .all();
-          
           for (const arl of arls) {
             await sendPushToARL(arl.id, {
               title: `Global Chat: ${session.name}`,
