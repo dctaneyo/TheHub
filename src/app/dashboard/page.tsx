@@ -104,10 +104,12 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch tasks on mount + listen for instant WebSocket updates
+  // Fetch tasks on mount + every 60s + listen for instant WebSocket updates
   const { socket, updateActivity } = useSocket();
   useEffect(() => {
     fetchTasks();
+    const interval = setInterval(fetchTasks, 60_000);
+    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   useEffect(() => {

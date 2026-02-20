@@ -28,6 +28,13 @@ function formatTime12(time: string): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+const DUE_SOON_MINUTES = 30;
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
 export function NotificationSystem({ tasks, currentTime }: NotificationSystemProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -125,9 +132,14 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
 
     const checkAndCreateNotifications = async () => {
       const newNotifications: Notification[] = [];
+      const nowMinutes = timeToMinutes(currentTime);
 
       for (const task of tasks) {
         if (task.isCompleted) continue;
+
+        const taskMinutes = timeToMinutes(task.dueTime);
+        const isOverdue = taskMinutes < nowMinutes;
+        const isDueSoon = !isOverdue && taskMinutes <= nowMinutes + DUE_SOON_MINUTES;
 
         const overdueId = `overdue-${task.id}`;
         const dueId = `due-${task.id}`;
@@ -138,7 +150,7 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
         }
 
         // Create notifications in database
-        if (task.isOverdue) {
+        if (isOverdue) {
           try {
             const response = await fetch('/api/notifications/create', {
               method: 'POST',
@@ -169,7 +181,7 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
           }
         }
 
-        if (task.isDueSoon) {
+        if (isDueSoon) {
           try {
             const response = await fetch('/api/notifications/create', {
               method: 'POST',
@@ -210,6 +222,8 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
 
     checkAndCreateNotifications();
   }, [tasks, currentTime, playNotificationSound]);
+  // NOTE: currentTime is HH:mm — it only changes once per minute, so this
+  // effect fires at most once per minute per tasks change. That is correct.
 
   const dismissNotification = async (id: string) => {
     // Add to dismissed set and save to database
