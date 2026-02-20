@@ -28,6 +28,7 @@ export function ConnectionStatus() {
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [showCode, setShowCode] = useState(false);
+  const [, setTick] = useState(0);
   const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
   const checkInterval = useRef<NodeJS.Timeout | null>(null);
   const popdownRef = useRef<HTMLDivElement>(null);
@@ -132,7 +133,15 @@ export function ConnectionStatus() {
       }
     };
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    // Re-fetch every 30s while open so lastSeen stays current
+    const refreshTimer = setInterval(fetchSessionCode, 30000);
+    // Tick every second so formatDistanceToNow re-evaluates in real time
+    const tickTimer = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      clearInterval(refreshTimer);
+      clearInterval(tickTimer);
+    };
   }, [showCode]);
 
   // API already filters to online-only; multiSession = more than one active session
@@ -226,7 +235,7 @@ export function ConnectionStatus() {
                       {s.isCurrent && <span className="text-[9px] font-semibold text-emerald-600">(this)</span>}
                     </div>
                     <p className="text-[9px] text-slate-400 truncate">
-                      {s.deviceType ?? "unknown"} · {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                      {s.deviceType ?? "unknown"} · {formatDistanceToNow(new Date(s.lastSeen), { addSuffix: true })}
                     </p>
                   </div>
                   <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-emerald-400" />
