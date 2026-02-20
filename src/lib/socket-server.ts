@@ -288,6 +288,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
+    // ── Midnight rollover: client detected date change, reschedule timers for new day ──
+    socket.on("client:day-reset", () => {
+      if (user?.userType === "location") {
+        scheduleTaskNotifications(io, user.id);
+        // Tell the client to re-fetch tasks for the new day
+        socket.emit("task:updated", { locationId: user.id });
+      }
+    });
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {

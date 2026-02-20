@@ -91,6 +91,9 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Hoist socket so it's available in the clock effect below
+  const { socket, updateActivity } = useSocket();
+
   // Update current time every second for display; task logic still uses HH:mm.
   // Also detects midnight rollover and immediately re-fetches tasks for the new day.
   const currentDateRef = useRef<string>("");
@@ -106,24 +109,23 @@ export default function DashboardPage() {
       const ampm = h >= 12 ? "PM" : "AM";
       const h12 = h % 12 || 12;
       setDisplayTime(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${ampm}`);
-      // Detect date rollover (midnight) and immediately refresh tasks for the new day
+      // Detect date rollover (midnight) — emit to server so it reschedules timers;
+      // server responds with task:updated which triggers fetchTasks via socket listener.
       if (currentDateRef.current && currentDateRef.current !== dateStr) {
-        completingRef.current = 0; // clear suppression so fetchTasks runs
-        fetchTasks();
+        completingRef.current = 0;
+        socket?.emit("client:day-reset");
+        fetchTasks(); // immediate local re-fetch in case socket is momentarily slow
       }
       currentDateRef.current = dateStr;
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [fetchTasks]);
+  }, [fetchTasks, socket]);
 
-  // Fetch tasks on mount + every 60s + listen for instant WebSocket updates
-  const { socket, updateActivity } = useSocket();
+  // Fetch tasks on mount + listen for instant WebSocket updates (no polling needed)
   useEffect(() => {
     fetchTasks();
-    const interval = setInterval(fetchTasks, 60_000);
-    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   useEffect(() => {
