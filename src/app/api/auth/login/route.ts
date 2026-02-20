@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { compareSync } from "bcryptjs";
 import { signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
+import { broadcastSessionUpdated } from "@/lib/socket-emit";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
         expiresAt,
       }).run();
+
+      broadcastSessionUpdated(location.id, "location");
 
       const response = NextResponse.json({
         success: true,
@@ -158,6 +161,8 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
         expiresAt,
       }).run();
+
+      broadcastSessionUpdated(arl.id, "arl");
 
       const response = NextResponse.json({
         success: true,

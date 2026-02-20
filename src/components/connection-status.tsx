@@ -78,6 +78,14 @@ export function ConnectionStatus() {
 
   const { socket, isConnected: socketConnected } = useSocket();
 
+  // Re-fetch session list when a session change is detected
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchSessionCode();
+    socket.on("session:updated", handler);
+    return () => { socket.off("session:updated", handler); };
+  }, [socket]);
+
   // Use WebSocket connection state as primary online indicator
   useEffect(() => {
     setIsOnline(socketConnected);

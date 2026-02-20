@@ -110,6 +110,14 @@ export function broadcastPresenceUpdate(userId: string, userType: string, name: 
   emitToArls("presence:update", { userId, userType, name, isOnline, storeNumber });
 }
 
+// Notify a specific user's connected sockets that their session list changed
+// so ConnectionStatus can re-fetch /api/session/code and stay live.
+export function broadcastSessionUpdated(userId: string, userType: string) {
+  if (!isAvailable()) return;
+  const room = userType === "location" ? `location:${userId}` : `arl:${userId}`;
+  getIO()!.to(room).emit("session:updated", {});
+}
+
 // ── Remote login / pending session events ──
 export function broadcastPendingSession(data: { id: string; code: string; userAgent: string; createdAt: string; expiresAt: string }) {
   if (!isAvailable()) return;

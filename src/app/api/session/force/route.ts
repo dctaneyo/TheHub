@@ -3,7 +3,7 @@ import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/a
 import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate } from "@/lib/socket-emit";
+import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate, broadcastSessionUpdated } from "@/lib/socket-emit";
 import { setPendingForceAction } from "@/lib/socket-server";
 
 function genSessionCode(): string {
@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       // Emit socket event to force client redirect to login (primary / instant)
       broadcastForceLogout(targetSession.userId, targetSession.userType);
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+      broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
       return NextResponse.json({ success: true, action: "logout" });
     }
@@ -184,6 +185,7 @@ export async function POST(req: NextRequest) {
       // Emit socket event to force client to apply new token and redirect
       broadcastForceRedirect(targetSession.userId, targetSession.userType, token, redirectTo);
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+      broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
       return NextResponse.json({ success: true, action: "reassign", targetName, redirectTo });
     }
