@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import {
@@ -33,6 +34,7 @@ import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { GamificationBar } from "@/components/dashboard/gamification-bar";
 import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
+import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -43,6 +45,7 @@ interface TasksResponse {
 }
 
 export default function DashboardPage() {
+  const { idle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
   const { user, logout } = useAuth();
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
@@ -361,6 +364,11 @@ export default function DashboardPage() {
 
       {/* Forms Viewer Modal */}
       {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
+
+      {/* Idle Screensaver */}
+      <AnimatePresence>
+        {idle && <IdleScreensaver onActivity={resetIdle} />}
+      </AnimatePresence>
 
       {/* Emergency Broadcast Overlay */}
       <EmergencyOverlay />
