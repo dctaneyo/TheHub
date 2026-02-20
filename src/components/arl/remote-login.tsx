@@ -58,6 +58,7 @@ export function RemoteLogin() {
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [selfPingingId, setSelfPingingId] = useState<string | null>(null);
 
+  // Full fetch — called once on mount to populate locations/ARLs dropdowns
   const fetchData = useCallback(async () => {
     try {
       const [sessRes, locRes, arlRes, activeRes] = await Promise.all([
@@ -66,24 +67,25 @@ export function RemoteLogin() {
         fetch("/api/arls"),
         fetch("/api/session/force"),
       ]);
-      if (sessRes.ok) {
-        const d = await sessRes.json();
-        setPendingSessions(d.pendingSessions || []);
-      }
-      if (locRes.ok) {
-        const d = await locRes.json();
-        setLocations(d.locations || []);
-      }
-      if (arlRes.ok) {
-        const d = await arlRes.json();
-        setArls(d.arls || []);
-      }
-      if (activeRes.ok) {
-        const d = await activeRes.json();
-        setActiveSessions(d.activeSessions || []);
-      }
+      if (sessRes.ok) setPendingSessions((await sessRes.json()).pendingSessions || []);
+      if (locRes.ok) { const d = await locRes.json(); setLocations(d.locations || []); }
+      if (arlRes.ok) setArls((await arlRes.json()).arls || []);
+      if (activeRes.ok) setActiveSessions((await activeRes.json()).activeSessions || []);
     } catch {}
     setLoading(false);
+  }, []);
+
+  // Lightweight refresh — only re-fetches sessions (no stale sweep side-effects
+  // from /api/locations or /api/session/force that could mark the ARL offline)
+  const refreshSessions = useCallback(async () => {
+    try {
+      const [sessRes, activeRes] = await Promise.all([
+        fetch("/api/session/pending"),
+        fetch("/api/session/force"),
+      ]);
+      if (sessRes.ok) setPendingSessions((await sessRes.json()).pendingSessions || []);
+      if (activeRes.ok) setActiveSessions((await activeRes.json()).activeSessions || []);
+    } catch {}
   }, []);
 
   const { socket } = useSocket();
@@ -92,17 +94,16 @@ export function RemoteLogin() {
     fetchData();
   }, [fetchData]);
 
-  // Instant updates via WebSocket
+  // Instant updates via WebSocket — use lightweight refresh, not full fetchData
   useEffect(() => {
     if (!socket) return;
-    const handler = () => fetchData();
-    socket.on("session:pending", handler);
-    socket.on("session:pending:refresh", handler);
+    socket.on("session:pending", refreshSessions);
+    socket.on("session:pending:refresh", refreshSessions);
     return () => {
-      socket.off("session:pending", handler);
-      socket.off("session:pending:refresh", handler);
+      socket.off("session:pending", refreshSessions);
+      socket.off("session:pending:refresh", refreshSessions);
     };
-  }, [socket, fetchData]);
+  }, [socket, refreshSessions]);
 
   // Self-ping: device tapped their session ID — highlight it here
   useEffect(() => {

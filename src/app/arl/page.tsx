@@ -201,14 +201,20 @@ export default function ArlPage() {
     updateActivity(activeView);
   }, [activeView, updateActivity]);
 
-  // Fetch online count + cache location names
+  // Track online location IDs in a ref so presence:update can delta-update
+  // without triggering a full HTTP fetch on every heartbeat.
+  const onlineLocationIdsRef = useRef<Set<string>>(new Set());
+
+  // Fetch online count + cache location names (called once on mount only)
   const fetchOnlineCount = useCallback(() => {
     fetch("/api/locations").then(async (r) => {
       if (r.ok) {
         const d = await r.json();
-        const locs = d.locations || [];
-        const arls = d.arls || [];
-        setOnlineCount(locs.filter((l: any) => l.isOnline).length);
+        const locs: any[] = d.locations || [];
+        const arls: any[] = d.arls || [];
+        const onlineLocs = locs.filter((l) => l.isOnline);
+        onlineLocationIdsRef.current = new Set(onlineLocs.map((l) => l.id));
+        setOnlineCount(onlineLocs.length);
         const map = new Map<string, string>();
         for (const l of locs) map.set(l.id, l.name);
         for (const a of arls) map.set(a.id, a.name);
@@ -241,13 +247,25 @@ export default function ArlPage() {
     return () => { socket.off("task:completed", handleTaskCompleted); };
   }, [socket, playTaskChime]);
 
-  // Re-fetch actual online count on presence changes (avoids stale delta tracking)
+  // Delta-update online count from presence:update events — no HTTP fetch needed.
+  // Only location presence affects the nav badge (ARL count not shown there).
   useEffect(() => {
     if (!socket) return;
-    const handlePresence = () => fetchOnlineCount();
+    const handlePresence = (data: { userId: string; userType: string; isOnline: boolean }) => {
+      if (data.userType !== "location") return;
+      const ids = onlineLocationIdsRef.current;
+      const wasOnline = ids.has(data.userId);
+      if (data.isOnline && !wasOnline) {
+        ids.add(data.userId);
+        setOnlineCount((c) => c + 1);
+      } else if (!data.isOnline && wasOnline) {
+        ids.delete(data.userId);
+        setOnlineCount((c) => Math.max(0, c - 1));
+      }
+    };
     socket.on("presence:update", handlePresence);
     return () => { socket.off("presence:update", handlePresence); };
-  }, [socket, fetchOnlineCount]);
+  }, [socket]);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -613,18 +631,26 @@ function OverviewContent() {
   useEffect(() => {
     if (!socket) return;
     const handler = () => load();
-    socket.on("presence:update", handler);
     socket.on("message:new", handler);
     socket.on("conversation:updated", handler);
     socket.on("task:updated", handler);
     socket.on("task:completed", handler);
+    // Delta-update presence — avoid full HTTP fetch + stale sweep on every heartbeat
+    const presenceHandler = (data: { userId: string; userType: string; isOnline: boolean }) => {
+      if (data.userType === "location") {
+        setLocations((prev) => prev.map((l) => l.id === data.userId ? { ...l, isOnline: data.isOnline } : l));
+      } else {
+        setArls((prev) => prev.map((a) => a.id === data.userId ? { ...a, isOnline: data.isOnline } : a));
+      }
+    };
+    socket.on("presence:update", presenceHandler);
     // Track user activities
     const activityHandler = (data: { userId: string; page: string }) => {
       setUserActivities((prev) => new Map(prev).set(data.userId, data.page));
     };
     socket.on("activity:update", activityHandler);
     return () => {
-      socket.off("presence:update", handler);
+      socket.off("presence:update", presenceHandler);
       socket.off("message:new", handler);
       socket.off("conversation:updated", handler);
       socket.off("task:updated", handler);
