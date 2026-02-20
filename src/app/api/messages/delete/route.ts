@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { broadcastConversationUpdate } from "@/lib/socket-emit";
 
 // POST - soft-delete (hide) a conversation for the current user
 // The conversation and its messages are preserved; starting a new direct chat
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
       .set({ deletedBy: JSON.stringify(deletedBy) })
       .where(eq(schema.conversations.id, conversationId))
       .run();
+
+    // Notify all members so sibling kiosks (same location) also hide the conversation
+    broadcastConversationUpdate(conversationId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
