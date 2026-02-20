@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -55,6 +56,7 @@ export function RemoteLogin() {
   const [forceAssignType, setForceAssignType] = useState<"location" | "arl">("location");
   const [forcing, setForcing] = useState(false);
   const [pingingId, setPingingId] = useState<string | null>(null);
+  const [selfPingingId, setSelfPingingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,6 +103,17 @@ export function RemoteLogin() {
       socket.off("session:pending:refresh", handler);
     };
   }, [socket, fetchData]);
+
+  // Self-ping: device tapped their session ID — highlight it here
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { pendingId: string; code: string }) => {
+      setSelfPingingId(data.pendingId);
+      setTimeout(() => setSelfPingingId(null), 3000);
+    };
+    socket.on("session:self-ping", handler);
+    return () => { socket.off("session:self-ping", handler); };
+  }, [socket]);
 
   const handleActivate = async (assignToId: string) => {
     if (!selectedSession) return;
@@ -274,38 +287,73 @@ export function RemoteLogin() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pendingSessions.map((ps) => {
               const isSelected = selectedSession?.id === ps.id;
+              const isSelfPinging = selfPingingId === ps.id;
               return (
-                <div key={ps.id} className={cn(
-                  "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
-                  isSelected
-                    ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20 shadow-md"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-                )}>
-                  <button
-                    onClick={() => setSelectedSession(isSelected ? null : ps)}
-                    className="flex flex-col items-center gap-2 w-full"
-                  >
-                    <Monitor className={cn("h-6 w-6", isSelected ? "text-[var(--hub-red)]" : "text-slate-400")} />
-                    <span className="text-2xl font-black tracking-[0.2em] text-slate-800">{ps.code}</span>
-                    <div className="text-[10px] text-slate-400">
-                      <p>{getDeviceHint(ps.userAgent)}</p>
-                      <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handlePing(ps.id)}
-                    disabled={pingingId === ps.id}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all",
-                      pingingId === ps.id
-                        ? "bg-amber-400 text-white scale-95"
-                        : "bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-700"
-                    )}
-                    title="Send a visual ping to this device to confirm it's the right one"
-                  >
-                    <Bell className={cn("h-3 w-3", pingingId === ps.id && "animate-bounce")} />
-                    {pingingId === ps.id ? "Pinged!" : "Ping"}
-                  </button>
+                <div key={ps.id} className="relative">
+                  {/* Radiating rings when device self-pings */}
+                  <AnimatePresence>
+                    {isSelfPinging && [0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute inset-0 rounded-2xl border-2 border-amber-400 pointer-events-none"
+                        initial={{ opacity: 0.8, scale: 1 }}
+                        animate={{ opacity: 0, scale: 1.18 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.9, delay: i * 0.28, ease: "easeOut" }}
+                      />
+                    ))}
+                  </AnimatePresence>
+
+                  <div className={cn(
+                    "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
+                    isSelfPinging
+                      ? "border-amber-400 bg-amber-50 ring-2 ring-amber-300/40 shadow-lg shadow-amber-100"
+                      : isSelected
+                      ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20 shadow-md"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                  )}>
+                    {/* "That's me!" badge */}
+                    <AnimatePresence>
+                      {isSelfPinging && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, scale: 0.8 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                          className="flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-white shadow-md"
+                        >
+                          <Hand className="h-3 w-3" />
+                          That&apos;s me!
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <button
+                      onClick={() => setSelectedSession(isSelected ? null : ps)}
+                      className="flex flex-col items-center gap-2 w-full"
+                    >
+                      <Monitor className={cn("h-6 w-6", isSelfPinging ? "text-amber-500" : isSelected ? "text-[var(--hub-red)]" : "text-slate-400")} />
+                      <span className={cn("text-2xl font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700" : "text-slate-800")}>{ps.code}</span>
+                      <div className="text-[10px] text-slate-400">
+                        <p>{getDeviceHint(ps.userAgent)}</p>
+                        <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handlePing(ps.id)}
+                      disabled={pingingId === ps.id}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all",
+                        pingingId === ps.id
+                          ? "bg-amber-400 text-white scale-95"
+                          : "bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-700"
+                      )}
+                      title="Send a visual ping to this device to confirm it's the right one"
+                    >
+                      <Bell className={cn("h-3 w-3", pingingId === ps.id && "animate-bounce")} />
+                      {pingingId === ps.id ? "Pinged!" : "Ping"}
+                    </button>
+                  </div>
                 </div>
               );
             })}

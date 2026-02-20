@@ -36,6 +36,14 @@ export default function LoginPage() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
+  const [selfPinged, setSelfPinged] = useState(false);
+
+  const handleSelfPing = () => {
+    if (!socket || !pendingId || !pendingCode) return;
+    socket.emit("session:self-ping", { pendingId, code: pendingCode });
+    setSelfPinged(true);
+    setTimeout(() => setSelfPinged(false), 2500);
+  };
 
   const generateSession = useCallback(async () => {
     setRefreshing(true);
@@ -224,19 +232,33 @@ export default function LoginPage() {
       {/* Top bar: connection + session ID — hidden on mobile (shown inside card instead) */}
       <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
         {pendingCode && (
-          <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
-            <Monitor className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-[10px] font-medium text-slate-400">Session ID</span>
-            <span className="text-sm font-black tracking-widest text-slate-700">{pendingCode}</span>
+          <motion.button
+            onClick={handleSelfPing}
+            title="Tap to signal your ARL which session is yours"
+            animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
+            transition={{ duration: 0.3 }}
+            className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-sm backdrop-blur-sm transition-colors cursor-pointer select-none ${
+              selfPinged
+                ? "bg-[var(--hub-red)] text-white"
+                : "bg-white/80 hover:bg-white"
+            }`}
+          >
+            <Monitor className={`h-3.5 w-3.5 ${selfPinged ? "text-white" : "text-slate-400"}`} />
+            <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-slate-400"}`}>
+              {selfPinged ? "Signaled!" : "Session ID"}
+            </span>
+            <span className={`text-sm font-black tracking-widest ${selfPinged ? "text-white" : "text-slate-700"}`}>{pendingCode}</span>
             <button
-              onClick={generateSession}
+              onClick={(e) => { e.stopPropagation(); generateSession(); }}
               disabled={refreshing}
               title="Refresh session"
-              className="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+              className={`ml-1 flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                selfPinged ? "text-red-100 hover:bg-red-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              }`}
             >
               <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
             </button>
-          </div>
+          </motion.button>
         )}
         <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
           {isOnline ? (
@@ -334,19 +356,31 @@ export default function LoginPage() {
             )}
           </div>
           {pendingCode && (
-            <div className="flex items-center gap-1.5">
-              <Monitor className="h-3 w-3 text-slate-400" />
-              <span className="text-[10px] font-medium text-slate-400">Session</span>
-              <span className="text-xs font-black tracking-widest text-slate-700">{pendingCode}</span>
+            <motion.button
+              onClick={handleSelfPing}
+              title="Tap to signal your ARL which session is yours"
+              animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
+              transition={{ duration: 0.3 }}
+              className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
+                selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-slate-100"
+              }`}
+            >
+              <Monitor className={`h-3 w-3 ${selfPinged ? "text-white" : "text-slate-400"}`} />
+              <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-slate-400"}`}>
+                {selfPinged ? "Signaled!" : "Session"}
+              </span>
+              {!selfPinged && <span className="text-xs font-black tracking-widest text-slate-700">{pendingCode}</span>}
               <button
-                onClick={generateSession}
+                onClick={(e) => { e.stopPropagation(); generateSession(); }}
                 disabled={refreshing}
                 title="Refresh session"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 active:bg-slate-100 transition-colors disabled:opacity-50"
+                className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                  selfPinged ? "text-red-100" : "text-slate-400 hover:text-slate-600"
+                }`}
               >
                 <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-            </div>
+            </motion.button>
           )}
         </div>
 

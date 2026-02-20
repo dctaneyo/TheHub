@@ -89,6 +89,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       socket.join("login-watchers");
     }
 
+    // ── Self-ping: login screen taps their session ID → highlight it on ARL Remote Login ──
+    socket.on("session:self-ping", (data: { pendingId: string; code: string }) => {
+      io!.to("arls").emit("session:self-ping", { pendingId: data.pendingId, code: data.code });
+    });
+
     // ── Join a conversation room ──
     socket.on("conversation:join", (conversationId: string) => {
       socket.join(`conversation:${conversationId}`);
