@@ -142,6 +142,12 @@ export function broadcastMessageRead(conversationId: string, readerId: string) {
   emitToConversation(conversationId, "message:read", { conversationId, readerId });
 }
 
+// ── User / location management events ──
+export function broadcastUserUpdate() {
+  if (!isAvailable()) return;
+  emitToArls("user:updated", {});
+}
+
 // ── Leaderboard / gamification events ──
 export function broadcastLeaderboardUpdate(locationId: string) {
   if (!isAvailable()) return;

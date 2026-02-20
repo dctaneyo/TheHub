@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import type { AuthPayload } from "./auth";
+import { db, schema } from "./db";
+import { and, eq } from "drizzle-orm";
 
 // Read the build ID written by `npm run build` — the only reliable way
 // to pass a build-time value into the custom Node server at runtime.
@@ -16,6 +18,127 @@ function readBuildId(): string {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
+
+// ── Server-side task notification scheduler ──
+// Per-location map of active timers: taskId → [dueSoonTimer, overdueTimer]
+const _taskTimers = new Map<string, ReturnType<typeof setTimeout>[]>();
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function dayOfWeek(): string {
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+}
+
+function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
+  const today = todayStr();
+  const dow = dayOfWeek();
+  if (task.isHidden || !task.showInToday) return false;
+  if (!task.isRecurring) return task.dueDate === today;
+  if (task.isRecurring && task.createdAt) {
+    if (today < task.createdAt.split("T")[0]) return false;
+  }
+  const rType = task.recurringType || "weekly";
+  if (rType === "daily") return true;
+  if (rType === "weekly" || rType === "biweekly") {
+    if (!task.recurringDays) return false;
+    try {
+      const days = JSON.parse(task.recurringDays) as string[];
+      if (!days.includes(dow)) return false;
+      if (rType === "biweekly") {
+        const anchor = task.createdAt ? new Date(task.createdAt) : new Date(0);
+        const anchorMon = new Date(anchor);
+        const ad = anchorMon.getDay();
+        anchorMon.setDate(anchorMon.getDate() + (ad === 0 ? -6 : 1 - ad));
+        anchorMon.setHours(0, 0, 0, 0);
+        const now = new Date(); now.setHours(0, 0, 0, 0);
+        const nd = now.getDay();
+        const nowMon = new Date(now);
+        nowMon.setDate(nowMon.getDate() + (nd === 0 ? -6 : 1 - nd));
+        const weeksDiff = Math.round((nowMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
+        const isEven = weeksDiff % 2 === 0;
+        return (task as any).biweeklyStart === "next" ? !isEven : isEven;
+      }
+      return true;
+    } catch { return false; }
+  }
+  if (rType === "monthly") {
+    if (!task.recurringDays) return false;
+    try { return (JSON.parse(task.recurringDays) as number[]).includes(new Date().getDate()); } catch { return false; }
+  }
+  return false;
+}
+
+function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
+  // Cancel any existing timers for this location
+  const existing = _taskTimers.get(locationId) || [];
+  existing.forEach(clearTimeout);
+  _taskTimers.set(locationId, []);
+
+  try {
+    const allTasks = db.select().from(schema.tasks).all();
+    const today = todayStr();
+    const completions = db.select({ taskId: schema.taskCompletions.taskId })
+      .from(schema.taskCompletions)
+      .where(and(eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, today)))
+      .all();
+    const completedIds = new Set(completions.map((c) => c.taskId));
+
+    const todayTasks = allTasks.filter((t) =>
+      (!t.locationId || t.locationId === locationId) &&
+      !completedIds.has(t.id) &&
+      taskAppliesToToday(t)
+    );
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    for (const task of todayTasks) {
+      const taskMinutes = timeToMinutes(task.dueTime);
+
+      // Due-soon: 30 minutes before due time
+      const dueSoonMinutes = taskMinutes - 30;
+      const msUntilDueSoon = (dueSoonMinutes - nowMinutes) * 60 * 1000 - now.getSeconds() * 1000;
+      if (msUntilDueSoon > 0) {
+        timers.push(setTimeout(() => {
+          // Re-check not completed before firing
+          const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
+            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
+            .get();
+          if (!c) {
+            io.to(`location:${locationId}`).emit("task:due-soon", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+          }
+        }, msUntilDueSoon));
+      }
+
+      // Overdue: exactly at due time
+      const msUntilOverdue = (taskMinutes - nowMinutes) * 60 * 1000 - now.getSeconds() * 1000;
+      if (msUntilOverdue > 0) {
+        timers.push(setTimeout(() => {
+          const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
+            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
+            .get();
+          if (!c) {
+            io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+          }
+        }, msUntilOverdue));
+      }
+    }
+
+    _taskTimers.set(locationId, timers);
+    console.log(`⏰ Scheduled ${timers.length} task notification timers for location ${locationId}`);
+  } catch (err) {
+    console.error("scheduleTaskNotifications error:", err);
+  }
+}
 
 // Global singleton via globalThis so the io instance is shared between
 // the custom server (Node.js module) AND webpack-bundled API routes.
@@ -65,6 +188,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (user.userType === "location") {
         socket.join(`location:${user.id}`);
         socket.join("locations");
+        // Schedule due-soon / overdue push notifications for this location
+        scheduleTaskNotifications(io, user.id);
       } else {
         socket.join(`arl:${user.id}`);
         socket.join("arls");
@@ -122,8 +247,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
-    // ── Client heartbeat — purely broadcasts presence to ARLs via socket ──
-    // DB lastSeen update is handled by the HTTP heartbeat route
+    // ── Client heartbeat — broadcasts presence + updates lastSeen in DB ──
     socket.on("client:heartbeat", () => {
       if (!user) return;
       io!.to("arls").emit("presence:update", {
@@ -133,6 +257,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         storeNumber: user.userType === "location" ? user.storeNumber : undefined,
         isOnline: true,
       });
+      // Update lastSeen in DB so the HTTP heartbeat route only needs to check force actions
+      try {
+        db.update(schema.sessions)
+          .set({ isOnline: true, lastSeen: new Date().toISOString() })
+          .where(eq(schema.sessions.userId, user.id))
+          .run();
+      } catch {}
     });
 
     // ── Activity tracking (which page/section a user is on) ──
@@ -147,6 +278,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Reschedule task notifications when tasks change (ARL updated tasks) ──
+    socket.on("task:updated", () => {
+      if (user?.userType === "location") {
+        scheduleTaskNotifications(io, user.id);
+      }
+    });
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {
@@ -157,6 +295,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           storeNumber: user.userType === "location" ? user.storeNumber : undefined,
           isOnline: false,
         });
+        // Cancel task notification timers for this location
+        if (user.userType === "location") {
+          const timers = _taskTimers.get(user.id) || [];
+          timers.forEach(clearTimeout);
+          _taskTimers.delete(user.id);
+        }
         console.log(`🔌 ${user.userType} disconnected: ${user.name} (${socket.id})`);
       }
     });

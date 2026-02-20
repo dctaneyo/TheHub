@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Edit2, Trash2, UserCheck, UserX,
@@ -72,6 +73,15 @@ export function UserManagement() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Live sync — refresh when any ARL creates/edits/deletes a user or location
+  const { socket } = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchData();
+    socket.on("user:updated", handler);
+    return () => { socket.off("user:updated", handler); };
+  }, [socket, fetchData]);
 
   const openCreate = () => {
     setEditTarget(null);

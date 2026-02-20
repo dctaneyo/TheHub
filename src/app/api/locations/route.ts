@@ -4,6 +4,7 @@ import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { hashSync } from "bcryptjs";
+import { broadcastUserUpdate } from "@/lib/socket-emit";
 
 // GET all locations (+ ARLs) with session status
 export async function GET() {
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
       }).run();
     }
 
+    broadcastUserUpdate();
     return NextResponse.json({ success: true, location: { ...location, pinHash: undefined } });
   } catch (error) {
     console.error("Create location error:", error);
@@ -198,6 +200,7 @@ export async function PUT(req: NextRequest) {
     if (pin && pin.length === 6) updates.pinHash = hashSync(pin, 10);
 
     db.update(schema.locations).set(updates).where(eq(schema.locations.id, id)).run();
+    broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update location error:", error);
@@ -262,7 +265,7 @@ export async function DELETE(req: NextRequest) {
 
     // 10. Delete the location record
     db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
-
+    broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete location error:", error);

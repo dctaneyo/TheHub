@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
+import { broadcastUserUpdate } from "@/lib/socket-emit";
 
 export async function GET() {
   try {
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const arl = { id: uuid(), name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
     db.insert(schema.arls).values(arl).run();
+    broadcastUserUpdate();
     return NextResponse.json({ success: true, arl: { ...arl, pinHash: undefined } });
   } catch (error) {
     console.error("Create ARL error:", error);
@@ -71,6 +73,7 @@ export async function PUT(req: NextRequest) {
     if (isActive !== undefined) updates.isActive = isActive;
 
     db.update(schema.arls).set(updates).where(eq(schema.arls.id, id)).run();
+    broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update ARL error:", error);
@@ -129,7 +132,7 @@ export async function DELETE(req: NextRequest) {
 
     // 7. Delete the ARL record
     db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
-
+    broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete ARL error:", error);

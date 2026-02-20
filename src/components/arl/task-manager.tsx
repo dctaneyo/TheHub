@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket-context";
 
 interface Task {
   id: string;
@@ -141,6 +142,15 @@ export function TaskManager() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Live sync — refresh when any ARL creates/edits/deletes a task
+  const { socket } = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchData();
+    socket.on("task:updated", handler);
+    return () => { socket.off("task:updated", handler); };
+  }, [socket, fetchData]);
 
   const resetForm = () => {
     setTitle("");

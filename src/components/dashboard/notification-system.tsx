@@ -126,7 +126,53 @@ export function NotificationSystem({ tasks, currentTime }: NotificationSystemPro
     } catch {}
   }, [soundEnabled]);
 
-  // Check for due-soon and overdue tasks
+  // ── Server-pushed exact-time notifications ──
+  const fireNotification = useCallback(async (
+    type: "due_soon" | "overdue",
+    data: { taskId: string; title: string; dueTime: string }
+  ) => {
+    const id = `${type === "due_soon" ? "due" : "overdue"}-${data.taskId}`;
+    if (notifiedRef.current.has(id)) return;
+    try {
+      const res = await fetch('/api/notifications/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: type === "due_soon" ? 'task_due_soon' : 'task_overdue',
+          title: type === "due_soon" ? 'Task Due Soon' : 'Overdue Task',
+          body: data.title,
+          referenceId: id,
+        }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (!d.existing) {
+          setNotifications((prev) => [{
+            id, taskId: data.taskId, title: data.title,
+            type, dueTime: data.dueTime, dismissed: false,
+          }, ...prev]);
+          playNotificationSound();
+          setShowPanel(true);
+        }
+      }
+    } catch {}
+  }, [playNotificationSound]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleDueSoon = (data: { taskId: string; title: string; dueTime: string }) =>
+      fireNotification("due_soon", data);
+    const handleOverdue = (data: { taskId: string; title: string; dueTime: string }) =>
+      fireNotification("overdue", data);
+    socket.on('task:due-soon', handleDueSoon);
+    socket.on('task:overdue', handleOverdue);
+    return () => {
+      socket.off('task:due-soon', handleDueSoon);
+      socket.off('task:overdue', handleOverdue);
+    };
+  }, [socket, fireNotification]);
+
+  // Check for due-soon and overdue tasks (fallback: fires if server push missed due to reconnect)
   useEffect(() => {
     if (!currentTime || tasks.length === 0) return;
 
