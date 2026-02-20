@@ -126,21 +126,21 @@ export default function ArlPage() {
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
 
-  // Play alert chime for new messages (fires from any view)
+  // Play subtle 2-note beep for new messages (ARL office environment — not a loud kitchen)
   const playMessageChime = useCallback(() => {
     try {
       const ctx = audioCtxRef.current ?? new AudioContext();
       audioCtxRef.current = ctx;
       const t = ctx.currentTime;
-      [[880, 0, 0.18], [1100, 0.22, 0.18], [880, 0.44, 0.18], [1100, 0.66, 0.18], [1320, 0.88, 0.25]].forEach(([freq, delay, dur]) => {
+      [[660, 0, 0.12], [880, 0.15, 0.18]].forEach(([freq, delay, dur]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = "square";
+        osc.type = "sine";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.5, t + delay);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
+        gain.gain.setValueAtTime(0.08, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
         osc.start(t + delay);
         osc.stop(t + delay + dur);
       });
