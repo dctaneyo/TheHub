@@ -90,25 +90,42 @@ export default function DashboardPage() {
   const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ── Shared AudioContext — warmed up on every user interaction so it stays running ──
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  useEffect(() => {
-    const warmup = () => {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
+  // ── Shared AudioContext — created fresh per-call inside a user-gesture-safe wrapper ──
+  // We do NOT use a persistent ref because Chrome suspends contexts created outside
+  // a user gesture. Instead we create a fresh one each time and immediately resume it.
+  const playChime = useCallback((onDone: () => void) => {
+    try {
+      const ctx = new AudioContext();
+      const go = () => {
+        // Rising 3-note chime: C5 → E5 → G5
+        const notes = [
+          { freq: 523.25, start: 0,    dur: 0.55 },
+          { freq: 659.25, start: 0.35, dur: 0.55 },
+          { freq: 783.99, start: 0.70, dur: 0.90 },
+        ];
+        notes.forEach(({ freq, start, dur }) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, ctx.currentTime + start);
+          gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + dur);
+        });
+        setTimeout(() => { onDone(); ctx.close(); }, 1800 + 150);
+      };
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(go).catch(() => { onDone(); });
+      } else {
+        go();
       }
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume();
-      }
-    };
-    window.addEventListener('pointerdown', warmup);
-    window.addEventListener('keydown', warmup);
-    window.addEventListener('click', warmup);
-    return () => {
-      window.removeEventListener('pointerdown', warmup);
-      window.removeEventListener('keydown', warmup);
-      window.removeEventListener('click', warmup);
-    };
+    } catch {
+      onDone();
+    }
   }, []);
 
   // ── Voice announcements: speak 5 min before each color slot boundary ──
@@ -143,42 +160,6 @@ export default function DashboardPage() {
       return SLOT_MINS * 60 - secsIntoSlot;
     }
 
-    function playChime(onDone: () => void) {
-      try {
-        // Recreate if closed or missing
-        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-          audioCtxRef.current = new AudioContext();
-        }
-        const ctx = audioCtxRef.current;
-        const resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
-        resume.then(() => {
-          // Rising 3-note chime: C5 → E5 → G5 (major triad, airport/train style)
-          const notes = [
-            { freq: 523.25, start: 0,    dur: 0.55 },  // C5
-            { freq: 659.25, start: 0.35, dur: 0.55 },  // E5
-            { freq: 783.99, start: 0.70, dur: 0.90 },  // G5
-          ];
-          const totalDur = 1.65;
-          notes.forEach(({ freq, start, dur }) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0, ctx.currentTime + start);
-            gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(ctx.currentTime + start);
-            osc.stop(ctx.currentTime + start + dur);
-          });
-          setTimeout(onDone, totalDur * 1000 + 150);
-        }).catch(() => onDone());
-      } catch {
-        onDone();
-      }
-    }
-
     function speak(text: string) {
       window.speechSynthesis.cancel();
       const utt = new SpeechSynthesisUtterance(text);
@@ -210,17 +191,15 @@ export default function DashboardPage() {
       if (voiceAnnouncedRef.current.has(key)) return;
       voiceAnnouncedRef.current.add(key);
 
-      // Show toast (only visible when screensaver is not active — controlled in JSX)
       setColorExpiryToast({ color: colorData.name, bg: colorData.bg, text: colorData.text });
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setColorExpiryToast(null), 12000);
 
-      // Chime first, then speak
       playChime(() => speak(`Heads up — ${colorData.name} is expiring in 5 minutes.`));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [soundEnabled]);
+  }, [soundEnabled, playChime]);
 
   // Close settings popover on outside click
   useEffect(() => {
@@ -598,6 +577,20 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800">Show Screensaver</p>
                         <p className="text-[11px] text-slate-400">Preview now</p>
+                      </div>
+                    </button>
+
+                    {/* Test chime */}
+                    <button
+                      onClick={() => playChime(() => {})}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <Volume2 className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">Test Chime</p>
+                        <p className="text-[11px] text-slate-400">Play announcement chime</p>
                       </div>
                     </button>
                   </div>
