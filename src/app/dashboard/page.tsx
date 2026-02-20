@@ -580,19 +580,6 @@ export default function DashboardPage() {
                       </div>
                     </button>
 
-                    {/* Test chime */}
-                    <button
-                      onClick={() => playChime(() => {})}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                        <Volume2 className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">Test Chime</p>
-                        <p className="text-[11px] text-slate-400">Play announcement chime</p>
-                      </div>
-                    </button>
                   </div>
                 </motion.div>
               )}
