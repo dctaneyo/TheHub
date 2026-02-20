@@ -67,7 +67,12 @@ export default function DashboardPage() {
     return `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`;
   };
 
+  // Tracks whether a completion is in-flight — suppresses socket-triggered
+  // fetchTasks during that window to prevent the optimistic update being overwritten.
+  const completingRef = useRef(false);
+
   const fetchTasks = useCallback(async () => {
+    if (completingRef.current) return;
     try {
       const [todayRes, upcomingRes] = await Promise.all([
         fetch(`/api/tasks/today?${localTimeParams()}`),
@@ -195,6 +200,20 @@ export default function DashboardPage() {
   };
 
   const handleCompleteTask = async (taskId: string) => {
+    completingRef.current = true;
+    // Optimistic update — immediately mark completed so the UI never reverts
+    // due to a race between the socket-triggered fetchTasks and our own fetch.
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId ? { ...t, isCompleted: true, isOverdue: false, isDueSoon: false } : t
+        ),
+        completedToday: prev.completedToday + 1,
+      };
+    });
+
     try {
       const res = await fetch("/api/tasks/complete", {
         method: "POST",
@@ -204,11 +223,10 @@ export default function DashboardPage() {
 
       if (res.ok) {
         const result = await res.json();
-        // Show confetti animation
         const pts = result.pointsEarned || 0;
         setConfettiPoints(pts);
         playConfettiSound();
-        // Check if all tasks are now complete
+        // Fetch confirmed state to check all-done and update points
         const updatedRes = await fetch(`/api/tasks/today?${localTimeParams()}`);
         if (updatedRes.ok) {
           const updated = await updatedRes.json();
@@ -226,9 +244,19 @@ export default function DashboardPage() {
           setTimeout(() => setShowConfetti(false), 2800);
           await fetchTasks();
         }
+      } else {
+        // Revert optimistic update on failure
+        completingRef.current = false;
+        await fetchTasks();
       }
     } catch (err) {
       console.error("Failed to complete task:", err);
+      completingRef.current = false;
+      await fetchTasks();
+    } finally {
+      // Always clear the lock after a short delay so the confirmed setData(updated)
+      // has settled before socket events can trigger another fetch
+      setTimeout(() => { completingRef.current = false; }, 1500);
     }
   };
 
