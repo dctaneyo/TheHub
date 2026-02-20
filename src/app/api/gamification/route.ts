@@ -91,7 +91,7 @@ interface BadgeResult {
   earnedDate?: string;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "location") {
@@ -106,8 +106,10 @@ export async function GET() {
       .where(eq(schema.taskCompletions.locationId, locationId))
       .all();
 
-    const today = new Date();
-    const todayStr = format(today, "yyyy-MM-dd");
+    const { searchParams } = new URL(req.url);
+    const localDate = searchParams.get("localDate");
+    const todayStr = localDate || format(new Date(), "yyyy-MM-dd");
+    const today = new Date(`${todayStr}T12:00:00`);
 
     // ── STREAK CALCULATION ──
     // Check each day going backwards. A day counts as "perfect" if all applicable tasks were completed.

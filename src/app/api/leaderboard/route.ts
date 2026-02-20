@@ -53,7 +53,7 @@ function taskAppliesToDate(
   return false;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     if (!session) {
@@ -64,7 +64,9 @@ export async function GET() {
     const allTasks = db.select().from(schema.tasks).all();
     const allCompletions = db.select().from(schema.taskCompletions).all();
 
-    const today = new Date();
+    const { searchParams } = new URL(req.url);
+    const localDate = searchParams.get("localDate");
+    const today = localDate ? new Date(`${localDate}T12:00:00`) : new Date();
     const weekStart = startOfWeekMonday(today);
     const weekEnd = addDays(weekStart, 6); // Sunday
 

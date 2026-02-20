@@ -44,7 +44,9 @@ export function GamificationBar() {
   const { socket } = useSocket();
 
   const fetchData = useCallback(() => {
-    fetch("/api/gamification")
+    const now = new Date();
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    fetch(`/api/gamification?localDate=${localDate}`)
       .then(async (r) => { if (r.ok) setData(await r.json()); })
       .catch(() => {});
   }, []);
