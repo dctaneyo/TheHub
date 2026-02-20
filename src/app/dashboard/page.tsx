@@ -90,21 +90,24 @@ export default function DashboardPage() {
   const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ── Shared AudioContext — created on first user gesture so it's never suspended ──
+  // ── Shared AudioContext — warmed up on every user interaction so it stays running ──
   const audioCtxRef = useRef<AudioContext | null>(null);
   useEffect(() => {
-    const resume = () => {
+    const warmup = () => {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new AudioContext();
-      } else if (audioCtxRef.current.state === 'suspended') {
+      }
+      if (audioCtxRef.current.state === 'suspended') {
         audioCtxRef.current.resume();
       }
     };
-    window.addEventListener('pointerdown', resume, { once: true });
-    window.addEventListener('keydown', resume, { once: true });
+    window.addEventListener('pointerdown', warmup);
+    window.addEventListener('keydown', warmup);
+    window.addEventListener('click', warmup);
     return () => {
-      window.removeEventListener('pointerdown', resume);
-      window.removeEventListener('keydown', resume);
+      window.removeEventListener('pointerdown', warmup);
+      window.removeEventListener('keydown', warmup);
+      window.removeEventListener('click', warmup);
     };
   }, []);
 
