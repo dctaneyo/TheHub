@@ -522,7 +522,7 @@ export default function DashboardPage() {
 
       {/* Idle Screensaver */}
       <AnimatePresence>
-        {idle && <IdleScreensaver onActivity={resetIdle} />}
+        {idle && <IdleScreensaver onActivity={() => { setForceIdle(false); resetIdle(); }} />}
       </AnimatePresence>
 
       {/* Emergency Broadcast Overlay */}

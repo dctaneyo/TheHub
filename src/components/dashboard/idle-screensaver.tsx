@@ -297,9 +297,9 @@ export function IdleScreensaver({ onActivity }: { onActivity: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}
-      className="fixed inset-0 z-40 flex flex-col items-center justify-between overflow-hidden cursor-pointer select-none"
+      className="fixed inset-0 z-40 flex flex-col items-center justify-between overflow-hidden cursor-pointer select-none backdrop-blur-sm"
       style={{
-        background: "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 30%, #0a1628 60%, #0f1a0a 100%)",
+        background: "linear-gradient(135deg, rgba(15,15,26,0.88) 0%, rgba(26,10,46,0.88) 30%, rgba(10,22,40,0.88) 60%, rgba(15,26,10,0.88) 100%)",
       }}
       onClick={onActivity}
       onMouseMove={onActivity}
