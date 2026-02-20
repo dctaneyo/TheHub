@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
-import { db, schema } from "@/lib/db";
+import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate } from "@/lib/socket-emit";
@@ -17,6 +17,13 @@ export async function GET() {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
+
+    // Mark stale sessions offline before listing (same threshold as locations route)
+    const STALE_MS = 3 * 60 * 1000;
+    const staleTimestamp = new Date(Date.now() - STALE_MS).toISOString();
+    sqlite.prepare(
+      `UPDATE sessions SET is_online = 0 WHERE is_online = 1 AND last_seen < ?`
+    ).run(staleTimestamp);
 
     const activeSessions = db
       .select()

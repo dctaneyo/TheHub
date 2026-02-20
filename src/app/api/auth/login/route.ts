@@ -56,6 +56,12 @@ export async function POST(req: NextRequest) {
       const token = signToken(payload);
       const expiresAt = getTokenExpiry();
 
+      // Mark any existing sessions for this user offline before creating new one
+      db.update(schema.sessions)
+        .set({ isOnline: false })
+        .where(eq(schema.sessions.userId, location.id))
+        .run();
+
       // Create session
       db.insert(schema.sessions).values({
         id: uuid(),
@@ -132,6 +138,12 @@ export async function POST(req: NextRequest) {
 
       const token = signToken(payload);
       const expiresAt = getTokenExpiry();
+
+      // Mark any existing sessions for this user offline before creating new one
+      db.update(schema.sessions)
+        .set({ isOnline: false })
+        .where(eq(schema.sessions.userId, arl.id))
+        .run();
 
       // Create session
       db.insert(schema.sessions).values({

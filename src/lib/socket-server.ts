@@ -295,6 +295,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           storeNumber: user.userType === "location" ? user.storeNumber : undefined,
           isOnline: false,
         });
+        // Mark session offline in DB so active sessions list stays accurate
+        try {
+          db.update(schema.sessions)
+            .set({ isOnline: false })
+            .where(eq(schema.sessions.userId, user.id))
+            .run();
+        } catch {}
         // Cancel task notification timers for this location
         if (user.userType === "location") {
           const timers = _taskTimers.get(user.id) || [];
