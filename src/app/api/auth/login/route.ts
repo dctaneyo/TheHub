@@ -77,8 +77,6 @@ export async function POST(req: NextRequest) {
         expiresAt,
       }).run();
 
-      broadcastSessionUpdated(location.id, "location");
-
       const response = NextResponse.json({
         success: true,
         userType: "location",
@@ -161,8 +159,6 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
         expiresAt,
       }).run();
-
-      broadcastSessionUpdated(arl.id, "arl");
 
       const response = NextResponse.json({
         success: true,

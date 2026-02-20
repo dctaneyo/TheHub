@@ -78,12 +78,18 @@ export function ConnectionStatus() {
 
   const { socket, isConnected: socketConnected } = useSocket();
 
-  // Re-fetch session list when a session change is detected
+  // Re-fetch session list on socket connect (picks up new session after login)
+  // and when a session:updated event arrives (force logout/reassign from ARL).
   useEffect(() => {
     if (!socket) return;
-    const handler = () => fetchSessionCode();
-    socket.on("session:updated", handler);
-    return () => { socket.off("session:updated", handler); };
+    const onConnect = () => fetchSessionCode();
+    const onSessionUpdated = () => setTimeout(fetchSessionCode, 500);
+    socket.on("connect", onConnect);
+    socket.on("session:updated", onSessionUpdated);
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("session:updated", onSessionUpdated);
+    };
   }, [socket]);
 
   // Use WebSocket connection state as primary online indicator
