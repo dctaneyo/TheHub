@@ -261,10 +261,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       // Using userId would revive all old stale sessions for the same user.
       try {
         if (user.sessionCode) {
+          const now = new Date().toISOString();
           db.update(schema.sessions)
-            .set({ isOnline: true, lastSeen: new Date().toISOString() })
+            .set({ isOnline: true, lastSeen: now })
             .where(eq(schema.sessions.sessionCode, user.sessionCode))
             .run();
+          // Ack back to this socket so the session popdown updates without polling
+          socket.emit("session:heartbeat-ack", { lastSeen: now, sessionCode: user.sessionCode });
         }
       } catch {}
     });

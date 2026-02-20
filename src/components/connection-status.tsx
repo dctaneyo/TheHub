@@ -81,15 +81,23 @@ export function ConnectionStatus() {
 
   // Re-fetch session list on socket connect (picks up new session after login)
   // and when a session:updated event arrives (force logout/reassign from ARL).
+  // Also listen for heartbeat-ack to update lastSeen in real time without polling.
   useEffect(() => {
     if (!socket) return;
     const onConnect = () => fetchSessionCode();
     const onSessionUpdated = () => setTimeout(fetchSessionCode, 500);
+    const onHeartbeatAck = ({ lastSeen, sessionCode: ackCode }: { lastSeen: string; sessionCode: string }) => {
+      setSessions((prev) =>
+        prev.map((s) => (s.code === ackCode ? { ...s, lastSeen } : s))
+      );
+    };
     socket.on("connect", onConnect);
     socket.on("session:updated", onSessionUpdated);
+    socket.on("session:heartbeat-ack", onHeartbeatAck);
     return () => {
       socket.off("connect", onConnect);
       socket.off("session:updated", onSessionUpdated);
+      socket.off("session:heartbeat-ack", onHeartbeatAck);
     };
   }, [socket]);
 
@@ -133,13 +141,11 @@ export function ConnectionStatus() {
       }
     };
     document.addEventListener("mousedown", handleClick);
-    // Re-fetch every 30s while open so lastSeen stays current
-    const refreshTimer = setInterval(fetchSessionCode, 30000);
     // Tick every second so formatDistanceToNow re-evaluates in real time
+    // (lastSeen itself is kept fresh via session:heartbeat-ack WebSocket event)
     const tickTimer = setInterval(() => setTick((n) => n + 1), 1000);
     return () => {
       document.removeEventListener("mousedown", handleClick);
-      clearInterval(refreshTimer);
       clearInterval(tickTimer);
     };
   }, [showCode]);
