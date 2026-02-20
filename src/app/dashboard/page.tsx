@@ -76,7 +76,7 @@ export default function DashboardPage() {
     try {
       const [todayRes, upcomingRes] = await Promise.all([
         fetch(`/api/tasks/today?${localTimeParams()}`),
-        fetch("/api/tasks/upcoming"),
+        fetch(`/api/tasks/upcoming?${localTimeParams()}`),
       ]);
       if (todayRes.ok) {
         const json = await todayRes.json();

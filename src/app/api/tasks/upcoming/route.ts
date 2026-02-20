@@ -4,7 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { addDays, format } from "date-fns";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     if (!session) {
@@ -16,7 +16,9 @@ export async function GET() {
     const allCompletions = locationId
       ? db.select().from(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, locationId)).all()
       : [];
-    const today = new Date();
+    const { searchParams } = new URL(req.url);
+    const localDate = searchParams.get("localDate");
+    const today = localDate ? new Date(`${localDate}T12:00:00`) : new Date();
 
     const upcoming: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete: boolean; isCompleted: boolean }>> = {};
 
