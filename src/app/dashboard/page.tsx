@@ -86,15 +86,29 @@ export default function DashboardPage() {
     }).catch(() => {});
   };
 
+  // ── Color expiry toast state ──
+  const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // ── Voice announcements: speak 5 min before each color slot boundary ──
   const voiceAnnouncedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
-    const COLOR_NAMES = ["Red","Orange","Yellow","Green","Blue","Purple","Brown","Grey","White"];
+    const COLOR_DATA = [
+      { name: "Red",    bg: "#ef4444", text: "#fff" },
+      { name: "Orange", bg: "#f97316", text: "#fff" },
+      { name: "Yellow", bg: "#eab308", text: "#000" },
+      { name: "Green",  bg: "#22c55e", text: "#fff" },
+      { name: "Blue",   bg: "#3b82f6", text: "#fff" },
+      { name: "Purple", bg: "#a855f7", text: "#fff" },
+      { name: "Brown",  bg: "#92400e", text: "#fff" },
+      { name: "Grey",   bg: "#9ca3af", text: "#fff" },
+      { name: "White",  bg: "#f8fafc", text: "#000" },
+    ];
     const ANCHOR_MINUTES = 10 * 60;
     const SLOT_MINS = 30;
-    const ANNOUNCE_BEFORE_SECS = 5 * 60; // 5 minutes
+    const ANNOUNCE_BEFORE_SECS = 5 * 60;
 
     function getSlotIndex(now: Date) {
       const mins = now.getHours() * 60 + now.getMinutes();
@@ -108,14 +122,42 @@ export default function DashboardPage() {
       return SLOT_MINS * 60 - secsIntoSlot;
     }
 
+    function playChime(onDone: () => void) {
+      try {
+        const ctx = new AudioContext();
+        // Rising 3-note chime: C5 → E5 → G5 (major triad, airport/train style)
+        const notes = [
+          { freq: 523.25, start: 0,    dur: 0.55 },  // C5
+          { freq: 659.25, start: 0.35, dur: 0.55 },  // E5
+          { freq: 783.99, start: 0.70, dur: 0.90 },  // G5
+        ];
+        const totalDur = 1.65;
+        notes.forEach(({ freq, start, dur }) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          // Slight sine + triangle blend for a bell-like tone
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, ctx.currentTime + start);
+          gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + dur);
+        });
+        setTimeout(onDone, totalDur * 1000 + 150);
+      } catch {
+        onDone();
+      }
+    }
+
     function speak(text: string) {
       window.speechSynthesis.cancel();
       const utt = new SpeechSynthesisUtterance(text);
       utt.rate = 0.92;
       utt.pitch = 1.05;
       utt.volume = 1;
-
-      // Prefer a natural-sounding voice: Google US English, Samantha, or similar
       const voices = window.speechSynthesis.getVoices();
       const preferred = voices.find(v =>
         /google us english/i.test(v.name) ||
@@ -125,7 +167,6 @@ export default function DashboardPage() {
         /moira/i.test(v.name)
       ) ?? voices.find(v => v.lang === 'en-US') ?? voices[0];
       if (preferred) utt.voice = preferred;
-
       window.speechSynthesis.speak(utt);
     }
 
@@ -133,19 +174,22 @@ export default function DashboardPage() {
       if (!soundEnabled) return;
       const now = new Date();
       const secs = secsToNextBoundary(now);
-      // Fire in the window 5:00–4:55 before boundary (5-second window to avoid double-firing)
       if (secs > ANNOUNCE_BEFORE_SECS || secs <= ANNOUNCE_BEFORE_SECS - 5) return;
 
       const slotIdx = getSlotIndex(now);
-      // The color that is about to expire is the current slot color
-      const expiringColor = COLOR_NAMES[slotIdx];
-      // Key by slot boundary minute so we only fire once per boundary
+      const colorData = COLOR_DATA[slotIdx];
       const boundaryMin = Math.floor((now.getHours() * 60 + now.getMinutes() + 5) / SLOT_MINS) * SLOT_MINS;
       const key = `${boundaryMin}`;
       if (voiceAnnouncedRef.current.has(key)) return;
       voiceAnnouncedRef.current.add(key);
 
-      speak(`Heads up — ${expiringColor} is expiring in 5 minutes.`);
+      // Show toast (only visible when screensaver is not active — controlled in JSX)
+      setColorExpiryToast({ color: colorData.name, bg: colorData.bg, text: colorData.text });
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setColorExpiryToast(null), 12000);
+
+      // Chime first, then speak
+      playChime(() => speak(`Heads up — ${colorData.name} is expiring in 5 minutes.`));
     }, 1000);
 
     return () => clearInterval(interval);
@@ -584,6 +628,40 @@ export default function DashboardPage() {
 
       {/* Forms Viewer Modal */}
       {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
+
+      {/* Color expiry toast — only shown when screensaver is not active */}
+      <AnimatePresence>
+        {colorExpiryToast && !idle && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl"
+            style={{ background: "rgba(15,15,25,0.92)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}
+          >
+            {/* Color chip */}
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-black text-sm"
+              style={{ background: colorExpiryToast.bg, color: colorExpiryToast.text, boxShadow: `0 0 16px ${colorExpiryToast.bg}99` }}
+            >
+              {colorExpiryToast.color[0]}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white leading-tight">
+                {colorExpiryToast.color} expiring in 5 min
+              </p>
+              <p className="text-[11px] text-white/50 mt-0.5">Discard {colorExpiryToast.color} tags at the next color change</p>
+            </div>
+            <button
+              onClick={() => setColorExpiryToast(null)}
+              className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white/30 hover:text-white/70 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Idle Screensaver */}
       <AnimatePresence>
