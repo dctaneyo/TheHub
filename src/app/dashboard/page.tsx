@@ -145,9 +145,8 @@ export default function DashboardPage() {
 
     function playChime(onDone: () => void) {
       try {
-        // Reuse the shared AudioContext; create one now if the user somehow
-        // hasn't interacted yet (fallback — should already exist after login click)
-        if (!audioCtxRef.current) {
+        // Recreate if closed or missing
+        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
           audioCtxRef.current = new AudioContext();
         }
         const ctx = audioCtxRef.current;
