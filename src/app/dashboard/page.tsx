@@ -731,6 +731,7 @@ interface CalModalTask {
   dueTime: string; dueDate: string | null; isRecurring: boolean;
   recurringType: string | null; recurringDays: string | null; locationId: string | null;
   createdByType?: string; createdBy?: string; allowEarlyComplete?: boolean;
+  createdAt?: string; biweeklyStart?: string | null;
 }
 interface CalCompletion { taskId: string; completedDate: string; }
 const CAL_DAYS_H = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -741,10 +742,28 @@ function calModalTaskApplies(task: CalModalTask, date: Date): boolean {
   const dateStr = format(date, "yyyy-MM-dd");
   const dayKey = CAL_DAY_KEYS_H[date.getDay()];
   if (!task.isRecurring) return task.dueDate === dateStr;
+  if (task.createdAt) { const createdDateStr = task.createdAt.split("T")[0]; if (dateStr < createdDateStr) return false; }
   const rType = task.recurringType || "weekly";
   if (rType === "daily") return true;
   if (rType === "weekly") { try { return (JSON.parse(task.recurringDays!) as string[]).includes(dayKey); } catch { return false; } }
-  if (rType === "biweekly") { try { const days = JSON.parse(task.recurringDays!) as string[]; if (!days.includes(dayKey)) return false; const s = new Date(date.getFullYear(),0,1); const w = Math.ceil(((date.getTime()-s.getTime())/86400000+s.getDay()+1)/7); return w%2===0; } catch { return false; } }
+  if (rType === "biweekly") {
+    try {
+      const days = JSON.parse(task.recurringDays!) as string[];
+      if (!days.includes(dayKey)) return false;
+      const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
+      const anchorDay = anchorDate.getDay();
+      const anchorMon = new Date(anchorDate);
+      anchorMon.setDate(anchorDate.getDate() + (anchorDay === 0 ? -6 : 1 - anchorDay));
+      anchorMon.setHours(0, 0, 0, 0);
+      const targetDay = date.getDay();
+      const targetMon = new Date(date);
+      targetMon.setDate(date.getDate() + (targetDay === 0 ? -6 : 1 - targetDay));
+      targetMon.setHours(0, 0, 0, 0);
+      const weeksDiff = Math.round((targetMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
+      const isEven = weeksDiff % 2 === 0;
+      return task.biweeklyStart === "next" ? !isEven : isEven;
+    } catch { return false; }
+  }
   if (rType === "monthly") { try { return (JSON.parse(task.recurringDays!) as number[]).includes(date.getDate()); } catch { return false; } }
   return false;
 }
