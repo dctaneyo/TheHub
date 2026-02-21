@@ -309,13 +309,36 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
         const unreadIds = data.messages
           .filter((m: Message) => m.reads.length === 0 && m.senderType !== "location")
           .map((m: Message) => m.id);
+        
+        // Debug: Log message read attempt
+        console.log("Marking messages as read:", {
+          totalMessages: data.messages.length,
+          unreadIds: unreadIds.length,
+          messageDetails: data.messages.map((m: Message) => ({
+            id: m.id,
+            senderType: m.senderType,
+            readsCount: m.reads.length,
+            shouldMarkAsRead: m.reads.length === 0 && m.senderType !== "location"
+          }))
+        });
+        
         if (unreadIds.length > 0) {
-          await fetch("/api/messages/read", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageIds: unreadIds }),
-          });
-          // Don't fetchConversations here - let the WebSocket handle it
+          try {
+            const res = await fetch("/api/messages/read", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ messageIds: unreadIds }),
+            });
+            if (res.ok) {
+              console.log("Messages marked as read successfully");
+              // Refresh conversations immediately after marking as read
+              fetchConversations();
+            } else {
+              console.error("Failed to mark messages as read:", await res.text());
+            }
+          } catch (error) {
+            console.error("Error marking messages as read:", error);
+          }
         }
       }
     } catch {}
