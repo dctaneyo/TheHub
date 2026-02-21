@@ -291,9 +291,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   // Socket listeners for conversations and messages
   useEffect(() => {
     if (!socket) return;
-    const handleConvoUpdate = () => {
+    const handleConvoUpdate = (data?: { conversationId: string }) => {
       // Immediate conversation update for unread count
       fetchConversations();
+      // If this is the active conversation, refetch messages to show updated reactions
+      if (activeConvo && data?.conversationId === activeConvo.id) {
+        fetchMessages(activeConvo.id);
+      }
     };
     const handleNewMessage = (data: { conversationId: string }) => {
       // Immediate conversation update for unread count

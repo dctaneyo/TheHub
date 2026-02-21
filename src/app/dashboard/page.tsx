@@ -57,7 +57,6 @@ export default function DashboardPage() {
   const [screensaverEnabled, setScreensaverEnabled] = useState(true);
   const [forceIdle, setForceIdle] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -88,29 +87,6 @@ export default function DashboardPage() {
       body: JSON.stringify({ muted: !next }),
     }).catch(() => {});
   };
-
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    if (next) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(next));
-  };
-
-  // Load dark mode preference on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('darkMode');
-    if (saved) {
-      const isDark = JSON.parse(saved);
-      setDarkMode(isDark);
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      }
-    }
-  }, []);
 
   // ── Color expiry toast state ──
   const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
@@ -588,32 +564,6 @@ export default function DashboardPage() {
                         <div className={cn(
                           "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
                           screensaverEnabled ? "translate-x-4" : "translate-x-0.5"
-                        )} />
-                      </div>
-                    </button>
-
-                    {/* Dark mode toggle */}
-                    <button
-                      onClick={toggleDarkMode}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
-                    >
-                      <div className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        darkMode ? "bg-slate-800 text-yellow-400" : "bg-slate-100 text-slate-400"
-                      )}>
-                        {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">Dark Mode</p>
-                        <p className="text-[11px] text-slate-400">{darkMode ? "Enabled" : "Disabled"}</p>
-                      </div>
-                      <div className={cn(
-                        "h-5 w-9 rounded-full transition-colors relative",
-                        darkMode ? "bg-slate-800" : "bg-slate-200"
-                      )}>
-                        <div className={cn(
-                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
-                          darkMode ? "translate-x-4" : "translate-x-0.5"
                         )} />
                       </div>
                     </button>

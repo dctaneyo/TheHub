@@ -392,7 +392,13 @@ export function Messaging() {
   // Socket listeners
   useEffect(() => {
     if (!socket) return;
-    const handleConvoUpdate = () => fetchConversations();
+    const handleConvoUpdate = (data?: { conversationId: string }) => {
+      fetchConversations();
+      // If this is the active conversation, refetch messages to show updated reactions
+      if (activeConvo && data?.conversationId === activeConvo.id) {
+        fetchMessages(activeConvo.id);
+      }
+    };
     const handleNewMessage = (data: { conversationId: string }) => {
       fetchConversations();
       if (activeConvo && data.conversationId === activeConvo.id) {
