@@ -39,6 +39,7 @@ export const sessions = sqliteTable("sessions", {
   isOnline: integer("is_online", { mode: "boolean" }).notNull().default(false),
   lastSeen: text("last_seen").notNull().$defaultFn(() => new Date().toISOString()),
   deviceType: text("device_type"), // 'kiosk' | 'desktop' | 'tablet' | 'mobile'
+  currentPage: text("current_page"), // current page/section user is viewing
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   expiresAt: text("expires_at").notNull(),
 });

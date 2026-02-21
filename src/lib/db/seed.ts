@@ -57,6 +57,7 @@ async function seed() {
       is_online INTEGER NOT NULL DEFAULT 0,
       last_seen TEXT NOT NULL,
       device_type TEXT,
+      current_page TEXT,
       created_at TEXT NOT NULL,
       expires_at TEXT NOT NULL
     );

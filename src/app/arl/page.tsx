@@ -584,8 +584,8 @@ export default function ArlPage() {
 }
 
 function OverviewContent() {
-  const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
-  const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null }>>([]);
+  const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null; currentPage: string | null }>>([]);
+  const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null; currentPage: string | null }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userActivities, setUserActivities] = useState<Map<string, string>>(new Map());
   const { socket } = useSocket();
@@ -594,9 +594,21 @@ function OverviewContent() {
     fetch("/api/locations").then((r) => r.ok ? r.json() : { locations: [], arls: [] }),
     fetch("/api/messages").then((r) => r.ok ? r.json() : { conversations: [] }),
   ]).then(([locData, msgData]) => {
-    setLocations(locData.locations || []);
-    setArls(locData.arls || []);
+    const locs = locData.locations || [];
+    const arlsList = locData.arls || [];
+    setLocations(locs);
+    setArls(arlsList);
     setUnreadCount((msgData.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0));
+    
+    // Initialize userActivities from currentPage in session data
+    const activities = new Map<string, string>();
+    locs.forEach((loc: { id: string; currentPage: string | null }) => {
+      if (loc.currentPage) activities.set(loc.id, loc.currentPage);
+    });
+    arlsList.forEach((arl: { id: string; currentPage: string | null }) => {
+      if (arl.currentPage) activities.set(arl.id, arl.currentPage);
+    });
+    setUserActivities(activities);
   }), []);
 
   useEffect(() => { load(); }, [load]);

@@ -58,6 +58,7 @@ export async function GET() {
         lastSeen: latestSession?.lastSeen || null,
         deviceType: latestSession?.deviceType || null,
         sessionCode: latestSession?.sessionCode || null,
+        currentPage: latestSession?.currentPage || null,
         userKind: "location" as const,
       };
     });
@@ -66,7 +67,7 @@ export async function GET() {
     let arlsWithStatus: Array<{
       id: string; name: string; email: string | null; userId: string; role: string;
       isOnline: boolean; lastSeen: string | null; deviceType: string | null;
-      sessionCode: string | null; userKind: "arl";
+      sessionCode: string | null; currentPage: string | null; userKind: "arl";
     }> = [];
 
     if (isArl) {
@@ -96,6 +97,7 @@ export async function GET() {
           lastSeen: latestArlSession?.lastSeen || null,
           deviceType: latestArlSession?.deviceType || null,
           sessionCode: latestArlSession?.sessionCode || null,
+          currentPage: latestArlSession?.currentPage || null,
           userKind: "arl" as const,
         };
       });

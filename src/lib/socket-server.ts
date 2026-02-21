@@ -275,6 +275,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Activity tracking (which page/section a user is on) ──
     socket.on("activity:update", (data: { page: string }) => {
       if (!user) return;
+      // Persist current page to session so it's available on refresh
+      try {
+        db.update(schema.sessions)
+          .set({ currentPage: data.page })
+          .where(eq(schema.sessions.socketId, socket.id))
+          .run();
+      } catch (err) {
+        console.error("Failed to update session currentPage:", err);
+      }
       io!.to("arls").emit("activity:update", {
         userId: user.id,
         userType: user.userType,
