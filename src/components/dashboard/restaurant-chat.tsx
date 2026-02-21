@@ -222,6 +222,24 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       if (res.ok) {
         const data = await res.json();
         const convs: Conversation[] = data.conversations || [];
+        
+        // Debug: Check for duplicate conversation IDs
+        const ids = convs.map(c => c.id);
+        const uniqueIds = new Set(ids);
+        if (ids.length !== uniqueIds.size) {
+          console.warn("Duplicate conversation IDs detected:", ids);
+          console.warn("Duplicates:", ids.filter((id, index) => ids.indexOf(id) !== index));
+        }
+        
+        // Debug: Log conversation details
+        console.log("Conversations fetched:", convs.map(c => ({
+          id: c.id,
+          type: c.type,
+          name: c.name,
+          lastMessageTime: c.lastMessage?.createdAt,
+          unreadCount: c.unreadCount
+        })));
+        
         const total = convs.reduce((s, c) => s + c.unreadCount, 0);
         if (initializedRef.current && total > prevUnreadRef.current) {
           playMessageChime();
@@ -254,7 +272,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messageIds: unreadIds }),
           });
-          fetchConversations();
+          // Don't fetchConversations here - let the WebSocket handle it
         }
       }
     } catch {}
@@ -549,7 +567,22 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                     </div>
                   </div>
                 )}
-                {[...conversations].sort((a, b) => a.type === "global" ? -1 : b.type === "global" ? 1 : 0).map((convo) => (
+                {[...conversations].sort((a, b) => {
+    // Global chats always come first
+    if (a.type === "global" && b.type !== "global") return -1;
+    if (b.type === "global" && a.type !== "global") return 1;
+    
+    // For same type, sort by last message time (most recent first)
+    const aTime = a.lastMessage?.createdAt || "";
+    const bTime = b.lastMessage?.createdAt || "";
+    
+    // If both have no last message, they're equal
+    if (!aTime && !bTime) return 0;
+    if (!aTime) return 1; // b has message, comes first
+    if (!bTime) return -1; // a has message, comes first
+    
+    return bTime.localeCompare(aTime);
+  }).map((convo) => (
                   <div key={convo.id} className="group relative">
                     <button
                       onClick={() => setActiveConvo(convo)}
