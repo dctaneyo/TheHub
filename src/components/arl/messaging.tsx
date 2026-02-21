@@ -816,12 +816,32 @@ export function Messaging() {
                 {isGroup && !isMe && (
                   <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
                 )}
-                <div className="relative">
-                  <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
-                    isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
-                  )}>
-                    <p className="text-sm">{msg.content}</p>
+                <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
+                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+                )}>
+                  <p className="text-sm">{msg.content}</p>
                   
+                  {/* Reactions display - inline */}
+                  {msg.reactions && msg.reactions.length > 0 && (() => {
+                    const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
+                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {Object.entries(grouped).map(([emoji, count]) => (
+                          <div key={emoji} className={cn(
+                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
+                            isMe ? "bg-white/20" : "bg-white border border-slate-200"
+                          )}>
+                            <Emoji emoji={emoji} size={14} />
+                            {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-slate-600")}>{count}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                
                   <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
@@ -896,28 +916,6 @@ export function Messaging() {
                     </button>
                   </div>
                 </div>
-                
-                {/* Reactions display - iOS style hovering at bottom */}
-                {msg.reactions && msg.reactions.length > 0 && (() => {
-                  const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
-                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>);
-                  return (
-                    <div className={cn(
-                      "absolute -bottom-2 flex flex-wrap gap-1",
-                      isMe ? "right-2" : "left-2"
-                    )}>
-                      {Object.entries(grouped).map(([emoji, count]) => (
-                        <div key={emoji} className="flex items-center gap-0.5 rounded-full bg-white border border-slate-200 shadow-sm px-1.5 py-0.5">
-                          <Emoji emoji={emoji} size={14} />
-                          {count > 1 && <span className="text-[10px] font-medium text-slate-600">{count}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
                   
               {/* Reaction picker */}
               <AnimatePresence>
