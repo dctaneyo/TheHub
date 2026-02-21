@@ -44,6 +44,7 @@ import { DataManagement } from "@/components/arl/data-management";
 import { ShoutoutsFeed } from "@/components/shoutouts-feed";
 import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
+import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -587,6 +588,9 @@ export default function ArlPage() {
 
       {/* High-Five Animation */}
       <HighFiveAnimation />
+
+      {/* Social Actions Menu */}
+      <SocialActionsMenu userType="arl" userId={user?.id} userName={user?.name} />
     </div>
   );
 }
