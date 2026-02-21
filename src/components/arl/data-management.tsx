@@ -87,6 +87,13 @@ export function DataManagement() {
     return `Purged ${d.deletedMessages || 0} messages, ${d.deletedReads || 0} reads, ${d.deletedReactions || 0} reactions`;
   });
 
+  const purgeConversations = () => runAction(async () => {
+    const res = await fetch("/api/data-management/purge-conversations", { method: "POST" });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const d = await res.json();
+    return `Purged ${d.deletedConversations || 0} conversations, ${d.deletedMessages || 0} messages, ${d.deletedReads || 0} reads, ${d.deletedReactions || 0} reactions, ${d.deletedMembers || 0} members`;
+  });
+
   const purgeOldTasks = () => runAction(async () => {
     const res = await fetch("/api/data-management/purge-old-tasks", { method: "POST" });
     if (!res.ok) throw new Error((await res.json()).error);
@@ -240,6 +247,7 @@ export function DataManagement() {
       subtitle: "Permanently delete data. Use with extreme caution.",
       cards: [
         { id: "purge-msg", icon: Trash2, color: "red", title: "Purge All Messages", desc: "Delete all messages, read receipts, and reactions.", btn: "Purge Messages", onClick: () => confirm("purge-msg", "Purge All Messages", "This will permanently delete ALL messages, read receipts, and reactions from every conversation.", purgeMessages) },
+        { id: "purge-convos", icon: Trash2, color: "red", title: "Purge All Conversations", desc: "Delete all conversations, messages, and related data.", btn: "Purge Conversations", onClick: () => confirm("purge-convos", "Purge All Conversations", "This will permanently delete ALL conversations, messages, read receipts, reactions, and conversation members. This is more destructive than purging messages alone.", purgeConversations) },
         { id: "reset-lb", icon: Trophy, color: "red", title: "Reset Leaderboard", desc: "Clear all points and task completion history.", btn: "Reset Points", onClick: () => confirm("reset-lb", "Reset Leaderboard", "This will reset ALL points and task completion history for every location. Use to start a new competition period.", resetLeaderboard) },
       ],
     },
