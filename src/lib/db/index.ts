@@ -81,6 +81,8 @@ function runMigrations() {
       id TEXT PRIMARY KEY,
       message_id TEXT NOT NULL,
       user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      user_name TEXT NOT NULL,
       emoji TEXT NOT NULL,
       created_at TEXT NOT NULL
     )`);
