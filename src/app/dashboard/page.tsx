@@ -44,6 +44,10 @@ import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { GamificationBar } from "@/components/dashboard/gamification-bar";
 import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
+import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
+import { StreakWidget } from "@/components/dashboard/streak-widget";
+import { AchievementBadge } from "@/components/dashboard/achievement-badge";
+import { playTaskSound, playBonusSound, playStreakSound } from "@/lib/sound-effects";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -388,7 +392,31 @@ export default function DashboardPage() {
       if (res.ok) {
         const result = await res.json();
         setConfettiPoints(result.pointsEarned || 0);
+        
+        // Play task completion sound
+        const task = allTasks.find(t => t.id === taskId);
+        if (soundEnabled && task) {
+          playTaskSound(task.type as any);
+        }
+        
+        // Play bonus sound if bonus points awarded
+        if (result.bonusPoints > 0 && soundEnabled) {
+          setTimeout(() => playBonusSound(), 300);
+        }
+        
         playConfettiSound();
+        
+        // Update streak
+        try {
+          const streakRes = await fetch("/api/streaks", { method: "POST" });
+          if (streakRes.ok) {
+            const streakData = await streakRes.json();
+            if (streakData.milestone && soundEnabled) {
+              setTimeout(() => playStreakSound(), 600);
+            }
+          }
+        } catch {}
+        
         // Fetch confirmed state to check all-done and update points
         const updatedRes = await fetch(`/api/tasks/today?${localTimeParams()}`);
         if (updatedRes.ok) {
@@ -438,6 +466,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Achievement Badge */}
+          <AchievementBadge />
+
           {/* Gamification */}
           <GamificationBar />
 
@@ -600,7 +631,9 @@ export default function DashboardPage() {
       {/* Main Content - 3 column layout, no scrolling */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Column - Completed/Missed + Points (hidden on small screens) */}
-        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4">
+        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 space-y-4 overflow-y-auto">
+          <StreakWidget />
+          <MotivationalQuote />
           <CompletedMissed
             completedToday={completedTasks}
             missedYesterday={data?.missedYesterday || []}
