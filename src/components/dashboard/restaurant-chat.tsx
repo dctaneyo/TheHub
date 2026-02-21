@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
+import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 
 interface Message {
   id: string;
@@ -889,6 +890,13 @@ function ActiveConvoView({
       )}
 
       <div className="border-t border-slate-200">
+        {/* Emoji Quick Replies */}
+        {!showKeyboard && (
+          <div className="px-3 pt-3">
+            <EmojiQuickReplies onSelect={(text) => { setNewMessage(text); handleSend(); }} />
+          </div>
+        )}
+
         <div className="flex gap-2 p-3">
           <button
             onClick={() => setShowKeyboard((k) => !k)}
