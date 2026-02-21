@@ -672,6 +672,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             onStopTyping={() => stopTyping(activeConvo.id)}
             knownMessageIds={knownMessageIdsRef.current}
             sendError={sendError}
+            showEmojiPicker={showEmojiPicker}
+            setShowEmojiPicker={setShowEmojiPicker}
             onReaction={async (messageId: string, emoji: string) => {
               try {
                 const res = await fetch("/api/messages/reaction", {
@@ -710,6 +712,8 @@ interface ActiveConvoViewProps {
   knownMessageIds: Set<string>;
   sendError: boolean;
   onReaction: (messageId: string, emoji: string) => Promise<void>;
+  showEmojiPicker: boolean;
+  setShowEmojiPicker: (v: boolean) => void;
 }
 
 function ActiveConvoView({
@@ -717,6 +721,7 @@ function ActiveConvoView({
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
   typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
+  showEmojiPicker, setShowEmojiPicker,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -931,7 +936,7 @@ function ActiveConvoView({
               {showEmojiPicker && (
                 <KFCEmojiPicker
                   onSelect={(emoji) => {
-                    setNewMessage(prev => prev + emoji);
+                    setNewMessage(newMessage + emoji);
                     setShowEmojiPicker(false);
                   }}
                   onClose={() => setShowEmojiPicker(false)}
