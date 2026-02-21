@@ -87,6 +87,9 @@ function runMigrations() {
       created_at TEXT NOT NULL
     )`);
   } catch {}
+  // Add missing columns if table was created without them
+  try { s.exec(`ALTER TABLE message_reactions ADD COLUMN user_type TEXT NOT NULL DEFAULT 'location'`); } catch {}
+  try { s.exec(`ALTER TABLE message_reactions ADD COLUMN user_name TEXT NOT NULL DEFAULT 'Unknown'`); } catch {}
   try {
     s.exec(`CREATE TABLE IF NOT EXISTS pending_sessions (
       id TEXT PRIMARY KEY,
