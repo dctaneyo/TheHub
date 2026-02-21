@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { debounce } from "lodash";
 import {
   Send,
   X,
@@ -270,6 +271,14 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
     } catch {}
   }, [onUnreadChange, playMessageChime]);
 
+  // Add debouncing to prevent race conditions
+  const debouncedFetchConversations = useCallback(
+    debounce(() => {
+      fetchConversations();
+    }, 300), // 300ms debounce
+    [fetchConversations]
+  );
+
   const fetchMessages = useCallback(async (convId: string) => {
     try {
       // Purge old messages (>2 weeks) silently
@@ -308,14 +317,14 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   // Socket listeners for conversations and messages
   useEffect(() => {
     if (!socket) return;
-    const handleConvoUpdate = () => fetchConversations();
+    const handleConvoUpdate = () => debouncedFetchConversations();
     const handleNewMessage = (data: { conversationId: string }) => {
-      fetchConversations();
+      debouncedFetchConversations();
       if (activeConvo && data.conversationId === activeConvo.id) {
         fetchMessages(activeConvo.id);
       }
     };
-    const handleMessageRead = () => fetchConversations();
+    const handleMessageRead = () => debouncedFetchConversations();
     const handleTypingStart = (data: { conversationId: string; userId: string; userName: string }) => {
       if (activeConvo && data.conversationId === activeConvo.id) {
         setTypingUsers((prev) => new Map(prev).set(data.userId, data.userName));
@@ -343,7 +352,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
-  }, [socket, fetchConversations, fetchMessages, activeConvo]);
+  }, [socket, debouncedFetchConversations, fetchMessages, activeConvo]);
 
   // Join/leave conversation rooms
   useEffect(() => {
@@ -375,7 +384,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       if (res.ok) {
         setNewMessage("");
         await fetchMessages(activeConvo.id);
-        fetchConversations();
+        debouncedFetchConversations();
       }
     } catch {}
     setSending(false);
