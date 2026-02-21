@@ -27,6 +27,7 @@ import {
   Zap,
   CheckCircle2,
   Wifi,
+  Database,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -39,11 +40,12 @@ import { UserManagement } from "@/components/arl/user-management";
 import { EmergencyBroadcast } from "@/components/arl/emergency-broadcast";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { RemoteLogin } from "@/components/arl/remote-login";
+import { DataManagement } from "@/components/arl/data-management";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -90,6 +92,7 @@ const navItems = [
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },
   { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
+  { id: "data-management" as const, label: "Data Management", icon: Database },
 ];
 
 interface TaskToast {
@@ -105,7 +108,7 @@ export default function ArlPage() {
   const [activeView, setActiveView] = useState<ArlView>(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-      if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login"].includes(saved)) return saved;
+      if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management"].includes(saved)) return saved;
     }
     return "overview";
   });
@@ -547,6 +550,7 @@ export default function ArlPage() {
                 </div>
               )}
               {activeView === "remote-login" && <RemoteLogin />}
+              {activeView === "data-management" && <DataManagement />}
             </motion.div>
           </AnimatePresence>
         </main>
