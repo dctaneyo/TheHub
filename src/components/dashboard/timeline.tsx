@@ -272,6 +272,21 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                             </AnimatePresence>
                             {/* Timeline dot — only show on first card in group */}
                             {group.indexOf(task) === 0 && (
+                              <div className="absolute -left-8 top-4">
+                                {task.isCompleted || isCompleting ? (
+                                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300 }}>
+                                    <CheckCircle2 className="h-[18px] w-[18px] text-[var(--hub-green)]" />
+                                  </motion.div>
+                                ) : task.isOverdue ? (
+                                  <AlertTriangle className="h-[18px] w-[18px] text-[var(--hub-red)]" />
+                                ) : (
+                                  <Circle className={cn("h-[18px] w-[18px]", isPast ? "text-slate-300" : "text-slate-400")} />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Task card */}
+                            <motion.div
                               whileTap={!task.isCompleted && !isCompleting ? { scale: 0.98 } : {}}
                               className={cn(
                                 "w-full rounded-2xl border-2 p-4 text-left transition-all",
@@ -346,7 +361,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   </button>
                                 )}
                               </div>
-                            </motion.div>
+                              </motion.div>
+                            </div>
                           </div>
                         );
                       })}
