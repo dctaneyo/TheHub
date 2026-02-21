@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Trash2, Database, AlertTriangle, CheckCircle2, Trophy, Download, Calendar,
   HardDrive, Activity, Unlink, Shield, ListChecks, Search, Copy, Upload,
-  BarChart3, RefreshCw, X,
+  BarChart3, RefreshCw, X, Archive, ScrollText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -181,6 +181,54 @@ export function DataManagement() {
     }
   };
 
+  const archiveOldData = (dataType: string, daysOld: number, label: string) => () => runAction(async () => {
+    const res = await fetch("/api/data-management/archive-old-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataType, daysOld }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const d = await res.json();
+    return `${label}: archived ${d.archived} records older than ${daysOld} days`;
+  });
+
+  const viewAuditLog = async () => {
+    setProcessing(true);
+    clearAlerts();
+    try {
+      const res = await fetch("/api/data-management/audit-log?limit=100");
+      if (!res.ok) throw new Error((await res.json()).error);
+      const d = await res.json();
+      setSuccess(`Audit log: ${d.logs.length} recent actions. Check console for details.`);
+      console.table(d.logs);
+    } catch (err: any) {
+      setError(err?.message || "Failed to fetch audit log");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const viewAnalytics = async () => {
+    setProcessing(true);
+    clearAlerts();
+    try {
+      const res = await fetch("/api/data-management/usage-analytics");
+      if (!res.ok) throw new Error((await res.json()).error);
+      const d = await res.json();
+      setSuccess(`Usage analytics loaded. Check console for detailed charts and stats.`);
+      console.log("=== USAGE ANALYTICS ===");
+      console.log("Top Locations:", d.topLocations);
+      console.log("Peak Hours:", d.peakHours);
+      console.log("Completion Trends:", d.completionTrends);
+      console.log("Top Tasks:", d.topTasks);
+      console.log("Session Stats:", d.sessionStats);
+    } catch (err: any) {
+      setError(err?.message || "Failed to fetch analytics");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const confirm = (id: string, title: string, confirmText: string, action: () => Promise<void>) => {
     setShowConfirm({ id, title, confirmText, action });
   };
@@ -224,6 +272,22 @@ export function DataManagement() {
       ],
     },
     {
+      title: "Archive & Retention",
+      subtitle: "Move old data to archive instead of deleting.",
+      cards: [
+        { id: "archive-msgs", icon: Archive, color: "purple", title: "Archive Old Messages", desc: "Move messages older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-msgs", "Archive Old Messages", "This will move messages older than 180 days to the archive table. They can be restored later if needed.", archiveOldData("messages", 180, "Messages archived")) },
+        { id: "archive-tasks", icon: Archive, color: "indigo", title: "Archive Old Tasks", desc: "Move task completions older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-tasks", "Archive Old Tasks", "This will move task completions older than 180 days to the archive table.", archiveOldData("task-completions", 180, "Task completions archived")) },
+      ],
+    },
+    {
+      title: "Analytics & Audit",
+      subtitle: "View usage statistics and audit logs.",
+      cards: [
+        { id: "audit-log", icon: ScrollText, color: "slate", title: "View Audit Log", desc: "See recent admin actions and changes.", btn: "View Log", onClick: viewAuditLog },
+        { id: "analytics", icon: BarChart3, color: "cyan", title: "Usage Analytics", desc: "View detailed usage statistics and trends.", btn: "View Analytics", onClick: viewAnalytics },
+      ],
+    },
+    {
       title: "Backup & Export",
       subtitle: "Export and import system data.",
       cards: [
@@ -243,6 +307,8 @@ export function DataManagement() {
     indigo: { bg: "bg-indigo-50", text: "text-indigo-600", btn: "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300" },
     purple: { bg: "bg-purple-50", text: "text-purple-600", btn: "bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300" },
     sky:    { bg: "bg-sky-50",    text: "text-sky-600",    btn: "bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300" },
+    slate:  { bg: "bg-slate-50",  text: "text-slate-600",  btn: "bg-slate-600 hover:bg-slate-700 disabled:bg-slate-300" },
+    cyan:   { bg: "bg-cyan-50",   text: "text-cyan-600",   btn: "bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300" },
   };
 
   return (
