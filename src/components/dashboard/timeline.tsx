@@ -361,8 +361,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   </button>
                                 )}
                               </div>
-                              </motion.div>
-                            </div>
+                            </motion.div>
                           </div>
                         );
                       })}
