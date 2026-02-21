@@ -46,6 +46,7 @@ import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/componen
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import { HighFiveAnimation } from "@/components/high-five-animation";
+import { AnimatedBackground } from "@/components/animated-background";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 
@@ -439,9 +440,12 @@ export default function DashboardPage() {
   const allTasks = data?.tasks || [];
 
   return (
-    <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)]">
+    <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)] relative">
+      {/* Animated Background */}
+      <AnimatedBackground variant="subtle" />
+
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 relative z-10">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
