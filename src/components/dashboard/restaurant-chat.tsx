@@ -284,7 +284,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
 
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+    fetchParticipants();
+  }, [fetchConversations, fetchParticipants]);
 
   // Socket listeners for conversations and messages
   useEffect(() => {

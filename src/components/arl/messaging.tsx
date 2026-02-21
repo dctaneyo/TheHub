@@ -380,6 +380,11 @@ export function Messaging() {
 
   useEffect(() => {
     fetchConversations();
+    fetchParticipants();
+  }, [fetchConversations, fetchParticipants]);
+
+  useEffect(() => {
+    fetchConversations();
     fetchMemberInfo();
   }, [fetchConversations, fetchMemberInfo]);
 
