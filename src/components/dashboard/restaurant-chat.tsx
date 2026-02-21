@@ -717,9 +717,7 @@ function ActiveConvoView({
     typingTimerRef.current = setTimeout(onStopTyping, 2000);
   };
   const typingNames = Array.from(typingUsers.values());
-  const todayStr = new Date().toDateString();
-  const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
-
+  
   // Message reactions
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const reactions = ["❤️", "👍", "😂", "😊"];
@@ -728,9 +726,22 @@ function ActiveConvoView({
     setShowReactions(null);
     await onReaction(messageId, emoji);
   };
-  // Show all messages by default - date filtering was causing messages to disappear
-  const visibleMessages = messages;
-  const hasPast = false;
+  
+  // Date filtering with timezone-safe comparison
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  
+  const visibleMessages = showAllMessages
+    ? messages
+    : messages.filter((m) => {
+        const msgTime = new Date(m.createdAt).getTime();
+        return msgTime >= yesterdayStart;
+      });
+  const hasPast = messages.some((m) => {
+    const msgTime = new Date(m.createdAt).getTime();
+    return msgTime < yesterdayStart;
+  });
 
   return (
     <>
