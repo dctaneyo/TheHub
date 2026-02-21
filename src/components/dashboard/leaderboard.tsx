@@ -89,7 +89,7 @@ function PodiumCard({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean })
 
   return (
     <>
-      {shouldCelebrate && <ConfettiBurst />}
+      {shouldCelebrate && <ConfettiBurst active={true} />}
       <div className={cn("flex flex-col items-center rounded-2xl border-2 p-4 transition-all", c.bg, c.border, isMe && "ring-2 ring-[var(--hub-red)] ring-offset-1")}>
         <div className="flex items-center gap-2">
           <span className="text-3xl leading-none">{c.medal}</span>
