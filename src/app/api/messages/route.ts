@@ -4,7 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { sendPushToARL } from "@/lib/push";
-import { broadcastNewMessage, broadcastConversationUpdate } from "@/lib/socket-emit";
+import { broadcastNewMessage, broadcastConversationUpdate, broadcastMessageRead } from "@/lib/socket-emit";
 
 // Helper: get unread count for a conversation for the current session user
 function getUnreadCount(conversationId: string, sessionId: string, sessionType: string): number {
@@ -112,6 +112,33 @@ export async function GET(req: NextRequest) {
         if (!readMap.has(read.messageId)) readMap.set(read.messageId, []);
         readMap.get(read.messageId)!.push({ readerType: read.readerType, readerId: read.readerId, readAt: read.readAt });
       }
+    }
+
+    // Auto-mark all messages from OTHER users as read for the current user.
+    // Viewing a conversation = reading its messages.
+    const myReadIds = new Set(
+      reads.filter((r) => r.readerId === session.id).map((r) => r.messageId)
+    );
+    const now = new Date().toISOString();
+    let markedAny = false;
+    for (const msg of messages) {
+      if (msg.senderId !== session.id && !myReadIds.has(msg.id)) {
+        db.insert(schema.messageReads).values({
+          id: uuid(),
+          messageId: msg.id,
+          readerType: session.userType,
+          readerId: session.id,
+          readAt: now,
+        }).run();
+        // Also add to readMap so the response reflects the new read
+        if (!readMap.has(msg.id)) readMap.set(msg.id, []);
+        readMap.get(msg.id)!.push({ readerType: session.userType, readerId: session.id, readAt: now });
+        markedAny = true;
+      }
+    }
+    if (markedAny) {
+      broadcastMessageRead(conversationId, session.id);
+      broadcastConversationUpdate(conversationId);
     }
 
     return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [] })) });

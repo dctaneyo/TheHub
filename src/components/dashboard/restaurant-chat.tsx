@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { debounce } from "lodash";
+
 import {
   Send,
   X,
@@ -249,24 +249,6 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
         });
         
         const deduplicatedConvs = Array.from(conversationMap.values());
-        
-        // Debug: Check for duplicate conversation IDs
-        const ids = deduplicatedConvs.map(c => c.id);
-        const uniqueIds = new Set(ids);
-        if (ids.length !== uniqueIds.size) {
-          console.warn("Duplicate conversation IDs detected:", ids);
-          console.warn("Duplicates:", ids.filter((id, index) => ids.indexOf(id) !== index));
-        }
-        
-        // Debug: Log conversation details
-        console.log("Conversations fetched:", deduplicatedConvs.map(c => ({
-          id: c.id,
-          type: c.type,
-          name: c.name,
-          lastMessageTime: c.lastMessage?.createdAt,
-          unreadCount: c.unreadCount
-        })));
-        
         const total = deduplicatedConvs.reduce((s, c) => s + c.unreadCount, 0);
         if (initializedRef.current && total > prevUnreadRef.current) {
           playMessageChime();
@@ -279,22 +261,6 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
     } catch {}
   }, [onUnreadChange, playMessageChime]);
 
-  // Add debouncing to prevent race conditions
-  const debouncedFetchConversations = useCallback(
-    debounce(() => {
-      fetchConversations();
-    }, 300), // 300ms debounce
-    [fetchConversations]
-  );
-
-  // Debounced message fetching to prevent race conditions
-  const debouncedFetchMessages = useCallback(
-    debounce((conversationId: string) => {
-      fetchMessages(conversationId);
-    }, 100), // 100ms debounce for messages
-    []
-  );
-
   const fetchMessages = useCallback(async (convId: string) => {
     try {
       // Purge old messages (>2 weeks) silently
@@ -305,41 +271,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
         // Track known IDs so only truly new messages animate
         for (const m of data.messages) knownMessageIdsRef.current.add(m.id);
         setMessages(data.messages);
-        // Mark unread as read
-        const unreadIds = data.messages
-          .filter((m: Message) => m.reads.length === 0 && m.senderType !== "location")
-          .map((m: Message) => m.id);
-        
-        // Debug: Log message read attempt
-        console.log("Marking messages as read:", {
-          totalMessages: data.messages.length,
-          unreadIds: unreadIds.length,
-          messageDetails: data.messages.map((m: Message) => ({
-            id: m.id,
-            senderType: m.senderType,
-            readsCount: m.reads.length,
-            shouldMarkAsRead: m.reads.length === 0 && m.senderType !== "location"
-          }))
-        });
-        
-        if (unreadIds.length > 0) {
-          try {
-            const res = await fetch("/api/messages/read", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ messageIds: unreadIds }),
-            });
-            if (res.ok) {
-              console.log("Messages marked as read successfully");
-              // Refresh conversations immediately after marking as read
-              fetchConversations();
-            } else {
-              console.error("Failed to mark messages as read:", await res.text());
-            }
-          } catch (error) {
-            console.error("Error marking messages as read:", error);
-          }
-        }
+        // Server auto-marks messages as read when fetching, so refresh conversations to update unread counts
+        fetchConversations();
       }
     } catch {}
   }, [fetchConversations]);
@@ -364,7 +297,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       // Immediate conversation update for unread count
       fetchConversations();
       if (activeConvo && data.conversationId === activeConvo.id) {
-        debouncedFetchMessages(activeConvo.id);
+        fetchMessages(activeConvo.id);
       }
     };
     const handleMessageRead = () => {
@@ -398,7 +331,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
-  }, [socket, fetchConversations, debouncedFetchMessages, activeConvo]);
+  }, [socket, fetchConversations, fetchMessages, activeConvo]);
 
   // Join/leave conversation rooms
   useEffect(() => {
@@ -432,7 +365,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       if (res.ok) {
         setNewMessage("");
         await fetchMessages(activeConvo.id);
-        debouncedFetchConversations();
+        fetchConversations();
         setSendError(false);
       } else {
         setSendError(true);
