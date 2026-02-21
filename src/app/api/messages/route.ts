@@ -142,12 +142,17 @@ export async function GET(req: NextRequest) {
     }
 
     // Build reactions map
-    const allReactions = db.select().from(schema.messageReactions).all()
-      .filter((r) => messageIds.includes(r.messageId));
-    const reactionMap = new Map<string, Array<{ emoji: string; userId: string; userName: string; createdAt: string }>>();
-    for (const r of allReactions) {
-      if (!reactionMap.has(r.messageId)) reactionMap.set(r.messageId, []);
-      reactionMap.get(r.messageId)!.push({ emoji: r.emoji, userId: r.userId, userName: r.userName, createdAt: r.createdAt });
+    let reactionMap = new Map<string, Array<{ emoji: string; userId: string; userName: string; createdAt: string }>>();
+    try {
+      const allReactions = db.select().from(schema.messageReactions).all()
+        .filter((r) => messageIds.includes(r.messageId));
+      for (const r of allReactions) {
+        if (!reactionMap.has(r.messageId)) reactionMap.set(r.messageId, []);
+        reactionMap.get(r.messageId)!.push({ emoji: r.emoji, userId: r.userId, userName: r.userName, createdAt: r.createdAt });
+      }
+    } catch (reactionError) {
+      console.error("Failed to load reactions (table may not exist):", reactionError);
+      // Continue without reactions if table doesn't exist
     }
 
     return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [], reactions: reactionMap.get(m.id) || [] })) });

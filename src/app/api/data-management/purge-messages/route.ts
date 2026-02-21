@@ -13,10 +13,19 @@ export async function POST() {
     // Count before deletion
     const messageCount = db.select().from(schema.messages).all().length;
     const readCount = db.select().from(schema.messageReads).all().length;
-    const reactionCount = db.select().from(schema.messageReactions).all().length;
+    let reactionCount = 0;
+    try {
+      reactionCount = db.select().from(schema.messageReactions).all().length;
+    } catch {
+      // Table may not exist yet
+    }
 
-    // Delete all message reactions
-    sqlite.prepare("DELETE FROM message_reactions").run();
+    // Delete all message reactions (if table exists)
+    try {
+      sqlite.prepare("DELETE FROM message_reactions").run();
+    } catch (err) {
+      console.log("message_reactions table does not exist, skipping");
+    }
 
     // Delete all message reads
     sqlite.prepare("DELETE FROM message_reads").run();
