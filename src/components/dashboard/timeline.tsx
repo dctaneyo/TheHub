@@ -47,6 +47,12 @@ const priorityColors: Record<string, { bg: string; border: string; text: string 
   low: { bg: "bg-slate-50", border: "border-slate-300", text: "text-slate-600" },
 };
 
+// Animated color transitions for due-soon tasks
+const colorTransitionColors = [
+  "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500", 
+  "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-gray-500"
+];
+
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
@@ -289,9 +295,13 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   : task.isOverdue
                                   ? "border-red-300 bg-red-50 shadow-sm shadow-red-100 cursor-pointer"
                                   : task.isDueSoon
-                                  ? "border-amber-300 bg-amber-50 shadow-sm shadow-amber-100 animate-pulse cursor-pointer"
+                                  ? "border-amber-300 shadow-sm cursor-pointer"
                                   : cn(colors.border, colors.bg, "shadow-sm hover:shadow-md cursor-pointer")
                               )}
+                              animate={task.isDueSoon && !task.isCompleted ? {
+                                backgroundColor: colorTransitionColors,
+                                transition: { duration: 3, repeat: Infinity, ease: "linear" }
+                              } : {}}
                             >
                               <div className="flex items-start gap-3">
                                 <div className={cn(
