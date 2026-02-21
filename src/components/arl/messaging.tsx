@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -971,23 +972,30 @@ export function Messaging() {
         })()}
       </ScrollArea>
 
-      <div className="border-t border-slate-200 p-3">
-        <div className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              if (activeConvo) startTyping(activeConvo.id);
-            }}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { if (activeConvo) stopTyping(activeConvo.id); handleSend(); } }}
-            placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
-            className="flex-1 rounded-xl"
-          />
-          <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
-            className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+      <div className="border-t border-slate-200">
+        {/* Emoji Quick Replies */}
+        <div className="px-3 pt-3">
+          <EmojiQuickReplies onSelect={(text) => { setNewMessage(text); handleSend(); }} />
+        </div>
+
+        <div className="p-3">
+          <div className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                if (activeConvo) startTyping(activeConvo.id);
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { if (activeConvo) stopTyping(activeConvo.id); handleSend(); } }}
+              placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
+              className="flex-1 rounded-xl"
+            />
+            <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
