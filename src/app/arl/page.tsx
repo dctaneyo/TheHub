@@ -41,6 +41,9 @@ import { EmergencyBroadcast } from "@/components/arl/emergency-broadcast";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { RemoteLogin } from "@/components/arl/remote-login";
 import { DataManagement } from "@/components/arl/data-management";
+import { ShoutoutsFeed } from "@/components/shoutouts-feed";
+import { LiveActivityFeed } from "@/components/live-activity-feed";
+import { HighFiveAnimation } from "@/components/high-five-animation";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -581,6 +584,9 @@ export default function ArlPage() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* High-Five Animation */}
+      <HighFiveAnimation />
     </div>
   );
 }
@@ -749,6 +755,16 @@ function OverviewContent() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Shoutouts and Live Activity */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <ShoutoutsFeed />
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <LiveActivityFeed maxItems={15} />
+        </div>
       </div>
 
     </div>
