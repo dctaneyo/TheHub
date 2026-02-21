@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
+import { Emoji } from "@/components/ui/emoji";
 
 interface Conversation {
   id: string;
@@ -815,30 +816,11 @@ export function Messaging() {
                 {isGroup && !isMe && (
                   <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
                 )}
-                <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
-                )}>
-                  <p className="text-sm">{msg.content}</p>
-                  
-                  {/* Reactions display */}
-                  {msg.reactions && msg.reactions.length > 0 && (() => {
-                    const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
-                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>);
-                    return (
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {Object.entries(grouped).map(([emoji, count]) => (
-                          <span key={emoji} className={cn(
-                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs",
-                            isMe ? "bg-white/20 text-white/80" : "bg-slate-200 text-slate-600"
-                          )}>
-                            {emoji} {count > 1 && <span className="text-[10px]">{count}</span>}
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  })()}
+                <div className="relative">
+                  <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
+                    isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+                  )}>
+                    <p className="text-sm">{msg.content}</p>
                   
                   <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
@@ -913,33 +895,51 @@ export function Messaging() {
                       <Smile className="h-3 w-3" />
                     </button>
                   </div>
-                  
-                  {/* Reaction picker */}
-                  <AnimatePresence>
-                    {showReactions === msg.id && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                        className={cn(
-                          "absolute mt-1 flex gap-1 rounded-full bg-white shadow-lg border border-slate-200 p-1",
-                          isMe ? "right-0" : "left-0"
-                        )}
-                      >
-                        {reactions.map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => addReaction(msg.id, emoji)}
-                            className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-sm"
-                            title={`React with ${emoji}`}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
+                
+                {/* Reactions display - iOS style hovering at bottom */}
+                {msg.reactions && msg.reactions.length > 0 && (() => {
+                  const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
+                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  return (
+                    <div className={cn(
+                      "absolute -bottom-2 flex flex-wrap gap-1",
+                      isMe ? "right-2" : "left-2"
+                    )}>
+                      {Object.entries(grouped).map(([emoji, count]) => (
+                        <div key={emoji} className="flex items-center gap-0.5 rounded-full bg-white border border-slate-200 shadow-sm px-1.5 py-0.5">
+                          <Emoji emoji={emoji} className="w-3.5 h-3.5" />
+                          {count > 1 && <span className="text-[10px] font-medium text-slate-600">{count}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+                  
+              {/* Reaction picker */}
+              <AnimatePresence>
+                {showReactions === msg.id && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                    className="mt-1 flex gap-1.5 rounded-full bg-white shadow-lg border border-slate-200 px-2.5 py-1.5"
+                  >
+                    {reactions.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => addReaction(msg.id, emoji)}
+                        className="hover:scale-125 transition-transform"
+                      >
+                        <Emoji emoji={emoji} className="w-6 h-6" />
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               </motion.div>
             );
           })}

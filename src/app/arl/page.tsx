@@ -295,7 +295,6 @@ export default function ArlPage() {
       // Register service worker and subscribe
       if ("serviceWorker" in navigator && "PushManager" in window) {
         const registration = await navigator.serviceWorker.register("/sw.js");
-        console.log("SW registered");
 
         try {
           const subscription = await registration.pushManager.subscribe({
@@ -303,7 +302,6 @@ export default function ArlPage() {
             applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
           });
 
-          console.log("Push subscribed:", subscription);
           setPushSubscription(subscription);
 
           // Send subscription to server
@@ -332,12 +330,9 @@ export default function ArlPage() {
 
     if ("serviceWorker" in navigator && "PushManager" in window) {
       navigator.serviceWorker.register("/sw.js").then((registration) => {
-        console.log("SW registered");
-
         // Check existing subscription
         registration.pushManager.getSubscription().then((subscription) => {
           if (subscription) {
-            console.log("Existing push subscription found");
             setPushSubscription(subscription);
           } else if (Notification.permission === "granted") {
             // Try to subscribe if permission granted but no subscription
@@ -347,17 +342,14 @@ export default function ArlPage() {
                 applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
               })
               .then((sub) => {
-                console.log("Push subscribed:", sub);
                 setPushSubscription(sub);
                 fetch("/api/push/subscribe", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(sub),
-                }).catch(console.error);
+                }).catch(() => {});
               })
-              .catch((err) => {
-                console.log("Push subscription failed:", err);
-              });
+              .catch(() => {});
           }
         });
       });

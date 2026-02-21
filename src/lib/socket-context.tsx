@@ -56,7 +56,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     s.on("connect", () => {
-      console.log("🔌 Socket connected:", s.id);
       setIsConnected(true);
       // Emit immediately on connect so lastSeen is fresh right away
       s.emit("client:heartbeat");
@@ -75,32 +74,28 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (buildId !== sessionBuildId) {
-        console.log(`🔄 New build detected (${sessionBuildId} → ${buildId}), reloading…`);
         setUpdating(true);
         // Brief delay so the splash animation is visible before reload
         setTimeout(() => window.location.reload(), 3500);
       }
     });
 
-    s.on("disconnect", (reason) => {
-      console.log("🔌 Socket disconnected:", reason);
+    s.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    s.on("connect_error", (err) => {
-      console.log("🔌 Socket connection error:", err.message);
+    s.on("connect_error", () => {
+      // Connection error handled silently
     });
 
     // Force session management — ARL can remotely logout or reassign this device
     s.on("session:force-logout", () => {
-      console.log("🔌 Force logout received");
       fetch("/api/auth/logout", { method: "POST" }).finally(() => {
         window.location.href = "/login";
       });
     });
 
     s.on("session:force-redirect", async (data: { token: string; redirectTo: string }) => {
-      console.log("🔌 Force redirect received →", data.redirectTo);
       try {
         await fetch("/api/auth/force-apply", {
           method: "POST",

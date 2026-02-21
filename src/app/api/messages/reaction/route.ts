@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastConversationUpdate } from "@/lib/socket-emit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       db.delete(schema.messageReactions).where(eq(schema.messageReactions.id, existing.id)).run();
+      broadcastConversationUpdate(message.conversationId);
       return NextResponse.json({ success: true, action: "removed" });
     }
 
@@ -46,6 +48,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     }).run();
 
+    broadcastConversationUpdate(message.conversationId);
     return NextResponse.json({ success: true, action: "added" });
   } catch (error) {
     console.error("Error adding reaction:", error);
