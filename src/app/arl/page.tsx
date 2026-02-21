@@ -105,18 +105,24 @@ interface TaskToast {
 export default function ArlPage() {
   const { user, logout } = useAuth();
   const device = useDeviceType();
-  const [activeView, setActiveView] = useState<ArlView>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-      if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management"].includes(saved)) return saved;
+  const [activeView, setActiveView] = useState<ArlView>("overview");
+  const [mounted, setMounted] = useState(false);
+
+  // Restore active view from sessionStorage after mount (prevents hydration mismatch)
+  useEffect(() => {
+    const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
+    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management"].includes(saved)) {
+      setActiveView(saved);
     }
-    return "overview";
-  });
+    setMounted(true);
+  }, []);
 
   // Persist active view so it survives unexpected remounts
   useEffect(() => {
-    sessionStorage.setItem("arl-active-view", activeView);
-  }, [activeView]);
+    if (mounted) {
+      sessionStorage.setItem("arl-active-view", activeView);
+    }
+  }, [activeView, mounted]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
