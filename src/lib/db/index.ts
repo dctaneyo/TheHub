@@ -77,6 +77,15 @@ function runMigrations() {
   try { s.exec(`ALTER TABLE task_completions ADD COLUMN bonus_points INTEGER NOT NULL DEFAULT 0`); } catch {}
   try { s.exec(`ALTER TABLE conversations ADD COLUMN deleted_by TEXT NOT NULL DEFAULT '[]'`); } catch {}
   try {
+    s.exec(`CREATE TABLE IF NOT EXISTS message_reactions (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`);
+  } catch {}
+  try {
     s.exec(`CREATE TABLE IF NOT EXISTS pending_sessions (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
