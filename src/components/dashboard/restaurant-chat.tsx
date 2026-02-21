@@ -717,6 +717,25 @@ function ActiveConvoView({
   const typingNames = Array.from(typingUsers.values());
   const todayStr = new Date().toDateString();
   const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+
+  // Message reactions
+  const [showReactions, setShowReactions] = useState<string | null>(null);
+  const reactions = ["❤️", "👍", "😂", "😊"];
+
+  const addReaction = async (messageId: string, emoji: string) => {
+    try {
+      const res = await fetch("/api/messages/reaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId, emoji }),
+      });
+      if (res.ok) {
+        setShowReactions(null);
+        // Refresh messages to show the reaction
+        // This would trigger a socket event in a real implementation
+      }
+    } catch {}
+  };
   const visibleMessages = showAllMessages
     ? messages
     : messages.filter((m) => {
@@ -763,6 +782,19 @@ function ActiveConvoView({
                   isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
                 )}>
                   <p className="text-sm">{msg.content}</p>
+                  
+                  {/* Reactions display */}
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {msg.reactions.map((reaction, idx) => (
+                        <div key={idx} className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5">
+                          <span className="text-xs">{reaction.emoji}</span>
+                          <span className="text-[10px] text-white/70">{1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className={cn("mt-0.5 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
@@ -771,7 +803,41 @@ function ActiveConvoView({
                       ? <CheckCheck className="h-3 w-3 text-white/80" />
                       : <Check className="h-3 w-3 text-white/50" />
                     )}
+                    {/* Reaction button */}
+                    <button
+                      onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
+                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
+                      title="Add reaction"
+                    >
+                      <Smile className="h-3 w-3" />
+                    </button>
                   </div>
+                  
+                  {/* Reaction picker */}
+                  <AnimatePresence>
+                    {showReactions === msg.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                        className={cn(
+                          "absolute mt-1 flex gap-1 rounded-full bg-white shadow-lg border border-slate-200 p-1",
+                          isMe ? "right-0" : "left-0"
+                        )}
+                      >
+                        {reactions.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(msg.id, emoji)}
+                            className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-sm"
+                            title={`React with ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             );
