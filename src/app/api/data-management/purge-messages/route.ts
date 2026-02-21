@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { db, schema } from "@/lib/db";
+import { db, schema, sqlite } from "@/lib/db";
 
 // POST purge all messages, read receipts, and reactions
 export async function POST() {
@@ -16,13 +16,13 @@ export async function POST() {
     const reactionCount = db.select().from(schema.messageReactions).all().length;
 
     // Delete all message reactions
-    db.delete(schema.messageReactions).run();
+    sqlite.prepare("DELETE FROM message_reactions").run();
 
     // Delete all message reads
-    db.delete(schema.messageReads).run();
+    sqlite.prepare("DELETE FROM message_reads").run();
 
     // Delete all messages
-    db.delete(schema.messages).run();
+    sqlite.prepare("DELETE FROM messages").run();
 
     return NextResponse.json({
       success: true,
