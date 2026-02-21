@@ -257,13 +257,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         storeNumber: user.userType === "location" ? user.storeNumber : undefined,
         isOnline: true,
       });
-      // Update lastSeen for THIS session only (by sessionCode, not userId)
-      // Using userId would revive all old stale sessions for the same user.
       try {
+        const now = new Date().toISOString();
         if (user.sessionCode) {
-          const now = new Date().toISOString();
           db.update(schema.sessions)
-            .set({ isOnline: true, lastSeen: now })
+            .set({ lastSeen: now, isOnline: true, socketId: socket.id })
             .where(eq(schema.sessions.sessionCode, user.sessionCode))
             .run();
           // Ack back to this socket so the session popdown updates without polling
