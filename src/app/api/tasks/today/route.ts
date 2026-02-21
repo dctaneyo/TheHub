@@ -83,13 +83,28 @@ export async function GET(req: Request) {
     todayTasks.sort((a, b) => a.dueTime.localeCompare(b.dueTime));
 
     const now = localTime || `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+    
+    // Helper to convert time string to minutes for proper comparison
+    const timeToMinutes = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + m;
+    };
+    
+    const nowMinutes = timeToMinutes(now);
 
-    const tasksWithStatus = todayTasks.map((task) => ({
-      ...task,
-      isCompleted: completedTaskIds.has(task.id),
-      isOverdue: !completedTaskIds.has(task.id) && task.dueTime < now,
-      isDueSoon: !completedTaskIds.has(task.id) && !completedTaskIds.has(task.id) && task.dueTime >= now && task.dueTime <= addMinutes(now, 30),
-    }));
+    const tasksWithStatus = todayTasks.map((task) => {
+      const taskMinutes = timeToMinutes(task.dueTime);
+      const isCompleted = completedTaskIds.has(task.id);
+      const isOverdue = !isCompleted && taskMinutes < nowMinutes;
+      const isDueSoon = !isCompleted && !isOverdue && taskMinutes >= nowMinutes && taskMinutes <= nowMinutes + 30;
+      
+      return {
+        ...task,
+        isCompleted,
+        isOverdue,
+        isDueSoon,
+      };
+    });
 
     return NextResponse.json({
       tasks: tasksWithStatus,
