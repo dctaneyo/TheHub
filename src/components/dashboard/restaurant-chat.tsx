@@ -28,6 +28,8 @@ import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton, MessageSkeleton } from "@/components/ui/skeleton";
+import { Shake } from "@/components/ui/shake";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -89,6 +91,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
@@ -390,8 +393,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
         setNewMessage("");
         await fetchMessages(activeConvo.id);
         debouncedFetchConversations();
+        setSendError(false);
+      } else {
+        setSendError(true);
+        setTimeout(() => setSendError(false), 500);
       }
-    } catch {}
+    } catch {
+      setSendError(true);
+      setTimeout(() => setSendError(false), 500);
+    }
     setSending(false);
   };
 
@@ -530,7 +540,11 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                 <div className="space-y-1 p-3">
                   {participants.length === 0 && (
                     <div className="flex h-32 items-center justify-center">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+                      <div className="w-full space-y-2 p-3">
+                        <Skeleton variant="list" />
+                        <Skeleton variant="list" />
+                        <Skeleton variant="list" />
+                      </div>
                     </div>
                   )}
                   {participants
@@ -675,6 +689,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             onTyping={() => startTyping(activeConvo.id)}
             onStopTyping={() => stopTyping(activeConvo.id)}
             knownMessageIds={knownMessageIdsRef.current}
+            sendError={sendError}
           />}
         </motion.div>
       )}
@@ -699,13 +714,14 @@ interface ActiveConvoViewProps {
   onTyping: () => void;
   onStopTyping: () => void;
   knownMessageIds: Set<string>;
+  sendError: boolean;
 }
 
 function ActiveConvoView({
   messages, showAllMessages, setShowAllMessages, isGroup,
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
-  typingUsers, onTyping, onStopTyping, knownMessageIds,
+  typingUsers, onTyping, onStopTyping, knownMessageIds, sendError,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -763,7 +779,15 @@ function ActiveConvoView({
           )}
           {visibleMessages.length === 0 && (
             <div className="flex h-40 items-center justify-center">
-              <p className="text-xs text-slate-400">No messages yet</p>
+              {showAllMessages ? (
+                <div className="w-full space-y-3 p-4">
+                  <MessageSkeleton />
+                  <MessageSkeleton />
+                  <MessageSkeleton />
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">No messages yet</p>
+              )}
             </div>
           )}
           {visibleMessages.map((msg) => {
@@ -891,11 +915,13 @@ function ActiveConvoView({
             placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
             className="flex-1 rounded-xl"
           />
-          <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
-            className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <Shake trigger={sendError} intensity="medium">
+            <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </Shake>
         </div>
       </div>
     </>
