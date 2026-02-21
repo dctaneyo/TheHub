@@ -910,7 +910,7 @@ export function Messaging() {
                     )}>
                       {Object.entries(grouped).map(([emoji, count]) => (
                         <div key={emoji} className="flex items-center gap-0.5 rounded-full bg-white border border-slate-200 shadow-sm px-1.5 py-0.5">
-                          <Emoji emoji={emoji} className="w-3.5 h-3.5" />
+                          <Emoji emoji={emoji} size={14} />
                           {count > 1 && <span className="text-[10px] font-medium text-slate-600">{count}</span>}
                         </div>
                       ))}
@@ -934,7 +934,7 @@ export function Messaging() {
                         onClick={() => addReaction(msg.id, emoji)}
                         className="hover:scale-125 transition-transform"
                       >
-                        <Emoji emoji={emoji} className="w-6 h-6" />
+                        <Emoji emoji={emoji} size={24} />
                       </button>
                     ))}
                   </motion.div>

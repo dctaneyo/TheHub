@@ -4,7 +4,7 @@ import { Emoji as EmojiComponent } from "emoji-picker-react";
 
 interface EmojiProps {
   emoji: string;
-  className?: string;
+  size?: number;
 }
 
 // Convert emoji character to unified code point
@@ -21,12 +21,8 @@ function emojiToUnified(emoji: string): string {
   return codePoints.join('-');
 }
 
-export function Emoji({ emoji, className = "" }: EmojiProps) {
+export function Emoji({ emoji, size = 22 }: EmojiProps) {
   const unified = emojiToUnified(emoji);
   
-  return (
-    <span className={className}>
-      <EmojiComponent unified={unified} size={22} />
-    </span>
-  );
+  return <EmojiComponent unified={unified} size={size} />;
 }
