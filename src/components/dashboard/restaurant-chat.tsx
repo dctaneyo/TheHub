@@ -728,16 +728,9 @@ function ActiveConvoView({
     setShowReactions(null);
     await onReaction(messageId, emoji);
   };
-  const visibleMessages = showAllMessages
-    ? messages
-    : messages.filter((m) => {
-        const d = new Date(m.createdAt).toDateString();
-        return d === todayStr || d === yesterdayStr;
-      });
-  const hasPast = messages.some((m) => {
-    const d = new Date(m.createdAt).toDateString();
-    return d !== todayStr && d !== yesterdayStr;
-  });
+  // Show all messages by default - date filtering was causing messages to disappear
+  const visibleMessages = messages;
+  const hasPast = false;
 
   return (
     <>

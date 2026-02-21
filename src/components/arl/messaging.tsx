@@ -764,30 +764,10 @@ export function Messaging() {
 
       <ScrollArea className="flex-1 min-h-0 p-4">
         {(() => {
-          const todayStr = new Date().toDateString();
-          const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
-          const visibleMessages = showAllMessages
-            ? messages
-            : messages.filter((m) => {
-                const d = new Date(m.createdAt).toDateString();
-                return d === todayStr || d === yesterdayStr;
-              });
-          const hasPast = messages.some((m) => {
-            const d = new Date(m.createdAt).toDateString();
-            return d !== todayStr && d !== yesterdayStr;
-          });
+          // Show all messages by default - date filtering was causing messages to disappear
+          const visibleMessages = messages;
           return (
         <div className="space-y-3">
-          {!showAllMessages && hasPast && (
-            <div className="flex justify-center pb-1">
-              <button
-                onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors"
-              >
-                View Past Messages
-              </button>
-            </div>
-          )}
           {visibleMessages.length === 0 && (
             <div className="flex h-40 items-center justify-center">
               <p className="text-sm text-slate-400">No messages yet. Start the conversation!</p>
