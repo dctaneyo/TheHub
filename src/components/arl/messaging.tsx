@@ -16,6 +16,10 @@ import {
   X,
   Hash,
   Trash2,
+  Heart,
+  ThumbsUp,
+  Laugh,
+  Smile,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -51,6 +55,7 @@ interface Message {
   messageType: string;
   createdAt: string;
   reads: Array<{ readerType: string; readerId: string; readAt: string }>;
+  reactions?: Array<{ emoji: string; userId: string; userName: string; createdAt: string }>;
 }
 
 interface MemberInfo {
@@ -253,6 +258,8 @@ export function Messaging() {
   const [showNewDirect, setShowNewDirect] = useState(false);
   const [directSearch, setDirectSearch] = useState("");
   const [startingDirect, setStartingDirect] = useState(false);
+  const [showReactions, setShowReactions] = useState<string | null>(null);
+  const reactions = ["❤️", "👍", "😂", "😊"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevUnreadRef = useRef<number>(0);
@@ -413,6 +420,24 @@ export function Messaging() {
       socket.off("typing:stop", handleTypingStop);
     };
   }, [socket, fetchConversations, fetchMessages, activeConvo]);
+
+  // Add reaction functionality
+  const addReaction = async (messageId: string, emoji: string) => {
+    try {
+      const res = await fetch("/api/messages/reaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId, emoji }),
+      });
+      if (res.ok) {
+        setShowReactions(null);
+        // Refresh messages to show the reaction
+        if (activeConvo) {
+          fetchMessages(activeConvo.id);
+        }
+      }
+    } catch {}
+  };
 
   // Join/leave conversation rooms
   useEffect(() => {
@@ -786,6 +811,19 @@ export function Messaging() {
                   isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
                 )}>
                   <p className="text-sm">{msg.content}</p>
+                  
+                  {/* Reactions display */}
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {msg.reactions.map((reaction, idx) => (
+                        <div key={idx} className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5">
+                          <span className="text-xs">{reaction.emoji}</span>
+                          <span className="text-[10px] text-white/70">{1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
@@ -850,7 +888,41 @@ export function Messaging() {
                         )}
                       </div>
                     )}
+                    {/* Reaction button */}
+                    <button
+                      onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
+                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
+                      title="Add reaction"
+                    >
+                      <Smile className="h-3 w-3" />
+                    </button>
                   </div>
+                  
+                  {/* Reaction picker */}
+                  <AnimatePresence>
+                    {showReactions === msg.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                        className={cn(
+                          "absolute mt-1 flex gap-1 rounded-full bg-white shadow-lg border border-slate-200 p-1",
+                          isMe ? "right-0" : "left-0"
+                        )}
+                      >
+                        {reactions.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(msg.id, emoji)}
+                            className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-sm"
+                            title={`React with ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             );

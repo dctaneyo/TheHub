@@ -819,7 +819,7 @@ function ActiveConvoView({
                     </div>
                   )}
                   
-                  <div className={cn("mt-0.5 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
+                  <div className={cn("mt-0.5 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
@@ -830,7 +830,7 @@ function ActiveConvoView({
                     {/* Reaction button */}
                     <button
                       onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
+                      className={cn("transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
                       title="Add reaction"
                     >
                       <Smile className="h-3 w-3" />
