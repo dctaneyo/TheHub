@@ -287,6 +287,14 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
     [fetchConversations]
   );
 
+  // Debounced message fetching to prevent race conditions
+  const debouncedFetchMessages = useCallback(
+    debounce((conversationId: string) => {
+      fetchMessages(conversationId);
+    }, 100), // 100ms debounce for messages
+    []
+  );
+
   const fetchMessages = useCallback(async (convId: string) => {
     try {
       // Purge old messages (>2 weeks) silently
@@ -325,14 +333,21 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   // Socket listeners for conversations and messages
   useEffect(() => {
     if (!socket) return;
-    const handleConvoUpdate = () => debouncedFetchConversations();
+    const handleConvoUpdate = () => {
+      // Immediate conversation update for unread count
+      fetchConversations();
+    };
     const handleNewMessage = (data: { conversationId: string }) => {
-      debouncedFetchConversations();
+      // Immediate conversation update for unread count
+      fetchConversations();
       if (activeConvo && data.conversationId === activeConvo.id) {
-        fetchMessages(activeConvo.id);
+        debouncedFetchMessages(activeConvo.id);
       }
     };
-    const handleMessageRead = () => debouncedFetchConversations();
+    const handleMessageRead = () => {
+      // Immediate conversation update for unread count
+      fetchConversations();
+    };
     const handleTypingStart = (data: { conversationId: string; userId: string; userName: string }) => {
       if (activeConvo && data.conversationId === activeConvo.id) {
         setTypingUsers((prev) => new Map(prev).set(data.userId, data.userName));
@@ -360,7 +375,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
-  }, [socket, debouncedFetchConversations, fetchMessages, activeConvo]);
+  }, [socket, fetchConversations, debouncedFetchMessages, activeConvo]);
 
   // Join/leave conversation rooms
   useEffect(() => {
@@ -370,11 +385,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       fetchMessages(activeConvo.id);
       joinConversation(activeConvo.id);
       setTypingUsers(new Map());
+      // Refresh conversations to update unread count immediately
+      fetchConversations();
       return () => {
         leaveConversation(activeConvo.id);
       };
     }
-  }, [activeConvo, fetchMessages, joinConversation, leaveConversation]);
+  }, [activeConvo, fetchMessages, joinConversation, leaveConversation, fetchConversations]);
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
