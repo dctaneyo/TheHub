@@ -732,12 +732,14 @@ function RightPanel({
           🏆 Leaderboard
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
         {tab === "calendar" ? (
           <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
         ) : (
           <Leaderboard currentLocationId={currentLocationId} compact />
         )}
+      </div>
+      <div className="shrink-0 p-4 pt-0">
         <MotivationalQuote />
       </div>
     </div>
