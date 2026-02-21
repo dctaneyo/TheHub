@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Database, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Trash2, Database, AlertTriangle, CheckCircle2, Trophy, Bell, Download, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -34,14 +34,117 @@ export function DataManagement() {
     }
   };
 
+  const handlePurgeOldTasks = async () => {
+    setPurging(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/data-management/purge-old-tasks", {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuccess(`Successfully purged ${data.deletedCompletions || 0} old task completions (older than 90 days)`);
+        setShowConfirm(null);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to purge old tasks");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  const handleResetLeaderboard = async () => {
+    setPurging(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/data-management/reset-leaderboard", {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuccess(`Successfully reset leaderboard. Cleared ${data.deletedCompletions || 0} task completions.`);
+        setShowConfirm(null);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to reset leaderboard");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setPurging(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/data-management/export");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hub-data-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setSuccess("Data exported successfully");
+        setShowConfirm(null);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to export data");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setPurging(false);
+    }
+  };
+
   const actions = [
     {
       id: "purge-messages",
       title: "Purge All Messages",
-      description: "Delete all messages, read receipts, and reactions from all conversations. This action cannot be undone.",
+      description: "Delete all messages, read receipts, and reactions from all conversations.",
       icon: Trash2,
       color: "red",
       action: handlePurgeMessages,
+      confirmText: "Are you sure you want to purge all messages? This will permanently delete all messages, read receipts, and reactions from the system.",
+    },
+    {
+      id: "purge-old-tasks",
+      title: "Purge Old Task Data",
+      description: "Delete task completions older than 90 days to keep the database clean.",
+      icon: Calendar,
+      color: "orange",
+      action: handlePurgeOldTasks,
+      confirmText: "This will delete all task completions older than 90 days. Recent data will be preserved.",
+    },
+    {
+      id: "reset-leaderboard",
+      title: "Reset Leaderboard",
+      description: "Clear all task completion history and reset points for all locations.",
+      icon: Trophy,
+      color: "purple",
+      action: handleResetLeaderboard,
+      confirmText: "This will reset all points and task completion history for all locations. Use this to start a new competition period.",
+    },
+    {
+      id: "export-data",
+      title: "Export All Data",
+      description: "Download a complete backup of all system data as JSON.",
+      icon: Download,
+      color: "blue",
+      action: handleExportData,
+      confirmText: "This will export all data including tasks, messages, users, and completions as a JSON file.",
     },
   ];
 
@@ -100,7 +203,10 @@ export function DataManagement() {
           >
             <div className={cn(
               "mb-4 flex h-12 w-12 items-center justify-center rounded-xl",
-              action.color === "red" && "bg-red-50 text-red-600"
+              action.color === "red" && "bg-red-50 text-red-600",
+              action.color === "orange" && "bg-orange-50 text-orange-600",
+              action.color === "purple" && "bg-purple-50 text-purple-600",
+              action.color === "blue" && "bg-blue-50 text-blue-600"
             )}>
               <action.icon className="h-6 w-6" />
             </div>
@@ -111,7 +217,10 @@ export function DataManagement() {
               disabled={purging}
               className={cn(
                 "mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
-                action.color === "red" && "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                action.color === "red" && "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300",
+                action.color === "orange" && "bg-orange-600 text-white hover:bg-orange-700 disabled:bg-orange-300",
+                action.color === "purple" && "bg-purple-600 text-white hover:bg-purple-700 disabled:bg-purple-300",
+                action.color === "blue" && "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
               )}
             >
               {purging && showConfirm === action.id ? "Processing..." : "Execute"}
@@ -142,7 +251,7 @@ export function DataManagement() {
               </div>
               <h3 className="text-xl font-bold text-slate-800">Confirm Action</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Are you sure you want to purge all messages? This will permanently delete all messages, read receipts, and reactions from the system. This action cannot be undone.
+                {actions.find((a) => a.id === showConfirm)?.confirmText} This action cannot be undone.
               </p>
               <div className="mt-6 flex gap-3">
                 <button
@@ -160,7 +269,7 @@ export function DataManagement() {
                   disabled={purging}
                   className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-red-300"
                 >
-                  {purging ? "Purging..." : "Yes, Purge All"}
+                  {purging ? "Processing..." : "Yes, Continue"}
                 </button>
               </div>
             </motion.div>
