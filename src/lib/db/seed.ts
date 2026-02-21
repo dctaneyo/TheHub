@@ -132,6 +132,16 @@ async function seed() {
       read_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS forms (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,

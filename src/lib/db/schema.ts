@@ -128,6 +128,17 @@ export const messageReads = sqliteTable("message_reads", {
   readAt: text("read_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Message reactions
+export const messageReactions = sqliteTable("message_reactions", {
+  id: text("id").primaryKey(),
+  messageId: text("message_id").notNull(),
+  userId: text("user_id").notNull(),
+  userType: text("user_type").notNull(), // 'location' | 'arl'
+  userName: text("user_name").notNull(),
+  emoji: text("emoji").notNull(),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Forms repository
 export const forms = sqliteTable("forms", {
   id: text("id").primaryKey(), // UUID

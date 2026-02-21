@@ -663,6 +663,18 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             onStopTyping={() => stopTyping(activeConvo.id)}
             knownMessageIds={knownMessageIdsRef.current}
             sendError={sendError}
+            onReaction={async (messageId: string, emoji: string) => {
+              try {
+                const res = await fetch("/api/messages/reaction", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ messageId, emoji }),
+                });
+                if (res.ok && activeConvo) {
+                  fetchMessages(activeConvo.id);
+                }
+              } catch {}
+            }}
           />}
         </motion.div>
       )}
@@ -688,13 +700,14 @@ interface ActiveConvoViewProps {
   onStopTyping: () => void;
   knownMessageIds: Set<string>;
   sendError: boolean;
+  onReaction: (messageId: string, emoji: string) => Promise<void>;
 }
 
 function ActiveConvoView({
   messages, showAllMessages, setShowAllMessages, isGroup,
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
-  typingUsers, onTyping, onStopTyping, knownMessageIds, sendError,
+  typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -712,18 +725,8 @@ function ActiveConvoView({
   const reactions = ["❤️", "👍", "😂", "😊"];
 
   const addReaction = async (messageId: string, emoji: string) => {
-    try {
-      const res = await fetch("/api/messages/reaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId, emoji }),
-      });
-      if (res.ok) {
-        setShowReactions(null);
-        // Refresh messages to show the reaction
-        // This would trigger a socket event in a real implementation
-      }
-    } catch {}
+    setShowReactions(null);
+    await onReaction(messageId, emoji);
   };
   const visibleMessages = showAllMessages
     ? messages
@@ -781,16 +784,24 @@ function ActiveConvoView({
                   <p className="text-sm">{msg.content}</p>
                   
                   {/* Reactions display */}
-                  {msg.reactions && msg.reactions.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {msg.reactions.map((reaction, idx) => (
-                        <div key={idx} className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5">
-                          <span className="text-xs">{reaction.emoji}</span>
-                          <span className="text-[10px] text-white/70">{1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {msg.reactions && msg.reactions.length > 0 && (() => {
+                    const grouped = msg.reactions.reduce((acc, r) => {
+                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {Object.entries(grouped).map(([emoji, count]) => (
+                          <span key={emoji} className={cn(
+                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs",
+                            isMe ? "bg-white/20 text-white/80" : "bg-slate-200 text-slate-600"
+                          )}>
+                            {emoji} {count > 1 && <span className="text-[10px]">{count}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   
                   <div className={cn("mt-0.5 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>

@@ -813,16 +813,24 @@ export function Messaging() {
                   <p className="text-sm">{msg.content}</p>
                   
                   {/* Reactions display */}
-                  {msg.reactions && msg.reactions.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {msg.reactions.map((reaction, idx) => (
-                        <div key={idx} className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5">
-                          <span className="text-xs">{reaction.emoji}</span>
-                          <span className="text-[10px] text-white/70">{1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {msg.reactions && msg.reactions.length > 0 && (() => {
+                    const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
+                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {Object.entries(grouped).map(([emoji, count]) => (
+                          <span key={emoji} className={cn(
+                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs",
+                            isMe ? "bg-white/20 text-white/80" : "bg-slate-200 text-slate-600"
+                          )}>
+                            {emoji} {count > 1 && <span className="text-[10px]">{count}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   
                   <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>

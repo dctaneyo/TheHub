@@ -141,7 +141,16 @@ export async function GET(req: NextRequest) {
       broadcastConversationUpdate(conversationId);
     }
 
-    return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [] })) });
+    // Build reactions map
+    const allReactions = db.select().from(schema.messageReactions).all()
+      .filter((r) => messageIds.includes(r.messageId));
+    const reactionMap = new Map<string, Array<{ emoji: string; userId: string; userName: string; createdAt: string }>>();
+    for (const r of allReactions) {
+      if (!reactionMap.has(r.messageId)) reactionMap.set(r.messageId, []);
+      reactionMap.get(r.messageId)!.push({ emoji: r.emoji, userId: r.userId, userName: r.userName, createdAt: r.createdAt });
+    }
+
+    return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [], reactions: reactionMap.get(m.id) || [] })) });
   } catch (error) {
     console.error("Get messages error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
