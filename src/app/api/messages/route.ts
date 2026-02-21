@@ -230,14 +230,26 @@ export async function PUT(req: NextRequest) {
 
     if (type === "direct") {
       const [otherId, otherType] = [memberIds[0], memberTypes[0]];
-      // Check if direct conv already exists between these two (that neither has deleted)
+      // Check if direct conv already exists between these two
       const existing = db.select().from(schema.conversations).all().find(
         (c) => c.type === "direct" && (
           (c.participantAId === session.id && c.participantBId === otherId) ||
           (c.participantAId === otherId && c.participantBId === session.id)
-        ) && !JSON.parse(c.deletedBy || "[]").includes(session.id)
+        )
       );
-      if (existing) return NextResponse.json({ conversation: existing });
+      
+      if (existing) {
+        // If user had deleted this conversation, resurrect it by removing them from deletedBy
+        const deletedBy: string[] = JSON.parse(existing.deletedBy || "[]");
+        if (deletedBy.includes(session.id)) {
+          const updatedDeletedBy = deletedBy.filter((id) => id !== session.id);
+          db.update(schema.conversations)
+            .set({ deletedBy: JSON.stringify(updatedDeletedBy) })
+            .where(eq(schema.conversations.id, existing.id))
+            .run();
+        }
+        return NextResponse.json({ conversation: existing });
+      }
 
       db.insert(schema.conversations).values({
         id: convId, type: "direct",
