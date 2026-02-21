@@ -288,6 +288,11 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                             {/* Task card */}
                             <motion.div
                               whileTap={!task.isCompleted && !isCompleting ? { scale: 0.98 } : {}}
+                              onClick={() => {
+                                if (!task.isCompleted && !isCompleting) {
+                                  handleComplete(task.id);
+                                }
+                              }}
                               className={cn(
                                 "w-full rounded-2xl border-2 p-4 text-left transition-all",
                                 task.isCompleted || isCompleting
