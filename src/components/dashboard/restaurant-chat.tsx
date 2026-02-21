@@ -221,10 +221,28 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
       const res = await fetch("/api/messages");
       if (res.ok) {
         const data = await res.json();
-        const convs: Conversation[] = data.conversations || [];
+        let convs: Conversation[] = data.conversations || [];
+        
+        // Deduplicate conversations by ID (keep the one with the most recent message)
+        const conversationMap = new Map<string, Conversation>();
+        convs.forEach(convo => {
+          const existing = conversationMap.get(convo.id);
+          if (!existing) {
+            conversationMap.set(convo.id, convo);
+          } else {
+            // Keep the conversation with the more recent last message
+            const existingTime = existing.lastMessage?.createdAt || "";
+            const newTime = convo.lastMessage?.createdAt || "";
+            if (newTime > existingTime) {
+              conversationMap.set(convo.id, convo);
+            }
+          }
+        });
+        
+        const deduplicatedConvs = Array.from(conversationMap.values());
         
         // Debug: Check for duplicate conversation IDs
-        const ids = convs.map(c => c.id);
+        const ids = deduplicatedConvs.map(c => c.id);
         const uniqueIds = new Set(ids);
         if (ids.length !== uniqueIds.size) {
           console.warn("Duplicate conversation IDs detected:", ids);
@@ -232,7 +250,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
         }
         
         // Debug: Log conversation details
-        console.log("Conversations fetched:", convs.map(c => ({
+        console.log("Conversations fetched:", deduplicatedConvs.map(c => ({
           id: c.id,
           type: c.type,
           name: c.name,
@@ -240,13 +258,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
           unreadCount: c.unreadCount
         })));
         
-        const total = convs.reduce((s, c) => s + c.unreadCount, 0);
+        const total = deduplicatedConvs.reduce((s, c) => s + c.unreadCount, 0);
         if (initializedRef.current && total > prevUnreadRef.current) {
           playMessageChime();
         }
         prevUnreadRef.current = total;
         initializedRef.current = true;
-        setConversations(convs);
+        setConversations(deduplicatedConvs);
         onUnreadChange(total);
       }
     } catch {}
