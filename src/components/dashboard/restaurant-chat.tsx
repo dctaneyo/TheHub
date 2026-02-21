@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
+import { KFCEmojiPicker } from "@/components/kfc-emoji-picker";
 
 interface Message {
   id: string;
@@ -97,6 +98,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [newChatMode, setNewChatMode] = useState<"direct" | "group">("direct");
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -897,7 +899,7 @@ function ActiveConvoView({
           </div>
         )}
 
-        <div className="flex gap-2 p-3">
+        <div className="flex gap-2 p-3 relative">
           <button
             onClick={() => setShowKeyboard((k) => !k)}
             className={cn(
@@ -910,13 +912,33 @@ function ActiveConvoView({
           >
             <Keyboard className="h-4 w-4" />
           </button>
-          <Input
-            value={newMessage}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
-            placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
-            className="flex-1 rounded-xl"
-          />
+          <div className="relative flex-1">
+            <Input
+              value={newMessage}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
+              placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
+              className="rounded-xl pr-10"
+            />
+            <button
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-lg"
+              title="KFC Emojis"
+            >
+              🍗
+            </button>
+            <AnimatePresence>
+              {showEmojiPicker && (
+                <KFCEmojiPicker
+                  onSelect={(emoji) => {
+                    setNewMessage(prev => prev + emoji);
+                    setShowEmojiPicker(false);
+                  }}
+                  onClose={() => setShowEmojiPicker(false)}
+                />
+              )}
+            </AnimatePresence>
+          </div>
           <Shake trigger={sendError} intensity="medium">
             <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
