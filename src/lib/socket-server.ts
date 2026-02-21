@@ -273,14 +273,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Activity tracking (which page/section a user is on) ──
     socket.on("activity:update", (data: { page: string }) => {
       if (!user) return;
-      console.log(`[Socket] Activity update from ${user.name}: ${data.page} (socketId: ${socket.id})`);
       // Persist current page to session so it's available on refresh
       try {
-        const result = db.update(schema.sessions)
+        db.update(schema.sessions)
           .set({ currentPage: data.page })
           .where(eq(schema.sessions.socketId, socket.id))
           .run();
-        console.log(`[Socket] Updated ${result.changes} session(s) with currentPage: ${data.page}`);
       } catch (err) {
         console.error("Failed to update session currentPage:", err);
       }

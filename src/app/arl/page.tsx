@@ -607,18 +607,11 @@ function OverviewContent() {
     // Initialize userActivities from currentPage in session data
     const activities = new Map<string, string>();
     locs.forEach((loc: { id: string; name: string; currentPage: string | null }) => {
-      if (loc.currentPage) {
-        console.log(`[Overview] Initializing activity for ${loc.name}: ${loc.currentPage}`);
-        activities.set(loc.id, loc.currentPage);
-      }
+      if (loc.currentPage) activities.set(loc.id, loc.currentPage);
     });
     arlsList.forEach((arl: { id: string; name: string; currentPage: string | null }) => {
-      if (arl.currentPage) {
-        console.log(`[Overview] Initializing activity for ${arl.name}: ${arl.currentPage}`);
-        activities.set(arl.id, arl.currentPage);
-      }
+      if (arl.currentPage) activities.set(arl.id, arl.currentPage);
     });
-    console.log(`[Overview] Total activities initialized: ${activities.size}`);
     setUserActivities(activities);
   }), []);
 
