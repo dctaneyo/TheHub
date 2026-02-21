@@ -615,8 +615,7 @@ export default function DashboardPage() {
       {/* Main Content - 3 column layout, no scrolling */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Column - Completed/Missed + Points (hidden on small screens) */}
-        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 space-y-4 overflow-y-auto">
-          <MotivationalQuote />
+        <div className="hidden md:block w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 overflow-y-auto">
           <CompletedMissed
             completedToday={completedTasks}
             missedYesterday={data?.missedYesterday || []}
@@ -733,12 +732,13 @@ function RightPanel({
           🏆 Leaderboard
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-4">
         {tab === "calendar" ? (
           <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
         ) : (
           <Leaderboard currentLocationId={currentLocationId} compact />
         )}
+        <MotivationalQuote />
       </div>
     </div>
   );

@@ -43,12 +43,29 @@ export function GamificationBar() {
   const [showBadges, setShowBadges] = useState(false);
   const { socket } = useSocket();
 
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     const now = new Date();
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    fetch(`/api/gamification?localDate=${localDate}`)
-      .then(async (r) => { if (r.ok) setData(await r.json()); })
-      .catch(() => {});
+    
+    try {
+      // Fetch gamification data (streak, level, stats)
+      const gamRes = await fetch(`/api/gamification?localDate=${localDate}`);
+      if (!gamRes.ok) return;
+      const gamData = await gamRes.json();
+      
+      // Fetch new achievements
+      const achRes = await fetch('/api/achievements');
+      if (!achRes.ok) return;
+      const achData = await achRes.json();
+      
+      // Merge data
+      setData({
+        streak: gamData.streak,
+        level: gamData.level,
+        badges: achData.badges,
+        stats: gamData.stats,
+      });
+    } catch {}
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -194,20 +211,42 @@ export function GamificationBar() {
                 <div className="mb-4">
                   <h3 className="mb-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">Earned</h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {earnedBadges.map((badge) => (
-                      <motion.div
-                        key={badge.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3"
-                      >
-                        <span className="text-2xl">{badge.icon}</span>
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">{badge.name}</p>
-                          <p className="text-[10px] text-slate-400">{badge.description}</p>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {earnedBadges.map((badge) => {
+                      const tier = (badge as any).tier || 'bronze';
+                      const tierColors: Record<string, { border: string; bg: string }> = {
+                        bronze: { border: 'border-orange-200', bg: 'bg-orange-50/50' },
+                        silver: { border: 'border-slate-300', bg: 'bg-slate-50/50' },
+                        gold: { border: 'border-yellow-300', bg: 'bg-yellow-50/50' },
+                        platinum: { border: 'border-purple-300', bg: 'bg-purple-50/50' },
+                      };
+                      const colors = tierColors[tier] || tierColors.bronze;
+                      
+                      return (
+                        <motion.div
+                          key={badge.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={cn("flex items-center gap-3 rounded-xl border p-3", colors.border, colors.bg)}
+                        >
+                          <span className="text-2xl">{badge.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <p className="text-xs font-bold text-slate-800 truncate">{badge.name}</p>
+                              <span className={cn(
+                                "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase shrink-0",
+                                tier === 'platinum' && "bg-purple-100 text-purple-600",
+                                tier === 'gold' && "bg-yellow-100 text-yellow-600",
+                                tier === 'silver' && "bg-slate-200 text-slate-600",
+                                tier === 'bronze' && "bg-orange-100 text-orange-600"
+                              )}>
+                                {tier}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 truncate">{badge.description}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -223,9 +262,9 @@ export function GamificationBar() {
                         className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 opacity-50"
                       >
                         <span className="text-2xl grayscale">{badge.icon}</span>
-                        <div>
-                          <p className="text-xs font-bold text-slate-500">{badge.name}</p>
-                          <p className="text-[10px] text-slate-400">{badge.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-500 truncate">{badge.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{badge.description}</p>
                         </div>
                       </div>
                     ))}
