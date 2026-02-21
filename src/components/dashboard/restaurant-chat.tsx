@@ -471,7 +471,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
 
           {/* New chat picker */}
           {!activeConvo && showNewChat && (
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
               {/* Direct / Group tabs */}
               <div className="flex gap-1 border-b border-slate-100 px-3 py-2">
                 <button
@@ -526,7 +526,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
                 </div>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-h-0 h-full">
                 <div className="space-y-1 p-3">
                   {participants.length === 0 && (
                     <div className="flex h-32 items-center justify-center">
