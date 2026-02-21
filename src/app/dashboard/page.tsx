@@ -47,6 +47,7 @@ import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-scree
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
+import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 
 interface TasksResponse {
   tasks: TaskItem[];
