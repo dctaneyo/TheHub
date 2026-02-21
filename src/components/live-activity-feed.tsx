@@ -19,6 +19,26 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const { socket } = useSocket();
 
+  // Load activities from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('live-activity-feed');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setActivities(parsed.slice(0, maxItems));
+      } catch (err) {
+        console.error('Failed to parse stored activities:', err);
+      }
+    }
+  }, [maxItems]);
+
+  // Save activities to localStorage whenever they change
+  useEffect(() => {
+    if (activities.length > 0) {
+      localStorage.setItem('live-activity-feed', JSON.stringify(activities));
+    }
+  }, [activities]);
+
   useEffect(() => {
     if (!socket) return;
 
