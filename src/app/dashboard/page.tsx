@@ -45,6 +45,7 @@ import { GamificationBar } from "@/components/dashboard/gamification-bar";
 import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
+import { HighFiveAnimation } from "@/components/high-five-animation";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 
 interface TasksResponse {
@@ -694,6 +695,9 @@ export default function DashboardPage() {
 
       {/* Emergency Broadcast Overlay */}
       <EmergencyOverlay />
+
+      {/* High-Five Animation */}
+      <HighFiveAnimation />
 
       {/* Restaurant Chat Drawer */}
       <RestaurantChat
