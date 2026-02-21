@@ -191,3 +191,9 @@ export function broadcastForceRedirect(userId: string, userType: string, token: 
     emitToArl(userId, "session:force-redirect", { token, redirectTo });
   }
 }
+
+// ── General broadcast to all connected users ──
+export function broadcastToAll(event: string, data: any) {
+  if (!isAvailable()) return;
+  emitToAll(event, data);
+}
