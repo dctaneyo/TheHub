@@ -46,6 +46,12 @@ const priorityColors: Record<string, { bg: string; border: string; text: string 
   low: { bg: "bg-slate-50", border: "border-slate-300", text: "text-slate-600" },
 };
 
+// Animated color transitions
+const colorTransitionColors = [
+  "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500", 
+  "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-gray-500"
+];
+
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
@@ -132,7 +138,7 @@ export function VerticalTimeline({ tasks, onComplete, onUncomplete, currentTime 
             const colors = priorityColors[task.priority] || priorityColors.normal;
             
             return (
-              <div
+              <motion.div
                 key={task.id}
                 className={cn(
                   "absolute left-12 right-0 rounded border p-1.5 shadow-sm transition-all",
@@ -144,6 +150,10 @@ export function VerticalTimeline({ tasks, onComplete, onUncomplete, currentTime 
                   top: `${taskPosition}%`,
                   transform: 'translateY(-50%) translateY(-20px)'
                 }}
+                animate={task.isDueSoon && !task.isCompleted ? {
+                  backgroundColor: colorTransitionColors,
+                  transition: { duration: 2, repeat: Infinity, ease: "linear" }
+                } : {}}
               >
                 <div className="flex items-center gap-1.5">
                   <button

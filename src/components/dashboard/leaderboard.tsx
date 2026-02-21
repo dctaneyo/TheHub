@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, Zap } from "lucide-react";
+import { Trophy, Zap, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
+import { ConfettiBurst } from "./celebrations";
 
 interface LeaderboardEntry {
   locationId: string;
@@ -79,31 +80,39 @@ function PodiumCard({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean })
       text: "text-orange-800",
       sub: "text-orange-600",
       bar: "bg-orange-400",
-      height: "pt-1",
+      height: "pt-3",
     },
   ];
+
+  const shouldCelebrate = isMe && entry.rank <= 3;
   const c = configs[entry.rank - 1];
 
   return (
-    <div className={cn("flex flex-col items-center rounded-2xl border-2 p-4 transition-all", c.bg, c.border, isMe && "ring-2 ring-[var(--hub-red)] ring-offset-1")}>
-      <span className="text-3xl leading-none">{c.medal}</span>
-      <span className={cn("mt-1 text-[10px] font-bold uppercase tracking-wider", c.sub)}>{c.label}</span>
-      <p className={cn("mt-2 text-center text-sm font-bold leading-tight", c.text)}>{entry.name}</p>
-      <p className={cn("text-[10px]", c.sub)}>#{entry.storeNumber}</p>
-      {isMe && <span className="mt-1 rounded-full bg-[var(--hub-red)]/10 px-2 py-0.5 text-[9px] font-bold text-[var(--hub-red)]">YOU</span>}
-      <div className="mt-3 w-full">
-        <div className="h-1.5 w-full rounded-full bg-black/10">
-          <div className={cn("h-1.5 rounded-full transition-all duration-700", c.bar)} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
+    <>
+      {shouldCelebrate && <ConfettiBurst />}
+      <div className={cn("flex flex-col items-center rounded-2xl border-2 p-4 transition-all", c.bg, c.border, isMe && "ring-2 ring-[var(--hub-red)] ring-offset-1")}>
+        <div className="flex items-center gap-2">
+          <span className="text-3xl leading-none">{c.medal}</span>
+          {shouldCelebrate && <Sparkles className="h-4 w-4 text-yellow-500 animate-pulse" />}
         </div>
-        <p className={cn("mt-1 text-center text-xs font-bold", c.text)}>{entry.completionPct}%</p>
+        <span className={cn("mt-1 text-[10px] font-bold uppercase tracking-wider", c.sub)}>{c.label}</span>
+        <p className={cn("mt-2 text-center text-sm font-bold leading-tight", c.text)}>{entry.name}</p>
+        <p className={cn("text-[10px]", c.sub)}>#{entry.storeNumber}</p>
+        {isMe && <span className="mt-1 rounded-full bg-[var(--hub-red)]/10 px-2 py-0.5 text-[9px] font-bold text-[var(--hub-red)]">YOU</span>}
+        <div className="mt-3 w-full">
+          <div className="h-1.5 w-full rounded-full bg-black/10">
+            <div className={cn("h-1.5 rounded-full transition-all duration-700", c.bar)} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
+          </div>
+          <p className={cn("mt-1 text-center text-xs font-bold", c.text)}>{entry.completionPct}%</p>
+        </div>
+        <div className="mt-2 flex items-center gap-1">
+          <Zap className="h-3 w-3 text-amber-500" />
+          <span className={cn("text-sm font-black tabular-nums", c.text)}>{entry.totalPoints}</span>
+          {entry.bonusPoints > 0 && <span className="text-[9px] text-amber-600">+{entry.bonusPoints}</span>}
+        </div>
+        <p className={cn("text-[9px]", c.sub)}>{entry.completedTasks}/{entry.totalTasks} tasks</p>
       </div>
-      <div className="mt-2 flex items-center gap-1">
-        <Zap className="h-3 w-3 text-amber-500" />
-        <span className={cn("text-sm font-black tabular-nums", c.text)}>{entry.totalPoints}</span>
-        {entry.bonusPoints > 0 && <span className="text-[9px] text-amber-600">+{entry.bonusPoints}</span>}
-      </div>
-      <p className={cn("text-[9px]", c.sub)}>{entry.completedTasks}/{entry.totalTasks} tasks</p>
-    </div>
+    </>
   );
 }
 

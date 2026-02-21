@@ -19,6 +19,10 @@ import {
   Minimize2,
   Keyboard,
   Trash2,
+  Heart,
+  ThumbsUp,
+  Laugh,
+  Smile,
 } from "lucide-react";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { Input } from "@/components/ui/input";
@@ -38,6 +42,7 @@ interface Message {
   messageType: string;
   createdAt: string;
   reads: Array<{ readerType: string; readerId: string; readAt: string }>;
+  reactions?: Array<{ emoji: string; userId: string; userName: string; createdAt: string }>;
 }
 
 interface Conversation {
