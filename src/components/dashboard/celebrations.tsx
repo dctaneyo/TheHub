@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getRandomTaskCompletionPun } from "@/lib/funny-messages";
 
 // ── Sound Effects ──
 function useAudioCtx() {
@@ -172,16 +173,28 @@ export function ConfettiBurst({ active, points, onComplete }: { active: boolean;
             />
           ))}
           {points !== undefined && points > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, y: "40vh" }}
-              animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.2, 1, 0.8], y: ["40vh", "35vh", "30vh", "25vh"] }}
-              transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
-              className="fixed left-1/2 -translate-x-1/2 z-[101]"
-            >
-              <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 px-6 py-3 shadow-2xl">
-                <p className="text-center text-3xl font-black text-white">+{points} pts</p>
-              </div>
-            </motion.div>
+            <>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: "40vh" }}
+                animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.2, 1, 0.8], y: ["40vh", "35vh", "30vh", "25vh"] }}
+                transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
+                className="fixed left-1/2 -translate-x-1/2 z-[101]"
+              >
+                <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 px-6 py-3 shadow-2xl">
+                  <p className="text-center text-3xl font-black text-white">+{points} pts</p>
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [20, 0, 0, -10] }}
+                transition={{ duration: 3, times: [0, 0.1, 0.8, 1] }}
+                className="fixed top-24 left-1/2 -translate-x-1/2 z-[101]"
+              >
+                <div className="rounded-2xl bg-white border-2 border-green-400 px-6 py-3 shadow-2xl">
+                  <p className="text-center text-lg font-bold text-slate-800">{getRandomTaskCompletionPun()}</p>
+                </div>
+              </motion.div>
+            </>
           )}
         </motion.div>
       )}
