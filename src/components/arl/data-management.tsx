@@ -188,6 +188,31 @@ export function DataManagement() {
     }
   };
 
+  const dropUnusedTables = () => runAction(async () => {
+    const res = await fetch("/api/data-management/drop-tables", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tables: ["onboarding_custom_forms", "onboarding_sessions", "onboarding_submissions"] }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const d = await res.json();
+    return `Dropped ${d.dropped.length} unused table(s): ${d.dropped.join(", ") || "none"}${d.skipped.length > 0 ? ` (skipped: ${d.skipped.join(", ")})` : ""}`;
+  });
+
+  const purgeBroadcastData = () => runAction(async () => {
+    const res = await fetch("/api/data-management/purge-broadcast-data", { method: "POST" });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const d = await res.json();
+    return `Purged broadcast data: ${d.deletedBroadcasts} broadcasts, ${d.deletedMessages} messages, ${d.deletedQuestions} questions, ${d.deletedReactions} reactions, ${d.deletedViewers} viewers`;
+  });
+
+  const purgeNotifications = () => runAction(async () => {
+    const res = await fetch("/api/data-management/purge-notifications", { method: "POST" });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const d = await res.json();
+    return `Purged ${d.deletedNotifications} notifications, ${d.deletedEmergency} emergency messages`;
+  });
+
   const archiveOldData = (dataType: string, daysOld: number, label: string) => () => runAction(async () => {
     const res = await fetch("/api/data-management/archive-old-data", {
       method: "POST",
@@ -249,6 +274,8 @@ export function DataManagement() {
         { id: "purge-msg", icon: Trash2, color: "red", title: "Purge All Messages", desc: "Delete all messages, read receipts, and reactions.", btn: "Purge Messages", onClick: () => confirm("purge-msg", "Purge All Messages", "This will permanently delete ALL messages, read receipts, and reactions from every conversation.", purgeMessages) },
         { id: "purge-convos", icon: Trash2, color: "red", title: "Purge All Conversations", desc: "Delete all conversations, messages, and related data.", btn: "Purge Conversations", onClick: () => confirm("purge-convos", "Purge All Conversations", "This will permanently delete ALL conversations, messages, read receipts, reactions, and conversation members. This is more destructive than purging messages alone.", purgeConversations) },
         { id: "reset-lb", icon: Trophy, color: "red", title: "Reset Leaderboard", desc: "Clear all points and task completion history.", btn: "Reset Points", onClick: () => confirm("reset-lb", "Reset Leaderboard", "This will reset ALL points and task completion history for every location. Use to start a new competition period.", resetLeaderboard) },
+        { id: "purge-broadcast", icon: Trash2, color: "red", title: "Purge Broadcast Data", desc: "Delete all broadcast records, messages, Q&A, reactions, and viewers.", btn: "Purge Broadcasts", onClick: () => confirm("purge-broadcast", "Purge All Broadcast Data", "This will permanently delete ALL broadcast records including messages, questions, reactions, and viewer data.", purgeBroadcastData) },
+        { id: "purge-notif", icon: Trash2, color: "red", title: "Purge Notifications", desc: "Delete all notifications and emergency messages.", btn: "Purge Notifications", onClick: () => confirm("purge-notif", "Purge All Notifications", "This will permanently delete ALL notifications and emergency broadcast messages.", purgeNotifications) },
       ],
     },
     {
@@ -259,6 +286,7 @@ export function DataManagement() {
         { id: "purge-old", icon: Calendar, color: "orange", title: "Purge Old Tasks", desc: "Delete task completions older than 90 days.", btn: "Purge Old Data", onClick: () => confirm("purge-old", "Purge Old Task Data", "This will delete task completions older than 90 days. Recent data is preserved.", purgeOldTasks) },
         { id: "orphaned", icon: Unlink, color: "amber", title: "Orphaned Data Cleanup", desc: "Remove records with broken references.", btn: "Clean Orphans", onClick: () => confirm("orphaned", "Orphaned Data Cleanup", "This will remove messages without conversations, reads without messages, etc.", orphanedCleanup) },
         { id: "dupes", icon: Copy, color: "yellow", title: "Remove Duplicates", desc: "Find and remove duplicate records.", btn: "Remove Dupes", onClick: () => confirm("dupes", "Remove Duplicates", "This will remove duplicate task completions and sessions.", removeDuplicates) },
+        { id: "drop-tables", icon: Database, color: "red", title: "Drop Unused Tables", desc: "Remove legacy onboarding tables no longer used.", btn: "Drop Tables", onClick: () => confirm("drop-tables", "Drop Unused Tables", "This will permanently drop the onboarding_custom_forms, onboarding_sessions, and onboarding_submissions tables. These tables are not used by any feature.", dropUnusedTables) },
       ],
     },
     {

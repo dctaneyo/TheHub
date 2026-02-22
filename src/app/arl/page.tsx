@@ -558,34 +558,36 @@ export default function ArlPage() {
             ? "flex flex-col overflow-hidden p-5"
             : "overflow-y-auto p-5"
         )}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className={cn(
-                activeView === "messages" ? "flex flex-col h-full" : "h-full"
-              )}
-            >
-              {activeView === "overview" && <OverviewContent />}
-              {activeView === "messages" && <Messaging />}
-              {activeView === "tasks" && <TaskManager />}
-              {activeView === "calendar" && <ArlCalendar />}
-              {activeView === "locations" && <LocationsManager />}
-              {activeView === "forms" && <FormsRepository />}
-              {activeView === "emergency" && <EmergencyBroadcast />}
-              {activeView === "users" && <UserManagement />}
-              {activeView === "leaderboard" && (
-                <div className="max-w-3xl mx-auto">
-                  <Leaderboard />
-                </div>
-              )}
-              {activeView === "remote-login" && <RemoteLogin />}
-              {activeView === "data-management" && <DataManagement />}
-            </motion.div>
-          </AnimatePresence>
+          {mounted ? (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeView}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className={cn(
+                  activeView === "messages" ? "flex flex-col h-full" : "h-full"
+                )}
+              >
+                {activeView === "overview" && <OverviewContent />}
+                {activeView === "messages" && <Messaging />}
+                {activeView === "tasks" && <TaskManager />}
+                {activeView === "calendar" && <ArlCalendar />}
+                {activeView === "locations" && <LocationsManager />}
+                {activeView === "forms" && <FormsRepository />}
+                {activeView === "emergency" && <EmergencyBroadcast />}
+                {activeView === "users" && <UserManagement />}
+                {activeView === "leaderboard" && (
+                  <div className="max-w-3xl mx-auto">
+                    <Leaderboard />
+                  </div>
+                )}
+                {activeView === "remote-login" && <RemoteLogin />}
+                {activeView === "data-management" && <DataManagement />}
+              </motion.div>
+            </AnimatePresence>
+          ) : null}
         </main>
       </div>
 

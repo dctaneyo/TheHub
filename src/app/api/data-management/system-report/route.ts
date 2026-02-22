@@ -29,6 +29,18 @@ export async function GET() {
     try { messageReads = db.select().from(schema.messageReads).all().length; } catch {}
     let messageReactions = 0;
     try { messageReactions = db.select().from(schema.messageReactions).all().length; } catch {}
+    let forms = 0;
+    try { forms = db.select().from(schema.forms).all().length; } catch {}
+    let broadcasts = 0;
+    try { broadcasts = db.select().from(schema.broadcasts).all().length; } catch {}
+    let broadcastMessages = 0;
+    try { broadcastMessages = db.select().from(schema.broadcastMessages).all().length; } catch {}
+    let broadcastQuestions = 0;
+    try { broadcastQuestions = db.select().from(schema.broadcastQuestions).all().length; } catch {}
+    let emergencyMessages = 0;
+    try { emergencyMessages = db.select().from(schema.emergencyMessages).all().length; } catch {}
+    let notifications = 0;
+    try { notifications = db.select().from(schema.notifications).all().length; } catch {}
 
     // Table sizes
     const tableInfo = sqlite.prepare(
@@ -63,6 +75,12 @@ export async function GET() {
         conversations,
         sessions,
         onlineSessions,
+        forms,
+        broadcasts,
+        broadcastMessages,
+        broadcastQuestions,
+        emergencyMessages,
+        notifications,
       },
       system: {
         nodeVersion: process.version,

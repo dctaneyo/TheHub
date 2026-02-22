@@ -249,6 +249,92 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
     }
   };
 
+  // Toggle screen share
+  const toggleScreenShare = async () => {
+    if (!streamRef.current) return;
+
+    try {
+      if (!screenShare) {
+        // Switch to screen share
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" } as any,
+          audio: false,
+        });
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // When user stops sharing via browser UI
+        screenTrack.onended = () => {
+          switchBackToCamera();
+        };
+
+        // Replace video track in the stream
+        const oldVideoTrack = streamRef.current!.getVideoTracks()[0];
+        if (oldVideoTrack) {
+          streamRef.current!.removeTrack(oldVideoTrack);
+          oldVideoTrack.stop();
+        }
+        streamRef.current!.addTrack(screenTrack);
+
+        // Replace track in all peer connections
+        for (const [, pc] of peerConnectionsRef.current.entries()) {
+          const sender = pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender) {
+            await sender.replaceTrack(screenTrack);
+          }
+        }
+
+        // Update video preview
+        if (videoRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+        }
+
+        setScreenShare(true);
+        setVideoEnabled(true);
+      } else {
+        await switchBackToCamera();
+      }
+    } catch (err: any) {
+      // User cancelled the screen share picker
+      if (err.name !== "NotAllowedError") {
+        console.error("Screen share error:", err);
+      }
+    }
+  };
+
+  const switchBackToCamera = async () => {
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+      });
+      const cameraTrack = cameraStream.getVideoTracks()[0];
+
+      // Replace screen track with camera track
+      const oldTrack = streamRef.current?.getVideoTracks()[0];
+      if (oldTrack && streamRef.current) {
+        streamRef.current.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      streamRef.current?.addTrack(cameraTrack);
+
+      // Replace in all peer connections
+      for (const [, pc] of peerConnectionsRef.current.entries()) {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) {
+          await sender.replaceTrack(cameraTrack);
+        }
+      }
+
+      // Update video preview
+      if (videoRef.current && streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+
+      setScreenShare(false);
+    } catch (err) {
+      console.error("Failed to switch back to camera:", err);
+    }
+  };
+
   // Send chat message from ARL
   const sendChatMessage = () => {
     if (!newChatMessage.trim() || !socket || !broadcastId) return;
@@ -662,6 +748,24 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                           <Mic className="h-5 w-5 text-white" />
                         ) : (
                           <MicOff className="h-5 w-5 text-white" />
+                        )}
+                      </button>
+                    )}
+                    {streamMode === "video" && (
+                      <button
+                        onClick={toggleScreenShare}
+                        className={cn(
+                          "p-3 rounded-lg transition-colors",
+                          screenShare
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "bg-slate-700 hover:bg-slate-600"
+                        )}
+                        title={screenShare ? "Stop Screen Share" : "Share Screen"}
+                      >
+                        {screenShare ? (
+                          <MonitorOff className="h-5 w-5 text-white" />
+                        ) : (
+                          <Monitor className="h-5 w-5 text-white" />
                         )}
                       </button>
                     )}
