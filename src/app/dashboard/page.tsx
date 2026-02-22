@@ -47,6 +47,7 @@ import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-scree
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { AnimatedBackground } from "@/components/animated-background";
+import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 
@@ -234,6 +235,7 @@ export default function DashboardPage() {
   const [showCoinRain, setShowCoinRain] = useState(false);
   const [coinRainAmount, setCoinRainAmount] = useState(0);
   const [showFireworks, setShowFireworks] = useState(false);
+  const [activeStream, setActiveStream] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
   const playConfettiSound = useConfettiSound();
 
   const localTimeParams = () => {
@@ -340,9 +342,17 @@ export default function DashboardPage() {
     const handleTaskUpdate = () => fetchTasks();
     socket.on("task:updated", handleTaskUpdate);
     socket.on("task:completed", handleTaskUpdate);
+    
+    // Listen for live stream events
+    const handleStreamStarted = (data: { broadcastId: string; arlName: string; title: string }) => {
+      setActiveStream(data);
+    };
+    socket.on("stream:started", handleStreamStarted);
+    
     return () => {
       socket.off("task:updated", handleTaskUpdate);
       socket.off("task:completed", handleTaskUpdate);
+      socket.off("stream:started", handleStreamStarted);
     };
   }, [socket, fetchTasks]);
 
@@ -733,6 +743,16 @@ export default function DashboardPage() {
 
       {/* High-Five Animation */}
       <HighFiveAnimation />
+
+      {/* Live Stream Viewer */}
+      {activeStream && (
+        <StreamViewer
+          broadcastId={activeStream.broadcastId}
+          arlName={activeStream.arlName}
+          title={activeStream.title}
+          onClose={() => setActiveStream(null)}
+        />
+      )}
 
       {/* Restaurant Chat Drawer */}
       <RestaurantChat

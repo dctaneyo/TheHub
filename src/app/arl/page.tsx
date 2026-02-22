@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   Wifi,
   Database,
+  Video,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -45,11 +46,12 @@ import { ShoutoutsFeed } from "@/components/shoutouts-feed";
 import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
+import { BroadcastStudio } from "@/components/arl/broadcast-studio";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -93,6 +95,7 @@ const navItems = [
   { id: "leaderboard" as const, label: "Leaderboard", icon: Trophy },
   { id: "locations" as const, label: "Locations", icon: Store },
   { id: "forms" as const, label: "Forms", icon: FileText },
+  { id: "broadcast" as const, label: "Live Broadcast", icon: Video },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },
   { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
@@ -557,6 +560,12 @@ export default function ArlPage() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Broadcast Studio */}
+      <BroadcastStudio 
+        isOpen={activeView === "broadcast"} 
+        onClose={() => setActiveView("overview")} 
+      />
 
       {/* Task completion toasts */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
