@@ -47,6 +47,7 @@ import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-scree
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { AnimatedBackground } from "@/components/animated-background";
+import { KFCMascot } from "@/components/kfc-mascot";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 
@@ -703,6 +704,9 @@ export default function DashboardPage() {
 
       {/* High-Five Animation */}
       <HighFiveAnimation />
+
+      {/* KFC Mascot */}
+      <KFCMascot />
 
       {/* Restaurant Chat Drawer */}
       <RestaurantChat
