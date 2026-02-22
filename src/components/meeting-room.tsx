@@ -6,7 +6,7 @@ import {
   Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Maximize2, Minimize2,
-  Crown, Shield, Volume2, VolumeX, SwitchCamera, Keyboard,
+  Crown, Shield, Volume2, VolumeX, SwitchCamera, Keyboard, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ interface Participant {
   odId: string;
   socketId: string;
   name: string;
-  userType: "location" | "arl";
+  userType: "location" | "arl" | "guest";
   role: "host" | "cohost" | "participant";
   hasVideo: boolean;
   hasAudio: boolean;
@@ -72,11 +72,13 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [mySocketId, setMySocketId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<string>(isHost ? "host" : "participant");
-  const [videoEnabled, setVideoEnabled] = useState(user?.userType === "arl");
+  const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
+  const [videoEnabled, setVideoEnabled] = useState(hasVideoCapability);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [screenSharing, setScreenSharing] = useState(false);
   const [isMutedByHost, setIsMutedByHost] = useState(user?.userType === "location");
+  const [waitingForHost, setWaitingForHost] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
@@ -103,20 +105,20 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   // ── Get local media ──
   const getLocalMedia = useCallback(async () => {
     try {
-      const isArl = user?.userType === "arl";
+      const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
       const constraints: MediaStreamConstraints = {
-        video: isArl ? { width: 1280, height: 720 } : false,
+        video: wantsVideo ? { width: 1280, height: 720 } : false,
         audio: true,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
 
       // Restaurants start with audio muted (they need permission to speak)
-      if (!isArl) {
+      if (!wantsVideo) {
         stream.getAudioTracks().forEach(t => { t.enabled = false; });
       }
 
-      if (localVideoRef.current && isArl) {
+      if (localVideoRef.current && wantsVideo) {
         localVideoRef.current.srcObject = stream;
         localVideoRef.current.play().catch(() => {});
       }
@@ -211,10 +213,10 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
       await getLocalMedia();
 
-      const isArl = user?.userType === "arl";
+      const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
       socket.emit("meeting:join", {
         meetingId,
-        hasVideo: isArl,
+        hasVideo: wantsVideo,
         hasAudio: true,
       });
     };
@@ -253,6 +255,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     const handleJoined = (data: { meetingId: string; title: string; participants: Participant[]; yourRole: string }) => {
       if (data.meetingId !== meetingId) return;
       setJoined(true);
+      setWaitingForHost(false);
       setMyRole(data.yourRole);
       if (socket.id) setMySocketId(socket.id);
       setParticipants(data.participants);
@@ -264,6 +267,25 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
           createPeerConnection(p.socketId, p.name, true);
         });
       }, 500);
+    };
+
+    // If meeting doesn't exist yet (guest joined before host), wait for it
+    const handleMeetingError = (data: { error: string }) => {
+      if (data.error === "Meeting not found") {
+        setWaitingForHost(true);
+      }
+    };
+
+    // When host starts the meeting, auto-retry joining
+    const handleMeetingStarted = (data: { meetingId: string }) => {
+      if (data.meetingId !== meetingId) return;
+      // Meeting now exists — retry join
+      const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
+      socket.emit("meeting:join", {
+        meetingId,
+        hasVideo: wantsVideo,
+        hasAudio: true,
+      });
     };
 
     const handleParticipantJoined = (data: { meetingId: string; participant: Participant }) => {
@@ -403,6 +425,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     };
 
     socket.on("meeting:joined", handleJoined);
+    socket.on("meeting:error", handleMeetingError);
+    socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:participant-joined", handleParticipantJoined);
     socket.on("meeting:participant-left", handleParticipantLeft);
     socket.on("meeting:participants-updated", handleParticipantsUpdated);
@@ -422,6 +446,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     return () => {
       socket.off("meeting:joined", handleJoined);
+      socket.off("meeting:error", handleMeetingError);
+      socket.off("meeting:started", handleMeetingStarted);
       socket.off("meeting:participant-joined", handleParticipantJoined);
       socket.off("meeting:participant-left", handleParticipantLeft);
       socket.off("meeting:participants-updated", handleParticipantsUpdated);
@@ -561,12 +587,12 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   };
 
   const isHostOrCohost = myRole === "host" || myRole === "cohost";
-  const isArl = user?.userType === "arl";
+  const isArl = user?.userType === "arl" || user?.userType === "guest";
 
   // Filter out self from participants (we render local video separately)
   const remoteParticipants = mySocketId ? participants.filter(p => p.socketId !== mySocketId) : participants;
-  // Participants with video (ARLs)
-  const videoParticipants = remoteParticipants.filter(p => p.userType === "arl");
+  // Participants with video (ARLs + guests)
+  const videoParticipants = remoteParticipants.filter(p => p.userType === "arl" || p.userType === "guest");
   // All participants for the sidebar
   const allParticipants = remoteParticipants;
 
@@ -586,6 +612,29 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
   // ── Sidebar content ──
   const sidebarOpen = showChat || showQA || showParticipants;
+
+  // Waiting for host overlay (guest joined before host started)
+  if (waitingForHost) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-20 w-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+            <Users className="h-10 w-10 text-slate-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">{title}</h2>
+          <div className="inline-flex items-center gap-2 bg-yellow-600/20 text-yellow-400 rounded-full px-5 py-2.5 text-sm font-medium mb-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Waiting for host to start the meeting...
+          </div>
+          <p className="text-xs text-slate-500 mb-6">You&apos;ll be connected automatically</p>
+          <button onClick={onLeave}
+            className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors">
+            Leave
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col">
@@ -746,18 +795,19 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — full-screen overlay on mobile, side panel on desktop */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 320, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-              className="bg-slate-800 border-l border-slate-700 flex flex-col overflow-hidden shrink-0">
+              className="fixed inset-0 sm:static sm:inset-auto z-40 bg-slate-800 border-l border-slate-700 flex flex-col overflow-hidden shrink-0 w-full sm:w-auto">
 
               {/* Participants panel */}
               {showParticipants && (
                 <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700">
+                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                     <h3 className="text-white font-bold text-sm">Participants ({remoteParticipants.length + 1})</h3>
+                    <button onClick={() => setShowParticipants(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-1">
                     {/* Self */}
@@ -788,8 +838,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
                           {p.isMuted && <MicOff className="h-3 w-3 text-red-400" />}
                           {p.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                           {p.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
-                          {/* Host controls */}
-                          {isHostOrCohost && p.role === "participant" && (
+                          {/* Host controls — can mute/unmute anyone except the host */}
+                          {isHostOrCohost && p.role !== "host" && (
                             <div className="flex gap-1 ml-1">
                               {p.isMuted ? (
                                 <button onClick={() => allowSpeak(p.socketId)} title="Allow to speak"
@@ -814,8 +864,9 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               {/* Chat panel */}
               {showChat && (
                 <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700">
+                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                     <h3 className="text-white font-bold text-sm">Chat</h3>
+                    <button onClick={() => setShowChat(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {messages.length === 0 ? (
@@ -870,8 +921,9 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               {/* Q&A panel */}
               {showQA && (
                 <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700">
+                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                     <h3 className="text-white font-bold text-sm">Q&A</h3>
+                    <button onClick={() => setShowQA(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {questions.length === 0 ? (

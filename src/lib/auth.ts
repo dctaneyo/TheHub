@@ -5,7 +5,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-produ
 
 export interface AuthPayload {
   id: string;
-  userType: "location" | "arl";
+  userType: "location" | "arl" | "guest";
   userId: string; // 6-digit user ID
   name: string;
   role?: string; // 'arl' | 'admin' for ARLs

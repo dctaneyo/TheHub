@@ -29,7 +29,7 @@ interface MeetingParticipant {
   odId: string;        // odId = the user's id (location or arl)
   socketId: string;
   name: string;
-  userType: "location" | "arl";
+  userType: "location" | "arl" | "guest";
   role: "host" | "cohost" | "participant";
   hasVideo: boolean;
   hasAudio: boolean;
@@ -227,7 +227,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (guestName && guestMeetingId) {
         user = {
           id: `guest-${socket.id}`,
-          userType: "location", // guests treated as location-type (audio only)
+          userType: "guest",
+          userId: "000000",
           name: guestName,
         } as AuthPayload;
         (socket as any)._isGuest = true;
@@ -411,16 +412,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       _activeMeetings.set(data.meetingId, meeting);
       socket.join(`meeting:${data.meetingId}`);
 
-      // Notify everyone that a meeting started
-      io!.to("locations").emit("meeting:started", {
-        meetingId: data.meetingId, title: data.title,
-        hostName: user.name, hostId: user.id,
-      });
-      io!.to("arls").emit("meeting:started", {
+      // Notify everyone that a meeting started (including guests in "all" room)
+      const startedPayload = {
         meetingId: data.meetingId, title: data.title,
         hostName: user.name, hostId: user.id,
         hostSocketId: socket.id,
-      });
+      };
+      io!.to("locations").emit("meeting:started", startedPayload);
+      io!.to("arls").emit("meeting:started", startedPayload);
+      io!.to("all").emit("meeting:started", startedPayload);
       console.log(`📹 Meeting created: "${data.title}" by ${user.name}`);
     });
 
@@ -433,6 +433,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const alreadyInMeeting = meeting.participants.has(socket.id);
       const isHost = meeting.hostId === user.id;
       const isArl = user.userType === "arl";
+      const isGuest = user.userType === "guest";
+      const hasVideoCapability = isArl || isGuest;
 
       if (alreadyInMeeting) {
         // Host was pre-added during meeting:create — just update media state
@@ -445,11 +447,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           odId: user.id,
           socketId: socket.id,
           name: user.name,
-          userType: user.userType as "location" | "arl",
+          userType: user.userType as "location" | "arl" | "guest",
           role: isHost ? "host" : (isArl ? "cohost" : "participant"),
           hasVideo: data.hasVideo,
           hasAudio: data.hasAudio,
-          isMuted: !isArl, // restaurants start muted, ARLs start unmuted
+          isMuted: !hasVideoCapability, // restaurants start muted; ARLs and guests start unmuted
           handRaised: false,
           joinedAt: Date.now(),
         };
@@ -577,7 +579,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
       const target = meeting.participants.get(data.targetSocketId);
-      if (!target) return;
+      if (!target || target.role === "host") return; // host manages own mute
       target.isMuted = false;
       target.handRaised = false;
       // Tell the target they can now speak
@@ -594,7 +596,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
       const target = meeting.participants.get(data.targetSocketId);
-      if (!target) return;
+      if (!target || target.role === "host") return; // can't mute the host
       target.isMuted = true;
       io!.to(data.targetSocketId).emit("meeting:you-were-muted", { meetingId: data.meetingId });
       broadcastMeetingState(meeting);

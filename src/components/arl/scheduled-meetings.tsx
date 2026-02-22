@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Trash2, Copy, Check, Clock, Calendar,
@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket-context";
+import { MeetingRoom } from "@/components/meeting-room";
 
 interface ScheduledMeeting {
   id: string;
@@ -61,6 +63,21 @@ export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
   const [allowGuests, setAllowGuests] = useState(true);
   const [creating, setCreating] = useState(false);
+
+  // Direct meeting start state
+  const [activeMeeting, setActiveMeeting] = useState<{ id: string; title: string } | null>(null);
+  const { socket } = useSocket();
+
+  const handleStartMeetingDirect = (meetingTitle: string, meetingCode: string) => {
+    if (!socket) return;
+    const meetingId = `scheduled-${meetingCode}`;
+    socket.emit("meeting:create", { meetingId, title: meetingTitle });
+    setActiveMeeting({ id: meetingId, title: meetingTitle });
+  };
+
+  const handleLeaveMeeting = () => {
+    setActiveMeeting(null);
+  };
 
   const fetchMeetings = useCallback(async () => {
     try {
@@ -149,6 +166,18 @@ export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );
   };
+
+  // If in a meeting, render MeetingRoom fullscreen
+  if (activeMeeting) {
+    return (
+      <MeetingRoom
+        meetingId={activeMeeting.id}
+        title={activeMeeting.title}
+        isHost={true}
+        onLeave={handleLeaveMeeting}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -361,9 +390,9 @@ export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
                       </button>
                     </div>
                     <div className="flex items-center gap-1">
-                      {m.is_active && onStartMeeting && (
+                      {m.is_active && (
                         <button
-                          onClick={() => onStartMeeting(m.title, m.meeting_code)}
+                          onClick={() => handleStartMeetingDirect(m.title, m.meeting_code)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
                           <Play className="h-3 w-3" />Start

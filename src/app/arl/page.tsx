@@ -140,8 +140,6 @@ export default function ArlPage() {
   const [toasts, setToasts] = useState<TaskToast[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const [activeBroadcast, setActiveBroadcast] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
-  const [pendingMeetingTitle, setPendingMeetingTitle] = useState("");
-  const [pendingMeetingCode, setPendingMeetingCode] = useState("");
   const [showBroadcastNotification, setShowBroadcastNotification] = useState(false);
   const [watchingBroadcast, setWatchingBroadcast] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -605,15 +603,7 @@ export default function ArlPage() {
                 )}
                 {activeView === "remote-login" && <RemoteLogin />}
                 {activeView === "data-management" && <DataManagement />}
-                {activeView === "meetings" && (
-                  <ScheduledMeetings
-                    onStartMeeting={(title, meetingCode) => {
-                      setPendingMeetingTitle(title);
-                      setPendingMeetingCode(meetingCode);
-                      setActiveView("broadcast");
-                    }}
-                  />
-                )}
+                {activeView === "meetings" && <ScheduledMeetings />}
               </motion.div>
             </AnimatePresence>
           ) : null}
@@ -623,9 +613,7 @@ export default function ArlPage() {
       {/* Broadcast Studio */}
       <BroadcastStudio 
         isOpen={activeView === "broadcast"} 
-        onClose={() => { setActiveView("meetings"); setPendingMeetingTitle(""); setPendingMeetingCode(""); }}
-        initialTitle={pendingMeetingTitle}
-        initialMeetingCode={pendingMeetingCode}
+        onClose={() => setActiveView("meetings")}
       />
 
       {/* Task completion toasts */}
