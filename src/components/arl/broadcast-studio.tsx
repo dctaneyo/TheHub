@@ -350,15 +350,30 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
 
     // WebRTC: Handle answer from viewer
     const handleAnswer = async (data: { broadcastId: string; viewerSocketId: string; answer: RTCSessionDescriptionInit }) => {
-      if (data.broadcastId !== broadcastId) return;
+      console.log("Received answer from viewer socket:", data.viewerSocketId);
+      console.log("Answer broadcastId:", data.broadcastId, "Current broadcastId:", broadcastId);
+      
+      if (data.broadcastId !== broadcastId) {
+        console.log("Ignoring answer - broadcastId mismatch");
+        return;
+      }
 
       try {
         // Find the peer connection by socket ID
+        let found = false;
         for (const [viewerId, pc] of peerConnectionsRef.current.entries()) {
+          console.log(`Checking PC for viewer ${viewerId}, signalingState: ${pc.signalingState}`);
           if (pc.signalingState === "have-local-offer") {
+            console.log("Setting remote description (answer) on PC for viewer:", viewerId);
             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            console.log("Remote description set successfully, new signalingState:", pc.signalingState);
+            found = true;
             break;
           }
+        }
+        if (!found) {
+          console.error("No peer connection found in have-local-offer state!");
+          console.log("All PCs:", Array.from(peerConnectionsRef.current.entries()).map(([id, pc]) => ({ id, state: pc.signalingState })));
         }
       } catch (error) {
         console.error("Error setting remote description:", error);
@@ -368,12 +383,19 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
     // WebRTC: Handle ICE candidate from viewer
     const handleIceCandidate = async (data: { candidate: RTCIceCandidateInit; senderSocketId: string }) => {
       try {
+        console.log("Received ICE candidate from viewer socket:", data.senderSocketId);
         // Add ICE candidate to the appropriate peer connection
-        for (const pc of peerConnectionsRef.current.values()) {
+        let added = false;
+        for (const [viewerId, pc] of peerConnectionsRef.current.entries()) {
           if (pc.remoteDescription) {
             await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            console.log("Added viewer ICE candidate to PC for:", viewerId);
+            added = true;
             break;
           }
+        }
+        if (!added) {
+          console.log("No PC with remote description found for viewer ICE candidate");
         }
       } catch (error) {
         console.error("Error adding ICE candidate:", error);
