@@ -230,7 +230,7 @@ export function MeetingAnalyticsDashboard() {
   // Overview
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold text-white flex items-center gap-2">
+      <h2 className="text-lg font-bold text-black flex items-center gap-2">
         <BarChart3 className="h-5 w-5 text-blue-400" />
         Meeting Analytics
       </h2>

@@ -570,16 +570,19 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
               hadAudio: data.hasAudio,
             }).run();
             // Update meeting analytics totals
-            const typeCol = user.userType === 'arl' ? 'totalArls' : user.userType === 'guest' ? 'totalGuests' : 'totalLocations';
-            db.run(db.update(schema.meetingAnalytics)
+            const arlCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'arl'))).all().length;
+            const locCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'location'))).all().length;
+            const guestCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'guest'))).all().length;
+            db.update(schema.meetingAnalytics)
               .set({
                 totalParticipants: meeting.participants.size,
                 peakParticipants: analytics.peakParticipants,
-                ...(typeCol === 'totalArls' ? { totalArls: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'arl'))).all().length } : {}),
-                ...(typeCol === 'totalLocations' ? { totalLocations: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'location'))).all().length } : {}),
-                ...(typeCol === 'totalGuests' ? { totalGuests: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'guest'))).all().length } : {}),
+                totalArls: arlCount,
+                totalLocations: locCount,
+                totalGuests: guestCount,
               })
-              .where(eq(schema.meetingAnalytics.id, analytics.analyticsId)));
+              .where(eq(schema.meetingAnalytics.id, analytics.analyticsId))
+              .run();
           } catch (e) { console.error('Analytics insert error:', e); }
         }
       }
@@ -743,10 +746,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           }
         }
       }
-      if (!target || target.role === "host") return;
+      if (!target) {
+        console.warn(`⚠️ allow-speak: target not found for targetSocketId=${data.targetSocketId}, participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity })));
+        return;
+      }
+      if (target.role === "host") return;
       target.isMuted = false;
       target.handRaised = false;
       io!.to(targetSid).emit("meeting:speak-allowed", { meetingId: data.meetingId });
+      console.log(`📹 ${user.name} allowed ${target.name} to speak`);
       broadcastMeetingState(meeting);
     });
 
@@ -774,8 +782,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           }
         }
       }
-      if (!target || target.role === "host") return;
+      if (!target) {
+        console.warn(`⚠️ mute: target not found for targetSocketId=${data.targetSocketId}, participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity })));
+        return;
+      }
+      if (target.role === "host") return;
       target.isMuted = true;
+      console.log(`📹 ${user.name} muted ${target.name}`);
       // Track analytics: muted by host
       const muteAnalytics = _meetingAnalytics.get(data.meetingId);
       if (muteAnalytics) {

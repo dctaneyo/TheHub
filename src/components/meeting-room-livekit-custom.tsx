@@ -620,6 +620,8 @@ function MeetingUI({
 
     socket.emit("meeting:join", {
       meetingId,
+      hasVideo: localParticipant.isCameraEnabled ?? false,
+      hasAudio: localParticipant.isMicrophoneEnabled ?? true,
       name: user.name,
       userType: user.userType,
       role: myRole,
@@ -629,7 +631,10 @@ function MeetingUI({
     return () => {
       socket.emit("meeting:leave", { meetingId });
     };
-  }, [socket, meetingId, user, myRole, localParticipant]);
+    // NOTE: myRole intentionally excluded — server assigns the role during join
+    // and including it here causes a leave→rejoin cycle that breaks mute/unmute
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, meetingId, user, localParticipant]);
 
   // Apply RNNoise noise suppression to microphone track
   useEffect(() => {
