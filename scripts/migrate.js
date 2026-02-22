@@ -12,10 +12,11 @@ try {
   
   execSync(`mkdir -p ${dbDir}`, { stdio: 'inherit' });
   
-  // Run the migration
-  execSync('npx drizzle-kit push --force', { 
+  // Run the migration with --yes to auto-accept all prompts
+  execSync('echo "y" | npx drizzle-kit push', { 
     stdio: 'inherit',
-    env: { ...process.env }
+    env: { ...process.env },
+    shell: '/bin/bash'
   });
   
   console.log('✅ Database migrations completed successfully');
