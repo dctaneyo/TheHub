@@ -271,8 +271,21 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
             autoPlay
             muted={isMuted}
             playsInline
-            className="max-h-full max-w-full"
+            className="max-h-full max-w-full hidden"
           />
+          
+          {/* Video placeholder message */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <div className="text-6xl">📹</div>
+            <div className="text-white text-2xl font-bold">{title}</div>
+            <div className="text-slate-300 text-lg">Live broadcast from {arlName}</div>
+            <div className="bg-yellow-500/90 text-yellow-900 px-6 py-3 rounded-lg text-sm font-medium shadow-lg max-w-md">
+              Video streaming requires WebRTC setup. Currently showing text/chat broadcast mode.
+            </div>
+            <div className="text-slate-400 text-sm mt-4">
+              Use chat and reactions below to interact with the broadcast
+            </div>
+          </div>
           
           {/* Floating reactions */}
           <AnimatePresence>

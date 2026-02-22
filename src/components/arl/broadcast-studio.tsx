@@ -97,6 +97,12 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
           
           if (videoRef.current && streamMode === "video") {
             videoRef.current.srcObject = stream;
+            // Explicitly play the video
+            try {
+              await videoRef.current.play();
+            } catch (playError) {
+              console.error("Video play error:", playError);
+            }
           }
         } catch (mediaError: any) {
           console.error("Media error:", mediaError);
@@ -395,6 +401,10 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                         <VideoOff className="h-16 w-16 text-slate-400" />
                       </div>
                     )}
+                    {/* Info banner */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg">
+                      📹 Local camera preview only - Video streaming to locations requires WebRTC setup
+                    </div>
                   </div>
                 )}
 
