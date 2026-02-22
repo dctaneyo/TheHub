@@ -6,6 +6,7 @@ import path from "path";
 import type { AuthPayload } from "./auth";
 import { db, schema } from "./db";
 import { and, eq } from "drizzle-orm";
+import { sendPushToAllARLs } from "./push";
 
 // Read the build ID written by `npm run build` — the only reliable way
 // to pass a build-time value into the custom Node server at runtime.
@@ -494,6 +495,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
             guestName: user.name,
             guestSocketId: socket.id,
           });
+
+          // Send mobile push notification to all ARLs
+          sendPushToAllARLs({
+            title: "Guest Joined Meeting",
+            body: `${user.name} joined "${meeting.title}"`,
+            url: "/arl",
+          }).catch(() => {});
         }
       }
       console.log(`📹 ${user.name} ${alreadyInMeeting ? "re-joined" : "joined"} meeting "${meeting.title}" as ${myParticipant.role}`);

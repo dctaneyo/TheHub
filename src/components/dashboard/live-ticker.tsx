@@ -117,8 +117,9 @@ export function LiveTicker() {
 
   if (items.length === 0) return null;
 
-  // Build ticker string — duplicate for seamless loop
-  const tickerContent = items.map(item => `${item.icon} ${item.text}`).join("     •     ");
+  // Build ticker string with timestamps — duplicate for seamless loop
+  const formatTime = (ts: number) => new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const tickerContent = items.map(item => `${item.icon} ${item.text}  ⏐  ${formatTime(item.timestamp)}`).join("     •     ");
 
   return (
     <div className="w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-b border-slate-700/50 overflow-hidden shrink-0">

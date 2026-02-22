@@ -24,6 +24,30 @@ export function generateVAPIDKeys() {
   return keys;
 }
 
+// Send push notification to ALL ARL users (e.g. guest joining a meeting)
+export async function sendPushToAllARLs(payload: {
+  title: string;
+  body: string;
+  url?: string;
+}) {
+  if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+    console.warn("VAPID keys not configured, skipping push notification");
+    return;
+  }
+
+  try {
+    const activeArls = db.select().from(schema.arls)
+      .where(eq(schema.arls.isActive, true))
+      .all();
+
+    for (const arl of activeArls) {
+      await sendPushToARL(arl.id, payload);
+    }
+  } catch (error) {
+    console.error("Error sending push to all ARLs:", error);
+  }
+}
+
 // Send push notification to an ARL user
 export async function sendPushToARL(userId: string, payload: {
   title: string;

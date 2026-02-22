@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Trash2, Copy, Check, Clock, Calendar,
-  Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown,
+  Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,11 @@ const DAYS_OF_WEEK = [
   { key: "sun", label: "Sun" },
 ];
 
-export function ScheduledMeetings() {
+interface ScheduledMeetingsProps {
+  onStartMeeting?: (title: string, meetingCode: string) => void;
+}
+
+export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -357,6 +361,14 @@ export function ScheduledMeetings() {
                       </button>
                     </div>
                     <div className="flex items-center gap-1">
+                      {m.is_active && onStartMeeting && (
+                        <button
+                          onClick={() => onStartMeeting(m.title, m.meeting_code)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                        >
+                          <Play className="h-3 w-3" />Start
+                        </button>
+                      )}
                       <button
                         onClick={() => handleToggleActive(m.id, m.is_active)}
                         className={cn(

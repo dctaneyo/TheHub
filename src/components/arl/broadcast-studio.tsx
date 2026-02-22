@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Video, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,17 @@ import { MeetingRoom } from "@/components/meeting-room";
 interface BroadcastStudioProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTitle?: string;
+  initialMeetingCode?: string;
 }
 
-export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
-  const [title, setTitle] = useState("");
+export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingCode }: BroadcastStudioProps) {
+  const [title, setTitle] = useState(initialTitle || "");
+
+  // Sync initialTitle when it changes (e.g. starting from scheduled meeting)
+  useEffect(() => {
+    if (initialTitle) setTitle(initialTitle);
+  }, [initialTitle]);
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [inMeeting, setInMeeting] = useState(false);
 
@@ -26,7 +33,9 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       return;
     }
 
-    const id = `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = initialMeetingCode
+      ? `scheduled-${initialMeetingCode}`
+      : `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setMeetingId(id);
 
     // Create meeting on server
