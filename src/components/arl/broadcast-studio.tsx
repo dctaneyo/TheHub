@@ -280,8 +280,20 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
 
         // Add all tracks from the media stream
         console.log("Adding tracks to peer connection for viewer:", data.viewerId);
+        console.log("Stream active:", streamRef.current.active);
+        console.log("Stream ID:", streamRef.current.id);
+        
         streamRef.current.getTracks().forEach(track => {
-          console.log("Adding track:", track.kind, track.label, track.enabled);
+          console.log("Adding track:", track.kind, track.label);
+          console.log("  - enabled:", track.enabled);
+          console.log("  - readyState:", track.readyState);
+          console.log("  - muted:", track.muted);
+          
+          if (track.kind === "video") {
+            const settings = track.getSettings();
+            console.log("  - video settings:", settings);
+          }
+          
           pc.addTrack(track, streamRef.current!);
         });
 
