@@ -777,10 +777,10 @@ function MeetingUI({
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-w-0">
         {/* Video grid */}
-        <div className="flex-1 flex flex-col relative">
-          <div className="flex-1 p-3 overflow-hidden">
+        <div className="flex-1 flex flex-col relative min-w-0">
+          <div className="flex-1 p-3 overflow-hidden min-w-0">
             {isPresentationMode ? (
               /* Presentation layout: large shared screen + thumbnail strip */
               <div className="h-full flex flex-col gap-2">
@@ -813,7 +813,7 @@ function MeetingUI({
               </div>
             ) : (
               /* Host-focused layout: host big + scrollable participant strip */
-              <div className="h-full flex flex-col gap-2">
+              <div className="h-full flex flex-col gap-2 min-w-0">
                 {/* Main host view */}
                 <div className="flex-1 relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-0">
                   {localIsHost && hasVideoCapability ? (
@@ -887,12 +887,13 @@ function MeetingUI({
                 {/* Scrollable participant strip */}
                 {otherVideoParticipants.length > 0 && (
                   <div 
-                    className="flex gap-2 overflow-x-auto overflow-y-hidden shrink-0 pb-1" 
+                    className="flex gap-2 overflow-x-scroll overflow-y-hidden shrink-0 pb-1 -mx-3 px-3" 
                     style={{ 
                       height: 120, 
                       WebkitOverflowScrolling: 'touch',
                       scrollbarWidth: 'thin',
-                      touchAction: 'pan-x'
+                      touchAction: 'pan-x',
+                      scrollSnapType: 'x proximity'
                     }}
                   >
                     {/* Remote non-host participants */}
@@ -900,7 +901,7 @@ function MeetingUI({
                       const metadata = p.metadata ? JSON.parse(p.metadata) : {};
                       const camPub = p.getTrackPublication(Track.Source.Camera);
                       return (
-                        <div key={p.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
+                        <div key={p.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120, scrollSnapAlign: 'start' }}>
                           {camPub ? (
                             <VideoTrack
                               trackRef={{
@@ -945,17 +946,18 @@ function MeetingUI({
           {/* Audio-only participants strip (restaurants) */}
           {audioOnlyParticipants.length > 0 && (
             <div 
-              className="px-3 pb-2 flex gap-2 overflow-x-auto overflow-y-hidden shrink-0" 
+              className="px-3 pb-2 flex gap-2 overflow-x-scroll overflow-y-hidden shrink-0" 
               style={{
                 WebkitOverflowScrolling: 'touch',
                 scrollbarWidth: 'thin',
-                touchAction: 'pan-x'
+                touchAction: 'pan-x',
+                scrollSnapType: 'x proximity'
               }}
             >
               {audioOnlyParticipants.map(p => {
                 const metadata = p.metadata ? JSON.parse(p.metadata) : {};
                 return (
-                  <div key={p.identity} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 shrink-0">
+                  <div key={p.identity} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 shrink-0" style={{ scrollSnapAlign: 'start' }}>
                     <div
                       className={cn(
                         "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
