@@ -485,6 +485,16 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
             isMuted: myParticipant.isMuted, handRaised: myParticipant.handRaised,
           },
         });
+
+        // Notify ARLs when a guest joins a meeting
+        if ((socket as any)._isGuest) {
+          io!.to("arls").emit("meeting:guest-waiting", {
+            meetingId: data.meetingId,
+            meetingTitle: meeting.title,
+            guestName: user.name,
+            guestSocketId: socket.id,
+          });
+        }
       }
       console.log(`📹 ${user.name} ${alreadyInMeeting ? "re-joined" : "joined"} meeting "${meeting.title}" as ${myParticipant.role}`);
     });

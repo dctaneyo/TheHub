@@ -280,13 +280,29 @@ export default function ArlPage() {
         setWatchingBroadcast(false);
       }
     };
+    const handleGuestWaiting = (data: { meetingId: string; meetingTitle: string; guestName: string }) => {
+      const toast: TaskToast = {
+        id: `guest-${Date.now()}`,
+        locationName: `👤 ${data.guestName}`,
+        taskTitle: `joined meeting "${data.meetingTitle}"`,
+        pointsEarned: 0,
+      };
+      setToasts((prev) => [...prev, toast]);
+      playTaskChime();
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+      }, 8000);
+    };
+
     socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:ended", handleMeetingEnded);
+    socket.on("meeting:guest-waiting", handleGuestWaiting);
     return () => {
       socket.off("meeting:started", handleMeetingStarted);
       socket.off("meeting:ended", handleMeetingEnded);
+      socket.off("meeting:guest-waiting", handleGuestWaiting);
     };
-  }, [socket, activeView, activeBroadcast, user?.id]);
+  }, [socket, activeView, activeBroadcast, user?.id, playTaskChime]);
 
   const fetchUnread = useCallback(async () => {
     try {
