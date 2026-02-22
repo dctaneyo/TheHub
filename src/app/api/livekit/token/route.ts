@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { roomName, participantName } = await req.json();
+    const { roomName, participantName, role } = await req.json();
     if (!roomName || !participantName) {
       return NextResponse.json({ error: "Missing roomName or participantName" }, { status: 400 });
     }
@@ -22,9 +22,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "LiveKit not configured" }, { status: 500 });
     }
 
+    // Include metadata for participant identification
+    const metadata = JSON.stringify({
+      userType: session.userType,
+      role: role || "participant",
+      handRaised: false,
+    });
+
     const at = new AccessToken(apiKey, apiSecret, {
       identity: session.userId,
       name: participantName,
+      metadata,
     });
 
     at.addGrant({

@@ -69,6 +69,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
           body: JSON.stringify({
             roomName: meetingId,
             participantName: user?.name || "Guest",
+            role: isHost ? "host" : "participant",
           }),
         });
 
@@ -313,10 +314,22 @@ function MeetingUI({
     setNewQuestion("");
   };
 
-  const toggleRaiseHand = () => {
+  const toggleRaiseHand = async () => {
     const newState = !handRaised;
     setHandRaised(newState);
     socket?.emit("meeting:hand-raise", { meetingId, raised: newState });
+    
+    // Update LiveKit metadata so other participants see the hand raise
+    try {
+      const currentMetadata = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+      const updatedMetadata = JSON.stringify({
+        ...currentMetadata,
+        handRaised: newState,
+      });
+      await localParticipant.setMetadata(updatedMetadata);
+    } catch (err) {
+      console.error("Failed to update hand raise metadata:", err);
+    }
   };
 
   const endMeeting = () => {
@@ -467,15 +480,22 @@ function MeetingUI({
                 <div className="flex-1 relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-0">
                   {localIsHost && hasVideoCapability ? (
                     <>
-                      {localParticipant.getTrackPublication(Track.Source.Camera) && (
+                      {localParticipant.getTrackPublication(Track.Source.Camera) ? (
                         <VideoTrack
                           trackRef={{
                             participant: localParticipant,
                             source: Track.Source.Camera,
                             publication: localParticipant.getTrackPublication(Track.Source.Camera)!,
                           }}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
+                      ) : (
+                        <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                          <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-2">
+                            <span className="text-3xl font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                          </div>
+                          <span className="text-sm text-slate-400">{user?.name} (You)</span>
+                        </div>
                       )}
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-medium">{user?.name} (You)</span>
@@ -487,18 +507,16 @@ function MeetingUI({
                         </div>
                       )}
                     </>
-                  ) : hostParticipant ? (
+                  ) : hostParticipant && hostParticipant.getTrackPublication(Track.Source.Camera) ? (
                     <>
-                      {hostParticipant.getTrackPublication(Track.Source.Camera) && (
-                        <VideoTrack
-                          trackRef={{
-                            participant: hostParticipant,
-                            source: Track.Source.Camera,
-                            publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
-                          }}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
+                      <VideoTrack
+                        trackRef={{
+                          participant: hostParticipant,
+                          source: Track.Source.Camera,
+                          publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
+                        }}
+                        className="w-full h-full object-contain"
+                      />
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-medium">{hostParticipant.name}</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
@@ -692,6 +710,34 @@ function MeetingUI({
                             {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
                             {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
+                            {/* Host/cohost controls - can mute/unmute anyone except the host */}
+                            {isHostOrCohost && metadata.role !== "host" && !isLocal && (
+                              <div className="flex gap-1 ml-1">
+                                {p.isMicrophoneEnabled === false ? (
+                                  <button
+                                    onClick={() => {
+                                      // Request participant to unmute via Socket.io
+                                      socket?.emit("meeting:allow-speak", { meetingId, targetSocketId: p.identity });
+                                    }}
+                                    title="Allow to speak"
+                                    className="p-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-400"
+                                  >
+                                    <Mic className="h-3 w-3" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      // Request participant to mute via Socket.io
+                                      socket?.emit("meeting:mute-participant", { meetingId, targetSocketId: p.identity });
+                                    }}
+                                    title="Mute"
+                                    className="p-1 rounded bg-red-600/20 hover:bg-red-600/40 text-red-400"
+                                  >
+                                    <MicOff className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -837,20 +883,20 @@ function MeetingUI({
         {/* Center: media controls */}
         <div className="flex items-center gap-2">
           {/* Mic toggle */}
-          <TrackToggle source={Track.Source.Microphone} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+          <TrackToggle source={Track.Source.Microphone} showIcon={false} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
             <Mic className="h-5 w-5" />
           </TrackToggle>
 
           {/* Video toggle (ARL only) */}
           {hasVideoCapability && (
-            <TrackToggle source={Track.Source.Camera} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+            <TrackToggle source={Track.Source.Camera} showIcon={false} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
               <Video className="h-5 w-5" />
             </TrackToggle>
           )}
 
           {/* Screen share (ARL only) */}
           {isArl && (
-            <TrackToggle source={Track.Source.ScreenShare} captureOptions={{ audio: true, video: true }} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+            <TrackToggle source={Track.Source.ScreenShare} showIcon={false} captureOptions={{ audio: true, video: true }} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
               <Monitor className="h-5 w-5" />
             </TrackToggle>
           )}
