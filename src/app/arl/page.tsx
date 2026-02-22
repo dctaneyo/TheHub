@@ -279,11 +279,24 @@ export default function ArlPage() {
         setWatchingBroadcast(false);
       }
     };
+    // Check for already-active meetings (ARL connected after meeting started)
+    const handleMeetingList = (data: { meetings: Array<{ meetingId: string; hostName: string; title: string; hostId: string }> }) => {
+      if (data.meetings.length > 0 && !activeBroadcast && activeView !== "broadcast") {
+        const m = data.meetings.find(m => m.hostId !== user?.id);
+        if (m) {
+          setActiveBroadcast({ broadcastId: m.meetingId, arlName: m.hostName, title: m.title });
+          setShowBroadcastNotification(true);
+        }
+      }
+    };
     socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:ended", handleMeetingEnded);
+    socket.on("meeting:list", handleMeetingList);
+    socket.emit("meeting:list");
     return () => {
       socket.off("meeting:started", handleMeetingStarted);
       socket.off("meeting:ended", handleMeetingEnded);
+      socket.off("meeting:list", handleMeetingList);
     };
   }, [socket, activeView, activeBroadcast, user?.id, playTaskChime]);
 
