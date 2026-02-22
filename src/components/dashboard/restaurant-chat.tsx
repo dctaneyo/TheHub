@@ -361,14 +361,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || !activeConvo || sending) return;
+  const handleSend = async (directContent?: string) => {
+    const content = (directContent || newMessage).trim();
+    if (!content || !activeConvo || sending) return;
     setSending(true);
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: activeConvo.id, content: newMessage.trim() }),
+        body: JSON.stringify({ conversationId: activeConvo.id, content }),
       });
       if (res.ok) {
         setNewMessage("");
@@ -702,7 +703,7 @@ interface ActiveConvoViewProps {
   newMessage: string;
   setNewMessage: (v: string) => void;
   sending: boolean;
-  handleSend: () => void;
+  handleSend: (directContent?: string) => void;
   convoType: string;
   typingUsers: Map<string, string>;
   onTyping: () => void;
@@ -898,9 +899,7 @@ function ActiveConvoView({
         {!showKeyboard && (
           <div className="px-3 pt-3">
             <EmojiQuickReplies onSelect={(text) => {
-              setNewMessage(text);
-              // Send immediately with the selected text
-              setTimeout(() => handleSend(), 0);
+              handleSend(text);
             }} />
           </div>
         )}
@@ -926,7 +925,7 @@ function ActiveConvoView({
             className="rounded-xl flex-1"
           />
           <Shake trigger={sendError} intensity="medium">
-            <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
+            <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
             >
               <Send className="h-4 w-4" />

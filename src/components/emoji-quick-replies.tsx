@@ -24,9 +24,6 @@ export function EmojiQuickReplies({ onSelect, className = "" }: EmojiQuickReplie
       {EMOJI_QUICK_REPLIES.map((reply, index) => (
         <motion.button
           key={reply.text}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.05 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onSelect(reply.text)}

@@ -28,13 +28,21 @@ function timeToMinutes(t: string): number {
   return h * 60 + m;
 }
 
+// All date/time helpers use Hawaii time (Pacific/Honolulu) since the server
+// runs on Railway (UTC) but all tasks are in Hawaii local time.
+function hawaiiNow(): Date {
+  // Get current time in Hawaii by formatting in that timezone then parsing
+  const str = new Date().toLocaleString("en-US", { timeZone: "Pacific/Honolulu" });
+  return new Date(str);
+}
+
 function todayStr(): string {
-  const d = new Date();
+  const d = hawaiiNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function dayOfWeek(): string {
-  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][hawaiiNow().getDay()];
 }
 
 function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
@@ -58,9 +66,9 @@ function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
         const ad = anchorMon.getDay();
         anchorMon.setDate(anchorMon.getDate() + (ad === 0 ? -6 : 1 - ad));
         anchorMon.setHours(0, 0, 0, 0);
-        const now = new Date(); now.setHours(0, 0, 0, 0);
-        const nd = now.getDay();
-        const nowMon = new Date(now);
+        const hiNow = hawaiiNow(); hiNow.setHours(0, 0, 0, 0);
+        const nd = hiNow.getDay();
+        const nowMon = new Date(hiNow);
         nowMon.setDate(nowMon.getDate() + (nd === 0 ? -6 : 1 - nd));
         const weeksDiff = Math.round((nowMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
         const isEven = weeksDiff % 2 === 0;
@@ -71,7 +79,7 @@ function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
   }
   if (rType === "monthly") {
     if (!task.recurringDays) return false;
-    try { return (JSON.parse(task.recurringDays) as number[]).includes(new Date().getDate()); } catch { return false; }
+    try { return (JSON.parse(task.recurringDays) as number[]).includes(hawaiiNow().getDate()); } catch { return false; }
   }
   return false;
 }
@@ -97,7 +105,7 @@ function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
       taskAppliesToToday(t)
     );
 
-    const now = new Date();
+    const now = hawaiiNow();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const timers: ReturnType<typeof setTimeout>[] = [];
 

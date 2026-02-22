@@ -468,14 +468,15 @@ export function Messaging() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || !activeConvo || sending) return;
+  const handleSend = async (directContent?: string) => {
+    const content = (directContent || newMessage).trim();
+    if (!content || !activeConvo || sending) return;
     setSending(true);
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: activeConvo.id, content: newMessage.trim() }),
+        body: JSON.stringify({ conversationId: activeConvo.id, content }),
       });
       if (res.ok) {
         setNewMessage("");
@@ -976,9 +977,7 @@ export function Messaging() {
         {/* Emoji Quick Replies */}
         <div className="px-3 pt-3">
           <EmojiQuickReplies onSelect={(text) => {
-            setNewMessage(text);
-            // Send immediately with the selected text
-            setTimeout(() => handleSend(), 0);
+            handleSend(text);
           }} />
         </div>
 
@@ -991,7 +990,7 @@ export function Messaging() {
               placeholder="Type a message..."
               className="rounded-xl flex-1"
             />
-            <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
+            <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
             >
               <Send className="h-4 w-4" />
