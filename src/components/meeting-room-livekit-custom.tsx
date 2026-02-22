@@ -878,7 +878,15 @@ function MeetingUI({
                 </div>
                 {/* Scrollable participant strip */}
                 {otherVideoParticipants.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto shrink-0 pb-1" style={{ height: 120 }}>
+                  <div 
+                    className="flex gap-2 overflow-x-auto overflow-y-hidden shrink-0 pb-1" 
+                    style={{ 
+                      height: 120, 
+                      WebkitOverflowScrolling: 'touch',
+                      scrollbarWidth: 'thin',
+                      touchAction: 'pan-x'
+                    }}
+                  >
                     {/* Remote non-host participants */}
                     {otherVideoParticipants.map((p) => {
                       const metadata = p.metadata ? JSON.parse(p.metadata) : {};
@@ -928,7 +936,14 @@ function MeetingUI({
 
           {/* Audio-only participants strip (restaurants) */}
           {audioOnlyParticipants.length > 0 && (
-            <div className="px-3 pb-2 flex gap-2 overflow-x-auto shrink-0">
+            <div 
+              className="px-3 pb-2 flex gap-2 overflow-x-auto overflow-y-hidden shrink-0" 
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'thin',
+                touchAction: 'pan-x'
+              }}
+            >
               {audioOnlyParticipants.map(p => {
                 const metadata = p.metadata ? JSON.parse(p.metadata) : {};
                 return (
