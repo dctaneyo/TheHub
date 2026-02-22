@@ -84,6 +84,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const [hasUnreadQA, setHasUnreadQA] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -351,6 +353,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     const handleChatMessage = (data: ChatMessage) => {
       setMessages(prev => [...prev, data]);
+      setHasUnreadChat(true);
     };
 
     const handleReaction = (data: { emoji: string; senderName: string }) => {
@@ -362,6 +365,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     const handleQuestion = (data: Question) => {
       setQuestions(prev => [...prev, data]);
+      setHasUnreadQA(true);
     };
 
     const handleQuestionAnswered = (data: { questionId: string }) => {
@@ -680,12 +684,19 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               {remoteParticipants.length + 1}
             </span>
           </button>
-          <button onClick={() => { setShowChat(!showChat); setShowQA(false); setShowParticipants(false); }}
-            className={cn("p-2 rounded-lg transition-colors text-slate-300", showChat ? "bg-slate-600" : "hover:bg-slate-700")} title="Chat">
+          <button onClick={() => { setShowChat(!showChat); setShowQA(false); setShowParticipants(false); if (!showChat) setHasUnreadChat(false); }}
+            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showChat ? "bg-slate-600" : "hover:bg-slate-700",
+              hasUnreadChat && !showChat && "animate-pulse ring-2 ring-green-400/60 bg-green-500/20"
+            )} title="Chat">
             <MessageCircle className="h-4 w-4" />
+            {hasUnreadChat && !showChat && (
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 animate-ping" />
+            )}
           </button>
-          <button onClick={() => { setShowQA(!showQA); setShowChat(false); setShowParticipants(false); }}
-            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showQA ? "bg-slate-600" : "hover:bg-slate-700")} title="Q&A">
+          <button onClick={() => { setShowQA(!showQA); setShowChat(false); setShowParticipants(false); if (!showQA) setHasUnreadQA(false); }}
+            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showQA ? "bg-slate-600" : "hover:bg-slate-700",
+              hasUnreadQA && !showQA && "animate-pulse ring-2 ring-yellow-400/60 bg-yellow-500/20"
+            )} title="Q&A">
             <HelpCircle className="h-4 w-4" />
             {questions.filter(q => !q.isAnswered).length > 0 && (
               <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-yellow-400 text-[9px] font-bold text-black flex items-center justify-center">
