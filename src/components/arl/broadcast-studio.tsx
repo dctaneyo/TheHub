@@ -108,19 +108,7 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
           console.log("Video tracks:", stream.getVideoTracks());
           console.log("Audio tracks:", stream.getAudioTracks());
           
-          if (videoRef.current && streamMode === "video") {
-            console.log("Setting video srcObject...");
-            videoRef.current.srcObject = stream;
-            console.log("Video element srcObject set:", videoRef.current.srcObject);
-            
-            // Explicitly play the video
-            try {
-              await videoRef.current.play();
-              console.log("Video playing successfully");
-            } catch (playError) {
-              console.error("Video play error:", playError);
-            }
-          }
+          // Video preview will be set by useEffect after component renders
         } catch (mediaError: any) {
           console.error("Media error:", mediaError);
           alert(`Camera/Microphone error: ${mediaError.message || "Permission denied"}`);
@@ -370,6 +358,17 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       socket.off("webrtc:ice-candidate", handleIceCandidate);
     };
   }, [socket, isStreaming, broadcastId, rtcConfig]);
+
+  // Set local video preview when streaming starts
+  useEffect(() => {
+    if (isStreaming && streamRef.current && videoRef.current && streamMode === "video") {
+      console.log("Setting local video preview in useEffect...");
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play()
+        .then(() => console.log("Local video preview playing"))
+        .catch(err => console.error("Local video preview play error:", err));
+    }
+  }, [isStreaming, streamMode]);
 
   // Cleanup on unmount
   useEffect(() => {
