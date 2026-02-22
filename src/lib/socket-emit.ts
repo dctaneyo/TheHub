@@ -197,3 +197,52 @@ export function broadcastToAll(event: string, data: any) {
   if (!isAvailable()) return;
   emitToAll(event, data);
 }
+
+// ── Live streaming events ──
+export function broadcastStreamStarted(broadcastId: string, arlId: string, arlName: string, title: string, targetLocationIds?: string[] | null) {
+  if (!isAvailable()) return;
+  const data = { broadcastId, arlId, arlName, title };
+  
+  if (targetLocationIds && targetLocationIds.length > 0) {
+    for (const locId of targetLocationIds) {
+      emitToLocation(locId, "stream:started", data);
+    }
+  } else {
+    emitToLocations("stream:started", data);
+  }
+  emitToArls("stream:started", data);
+}
+
+export function broadcastStreamEnded(broadcastId: string) {
+  if (!isAvailable()) return;
+  emitToAll("stream:ended", { broadcastId });
+}
+
+export function broadcastStreamViewerUpdate(broadcastId: string, viewerCount: number, viewers: any[]) {
+  if (!isAvailable()) return;
+  // Notify the broadcaster (ARL) about viewer updates
+  const io = getIO();
+  if (!io) return;
+  io.to(`broadcast:${broadcastId}`).emit("stream:viewer-update", { broadcastId, viewerCount, viewers });
+}
+
+export function broadcastStreamReaction(broadcastId: string, reaction: { emoji: string; viewerName: string; timestamp: number }) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  io.to(`broadcast:${broadcastId}`).emit("stream:reaction", { broadcastId, ...reaction });
+}
+
+export function broadcastStreamMessage(broadcastId: string, message: { senderName: string; content: string; timestamp: number }) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  io.to(`broadcast:${broadcastId}`).emit("stream:message", { broadcastId, ...message });
+}
+
+export function broadcastStreamQuestion(broadcastId: string, question: { id: string; askerName: string; question: string; upvotes: number }) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  io.to(`broadcast:${broadcastId}`).emit("stream:question", { broadcastId, ...question });
+}

@@ -218,3 +218,80 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Live broadcasts - ARL streaming to locations
+export const broadcasts = sqliteTable("broadcasts", {
+  id: text("id").primaryKey(), // UUID
+  arlId: text("arl_id").notNull(), // ARL who is broadcasting
+  arlName: text("arl_name").notNull(),
+  title: text("title").notNull(), // Broadcast title/subject
+  description: text("description"), // Optional description
+  status: text("status").notNull().default("live"), // 'scheduled' | 'live' | 'ended'
+  streamMode: text("stream_mode").notNull().default("video"), // 'video' | 'audio' | 'text'
+  targetAudience: text("target_audience").notNull().default("all"), // 'all' | 'specific'
+  targetLocationIds: text("target_location_ids"), // JSON array of location IDs if specific
+  recordingUrl: text("recording_url"), // URL to recorded stream (if saved)
+  thumbnailUrl: text("thumbnail_url"), // Thumbnail for replay
+  viewerCount: integer("viewer_count").notNull().default(0), // Current live viewers
+  totalViews: integer("total_views").notNull().default(0), // Total unique viewers
+  reactionCount: integer("reaction_count").notNull().default(0), // Total reactions received
+  scheduledFor: text("scheduled_for"), // ISO timestamp for scheduled broadcasts
+  startedAt: text("started_at"), // When stream actually started
+  endedAt: text("ended_at"), // When stream ended
+  duration: integer("duration"), // Duration in seconds
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Broadcast viewers - track who watched what
+export const broadcastViewers = sqliteTable("broadcast_viewers", {
+  id: text("id").primaryKey(), // UUID
+  broadcastId: text("broadcast_id").notNull(),
+  viewerType: text("viewer_type").notNull(), // 'location' | 'arl'
+  viewerId: text("viewer_id").notNull(),
+  viewerName: text("viewer_name").notNull(),
+  joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
+  leftAt: text("left_at"), // null if still watching
+  watchDuration: integer("watch_duration"), // seconds watched
+  isMinimized: integer("is_minimized", { mode: "boolean" }).notNull().default(false),
+  isDismissed: integer("is_dismissed", { mode: "boolean" }).notNull().default(false),
+  completionRate: real("completion_rate"), // percentage of stream watched (0-100)
+});
+
+// Broadcast reactions - live emoji reactions during stream
+export const broadcastReactions = sqliteTable("broadcast_reactions", {
+  id: text("id").primaryKey(), // UUID
+  broadcastId: text("broadcast_id").notNull(),
+  viewerType: text("viewer_type").notNull(), // 'location' | 'arl'
+  viewerId: text("viewer_id").notNull(),
+  viewerName: text("viewer_name").notNull(),
+  emoji: text("emoji").notNull(),
+  timestamp: integer("timestamp").notNull(), // seconds into the stream
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Broadcast chat messages - text chat during live stream
+export const broadcastMessages = sqliteTable("broadcast_messages", {
+  id: text("id").primaryKey(), // UUID
+  broadcastId: text("broadcast_id").notNull(),
+  senderType: text("sender_type").notNull(), // 'location' | 'arl'
+  senderId: text("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  content: text("content").notNull(),
+  timestamp: integer("timestamp").notNull(), // seconds into the stream
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Broadcast questions - Q&A feature during streams
+export const broadcastQuestions = sqliteTable("broadcast_questions", {
+  id: text("id").primaryKey(), // UUID
+  broadcastId: text("broadcast_id").notNull(),
+  askerType: text("asker_type").notNull(), // 'location' | 'arl'
+  askerId: text("asker_id").notNull(),
+  askerName: text("asker_name").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer"), // ARL's answer
+  answeredAt: text("answered_at"), // When answered
+  isAnswered: integer("is_answered", { mode: "boolean" }).notNull().default(false),
+  upvotes: integer("upvotes").notNull().default(0), // Other viewers can upvote questions
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
