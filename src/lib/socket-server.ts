@@ -335,6 +335,26 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Broadcast Viewer Events ──
+    socket.on("broadcast:join", (data: { broadcastId: string; viewerId: string }) => {
+      if (user?.userType !== "location") return;
+      // Notify ARL that a viewer joined
+      io!.to("arls").emit("stream:viewer-join", {
+        broadcastId: data.broadcastId,
+        viewerId: data.viewerId,
+        viewerName: user.name,
+      });
+    });
+
+    socket.on("broadcast:leave", (data: { broadcastId: string; viewerId: string }) => {
+      if (user?.userType !== "location") return;
+      // Notify ARL that a viewer left
+      io!.to("arls").emit("stream:viewer-leave", {
+        broadcastId: data.broadcastId,
+        viewerId: data.viewerId,
+      });
+    });
+
     // ── WebRTC Signaling Events ──
     // Location requests video stream from ARL
     socket.on("webrtc:request-offer", (data: { broadcastId: string; viewerId: string }) => {
