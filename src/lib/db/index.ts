@@ -106,6 +106,26 @@ function runMigrations() {
       expires_at TEXT NOT NULL
     )`);
   } catch {}
+  try {
+    s.exec(`CREATE TABLE IF NOT EXISTS scheduled_meetings (
+      id TEXT PRIMARY KEY,
+      meeting_code TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      description TEXT,
+      password TEXT,
+      host_id TEXT NOT NULL,
+      host_name TEXT NOT NULL,
+      scheduled_at TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 60,
+      is_recurring INTEGER NOT NULL DEFAULT 0,
+      recurring_type TEXT,
+      recurring_days TEXT,
+      allow_guests INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+  } catch {}
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

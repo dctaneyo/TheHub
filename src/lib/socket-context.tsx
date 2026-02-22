@@ -36,15 +36,18 @@ export function useSocket() {
   return useContext(SocketContext);
 }
 
-export function SocketProvider({ children }: { children: React.ReactNode }) {
+export function SocketProvider({ children, guestName, guestMeetingId }: { children: React.ReactNode; guestName?: string; guestMeetingId?: string }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [updating, setUpdating] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Get the auth token from cookie (read by JS — not httpOnly for socket auth)
-    // We'll pass it via handshake auth
+    // Build auth payload — include guest info if provided
+    const auth: Record<string, string> = {};
+    if (guestName) auth.guestName = guestName;
+    if (guestMeetingId) auth.guestMeetingId = guestMeetingId;
+
     const s = io({
       path: "/api/socketio",
       transports: ["websocket", "polling"],
@@ -53,6 +56,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+      auth: Object.keys(auth).length > 0 ? auth : undefined,
     });
 
     s.on("connect", () => {

@@ -219,9 +219,27 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     }
 
+    // Guest auth: if no JWT but handshake has guest info, create a virtual guest user
+    if (!user) {
+      const guestName = socket.handshake.auth?.guestName as string | undefined;
+      const guestMeetingId = socket.handshake.auth?.guestMeetingId as string | undefined;
+      if (guestName && guestMeetingId) {
+        user = {
+          id: `guest-${socket.id}`,
+          userType: "location", // guests treated as location-type (audio only)
+          name: guestName,
+        } as AuthPayload;
+        (socket as any)._isGuest = true;
+        (socket as any)._guestMeetingId = guestMeetingId;
+      }
+    }
+
     if (user) {
       // Join user-specific room
-      if (user.userType === "location") {
+      if ((socket as any)._isGuest) {
+        // Guests only join the "all" room — no location/arl rooms
+        socket.join("all");
+      } else if (user.userType === "location") {
         socket.join(`location:${user.id}`);
         socket.join("locations");
         // Schedule due-soon / overdue push notifications for this location
@@ -230,21 +248,24 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         socket.join(`arl:${user.id}`);
         socket.join("arls");
       }
-      socket.join("all");
+      if (!(socket as any)._isGuest) socket.join("all");
 
       // Store user info on socket
       (socket as any).user = user;
 
-      // Broadcast presence to ARLs
-      io!.to("arls").emit("presence:update", {
-        userId: user.id,
-        userType: user.userType,
-        name: user.name,
-        storeNumber: user.userType === "location" ? user.storeNumber : undefined,
-        isOnline: true,
-      });
+      // Broadcast presence to ARLs (not for guests)
+      if (!(socket as any)._isGuest) {
+        io!.to("arls").emit("presence:update", {
+          userId: user.id,
+          userType: user.userType,
+          name: user.name,
+          storeNumber: user.userType === "location" ? user.storeNumber : undefined,
+          isOnline: true,
+        });
+      }
 
-      console.log(`🔌 ${user.userType} connected: ${user.name} (${socket.id})`);
+      const label = (socket as any)._isGuest ? "guest" : user.userType;
+      console.log(`🔌 ${label} connected: ${user.name} (${socket.id})`);
     } else {
       // Unauthenticated — login page watcher
       socket.join("login-watchers");

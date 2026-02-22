@@ -47,12 +47,13 @@ import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { BroadcastStudio } from "@/components/arl/broadcast-studio";
+import { ScheduledMeetings } from "@/components/arl/scheduled-meetings";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -97,6 +98,7 @@ const navItems = [
   { id: "locations" as const, label: "Locations", icon: Store },
   { id: "forms" as const, label: "Forms", icon: FileText },
   { id: "broadcast" as const, label: "Live Broadcast", icon: Video },
+  { id: "meetings" as const, label: "Scheduled Meetings", icon: CalendarDays },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },
   { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
@@ -119,7 +121,7 @@ export default function ArlPage() {
   // Restore active view from sessionStorage after mount (prevents hydration mismatch)
   useEffect(() => {
     const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast"].includes(saved)) {
+    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast","meetings"].includes(saved)) {
       setActiveView(saved);
     }
     setMounted(true);
@@ -586,6 +588,7 @@ export default function ArlPage() {
                 )}
                 {activeView === "remote-login" && <RemoteLogin />}
                 {activeView === "data-management" && <DataManagement />}
+                {activeView === "meetings" && <ScheduledMeetings />}
               </motion.div>
             </AnimatePresence>
           ) : null}
