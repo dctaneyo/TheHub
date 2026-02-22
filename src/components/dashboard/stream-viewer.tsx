@@ -48,8 +48,18 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
   const videoRef = useRef<HTMLVideoElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const joinTimeRef = useRef<number>(Date.now());
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const arlSocketIdRef = useRef<string | null>(null);
   
   const { socket } = useSocket();
+
+  // WebRTC configuration
+  const rtcConfig: RTCConfiguration = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
+  };
 
   // Join broadcast as viewer
   useEffect(() => {
@@ -68,6 +78,12 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
           // Join broadcast room via socket
           if (socket) {
             socket.emit("broadcast:join", { broadcastId, viewerId: data.viewerId });
+            
+            // Request WebRTC offer from broadcaster
+            socket.emit("webrtc:request-offer", { 
+              broadcastId, 
+              viewerId: data.viewerId 
+            });
           }
         }
       } catch (error) {
@@ -128,16 +144,79 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
       }
     };
 
+    // WebRTC: Handle offer from broadcaster
+    const handleOffer = async (data: { offer: RTCSessionDescriptionInit }) => {
+      try {
+        // Create peer connection
+        const pc = new RTCPeerConnection(rtcConfig);
+        peerConnectionRef.current = pc;
+
+        // Handle incoming video stream
+        pc.ontrack = (event) => {
+          if (videoRef.current && event.streams[0]) {
+            videoRef.current.srcObject = event.streams[0];
+            videoRef.current.play().catch(err => console.error("Video play error:", err));
+          }
+        };
+
+        // Handle ICE candidates
+        pc.onicecandidate = (event) => {
+          if (event.candidate && socket) {
+            socket.emit("webrtc:ice-candidate", {
+              targetSocketId: arlSocketIdRef.current,
+              candidate: event.candidate.toJSON(),
+            });
+          }
+        };
+
+        // Set remote description (offer)
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+
+        // Create and send answer
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        socket.emit("webrtc:answer", {
+          broadcastId,
+          answer: pc.localDescription!.toJSON(),
+        });
+      } catch (error) {
+        console.error("Error handling WebRTC offer:", error);
+      }
+    };
+
+    // WebRTC: Handle ICE candidate from broadcaster
+    const handleIceCandidate = async (data: { candidate: RTCIceCandidateInit; senderSocketId: string }) => {
+      try {
+        arlSocketIdRef.current = data.senderSocketId;
+        if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
+    };
+
     socket.on("stream:message", handleStreamMessage);
     socket.on("stream:reaction", handleStreamReaction);
     socket.on("stream:ended", handleStreamEnded);
+    socket.on("webrtc:offer", handleOffer);
+    socket.on("webrtc:ice-candidate", handleIceCandidate);
 
     return () => {
       socket.off("stream:message", handleStreamMessage);
       socket.off("stream:reaction", handleStreamReaction);
       socket.off("stream:ended", handleStreamEnded);
+      socket.off("webrtc:offer", handleOffer);
+      socket.off("webrtc:ice-candidate", handleIceCandidate);
+      
+      // Close peer connection
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
     };
-  }, [socket, broadcastId, onClose]);
+  }, [socket, broadcastId, onClose, rtcConfig]);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -271,21 +350,8 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
             autoPlay
             muted={isMuted}
             playsInline
-            className="max-h-full max-w-full hidden"
+            className="max-h-full max-w-full"
           />
-          
-          {/* Video placeholder message */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="text-6xl">📹</div>
-            <div className="text-white text-2xl font-bold">{title}</div>
-            <div className="text-slate-300 text-lg">Live broadcast from {arlName}</div>
-            <div className="bg-yellow-500/90 text-yellow-900 px-6 py-3 rounded-lg text-sm font-medium shadow-lg max-w-md">
-              Video streaming requires WebRTC setup. Currently showing text/chat broadcast mode.
-            </div>
-            <div className="text-slate-400 text-sm mt-4">
-              Use chat and reactions below to interact with the broadcast
-            </div>
-          </div>
           
           {/* Floating reactions */}
           <AnimatePresence>

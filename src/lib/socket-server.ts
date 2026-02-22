@@ -335,6 +335,47 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── WebRTC Signaling Events ──
+    // Location requests video stream from ARL
+    socket.on("webrtc:request-offer", (data: { broadcastId: string; viewerId: string }) => {
+      if (user?.userType !== "location") return;
+      // Forward request to the broadcasting ARL
+      io!.to("arls").emit("webrtc:offer-requested", {
+        broadcastId: data.broadcastId,
+        viewerId: data.viewerId,
+        viewerSocketId: socket.id,
+      });
+    });
+
+    // ARL sends WebRTC offer to specific location
+    socket.on("webrtc:offer", (data: { viewerSocketId: string; offer: RTCSessionDescriptionInit }) => {
+      if (user?.userType !== "arl") return;
+      // Send offer directly to the requesting viewer
+      io!.to(data.viewerSocketId).emit("webrtc:offer", {
+        offer: data.offer,
+      });
+    });
+
+    // Location sends WebRTC answer back to ARL
+    socket.on("webrtc:answer", (data: { broadcastId: string; answer: RTCSessionDescriptionInit }) => {
+      if (user?.userType !== "location") return;
+      // Forward answer to the broadcasting ARL
+      io!.to("arls").emit("webrtc:answer", {
+        broadcastId: data.broadcastId,
+        viewerSocketId: socket.id,
+        answer: data.answer,
+      });
+    });
+
+    // ICE candidate exchange (bidirectional)
+    socket.on("webrtc:ice-candidate", (data: { targetSocketId: string; candidate: RTCIceCandidateInit }) => {
+      // Forward ICE candidate to the target peer
+      io!.to(data.targetSocketId).emit("webrtc:ice-candidate", {
+        candidate: data.candidate,
+        senderSocketId: socket.id,
+      });
+    });
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {

@@ -73,8 +73,17 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   
   const { socket } = useSocket();
+
+  // WebRTC configuration with STUN servers
+  const rtcConfig: RTCConfiguration = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
+  };
 
   // Start broadcast
   const startBroadcast = async () => {
@@ -171,6 +180,10 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
         durationIntervalRef.current = null;
       }
 
+      // Close all peer connections
+      peerConnectionsRef.current.forEach(pc => pc.close());
+      peerConnectionsRef.current.clear();
+
       // Update broadcast status
       await fetch("/api/broadcasts", {
         method: "PATCH",
@@ -235,6 +248,12 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
 
     const handleViewerLeave = (data: { viewerId: string }) => {
       setViewers(prev => prev.filter(v => v.id !== data.viewerId));
+      // Close peer connection for this viewer
+      const pc = peerConnectionsRef.current.get(data.viewerId);
+      if (pc) {
+        pc.close();
+        peerConnectionsRef.current.delete(data.viewerId);
+      }
     };
 
     const handleStreamMessage = (data: StreamMessage) => {
@@ -245,18 +264,93 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       setQuestions(prev => [...prev, data]);
     };
 
+    // WebRTC: Handle offer request from viewer
+    const handleOfferRequested = async (data: { broadcastId: string; viewerId: string; viewerSocketId: string }) => {
+      if (data.broadcastId !== broadcastId || !streamRef.current) return;
+
+      try {
+        // Create new peer connection for this viewer
+        const pc = new RTCPeerConnection(rtcConfig);
+        peerConnectionsRef.current.set(data.viewerId, pc);
+
+        // Add all tracks from the media stream
+        streamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, streamRef.current!);
+        });
+
+        // Handle ICE candidates
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit("webrtc:ice-candidate", {
+              targetSocketId: data.viewerSocketId,
+              candidate: event.candidate.toJSON(),
+            });
+          }
+        };
+
+        // Create and send offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        socket.emit("webrtc:offer", {
+          viewerSocketId: data.viewerSocketId,
+          offer: pc.localDescription!.toJSON(),
+        });
+      } catch (error) {
+        console.error("Error creating WebRTC offer:", error);
+      }
+    };
+
+    // WebRTC: Handle answer from viewer
+    const handleAnswer = async (data: { broadcastId: string; viewerSocketId: string; answer: RTCSessionDescriptionInit }) => {
+      if (data.broadcastId !== broadcastId) return;
+
+      try {
+        // Find the peer connection by socket ID
+        for (const [viewerId, pc] of peerConnectionsRef.current.entries()) {
+          if (pc.signalingState === "have-local-offer") {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            break;
+          }
+        }
+      } catch (error) {
+        console.error("Error setting remote description:", error);
+      }
+    };
+
+    // WebRTC: Handle ICE candidate from viewer
+    const handleIceCandidate = async (data: { candidate: RTCIceCandidateInit; senderSocketId: string }) => {
+      try {
+        // Add ICE candidate to the appropriate peer connection
+        for (const pc of peerConnectionsRef.current.values()) {
+          if (pc.remoteDescription) {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            break;
+          }
+        }
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
+    };
+
     socket.on("stream:viewer-join", handleViewerJoin);
     socket.on("stream:viewer-leave", handleViewerLeave);
     socket.on("stream:message", handleStreamMessage);
     socket.on("stream:question", handleStreamQuestion);
+    socket.on("webrtc:offer-requested", handleOfferRequested);
+    socket.on("webrtc:answer", handleAnswer);
+    socket.on("webrtc:ice-candidate", handleIceCandidate);
 
     return () => {
       socket.off("stream:viewer-join", handleViewerJoin);
       socket.off("stream:viewer-leave", handleViewerLeave);
       socket.off("stream:message", handleStreamMessage);
       socket.off("stream:question", handleStreamQuestion);
+      socket.off("webrtc:offer-requested", handleOfferRequested);
+      socket.off("webrtc:answer", handleAnswer);
+      socket.off("webrtc:ice-candidate", handleIceCandidate);
     };
-  }, [socket, isStreaming, broadcastId]);
+  }, [socket, isStreaming, broadcastId, rtcConfig]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -267,6 +361,9 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
       }
+      // Close all peer connections
+      peerConnectionsRef.current.forEach(pc => pc.close());
+      peerConnectionsRef.current.clear();
     };
   }, []);
 
@@ -401,10 +498,6 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                         <VideoOff className="h-16 w-16 text-slate-400" />
                       </div>
                     )}
-                    {/* Info banner */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg">
-                      📹 Local camera preview only - Video streaming to locations requires WebRTC setup
-                    </div>
                   </div>
                 )}
 
