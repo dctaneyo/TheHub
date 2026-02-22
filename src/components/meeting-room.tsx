@@ -6,13 +6,14 @@ import {
   Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Maximize2, Minimize2,
-  Crown, Shield, Volume2, VolumeX, SwitchCamera,
+  Crown, Shield, Volume2, VolumeX, SwitchCamera, Keyboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
+import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 
 const rtcConfig: RTCConfiguration = {
   iceServers: [
@@ -84,6 +85,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const [newMessage, setNewMessage] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
+  const [showMeetingKeyboard, setShowMeetingKeyboard] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
   const [joined, setJoined] = useState(false);
 
@@ -831,7 +833,28 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
                     ))}
                     <div ref={chatEndRef} />
                   </div>
+                  {!isArl && showMeetingKeyboard && (
+                    <OnscreenKeyboard
+                      value={newMessage}
+                      onChange={setNewMessage}
+                      onSubmit={newMessage.trim() ? sendChat : undefined}
+                      onDismiss={() => setShowMeetingKeyboard(false)}
+                      placeholder="Type a message..."
+                    />
+                  )}
                   <div className="p-3 border-t border-slate-700 flex gap-2">
+                    {!isArl && (
+                      <button
+                        onClick={() => setShowMeetingKeyboard(k => !k)}
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                          showMeetingKeyboard ? "bg-red-600/20 text-red-400" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                        )}
+                        title="Onscreen keyboard"
+                      >
+                        <Keyboard className="h-4 w-4" />
+                      </button>
+                    )}
                     <Input value={newMessage} onChange={e => setNewMessage(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") sendChat(); }}
                       placeholder="Type a message..."
