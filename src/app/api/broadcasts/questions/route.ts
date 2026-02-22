@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { broadcastStreamQuestion } from "@/lib/socket-emit";
 
 // POST - Ask a question during broadcast
 export async function POST(request: Request) {
@@ -31,14 +30,6 @@ export async function POST(request: Request) {
       isAnswered: false,
       upvotes: 0,
       createdAt: new Date().toISOString(),
-    });
-
-    // Broadcast question via socket
-    broadcastStreamQuestion(broadcastId, {
-      id: questionId,
-      askerName: session.name,
-      question,
-      upvotes: 0,
     });
 
     return NextResponse.json({ questionId });

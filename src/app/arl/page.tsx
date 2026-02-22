@@ -261,29 +261,30 @@ export default function ArlPage() {
     return () => { socket.off("presence:update", handlePresence); };
   }, [socket]);
 
-  // Listen for broadcast started/ended from other ARLs
+  // Listen for meeting started/ended from other ARLs
   useEffect(() => {
     if (!socket) return;
-    const handleStreamStarted = (data: { broadcastId: string; arlName: string; title: string; broadcasterSocketId?: string }) => {
-      // Don't show notification if this ARL is the broadcaster (they're already in the studio)
+    const handleMeetingStarted = (data: { meetingId: string; hostName: string; title: string; hostId?: string }) => {
+      // Don't show notification if this ARL is the host (they're already in the studio)
       if (activeView === "broadcast") return;
-      setActiveBroadcast({ broadcastId: data.broadcastId, arlName: data.arlName, title: data.title });
+      if (data.hostId === user?.id) return;
+      setActiveBroadcast({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
       setShowBroadcastNotification(true);
     };
-    const handleStreamEnded = (data: { broadcastId: string }) => {
-      if (activeBroadcast?.broadcastId === data.broadcastId) {
+    const handleMeetingEnded = (data: { meetingId: string }) => {
+      if (activeBroadcast?.broadcastId === data.meetingId) {
         setShowBroadcastNotification(false);
         setActiveBroadcast(null);
         setWatchingBroadcast(false);
       }
     };
-    socket.on("stream:started", handleStreamStarted);
-    socket.on("stream:ended", handleStreamEnded);
+    socket.on("meeting:started", handleMeetingStarted);
+    socket.on("meeting:ended", handleMeetingEnded);
     return () => {
-      socket.off("stream:started", handleStreamStarted);
-      socket.off("stream:ended", handleStreamEnded);
+      socket.off("meeting:started", handleMeetingStarted);
+      socket.off("meeting:ended", handleMeetingEnded);
     };
-  }, [socket, activeView, activeBroadcast]);
+  }, [socket, activeView, activeBroadcast, user?.id]);
 
   const fetchUnread = useCallback(async () => {
     try {

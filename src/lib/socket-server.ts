@@ -23,6 +23,34 @@ const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-produ
 // Per-location map of active timers: taskId → [dueSoonTimer, overdueTimer]
 const _taskTimers = new Map<string, ReturnType<typeof setTimeout>[]>();
 
+// ── Meeting system: in-memory registry of active meetings ──
+interface MeetingParticipant {
+  odId: string;        // odId = the user's id (location or arl)
+  socketId: string;
+  name: string;
+  userType: "location" | "arl";
+  role: "host" | "cohost" | "participant";
+  hasVideo: boolean;
+  hasAudio: boolean;
+  isMuted: boolean;     // muted by host
+  handRaised: boolean;
+  joinedAt: number;
+}
+
+interface ActiveMeeting {
+  meetingId: string;
+  title: string;
+  hostId: string;       // ARL user id who created
+  hostName: string;
+  createdAt: number;
+  participants: Map<string, MeetingParticipant>; // keyed by socketId
+}
+
+if (!(globalThis as any).__hubActiveMeetings) {
+  (globalThis as any).__hubActiveMeetings = new Map<string, ActiveMeeting>();
+}
+const _activeMeetings: Map<string, ActiveMeeting> = (globalThis as any).__hubActiveMeetings;
+
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -315,171 +343,277 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // ── Live Broadcast Events ──
-    socket.on("broadcast:start", (data: { broadcastId: string; title: string; arlName?: string }) => {
-      if (user?.userType !== "arl") return;
-      // Broadcast to all locations
-      io!.to("locations").emit("stream:started", {
-        broadcastId: data.broadcastId,
-        arlName: data.arlName || user.name,
+    // ══════════════════════════════════════════════════════════
+    // ── Meeting System (replaces old one-way broadcast) ──
+    // ══════════════════════════════════════════════════════════
+
+    // Helper: serialize participants map for emission
+    const serializeParticipants = (meeting: ActiveMeeting) =>
+      Array.from(meeting.participants.values()).map(p => ({
+        odId: p.odId, socketId: p.socketId, name: p.name,
+        userType: p.userType, role: p.role, hasVideo: p.hasVideo,
+        hasAudio: p.hasAudio, isMuted: p.isMuted, handRaised: p.handRaised,
+      }));
+
+    // Helper: broadcast meeting state to all participants
+    const broadcastMeetingState = (meeting: ActiveMeeting) => {
+      io!.to(`meeting:${meeting.meetingId}`).emit("meeting:participants-updated", {
+        meetingId: meeting.meetingId,
+        participants: serializeParticipants(meeting),
+      });
+    };
+
+    // ── Create meeting (ARL only) ──
+    socket.on("meeting:create", (data: { meetingId: string; title: string }) => {
+      if (!user || user.userType !== "arl") return;
+      const meeting: ActiveMeeting = {
+        meetingId: data.meetingId,
         title: data.title,
+        hostId: user.id,
+        hostName: user.name,
+        createdAt: Date.now(),
+        participants: new Map(),
+      };
+      _activeMeetings.set(data.meetingId, meeting);
+
+      // Notify everyone that a meeting started
+      io!.to("locations").emit("meeting:started", {
+        meetingId: data.meetingId, title: data.title,
+        hostName: user.name, hostId: user.id,
+      });
+      io!.to("arls").emit("meeting:started", {
+        meetingId: data.meetingId, title: data.title,
+        hostName: user.name, hostId: user.id,
+        hostSocketId: socket.id,
+      });
+      console.log(`📹 Meeting created: "${data.title}" by ${user.name}`);
+    });
+
+    // ── Join meeting ──
+    socket.on("meeting:join", (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
+
+      const isHost = meeting.hostId === user.id;
+      const isArl = user.userType === "arl";
+      const participant: MeetingParticipant = {
+        odId: user.id,
+        socketId: socket.id,
+        name: user.name,
+        userType: user.userType as "location" | "arl",
+        role: isHost ? "host" : (isArl ? "cohost" : "participant"),
+        hasVideo: data.hasVideo,
+        hasAudio: data.hasAudio,
+        isMuted: !isArl, // restaurants start muted, ARLs start unmuted
+        handRaised: false,
+        joinedAt: Date.now(),
+      };
+      meeting.participants.set(socket.id, participant);
+      socket.join(`meeting:${data.meetingId}`);
+
+      // Tell the joiner about all existing participants (so they can create peer connections)
+      const existingParticipants = Array.from(meeting.participants.entries())
+        .filter(([sid]) => sid !== socket.id)
+        .map(([sid, p]) => ({
+          odId: p.odId, socketId: sid, name: p.name,
+          userType: p.userType, role: p.role, hasVideo: p.hasVideo,
+          hasAudio: p.hasAudio, isMuted: p.isMuted, handRaised: p.handRaised,
+        }));
+      socket.emit("meeting:joined", {
+        meetingId: data.meetingId,
+        title: meeting.title,
+        hostName: meeting.hostName,
+        participants: existingParticipants,
+        yourRole: participant.role,
+      });
+
+      // Tell all OTHER participants about the new joiner (so they create a peer connection to them)
+      socket.to(`meeting:${data.meetingId}`).emit("meeting:participant-joined", {
+        meetingId: data.meetingId,
+        participant: {
+          odId: participant.odId, socketId: socket.id, name: participant.name,
+          userType: participant.userType, role: participant.role,
+          hasVideo: participant.hasVideo, hasAudio: participant.hasAudio,
+          isMuted: participant.isMuted, handRaised: participant.handRaised,
+        },
+      });
+      console.log(`📹 ${user.name} joined meeting "${meeting.title}" as ${participant.role}`);
+    });
+
+    // ── Leave meeting ──
+    socket.on("meeting:leave", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      meeting.participants.delete(socket.id);
+      socket.leave(`meeting:${data.meetingId}`);
+
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:participant-left", {
+        meetingId: data.meetingId, socketId: socket.id, name: user.name,
+      });
+
+      // If host left and no participants remain, end the meeting
+      if (meeting.participants.size === 0) {
+        _activeMeetings.delete(data.meetingId);
+        io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
+        io!.to("arls").emit("meeting:ended", { meetingId: data.meetingId });
+        console.log(`📹 Meeting "${meeting.title}" ended (empty)`);
+      }
+    });
+
+    // ── End meeting (host/cohost only) ──
+    socket.on("meeting:end", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const p = meeting.participants.get(socket.id);
+      if (!p || (p.role !== "host" && p.role !== "cohost")) return;
+
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:ended", { meetingId: data.meetingId });
+      io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
+      io!.to("arls").emit("meeting:ended", { meetingId: data.meetingId });
+      _activeMeetings.delete(data.meetingId);
+      console.log(`📹 Meeting "${meeting.title}" ended by ${user.name}`);
+    });
+
+    // ── Raise hand (restaurant requests to speak) ──
+    socket.on("meeting:raise-hand", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const p = meeting.participants.get(socket.id);
+      if (!p) return;
+      p.handRaised = true;
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-raised", {
+        meetingId: data.meetingId, socketId: socket.id, name: user.name,
       });
     });
 
-    socket.on("broadcast:end", (data: { broadcastId: string }) => {
-      if (user?.userType !== "arl") return;
-      // Notify all locations that stream ended
-      io!.to("locations").emit("stream:ended", {
-        broadcastId: data.broadcastId,
+    // ── Lower hand ──
+    socket.on("meeting:lower-hand", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const p = meeting.participants.get(socket.id);
+      if (!p) return;
+      p.handRaised = false;
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-lowered", {
+        meetingId: data.meetingId, socketId: socket.id,
       });
     });
 
-    socket.on("broadcast:viewer-update", (data: { broadcastId: string; viewerCount: number }) => {
-      if (user?.userType !== "arl") return;
-      // Send viewer count update to the ARL
-      socket.emit("stream:viewer-update", {
-        broadcastId: data.broadcastId,
-        viewerCount: data.viewerCount,
-      });
+    // ── Allow speak (host/cohost unmutes a participant) ──
+    socket.on("meeting:allow-speak", (data: { meetingId: string; targetSocketId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      if (!me || (me.role !== "host" && me.role !== "cohost")) return;
+      const target = meeting.participants.get(data.targetSocketId);
+      if (!target) return;
+      target.isMuted = false;
+      target.handRaised = false;
+      // Tell the target they can now speak
+      io!.to(data.targetSocketId).emit("meeting:speak-allowed", { meetingId: data.meetingId });
+      // Tell everyone about the state change
+      broadcastMeetingState(meeting);
     });
 
-    // ── Broadcast Viewer Events ──
-    socket.on("broadcast:join", (data: { broadcastId: string; viewerId: string }) => {
-      if (user?.userType !== "location") return;
-      // Notify ARL that a viewer joined
-      io!.to("arls").emit("stream:viewer-join", {
-        broadcastId: data.broadcastId,
-        viewerId: data.viewerId,
-        viewerName: user.name,
-      });
+    // ── Mute participant (host/cohost mutes someone) ──
+    socket.on("meeting:mute-participant", (data: { meetingId: string; targetSocketId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      if (!me || (me.role !== "host" && me.role !== "cohost")) return;
+      const target = meeting.participants.get(data.targetSocketId);
+      if (!target) return;
+      target.isMuted = true;
+      io!.to(data.targetSocketId).emit("meeting:you-were-muted", { meetingId: data.meetingId });
+      broadcastMeetingState(meeting);
     });
 
-    socket.on("broadcast:leave", (data: { broadcastId: string; viewerId: string }) => {
-      if (user?.userType !== "location") return;
-      // Notify ARL that a viewer left
-      io!.to("arls").emit("stream:viewer-leave", {
-        broadcastId: data.broadcastId,
-        viewerId: data.viewerId,
-      });
+    // ── Update own media state (toggle video/audio) ──
+    socket.on("meeting:media-update", (data: { meetingId: string; hasVideo?: boolean; hasAudio?: boolean }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const p = meeting.participants.get(socket.id);
+      if (!p) return;
+      if (data.hasVideo !== undefined) p.hasVideo = data.hasVideo;
+      if (data.hasAudio !== undefined) p.hasAudio = data.hasAudio;
+      broadcastMeetingState(meeting);
     });
 
-    // ── Broadcast Chat/Reaction/Q&A Events ──
-    socket.on("broadcast:message", (data: { broadcastId: string; viewerId?: string; content: string; timestamp: number }) => {
-      // Relay message to all connected clients (both ARLs and locations)
-      const senderName = user?.name || "Unknown";
+    // ── Chat message in meeting ──
+    socket.on("meeting:chat", (data: { meetingId: string; content: string }) => {
+      if (!user) return;
       const msg = {
         id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        senderName,
-        senderType: user?.userType || "location",
+        senderName: user.name,
+        senderType: user.userType,
         content: data.content,
-        timestamp: data.timestamp,
+        timestamp: Date.now(),
       };
-      io!.to("arls").emit("stream:message", msg);
-      io!.to("locations").emit("stream:message", msg);
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:chat-message", msg);
     });
 
-    socket.on("broadcast:reaction", (data: { broadcastId: string; viewerId?: string; emoji: string; timestamp: number }) => {
-      const senderName = user?.name || "Unknown";
-      const reaction = {
-        emoji: data.emoji,
-        viewerName: senderName,
-        broadcastId: data.broadcastId,
-      };
-      io!.to("arls").emit("stream:reaction", reaction);
-      io!.to("locations").emit("stream:reaction", reaction);
-    });
-
-    socket.on("broadcast:start", (data: { broadcastId: string; title: string }) => {
-      // Notify all locations and other ARLs about the broadcast
-      const arlName = user?.name || "Unknown ARL";
-      io!.to("locations").emit("stream:started", {
-        broadcastId: data.broadcastId,
-        arlName,
-        title: data.title,
-      });
-      io!.to("arls").emit("stream:started", {
-        broadcastId: data.broadcastId,
-        arlName,
-        title: data.title,
-        broadcasterSocketId: socket.id,
+    // ── Reaction in meeting ──
+    socket.on("meeting:reaction", (data: { meetingId: string; emoji: string }) => {
+      if (!user) return;
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:reaction", {
+        emoji: data.emoji, senderName: user.name,
       });
     });
 
-    socket.on("broadcast:end", (data: { broadcastId: string }) => {
-      io!.to("locations").emit("stream:ended", { broadcastId: data.broadcastId });
-      io!.to("arls").emit("stream:ended", { broadcastId: data.broadcastId });
-    });
-
-    socket.on("broadcast:question", (data: { broadcastId: string; question: string }) => {
-      const askerName = user?.name || "Unknown";
+    // ── Q&A in meeting ──
+    socket.on("meeting:question", (data: { meetingId: string; question: string }) => {
+      if (!user) return;
       const q = {
         id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        askerName,
-        question: data.question,
-        upvotes: 0,
-        isAnswered: false,
-        broadcastId: data.broadcastId,
+        askerName: user.name, question: data.question,
+        upvotes: 0, isAnswered: false,
       };
-      io!.to("arls").emit("stream:question", q);
-      io!.to("locations").emit("stream:question", q);
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:question", q);
     });
 
-    socket.on("broadcast:answer-question", (data: { broadcastId: string; questionId: string }) => {
-      io!.to("arls").emit("stream:question-answered", { questionId: data.questionId });
-      io!.to("locations").emit("stream:question-answered", { questionId: data.questionId });
+    socket.on("meeting:answer-question", (data: { meetingId: string; questionId: string }) => {
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:question-answered", { questionId: data.questionId });
     });
 
-    socket.on("broadcast:upvote-question", (data: { broadcastId: string; questionId: string }) => {
-      io!.to("arls").emit("stream:question-upvoted", { questionId: data.questionId });
-      io!.to("locations").emit("stream:question-upvoted", { questionId: data.questionId });
+    socket.on("meeting:upvote-question", (data: { meetingId: string; questionId: string }) => {
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:question-upvoted", { questionId: data.questionId });
     });
 
-    // Allow ARLs to join broadcast as viewers too
-    socket.on("broadcast:arl-join", (data: { broadcastId: string }) => {
-      if (user?.userType !== "arl") return;
-      io!.to("arls").emit("stream:viewer-join", {
-        broadcastId: data.broadcastId,
-        viewerId: user.id,
-        viewerName: user.name + " (ARL)",
-      });
+    // ── Get active meetings list ──
+    socket.on("meeting:list", () => {
+      const meetings = Array.from(_activeMeetings.values()).map(m => ({
+        meetingId: m.meetingId, title: m.title,
+        hostName: m.hostName, hostId: m.hostId,
+        participantCount: m.participants.size,
+        createdAt: m.createdAt,
+      }));
+      socket.emit("meeting:list", { meetings });
     });
 
-    // ── WebRTC Signaling Events ──
-    // Location requests video stream from ARL
-    socket.on("webrtc:request-offer", (data: { broadcastId: string; viewerId: string }) => {
-      if (user?.userType !== "location") return;
-      // Forward request to the broadcasting ARL
-      io!.to("arls").emit("webrtc:offer-requested", {
-        broadcastId: data.broadcastId,
-        viewerId: data.viewerId,
-        viewerSocketId: socket.id,
-      });
-    });
-
-    // ARL sends WebRTC offer to specific location
-    socket.on("webrtc:offer", (data: { viewerSocketId: string; offer: RTCSessionDescriptionInit }) => {
-      if (user?.userType !== "arl") return;
-      // Send offer directly to the requesting viewer, include ARL socket ID
-      io!.to(data.viewerSocketId).emit("webrtc:offer", {
+    // ── WebRTC Signaling (mesh: peer-to-peer via server relay) ──
+    // Any participant can send an offer to any other participant
+    socket.on("webrtc:offer", (data: { targetSocketId: string; offer: any }) => {
+      io!.to(data.targetSocketId).emit("webrtc:offer", {
         offer: data.offer,
-        arlSocketId: socket.id,
+        senderSocketId: socket.id,
       });
     });
 
-    // Location sends WebRTC answer back to ARL
-    socket.on("webrtc:answer", (data: { broadcastId: string; answer: RTCSessionDescriptionInit }) => {
-      if (user?.userType !== "location") return;
-      // Forward answer to the broadcasting ARL
-      io!.to("arls").emit("webrtc:answer", {
-        broadcastId: data.broadcastId,
-        viewerSocketId: socket.id,
+    socket.on("webrtc:answer", (data: { targetSocketId: string; answer: any }) => {
+      io!.to(data.targetSocketId).emit("webrtc:answer", {
         answer: data.answer,
+        senderSocketId: socket.id,
       });
     });
 
-    // ICE candidate exchange (bidirectional)
-    socket.on("webrtc:ice-candidate", (data: { targetSocketId: string; candidate: RTCIceCandidateInit }) => {
-      // Forward ICE candidate to the target peer
+    socket.on("webrtc:ice-candidate", (data: { targetSocketId: string; candidate: any }) => {
       io!.to(data.targetSocketId).emit("webrtc:ice-candidate", {
         candidate: data.candidate,
         senderSocketId: socket.id,
@@ -508,6 +642,21 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           const timers = _taskTimers.get(user.id) || [];
           timers.forEach(clearTimeout);
           _taskTimers.delete(user.id);
+        }
+        // Clean up meetings: remove from any active meeting
+        for (const [meetingId, meeting] of _activeMeetings.entries()) {
+          if (meeting.participants.has(socket.id)) {
+            meeting.participants.delete(socket.id);
+            io!.to(`meeting:${meetingId}`).emit("meeting:participant-left", {
+              meetingId, socketId: socket.id, name: user.name,
+            });
+            // If meeting is now empty, clean it up
+            if (meeting.participants.size === 0) {
+              _activeMeetings.delete(meetingId);
+              io!.to("locations").emit("meeting:ended", { meetingId });
+              io!.to("arls").emit("meeting:ended", { meetingId });
+            }
+          }
         }
         console.log(`🔌 ${user.userType} disconnected: ${user.name} (${socket.id})`);
       }

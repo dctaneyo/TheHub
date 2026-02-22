@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { broadcastStreamReaction } from "@/lib/socket-emit";
 
 // POST - Add a reaction to a broadcast
 export async function POST(request: Request) {
@@ -42,13 +41,6 @@ export async function POST(request: Request) {
         .set({ reactionCount: (broadcast[0].reactionCount || 0) + 1 })
         .where(eq(schema.broadcasts.id, broadcastId));
     }
-
-    // Broadcast reaction via socket
-    broadcastStreamReaction(broadcastId, {
-      emoji,
-      viewerName: session.name,
-      timestamp: timestamp || 0,
-    });
 
     return NextResponse.json({ reactionId });
   } catch (error) {

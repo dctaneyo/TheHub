@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { broadcastStreamMessage } from "@/lib/socket-emit";
 
 // POST - Send a message in broadcast chat
 export async function POST(request: Request) {
@@ -30,13 +29,6 @@ export async function POST(request: Request) {
       content,
       timestamp: timestamp || 0,
       createdAt: new Date().toISOString(),
-    });
-
-    // Broadcast message via socket
-    broadcastStreamMessage(broadcastId, {
-      senderName: session.name,
-      content,
-      timestamp: timestamp || 0,
     });
 
     return NextResponse.json({ messageId });

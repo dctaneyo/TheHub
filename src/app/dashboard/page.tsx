@@ -343,16 +343,21 @@ export default function DashboardPage() {
     socket.on("task:updated", handleTaskUpdate);
     socket.on("task:completed", handleTaskUpdate);
     
-    // Listen for live stream events
-    const handleStreamStarted = (data: { broadcastId: string; arlName: string; title: string }) => {
-      setActiveStream(data);
+    // Listen for meeting events
+    const handleMeetingStarted = (data: { meetingId: string; hostName: string; title: string }) => {
+      setActiveStream({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
     };
-    socket.on("stream:started", handleStreamStarted);
+    const handleMeetingEnded = (data: { meetingId: string }) => {
+      setActiveStream(prev => prev?.broadcastId === data.meetingId ? null : prev);
+    };
+    socket.on("meeting:started", handleMeetingStarted);
+    socket.on("meeting:ended", handleMeetingEnded);
     
     return () => {
       socket.off("task:updated", handleTaskUpdate);
       socket.off("task:completed", handleTaskUpdate);
-      socket.off("stream:started", handleStreamStarted);
+      socket.off("meeting:started", handleMeetingStarted);
+      socket.off("meeting:ended", handleMeetingEnded);
     };
   }, [socket, fetchTasks]);
 
