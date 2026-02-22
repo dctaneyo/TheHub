@@ -432,14 +432,15 @@ function MeetingUI({
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(false);
-  const [hasUnreadChat, setHasUnreadChat] = useState(false);
-  const [hasUnreadQA, setHasUnreadQA] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(true);
+  const [noiseSuppression, setNoiseSuppression] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
   const [showMeetingKeyboard, setShowMeetingKeyboard] = useState(false);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const [hasUnreadQA, setHasUnreadQA] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
   const [waitingForHost, setWaitingForHost] = useState(false);
   const [hostHasLeft, setHostHasLeft] = useState(false);
@@ -626,6 +627,31 @@ function MeetingUI({
       socket.emit("meeting:leave", { meetingId });
     };
   }, [socket, meetingId, user, myRole, localParticipant]);
+
+  // Apply noise suppression to microphone track (WebRTC built-in)
+  useEffect(() => {
+    const applyNoiseSuppression = async () => {
+      const micTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+      if (!micTrack?.track) return;
+
+      try {
+        // Get the underlying MediaStreamTrack
+        const mediaStreamTrack = micTrack.track.mediaStreamTrack;
+        if (mediaStreamTrack && 'applyConstraints' in mediaStreamTrack) {
+          await mediaStreamTrack.applyConstraints({
+            noiseSuppression: noiseSuppression,
+            echoCancellation: true,
+            autoGainControl: true,
+          });
+          console.log(noiseSuppression ? "✅ Noise suppression enabled (WebRTC)" : "❌ Noise suppression disabled");
+        }
+      } catch (err) {
+        console.error("Noise suppression error:", err);
+      }
+    };
+
+    applyNoiseSuppression();
+  }, [noiseSuppression, localParticipant]);
 
   const sendChat = () => {
     if (!newMessage.trim() || !socket) return;
@@ -1281,6 +1307,20 @@ function MeetingUI({
               {localParticipant.isScreenShareEnabled ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
             </button>
           )}
+
+          {/* Noise suppression toggle */}
+          <button
+            onClick={() => setNoiseSuppression(!noiseSuppression)}
+            className={cn(
+              "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
+              noiseSuppression
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-slate-700 hover:bg-slate-600 text-white"
+            )}
+            title={noiseSuppression ? "Noise suppression ON" : "Noise suppression OFF"}
+          >
+            <Settings className="h-5 w-5" />
+          </button>
 
           {/* Raise hand (restaurants) */}
           {!isArl && (

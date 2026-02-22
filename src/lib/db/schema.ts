@@ -295,3 +295,48 @@ export const broadcastQuestions = sqliteTable("broadcast_questions", {
   upvotes: integer("upvotes").notNull().default(0), // Other viewers can upvote questions
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Meeting analytics - track LiveKit meeting sessions
+export const meetingAnalytics = sqliteTable("meeting_analytics", {
+  id: text("id").primaryKey(), // UUID
+  meetingId: text("meeting_id").notNull(), // LiveKit room name
+  title: text("title").notNull(),
+  hostId: text("host_id").notNull(), // ARL who created the meeting
+  hostName: text("host_name").notNull(),
+  startedAt: text("started_at").notNull().$defaultFn(() => new Date().toISOString()),
+  endedAt: text("ended_at"), // null if still ongoing
+  duration: integer("duration"), // Duration in seconds
+  totalParticipants: integer("total_participants").notNull().default(0),
+  totalLocations: integer("total_locations").notNull().default(0), // Restaurants
+  totalArls: integer("total_arls").notNull().default(0),
+  totalGuests: integer("total_guests").notNull().default(0),
+  peakParticipants: integer("peak_participants").notNull().default(0), // Max concurrent
+  totalMessages: integer("total_messages").notNull().default(0), // Chat messages
+  totalQuestions: integer("total_questions").notNull().default(0), // Q&A questions
+  totalReactions: integer("total_reactions").notNull().default(0), // Emoji reactions
+  totalHandRaises: integer("total_hand_raises").notNull().default(0),
+  screenShareDuration: integer("screen_share_duration").notNull().default(0), // seconds
+  recordingUrl: text("recording_url"), // If recorded
+});
+
+// Meeting participants - detailed per-participant analytics
+export const meetingParticipants = sqliteTable("meeting_participants", {
+  id: text("id").primaryKey(), // UUID
+  meetingId: text("meeting_id").notNull(),
+  participantId: text("participant_id").notNull(), // User ID (location/arl/guest)
+  participantName: text("participant_name").notNull(),
+  participantType: text("participant_type").notNull(), // 'location' | 'arl' | 'guest'
+  role: text("role").notNull(), // 'host' | 'cohost' | 'participant'
+  joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
+  leftAt: text("left_at"), // null if still in meeting
+  duration: integer("duration"), // seconds in meeting
+  hadVideo: integer("had_video", { mode: "boolean" }).notNull().default(false),
+  hadAudio: integer("had_audio", { mode: "boolean" }).notNull().default(true),
+  messagesSent: integer("messages_sent").notNull().default(0),
+  questionsSent: integer("questions_sent").notNull().default(0),
+  reactionsSent: integer("reactions_sent").notNull().default(0),
+  handRaiseCount: integer("hand_raise_count").notNull().default(0),
+  wasMutedByHost: integer("was_muted_by_host", { mode: "boolean" }).notNull().default(false),
+  connectionQuality: text("connection_quality"), // 'excellent' | 'good' | 'poor'
+  deviceType: text("device_type"), // 'desktop' | 'mobile' | 'tablet'
+});

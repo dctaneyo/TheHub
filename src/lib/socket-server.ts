@@ -53,6 +53,23 @@ if (!(globalThis as any).__hubActiveMeetings) {
 }
 const _activeMeetings: Map<string, ActiveMeeting> = (globalThis as any).__hubActiveMeetings;
 
+// ── Meeting analytics tracking ──
+interface MeetingAnalyticsData {
+  meetingId: string;
+  analyticsId: string;
+  participantRecords: Map<string, string>; // socketId -> participant analytics record ID
+  messageCount: number;
+  questionCount: number;
+  reactionCount: number;
+  handRaiseCount: number;
+  peakParticipants: number;
+}
+
+if (!(globalThis as any).__hubMeetingAnalytics) {
+  (globalThis as any).__hubMeetingAnalytics = new Map<string, MeetingAnalyticsData>();
+}
+const _meetingAnalytics: Map<string, MeetingAnalyticsData> = (globalThis as any).__hubMeetingAnalytics;
+
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -428,6 +445,29 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       };
       _activeMeetings.set(data.meetingId, meeting);
       socket.join(`meeting:${data.meetingId}`);
+
+      // Create analytics record
+      const analyticsId = crypto.randomUUID();
+      db.insert(schema.meetingAnalytics).values({
+        id: analyticsId,
+        meetingId: data.meetingId,
+        title: data.title,
+        hostId: user.id,
+        hostName: user.name,
+        totalParticipants: 1,
+        totalArls: 1,
+        peakParticipants: 1,
+      }).run();
+      _meetingAnalytics.set(data.meetingId, {
+        meetingId: data.meetingId,
+        analyticsId,
+        participantRecords: new Map(),
+        messageCount: 0,
+        questionCount: 0,
+        reactionCount: 0,
+        handRaiseCount: 0,
+        peakParticipants: 1,
+      });
 
       // Notify everyone that a meeting started (including guests in "all" room)
       const startedPayload = {
