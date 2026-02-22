@@ -119,7 +119,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
     <div className="fixed inset-0 z-50 bg-slate-900">
       <LiveKitRoom
         video={hasVideoCapability}
-        audio={true}
+        audio={!isHost ? false : true}
         token={token}
         serverUrl={wsUrl}
         data-lk-theme="default"
@@ -176,7 +176,7 @@ function MeetingUI({
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isArl = user?.userType === "arl" || user?.userType === "guest";
-  const isHostOrCohost = myRole === "host" || myRole === "cohost";
+  const isHostOnly = myRole === "host";
 
   // Get video and screen share tracks
   const tracks = useTracks(
@@ -537,39 +537,15 @@ function MeetingUI({
                   )}
                 </div>
                 {/* Scrollable participant strip */}
-                {((localIsHost ? 0 : (hasVideoCapability ? 1 : 0)) + otherVideoParticipants.length) > 0 && (
+                {otherVideoParticipants.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto shrink-0 pb-1" style={{ height: 120 }}>
-                    {/* Local user thumbnail (if not the host) */}
-                    {!localIsHost && hasVideoCapability && (
-                      <div className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
-                        {localParticipant.getTrackPublication(Track.Source.Camera) && (
-                          <VideoTrack
-                            trackRef={{
-                              participant: localParticipant,
-                              source: Track.Source.Camera,
-                              publication: localParticipant.getTrackPublication(Track.Source.Camera)!,
-                            }}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
-                          <span className="text-[9px] text-white">{user?.name} (You)</span>
-                          {myRole === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
-                        </div>
-                        {localParticipant.isMicrophoneEnabled === false && (
-                          <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
-                            <MicOff className="h-2.5 w-2.5 text-white" />
-                          </div>
-                        )}
-                      </div>
-                    )}
                     {/* Remote non-host participants */}
-                    {otherVideoParticipants.map(p => {
+                    {otherVideoParticipants.map((p) => {
                       const metadata = p.metadata ? JSON.parse(p.metadata) : {};
                       const camPub = p.getTrackPublication(Track.Source.Camera);
                       return (
                         <div key={p.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
-                          {camPub && (
+                          {camPub ? (
                             <VideoTrack
                               trackRef={{
                                 participant: p,
@@ -578,6 +554,13 @@ function MeetingUI({
                               }}
                               className="w-full h-full object-cover"
                             />
+                          ) : (
+                            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                              <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                                <span className="text-sm font-bold text-white">{p.name?.charAt(0) || "?"}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400">{p.name}</span>
+                            </div>
                           )}
                           <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
                             <span className="text-[9px] text-white">{p.name}</span>
@@ -710,13 +693,13 @@ function MeetingUI({
                             {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
                             {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
-                            {/* Host/cohost controls - can mute/unmute anyone except the host */}
-                            {isHostOrCohost && metadata.role !== "host" && !isLocal && (
+                            {/* Host-only controls - can mute/unmute anyone except themselves */}
+                            {isHostOnly && metadata.role !== "host" && !isLocal && (
                               <div className="flex gap-1 ml-1">
                                 {p.isMicrophoneEnabled === false ? (
                                   <button
                                     onClick={() => {
-                                      // Request participant to unmute via Socket.io
+                                      // Send unmute request via Socket.io
                                       socket?.emit("meeting:allow-speak", { meetingId, targetSocketId: p.identity });
                                     }}
                                     title="Allow to speak"
@@ -727,7 +710,7 @@ function MeetingUI({
                                 ) : (
                                   <button
                                     onClick={() => {
-                                      // Request participant to mute via Socket.io
+                                      // Send mute request via Socket.io
                                       socket?.emit("meeting:mute-participant", { meetingId, targetSocketId: p.identity });
                                     }}
                                     title="Mute"
@@ -841,7 +824,7 @@ function MeetingUI({
                                   Answered
                                 </span>
                               )}
-                              {isHostOrCohost && !q.isAnswered && (
+                              {isHostOnly && !q.isAnswered && (
                                 <button
                                   onClick={() => socket?.emit("meeting:answer-question", { meetingId, questionId: q.id })}
                                   className="text-xs text-green-400 hover:text-green-300 font-medium"
