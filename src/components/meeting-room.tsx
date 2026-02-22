@@ -110,9 +110,13 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     try {
       const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
       const constraints: MediaStreamConstraints = {
-        // Request video if user has capability (we'll disable the track if not host)
-        video: wantsVideo ? { width: 1280, height: 720 } : false,
-        audio: true,
+        // Host gets HD (1080p), non-host gets lower res (480p) to save bandwidth
+        video: wantsVideo
+          ? isHost
+            ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }
+            : { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } }
+          : false,
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
@@ -182,6 +186,20 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     pc.onconnectionstatechange = () => {
       console.log(`PC to ${targetName}: ${pc.connectionState}`);
+      if (pc.connectionState === "connected") {
+        // Apply bandwidth constraints — host sends HD, non-host sends low-res
+        pc.getSenders().forEach(sender => {
+          if (sender.track?.kind === "video") {
+            const params = sender.getParameters();
+            if (!params.encodings || params.encodings.length === 0) {
+              params.encodings = [{}];
+            }
+            params.encodings[0].maxBitrate = isHost ? 1_500_000 : 300_000;
+            params.encodings[0].maxFramerate = isHost ? 30 : 15;
+            sender.setParameters(params).catch(() => {});
+          }
+        });
+      }
       if (pc.connectionState === "failed") {
         // ICE restart for sporadic video issues
         pc.restartIce();
@@ -209,7 +227,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     }
 
     return pc;
-  }, [socket]);
+  }, [socket, isHost]);
 
   // ── Join meeting ──
   const joinedOnceRef = useRef(false);
