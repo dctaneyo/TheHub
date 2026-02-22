@@ -299,7 +299,15 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
             console.log("  - video settings:", settings);
           }
           
-          pc.addTrack(track, streamRef.current!);
+          const sender = pc.addTrack(track, streamRef.current!);
+          console.log("  - sender track:", sender.track?.kind, sender.track?.enabled);
+          
+          // Ensure transceiver is set to sendonly
+          const transceiver = pc.getTransceivers().find(t => t.sender === sender);
+          if (transceiver) {
+            transceiver.direction = "sendonly";
+            console.log("  - transceiver direction set to:", transceiver.direction);
+          }
         });
 
         // Handle ICE candidates - send them as they're discovered
