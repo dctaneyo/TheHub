@@ -15,6 +15,13 @@
       "when": 1771653709965,
       "tag": "0001_glossy_fallen_one",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771740168729,
+      "tag": "0002_puzzling_doctor_doom",
+      "breakpoints": true
     }
   ]
 }
