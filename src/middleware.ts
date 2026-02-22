@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const publicPaths = ["/login", "/api/auth/login", "/meeting", "/api/meetings/join"];
+const publicPaths = ["/login", "/api/auth/login", "/meeting", "/api/meetings/join", "/api/livekit/token"];
 
 // Edge-compatible JWT decode (no crypto verification — cookie is httpOnly,
 // full verification happens in API routes via jsonwebtoken)

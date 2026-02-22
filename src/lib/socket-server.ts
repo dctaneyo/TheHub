@@ -573,33 +573,58 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── Allow speak (host/cohost unmutes a participant) ──
-    socket.on("meeting:allow-speak", (data: { meetingId: string; targetSocketId: string }) => {
+    socket.on("meeting:allow-speak", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      const target = meeting.participants.get(data.targetSocketId);
-      if (!target || target.role === "host") return; // host manages own mute
+      // Look up target by socketId first, then fall back to userId
+      let target: MeetingParticipant | undefined;
+      let targetSid = data.targetSocketId;
+      target = meeting.participants.get(data.targetSocketId);
+      if (!target && data.targetUserId) {
+        for (const [sid, p] of meeting.participants) {
+          if (p.odId === data.targetUserId) { target = p; targetSid = sid; break; }
+        }
+      }
+      if (!target) {
+        // Also try matching targetSocketId as userId (LiveKit identity)
+        for (const [sid, p] of meeting.participants) {
+          if (p.odId === data.targetSocketId) { target = p; targetSid = sid; break; }
+        }
+      }
+      if (!target || target.role === "host") return;
       target.isMuted = false;
       target.handRaised = false;
-      // Tell the target they can now speak
-      io!.to(data.targetSocketId).emit("meeting:speak-allowed", { meetingId: data.meetingId });
-      // Tell everyone about the state change
+      io!.to(targetSid).emit("meeting:speak-allowed", { meetingId: data.meetingId });
       broadcastMeetingState(meeting);
     });
 
     // ── Mute participant (host/cohost mutes someone) ──
-    socket.on("meeting:mute-participant", (data: { meetingId: string; targetSocketId: string }) => {
+    socket.on("meeting:mute-participant", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      const target = meeting.participants.get(data.targetSocketId);
-      if (!target || target.role === "host") return; // can't mute the host
+      // Look up target by socketId first, then fall back to userId
+      let target: MeetingParticipant | undefined;
+      let targetSid = data.targetSocketId;
+      target = meeting.participants.get(data.targetSocketId);
+      if (!target && data.targetUserId) {
+        for (const [sid, p] of meeting.participants) {
+          if (p.odId === data.targetUserId) { target = p; targetSid = sid; break; }
+        }
+      }
+      if (!target) {
+        for (const [sid, p] of meeting.participants) {
+          if (p.odId === data.targetSocketId) { target = p; targetSid = sid; break; }
+        }
+      }
+      if (!target || target.role === "host") return;
       target.isMuted = true;
-      io!.to(data.targetSocketId).emit("meeting:you-were-muted", { meetingId: data.meetingId });
+      io!.to(targetSid).emit("meeting:you-were-muted", { meetingId: data.meetingId });
       broadcastMeetingState(meeting);
     });
 

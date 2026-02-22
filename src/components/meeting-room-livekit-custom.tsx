@@ -26,6 +26,7 @@ import {
 } from "@livekit/components-react";
 import { Track, RoomEvent, LocalParticipant, RemoteParticipant } from "livekit-client";
 import "@livekit/components-styles";
+import { LogOut, DoorOpen } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -162,6 +163,7 @@ function MeetingUI({
   // State
   const [myRole, setMyRole] = useState<string>(isHost ? "host" : "participant");
   const [handRaised, setHandRaised] = useState(false);
+  const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
@@ -262,6 +264,28 @@ function MeetingUI({
       setWaitingForHost(false);
     };
 
+    // Hand raise events from server
+    const handleHandRaised = (data: { socketId: string; name: string }) => {
+      setRaisedHands(prev => new Set(prev).add(data.socketId));
+    };
+
+    const handleHandLowered = (data: { socketId: string }) => {
+      setRaisedHands(prev => {
+        const next = new Set(prev);
+        next.delete(data.socketId);
+        return next;
+      });
+    };
+
+    // Mute/unmute events from server (when host mutes/unmutes us)
+    const handleYouWereMuted = () => {
+      localParticipant.setMicrophoneEnabled(false);
+    };
+
+    const handleSpeakAllowed = () => {
+      localParticipant.setMicrophoneEnabled(true);
+    };
+
     socket.on("meeting:chat-message", handleChatMessage);
     socket.on("meeting:question", handleQuestion);
     socket.on("meeting:question-upvoted", handleQuestionUpdate);
@@ -270,6 +294,10 @@ function MeetingUI({
     socket.on("meeting:role-updated", handleRoleUpdate);
     socket.on("meeting:waiting-for-host", handleWaitingForHost);
     socket.on("meeting:host-joined", handleHostJoined);
+    socket.on("meeting:hand-raised", handleHandRaised);
+    socket.on("meeting:hand-lowered", handleHandLowered);
+    socket.on("meeting:you-were-muted", handleYouWereMuted);
+    socket.on("meeting:speak-allowed", handleSpeakAllowed);
 
     return () => {
       socket.off("meeting:chat-message", handleChatMessage);
@@ -280,8 +308,12 @@ function MeetingUI({
       socket.off("meeting:role-updated", handleRoleUpdate);
       socket.off("meeting:waiting-for-host", handleWaitingForHost);
       socket.off("meeting:host-joined", handleHostJoined);
+      socket.off("meeting:hand-raised", handleHandRaised);
+      socket.off("meeting:hand-lowered", handleHandLowered);
+      socket.off("meeting:you-were-muted", handleYouWereMuted);
+      socket.off("meeting:speak-allowed", handleSpeakAllowed);
     };
-  }, [socket, showChat, showQA]);
+  }, [socket, showChat, showQA, localParticipant]);
 
   // Join meeting via socket
   useEffect(() => {
@@ -315,21 +347,14 @@ function MeetingUI({
     setNewQuestion("");
   };
 
-  const toggleRaiseHand = async () => {
+  const toggleRaiseHand = () => {
     const newState = !handRaised;
     setHandRaised(newState);
-    socket?.emit("meeting:hand-raise", { meetingId, raised: newState });
-    
-    // Update LiveKit metadata so other participants see the hand raise
-    try {
-      const currentMetadata = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
-      const updatedMetadata = JSON.stringify({
-        ...currentMetadata,
-        handRaised: newState,
-      });
-      await localParticipant.setMetadata(updatedMetadata);
-    } catch (err) {
-      console.error("Failed to update hand raise metadata:", err);
+    // Use correct server event names
+    if (newState) {
+      socket?.emit("meeting:raise-hand", { meetingId });
+    } else {
+      socket?.emit("meeting:lower-hand", { meetingId });
     }
   };
 
@@ -340,8 +365,20 @@ function MeetingUI({
   };
 
   const leaveMeeting = () => {
+    socket?.emit("meeting:leave", { meetingId });
     room.disconnect();
     onLeave();
+  };
+
+  // Helper: check if a participant has raised hand (by socket or LiveKit identity)
+  const isHandRaised = (p: any): boolean => {
+    // Check via our socket-based raisedHands set
+    if (raisedHands.has(p.identity)) return true;
+    // Also check metadata as fallback
+    try {
+      const meta = p.metadata ? JSON.parse(p.metadata) : {};
+      return !!meta.handRaised;
+    } catch { return false; }
   };
 
   const sidebarOpen = showChat || showQA || showParticipants;
@@ -372,6 +409,10 @@ function MeetingUI({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col">
+      {/* Override LiveKit's default video object-fit to prevent cropping on host video */}
+      <style>{`
+        .lk-host-video video { object-fit: contain !important; }
+      `}</style>
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -482,14 +523,16 @@ function MeetingUI({
                   {localIsHost && hasVideoCapability ? (
                     <>
                       {localParticipant.getTrackPublication(Track.Source.Camera) ? (
-                        <VideoTrack
-                          trackRef={{
-                            participant: localParticipant,
-                            source: Track.Source.Camera,
-                            publication: localParticipant.getTrackPublication(Track.Source.Camera)!,
-                          }}
-                          className="w-full h-full object-contain"
-                        />
+                        <div className="lk-host-video w-full h-full">
+                          <VideoTrack
+                            trackRef={{
+                              participant: localParticipant,
+                              source: Track.Source.Camera,
+                              publication: localParticipant.getTrackPublication(Track.Source.Camera)!,
+                            }}
+                            className="w-full h-full"
+                          />
+                        </div>
                       ) : (
                         <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
                           <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-2">
@@ -510,14 +553,16 @@ function MeetingUI({
                     </>
                   ) : hostParticipant && hostParticipant.getTrackPublication(Track.Source.Camera) ? (
                     <>
-                      <VideoTrack
-                        trackRef={{
-                          participant: hostParticipant,
-                          source: Track.Source.Camera,
-                          publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
-                        }}
-                        className="w-full h-full object-contain"
-                      />
+                      <div className="lk-host-video w-full h-full">
+                        <VideoTrack
+                          trackRef={{
+                            participant: hostParticipant,
+                            source: Track.Source.Camera,
+                            publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
+                          }}
+                          className="w-full h-full"
+                        />
+                      </div>
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-medium">{hostParticipant.name}</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
@@ -566,14 +611,14 @@ function MeetingUI({
                           <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
                             <span className="text-[9px] text-white">{p.name}</span>
                             {metadata.role === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
-                            {metadata.handRaised && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
+                            {isHandRaised(p) && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
                           </div>
                           {p.isMicrophoneEnabled === false && (
                             <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
                               <MicOff className="h-2.5 w-2.5 text-white" />
                             </div>
                           )}
-                          {metadata.handRaised && (
+                          {isHandRaised(p) && (
                             <div className="absolute top-1 left-1 bg-yellow-600 rounded-full p-0.5">
                               <Hand className="h-2.5 w-2.5 text-white" />
                             </div>
@@ -606,7 +651,7 @@ function MeetingUI({
                       <span className="text-xs text-white font-medium truncate block max-w-[100px]">{p.name}</span>
                       <span className="text-[10px] text-slate-400">{p.isMicrophoneEnabled ? "Speaking" : "Muted"}</span>
                     </div>
-                    {metadata.handRaised && <Hand className="h-3.5 w-3.5 text-yellow-400 shrink-0" />}
+                    {isHandRaised(p) && <Hand className="h-3.5 w-3.5 text-yellow-400 shrink-0" />}
                     {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400 shrink-0" />}
                     {/* Audio track */}
                     {p.getTrackPublication(Track.Source.Microphone) && (
@@ -696,7 +741,7 @@ function MeetingUI({
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            {metadata.handRaised && <Hand className="h-3.5 w-3.5 text-yellow-400" />}
+                            {isHandRaised(p) && <Hand className="h-3.5 w-3.5 text-yellow-400" />}
                             {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
                             {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
@@ -870,23 +915,23 @@ function MeetingUI({
       <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-center gap-2 shrink-0">
         <div className="flex-1" />
 
-        {/* Center: media controls */}
+        {/* Center: media controls — all pill-shaped */}
         <div className="flex items-center gap-2">
           {/* Mic toggle */}
-          <TrackToggle source={Track.Source.Microphone} showIcon={false} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+          <TrackToggle source={Track.Source.Microphone} showIcon={false} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
             <Mic className="h-5 w-5" />
           </TrackToggle>
 
           {/* Video toggle (ARL only) */}
           {hasVideoCapability && (
-            <TrackToggle source={Track.Source.Camera} showIcon={false} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+            <TrackToggle source={Track.Source.Camera} showIcon={false} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
               <Video className="h-5 w-5" />
             </TrackToggle>
           )}
 
           {/* Screen share (ARL only) */}
           {isArl && (
-            <TrackToggle source={Track.Source.ScreenShare} showIcon={false} captureOptions={{ audio: true, video: true }} className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+            <TrackToggle source={Track.Source.ScreenShare} showIcon={false} captureOptions={{ audio: true, video: true }} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
               <Monitor className="h-5 w-5" />
             </TrackToggle>
           )}
@@ -895,21 +940,41 @@ function MeetingUI({
           {!isArl && (
             <button
               onClick={toggleRaiseHand}
-              className={cn("p-3 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}
+              className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}
               title={handRaised ? "Lower hand" : "Raise hand"}
             >
               <Hand className="h-5 w-5" />
             </button>
           )}
 
-          {/* Leave / End */}
+          {/* Host: separate Leave + End Meeting buttons */}
           {myRole === "host" ? (
-            <button onClick={endMeeting} className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-6" title="End meeting for all">
-              <PhoneOff className="h-5 w-5" />
-            </button>
+            <>
+              <button
+                onClick={leaveMeeting}
+                className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                title="Leave meeting (meeting continues)"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="text-xs font-medium hidden sm:inline">Leave</span>
+              </button>
+              <button
+                onClick={endMeeting}
+                className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+                title="End meeting for all"
+              >
+                <PhoneOff className="h-5 w-5" />
+                <span className="text-xs font-medium hidden sm:inline">End</span>
+              </button>
+            </>
           ) : (
-            <button onClick={leaveMeeting} className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-6" title="Leave meeting">
+            <button
+              onClick={leaveMeeting}
+              className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+              title="Leave meeting"
+            >
               <PhoneOff className="h-5 w-5" />
+              <span className="text-xs font-medium hidden sm:inline">Leave</span>
             </button>
           )}
         </div>
