@@ -15,6 +15,7 @@
     "push:keys": "npx tsx scripts/generate-vapid-keys.ts"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.20",
     "@sendgrid/mail": "^8.1.6",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
@@ -27,6 +28,8 @@
     "emoji-picker-react": "^4.18.0",
     "framer-motion": "^12.34.1",
     "jsonwebtoken": "^9.0.3",
+    "livekit-client": "^2.17.2",
+    "livekit-server-sdk": "^2.15.0",
     "lodash": "^4.17.23",
     "lucide-react": "^0.574.0",
     "next": "16.1.6",
