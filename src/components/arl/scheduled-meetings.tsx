@@ -82,7 +82,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
   const fetchMeetings = useCallback(async () => {
     try {
-      const res = await fetch("/api/meetings");
+      const res = await fetch("/api/meetings?active=false");
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings);

@@ -205,6 +205,9 @@ export default function DashboardPage() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setColorExpiryToast(null), 12000);
 
+      // Silence audible alert between 11 PM and 9 AM
+      const hour = now.getHours();
+      if (hour >= 23 || hour < 9) return;
       playChime(() => speak(`Heads up — ${colorData.name} is expiring in 5 minutes.`));
     }, 1000);
 

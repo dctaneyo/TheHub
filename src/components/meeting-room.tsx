@@ -786,81 +786,121 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
                 </div>
               </div>
             ) : (
-              /* ── Normal grid layout ── */
-              <div className={cn(
-                "h-full grid gap-2",
-                (() => {
-                  const totalTiles = (isArl ? 1 : 0) + videoParticipants.length;
-                  if (totalTiles <= 1) return "grid-cols-1";
-                  if (totalTiles === 2) return "grid-cols-2";
-                  if (totalTiles === 3) return "grid-cols-3";
-                  return "grid-cols-2";
-                })(),
-              )}>
-                {/* Local video (self) — only show if ARL/guest with video capability */}
-                {isArl && (
-                  <div className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
-                    <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                    {!videoEnabled && (
-                      <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                        <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
-                          <span className="text-2xl font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+              /* ── Host-focused layout: host big + scrollable participant strip ── */
+              (() => {
+                const localIsHost = myRole === "host";
+                const remoteHost = videoParticipants.find(p => p.role === "host");
+                const stripParticipants = videoParticipants.filter(p => p.role !== "host");
+                return (
+                  <div className="h-full flex flex-col gap-2">
+                    {/* Main host view */}
+                    <div className="flex-1 relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-0">
+                      {localIsHost && isArl ? (
+                        <>
+                          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                          {!videoEnabled && (
+                            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                              <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-2">
+                                <span className="text-3xl font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                              </div>
+                              <span className="text-sm text-slate-400">{user?.name} (You)</span>
+                            </div>
+                          )}
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                            <span className="text-xs text-white font-medium">{user?.name} (You)</span>
+                            <Crown className="h-3 w-3 text-yellow-400" />
+                          </div>
+                          {!audioEnabled && (
+                            <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
+                              <MicOff className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </>
+                      ) : remoteHost ? (
+                        <>
+                          <video ref={setRemoteVideoRef(remoteHost.socketId)} autoPlay playsInline className="w-full h-full object-cover" />
+                          {!remoteHost.hasVideo && (
+                            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                              <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-2">
+                                <span className="text-3xl font-bold text-white">{remoteHost.name.charAt(0)}</span>
+                              </div>
+                              <span className="text-sm text-slate-400">{remoteHost.name}</span>
+                            </div>
+                          )}
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                            <span className="text-xs text-white font-medium">{remoteHost.name}</span>
+                            <Crown className="h-3 w-3 text-yellow-400" />
+                          </div>
+                          {remoteHost.isMuted && (
+                            <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
+                              <MicOff className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                            <Users className="h-10 w-10 text-slate-500" />
+                          </div>
+                          <p className="text-slate-400 text-sm">Waiting for host to share video...</p>
                         </div>
-                        <span className="text-sm text-slate-400">{user?.name} (You)</span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-                      <span className="text-xs text-white font-medium">{user?.name} (You)</span>
-                      {screenSharing && <Monitor className="h-3 w-3 text-blue-400" />}
-                      {myRole === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
-                      {myRole === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
+                      )}
                     </div>
-                    {!audioEnabled && (
-                      <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
-                        <MicOff className="h-3 w-3 text-white" />
+                    {/* Scrollable participant strip */}
+                    {((localIsHost ? 0 : (isArl ? 1 : 0)) + stripParticipants.length) > 0 && (
+                      <div className="flex gap-2 overflow-x-auto shrink-0 pb-1" style={{ height: 120 }}>
+                        {/* Local user thumbnail (if not the host) */}
+                        {!localIsHost && isArl && (
+                          <div className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
+                            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                            {!videoEnabled && (
+                              <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                                  <span className="text-sm font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                                </div>
+                                <span className="text-[10px] text-slate-400">{user?.name}</span>
+                              </div>
+                            )}
+                            <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                              <span className="text-[9px] text-white">{user?.name} (You)</span>
+                              {myRole === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
+                            </div>
+                            {!audioEnabled && (
+                              <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
+                                <MicOff className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Remote non-host participants */}
+                        {stripParticipants.map(p => (
+                          <div key={p.socketId} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
+                            <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" />
+                            {!p.hasVideo && (
+                              <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                                  <span className="text-sm font-bold text-white">{p.name.charAt(0)}</span>
+                                </div>
+                                <span className="text-[10px] text-slate-400">{p.name}</span>
+                              </div>
+                            )}
+                            <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                              <span className="text-[9px] text-white">{p.name}</span>
+                              {p.role === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
+                              {p.handRaised && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
+                            </div>
+                            {p.isMuted && (
+                              <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
+                                <MicOff className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
-                )}
-
-                {/* Remote ARL/guest videos */}
-                {videoParticipants.map(p => (
-                  <div key={p.socketId} className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
-                    <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(1)' }} />
-                    {!p.hasVideo && (
-                      <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                        <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
-                          <span className="text-2xl font-bold text-white">{p.name.charAt(0)}</span>
-                        </div>
-                        <span className="text-sm text-slate-400">{p.name}</span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-                      <span className="text-xs text-white font-medium">{p.name}</span>
-                      {p.role === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
-                      {p.role === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
-                      {p.handRaised && <Hand className="h-3 w-3 text-yellow-400" />}
-                    </div>
-                    {p.isMuted && (
-                      <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
-                        <MicOff className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* If no video participants and user is a restaurant, show a centered placeholder */}
-                {!isArl && videoParticipants.length === 0 && (
-                  <div className="flex items-center justify-center bg-slate-800 rounded-xl">
-                    <div className="text-center">
-                      <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
-                        <Users className="h-10 w-10 text-slate-500" />
-                      </div>
-                      <p className="text-slate-400 text-sm">Waiting for host to share video...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                );
+              })()
             )}
           </div>
 
