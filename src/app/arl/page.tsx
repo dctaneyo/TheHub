@@ -119,7 +119,7 @@ export default function ArlPage() {
   // Restore active view from sessionStorage after mount (prevents hydration mismatch)
   useEffect(() => {
     const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management"].includes(saved)) {
+    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast"].includes(saved)) {
       setActiveView(saved);
     }
     setMounted(true);

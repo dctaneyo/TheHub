@@ -366,15 +366,28 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Create meeting (ARL only) ──
     socket.on("meeting:create", (data: { meetingId: string; title: string }) => {
       if (!user || user.userType !== "arl") return;
+      const hostParticipant: MeetingParticipant = {
+        odId: user.id,
+        socketId: socket.id,
+        name: user.name,
+        userType: "arl",
+        role: "host",
+        hasVideo: true,
+        hasAudio: true,
+        isMuted: false,
+        handRaised: false,
+        joinedAt: Date.now(),
+      };
       const meeting: ActiveMeeting = {
         meetingId: data.meetingId,
         title: data.title,
         hostId: user.id,
         hostName: user.name,
         createdAt: Date.now(),
-        participants: new Map(),
+        participants: new Map([[socket.id, hostParticipant]]),
       };
       _activeMeetings.set(data.meetingId, meeting);
+      socket.join(`meeting:${data.meetingId}`);
 
       // Notify everyone that a meeting started
       io!.to("locations").emit("meeting:started", {

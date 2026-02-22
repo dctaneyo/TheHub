@@ -185,10 +185,14 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   }, [socket]);
 
   // ── Join meeting ──
+  const joinedOnceRef = useRef(false);
   useEffect(() => {
-    if (!socket || joined) return;
+    if (!socket) return;
 
     const init = async () => {
+      if (joinedOnceRef.current) return; // prevent double-join in Strict Mode
+      joinedOnceRef.current = true;
+
       await getLocalMedia();
 
       const isArl = user?.userType === "arl";
@@ -199,15 +203,29 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       });
     };
 
-    init();
+    if (!joined) init();
 
     return () => {
-      // Cleanup on unmount
-      socket.emit("meeting:leave", { meetingId });
-      localStreamRef.current?.getTracks().forEach(t => t.stop());
-      peerConnectionsRef.current.forEach(pc => pc.close());
-      peerConnectionsRef.current.clear();
-      remoteStreamsRef.current.clear();
+      // Defer cleanup so React Strict Mode re-mount can cancel it
+      const socketRef = socket;
+      const localStream = localStreamRef.current;
+      const peerConns = peerConnectionsRef.current;
+      const mid = meetingId;
+      const didJoin = joinedOnceRef.current;
+
+      setTimeout(() => {
+        // If joinedOnceRef was reset by a new mount, skip cleanup
+        if (joinedOnceRef.current) return;
+        if (!didJoin) return;
+        socketRef.emit("meeting:leave", { meetingId: mid });
+        localStream?.getTracks().forEach(t => t.stop());
+        peerConns.forEach(pc => pc.close());
+        peerConns.clear();
+        remoteStreamsRef.current.clear();
+      }, 100);
+
+      // Mark as not joined so re-mount can re-join
+      joinedOnceRef.current = false;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, meetingId]);
