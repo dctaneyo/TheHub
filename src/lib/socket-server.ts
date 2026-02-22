@@ -28,6 +28,7 @@ const _taskTimers = new Map<string, ReturnType<typeof setTimeout>[]>();
 interface MeetingParticipant {
   odId: string;        // odId = the user's id (location or arl)
   socketId: string;
+  livekitIdentity?: string; // LiveKit identity (for guests: guest-timestamp-random)
   name: string;
   userType: "location" | "arl" | "guest";
   role: "host" | "cohost" | "participant";
@@ -441,7 +442,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── Join meeting ──
-    socket.on("meeting:join", (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean }) => {
+    socket.on("meeting:join", (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean; livekitIdentity?: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
@@ -457,11 +458,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         const existing = meeting.participants.get(socket.id)!;
         existing.hasVideo = data.hasVideo;
         existing.hasAudio = data.hasAudio;
+        if (data.livekitIdentity) existing.livekitIdentity = data.livekitIdentity;
       } else {
         // New participant joining
         const participant: MeetingParticipant = {
           odId: user.id,
           socketId: socket.id,
+          livekitIdentity: data.livekitIdentity,
           name: user.name,
           userType: user.userType as "location" | "arl" | "guest",
           role: isHost ? "host" : (isArl ? "cohost" : "participant"),
@@ -579,7 +582,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      // Look up target by socketId first, then fall back to userId
+      // Look up target by socketId first, then fall back to userId or livekitIdentity
       let target: MeetingParticipant | undefined;
       let targetSid = data.targetSocketId;
       target = meeting.participants.get(data.targetSocketId);
@@ -589,9 +592,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         }
       }
       if (!target) {
-        // Also try matching targetSocketId as userId (LiveKit identity)
+        // Try matching targetSocketId as odId or livekitIdentity (for guests)
         for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId) { target = p; targetSid = sid; break; }
+          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+            target = p; targetSid = sid; break;
+          }
         }
       }
       if (!target || target.role === "host") return;
@@ -608,7 +613,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      // Look up target by socketId first, then fall back to userId
+      // Look up target by socketId first, then fall back to userId or livekitIdentity
       let target: MeetingParticipant | undefined;
       let targetSid = data.targetSocketId;
       target = meeting.participants.get(data.targetSocketId);
@@ -618,8 +623,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         }
       }
       if (!target) {
+        // Try matching targetSocketId as odId or livekitIdentity (for guests)
         for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId) { target = p; targetSid = sid; break; }
+          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+            target = p; targetSid = sid; break;
+          }
         }
       }
       if (!target || target.role === "host") return;

@@ -611,12 +611,13 @@ function MeetingUI({
       name: user.name,
       userType: user.userType,
       role: myRole,
+      livekitIdentity: localParticipant.identity, // Pass LiveKit identity for guest matching
     });
 
     return () => {
       socket.emit("meeting:leave", { meetingId });
     };
-  }, [socket, meetingId, user, myRole]);
+  }, [socket, meetingId, user, myRole, localParticipant]);
 
   const sendChat = () => {
     if (!newMessage.trim() || !socket) return;
