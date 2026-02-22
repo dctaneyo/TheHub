@@ -44,13 +44,47 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { socket } = useSocket();
 
-  // Load dismissed notifications from DB on mount
+  // Load dismissed notifications from localStorage on mount
   useEffect(() => {
-    fetch('/api/notifications/dismiss')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) notifiedRef.current = new Set(d.dismissedIds); })
-      .catch(() => {});
+    try {
+      const stored = localStorage.getItem('dismissed-notifications');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        notifiedRef.current = new Set(parsed);
+      }
+    } catch (err) {
+      console.error('Failed to load dismissed notifications:', err);
+    }
   }, []);
+
+  // Cleanup: Remove dismissed notifications for completed or non-existent tasks
+  useEffect(() => {
+    if (tasks.length === 0) return;
+    
+    const currentTaskIds = new Set(tasks.map(t => t.id));
+    const dismissedArray = Array.from(notifiedRef.current);
+    let needsUpdate = false;
+    
+    // Filter out dismissed notifications for tasks that are completed or no longer exist
+    const filtered = dismissedArray.filter(id => {
+      // Extract task ID from notification ID (format: "due-{taskId}" or "overdue-{taskId}")
+      const taskId = id.replace(/^(due|overdue)-/, '');
+      const task = tasks.find(t => t.id === taskId);
+      
+      // Keep if task exists and is not completed
+      if (task && !task.isCompleted && currentTaskIds.has(taskId)) {
+        return true;
+      }
+      
+      needsUpdate = true;
+      return false;
+    });
+    
+    if (needsUpdate) {
+      notifiedRef.current = new Set(filtered);
+      localStorage.setItem('dismissed-notifications', JSON.stringify(filtered));
+    }
+  }, [tasks]);
 
   // Cross-kiosk dismiss sync — when another kiosk at this location dismisses, mirror it here
   useEffect(() => {
@@ -65,22 +99,21 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     return () => { socket.off('notification:dismissed', handler); };
   }, [socket]);
 
-  // Save dismissed notifications to database
+  // Save dismissed notifications to localStorage and sync across kiosks
   const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
     try {
-      const response = await fetch('/api/notifications/dismiss', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationIds }),
-      });
+      // Save to localStorage
+      const allDismissed = Array.from(notifiedRef.current);
+      localStorage.setItem('dismissed-notifications', JSON.stringify(allDismissed));
       
-      if (!response.ok) {
-        console.error('Failed to save dismissed notifications');
+      // Broadcast to other kiosks at this location via socket
+      if (socket) {
+        socket.emit('notification:dismiss', { notificationIds });
       }
     } catch (error) {
       console.error('Failed to save dismissed notifications:', error);
     }
-  }, []);
+  }, [socket]);
 
   // Initialize audio
   useEffect(() => {
