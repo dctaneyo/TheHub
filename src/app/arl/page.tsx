@@ -45,7 +45,6 @@ import { ShoutoutsFeed } from "@/components/shoutouts-feed";
 import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
-import { KFCMascot } from "@/components/kfc-mascot";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -592,9 +591,6 @@ export default function ArlPage() {
 
       {/* Social Actions Menu */}
       <SocialActionsMenu userType="arl" userId={user?.id} userName={user?.name} />
-
-      {/* KFC Mascot */}
-      <KFCMascot />
     </div>
   );
 }
