@@ -307,6 +307,34 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
+    // ── Live Broadcast Events ──
+    socket.on("broadcast:start", (data: { broadcastId: string; title: string; arlName?: string }) => {
+      if (user?.userType !== "arl") return;
+      // Broadcast to all locations
+      io!.to("locations").emit("stream:started", {
+        broadcastId: data.broadcastId,
+        arlName: data.arlName || user.name,
+        title: data.title,
+      });
+    });
+
+    socket.on("broadcast:end", (data: { broadcastId: string }) => {
+      if (user?.userType !== "arl") return;
+      // Notify all locations that stream ended
+      io!.to("locations").emit("stream:ended", {
+        broadcastId: data.broadcastId,
+      });
+    });
+
+    socket.on("broadcast:viewer-update", (data: { broadcastId: string; viewerCount: number }) => {
+      if (user?.userType !== "arl") return;
+      // Send viewer count update to the ARL
+      socket.emit("stream:viewer-update", {
+        broadcastId: data.broadcastId,
+        viewerCount: data.viewerCount,
+      });
+    });
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {

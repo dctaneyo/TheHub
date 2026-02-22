@@ -386,8 +386,8 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                     <video
                       ref={videoRef}
                       autoPlay
-                      muted
                       playsInline
+                      muted
                       className="max-h-full max-w-full"
                     />
                     {!videoEnabled && (
