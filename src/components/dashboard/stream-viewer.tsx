@@ -20,6 +20,30 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
+// WebRTC configuration - defined outside component to prevent re-renders
+const rtcConfig: RTCConfiguration = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+  iceTransportPolicy: "all",
+};
+
 interface StreamViewerProps {
   broadcastId: string;
   arlName: string;
@@ -54,29 +78,6 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
   
   const { socket } = useSocket();
 
-  // WebRTC configuration with STUN + TURN servers
-  const rtcConfig: RTCConfiguration = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443?transport=tcp",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-    ],
-    iceTransportPolicy: "all",
-  };
 
   // Join broadcast as viewer
   useEffect(() => {
@@ -293,7 +294,7 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
         peerConnectionRef.current = null;
       }
     };
-  }, [socket, broadcastId, onClose, rtcConfig]);
+  }, [socket, broadcastId, onClose]);
 
   // Auto-scroll messages
   useEffect(() => {
