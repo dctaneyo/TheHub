@@ -279,27 +279,11 @@ export default function ArlPage() {
         setWatchingBroadcast(false);
       }
     };
-    const handleGuestWaiting = (data: { meetingId: string; meetingTitle: string; guestName: string }) => {
-      const toast: TaskToast = {
-        id: `guest-${Date.now()}`,
-        locationName: `👤 ${data.guestName}`,
-        taskTitle: `joined meeting "${data.meetingTitle}"`,
-        pointsEarned: 0,
-      };
-      setToasts((prev) => [...prev, toast]);
-      playTaskChime();
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-      }, 8000);
-    };
-
     socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:ended", handleMeetingEnded);
-    socket.on("meeting:guest-waiting", handleGuestWaiting);
     return () => {
       socket.off("meeting:started", handleMeetingStarted);
       socket.off("meeting:ended", handleMeetingEnded);
-      socket.off("meeting:guest-waiting", handleGuestWaiting);
     };
   }, [socket, activeView, activeBroadcast, user?.id, playTaskChime]);
 
@@ -544,14 +528,6 @@ export default function ArlPage() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {/* Start Meeting button */}
-            <button
-              onClick={() => setActiveView("broadcast")}
-              className="flex items-center gap-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 transition-colors"
-            >
-              <Video className="h-3.5 w-3.5" />
-              <span className="text-xs font-semibold">Start Meeting</span>
-            </button>
             {/* Notification Status */}
             {pushSubscription ? (
               <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1">
@@ -611,7 +587,7 @@ export default function ArlPage() {
                 )}
                 {activeView === "remote-login" && <RemoteLogin />}
                 {activeView === "data-management" && <DataManagement />}
-                {activeView === "meetings" && <ScheduledMeetings />}
+                {activeView === "meetings" && <ScheduledMeetings onStartOnDemand={() => setActiveView("broadcast")} />}
               </motion.div>
             </AnimatePresence>
           ) : null}

@@ -14,7 +14,7 @@ interface TickerItem {
 const MAX_ITEMS = 20;
 const TICKER_SPEED = 60; // pixels per second
 
-export function LiveTicker() {
+export function LiveTicker({ currentLocationId }: { currentLocationId?: string }) {
   const [items, setItems] = useState<TickerItem[]>([]);
   const { socket } = useSocket();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,7 +45,9 @@ export function LiveTicker() {
       setItems(prev => [item, ...prev].slice(0, MAX_ITEMS));
     };
 
-    const handleTaskCompleted = (data: { locationName?: string; taskTitle?: string; taskId?: string }) => {
+    const handleTaskCompleted = (data: { locationId?: string; locationName?: string; taskTitle?: string; taskId?: string }) => {
+      // Only show other restaurants' and ARLs' activity, not our own
+      if (currentLocationId && data.locationId === currentLocationId) return;
       addItem({
         id: `task-${data.taskId}-${Date.now()}`,
         text: `${data.locationName || "A location"} completed "${data.taskTitle}"`,

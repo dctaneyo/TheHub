@@ -701,7 +701,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Live Activity Ticker */}
-      <LiveTicker />
+      <LiveTicker currentLocationId={user?.id} />
 
       {/* Celebrations */}
       <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />

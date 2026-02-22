@@ -43,9 +43,10 @@ const DAYS_OF_WEEK = [
 
 interface ScheduledMeetingsProps {
   onStartMeeting?: (title: string, meetingCode: string) => void;
+  onStartOnDemand?: () => void;
 }
 
-export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
+export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: ScheduledMeetingsProps) {
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -192,15 +193,25 @@ export function ScheduledMeetings({ onStartMeeting }: ScheduledMeetingsProps) {
             <p className="text-xs text-slate-500">{meetings.length} meeting{meetings.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
-        <Button
-          onClick={() => { setShowCreate(!showCreate); if (showCreate) resetForm(); }}
-          className={cn(
-            "rounded-xl font-semibold text-sm",
-            showCreate ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-red-600 hover:bg-red-700 text-white"
+        <div className="flex items-center gap-2">
+          {onStartOnDemand && (
+            <Button
+              onClick={onStartOnDemand}
+              className="rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Play className="h-4 w-4 mr-1.5" />Start Meeting
+            </Button>
           )}
-        >
-          {showCreate ? <><X className="h-4 w-4 mr-1.5" />Cancel</> : <><Plus className="h-4 w-4 mr-1.5" />New Meeting</>}
-        </Button>
+          <Button
+            onClick={() => { setShowCreate(!showCreate); if (showCreate) resetForm(); }}
+            className={cn(
+              "rounded-xl font-semibold text-sm",
+              showCreate ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-slate-700 hover:bg-slate-800 text-white"
+            )}
+          >
+            {showCreate ? <><X className="h-4 w-4 mr-1.5" />Cancel</> : <><Plus className="h-4 w-4 mr-1.5" />Schedule Meeting</>}
+          </Button>
+        </div>
       </div>
 
       {/* Create Form */}

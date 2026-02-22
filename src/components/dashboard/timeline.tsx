@@ -287,21 +287,15 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
 
                             {/* Task card */}
                             <motion.div
-                              whileTap={!task.isCompleted && !isCompleting ? { scale: 0.98 } : {}}
-                              onClick={() => {
-                                if (!task.isCompleted && !isCompleting) {
-                                  handleComplete(task.id);
-                                }
-                              }}
                               className={cn(
                                 "w-full rounded-2xl border-2 p-4 text-left transition-all",
                                 task.isCompleted || isCompleting
                                   ? "border-emerald-200 bg-emerald-50/50 opacity-60"
                                   : task.isOverdue
-                                  ? "border-red-300 bg-red-50 shadow-sm shadow-red-100 cursor-pointer"
+                                  ? "border-red-300 bg-red-50 shadow-sm shadow-red-100"
                                   : task.isDueSoon
-                                  ? "border-amber-300 shadow-sm cursor-pointer"
-                                  : cn(colors.border, colors.bg, "shadow-sm hover:shadow-md cursor-pointer")
+                                  ? "border-amber-300 shadow-sm"
+                                  : cn(colors.border, colors.bg, "shadow-sm")
                               )}
                               animate={task.isDueSoon && !task.isCompleted ? {
                                 backgroundColor: colorTransitionColors,
@@ -347,9 +341,12 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   </div>
                                 </div>
                                 {!task.isCompleted && !isCompleting && (
-                                  <div className="mt-1 shrink-0 rounded-xl bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleComplete(task.id); }}
+                                    className="mt-1 shrink-0 rounded-xl bg-white/80 hover:bg-emerald-50 active:scale-95 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-600 shadow-sm transition-all cursor-pointer"
+                                  >
                                     Tap
-                                  </div>
+                                  </button>
                                 )}
                                 {isCompleting && (
                                   <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} className="mt-1 shrink-0">
