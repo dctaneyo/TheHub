@@ -6,7 +6,7 @@ import {
   Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Maximize2, Minimize2,
-  Crown, Shield, Volume2, VolumeX,
+  Crown, Shield, Volume2, VolumeX, SwitchCamera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,9 +69,11 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
   // ── State ──
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [mySocketId, setMySocketId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<string>(isHost ? "host" : "participant");
   const [videoEnabled, setVideoEnabled] = useState(user?.userType === "arl");
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [screenSharing, setScreenSharing] = useState(false);
   const [isMutedByHost, setIsMutedByHost] = useState(user?.userType === "location");
   const [handRaised, setHandRaised] = useState(false);
@@ -167,6 +169,18 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     pc.onconnectionstatechange = () => {
       console.log(`PC to ${targetName}: ${pc.connectionState}`);
+      if (pc.connectionState === "failed") {
+        // ICE restart for sporadic video issues
+        pc.restartIce();
+        pc.createOffer({ iceRestart: true }).then(offer => {
+          return pc.setLocalDescription(offer);
+        }).then(() => {
+          socket.emit("webrtc:offer", {
+            targetSocketId,
+            offer: pc.localDescription!.toJSON(),
+          });
+        }).catch(err => console.error("ICE restart error:", err));
+      }
     };
 
     // If we should create the offer (we're the "polite" peer when our socketId < target)
@@ -238,6 +252,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       if (data.meetingId !== meetingId) return;
       setJoined(true);
       setMyRole(data.yourRole);
+      if (socket.id) setMySocketId(socket.id);
       setParticipants(data.participants);
 
       // Create peer connections to all existing participants
@@ -270,7 +285,9 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
 
     const handleParticipantsUpdated = (data: { meetingId: string; participants: Participant[] }) => {
       if (data.meetingId !== meetingId) return;
-      setParticipants(data.participants);
+      // Filter out self — we render local video separately
+      const sid = socket.id;
+      setParticipants(sid ? data.participants.filter(p => p.socketId !== sid) : data.participants);
     };
 
     const handleMeetingEnded = (data: { meetingId: string }) => {
@@ -544,10 +561,12 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const isHostOrCohost = myRole === "host" || myRole === "cohost";
   const isArl = user?.userType === "arl";
 
+  // Filter out self from participants (we render local video separately)
+  const remoteParticipants = mySocketId ? participants.filter(p => p.socketId !== mySocketId) : participants;
   // Participants with video (ARLs)
-  const videoParticipants = participants.filter(p => p.userType === "arl");
+  const videoParticipants = remoteParticipants.filter(p => p.userType === "arl");
   // All participants for the sidebar
-  const allParticipants = participants;
+  const allParticipants = remoteParticipants;
 
   // ── Ref callback for remote video elements ──
   const setRemoteVideoRef = useCallback((socketId: string) => (el: HTMLVideoElement | null) => {
@@ -577,7 +596,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
           </div>
           <div className="h-4 w-px bg-slate-600" />
           <h2 className="text-white font-semibold text-sm">{title}</h2>
-          <span className="text-slate-400 text-xs">• {participants.length + 1} participants</span>
+          <span className="text-slate-400 text-xs">• {remoteParticipants.length + 1} participants</span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => { setShowParticipants(!showParticipants); setShowChat(false); setShowQA(false); }}
@@ -640,7 +659,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               {/* Remote ARL videos */}
               {videoParticipants.map(p => (
                 <div key={p.socketId} className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
-                  <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" />
+                  <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(1)' }} />
                   {!p.hasVideo && (
                     <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
                       <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
@@ -678,9 +697,9 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
           </div>
 
           {/* Audio-only participants strip (restaurants) */}
-          {participants.filter(p => p.userType === "location").length > 0 && (
+          {remoteParticipants.filter(p => p.userType === "location").length > 0 && (
             <div className="px-3 pb-2 flex gap-2 overflow-x-auto shrink-0">
-              {participants.filter(p => p.userType === "location").map(p => (
+              {remoteParticipants.filter(p => p.userType === "location").map(p => (
                 <div key={p.socketId} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 shrink-0">
                   <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
                     p.hasAudio && !p.isMuted ? "bg-green-600" : "bg-slate-600"
@@ -702,23 +721,23 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
             </div>
           )}
 
-          {/* Floating reactions */}
+          {/* Floating reactions — positioned on right edge so they don't block video */}
           <AnimatePresence>
             {floatingReactions.map(r => (
               <motion.div key={r.id} initial={{ opacity: 1, y: 0, scale: 1 }}
                 animate={{ opacity: 0, y: -200, scale: 1.5 }} exit={{ opacity: 0 }}
                 transition={{ duration: 3, ease: "easeOut" }}
-                className="absolute bottom-24 text-4xl pointer-events-none" style={{ left: `${r.x}%` }}>
+                className="absolute bottom-24 right-4 text-3xl pointer-events-none">
                 {r.emoji}
               </motion.div>
             ))}
           </AnimatePresence>
 
-          {/* Reaction bar */}
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-1 bg-slate-800/80 backdrop-blur-sm rounded-full px-2 py-1">
+          {/* Reaction bar — right side vertical strip */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1 bg-slate-800/80 backdrop-blur-sm rounded-full px-1 py-2">
             {REACTION_EMOJIS.map(emoji => (
               <button key={emoji} onClick={() => sendReaction(emoji)}
-                className="text-xl hover:scale-125 transition-transform p-1.5 hover:bg-white/10 rounded-full">
+                className="text-lg hover:scale-125 transition-transform p-1 hover:bg-white/10 rounded-full">
                 {emoji}
               </button>
             ))}
@@ -736,7 +755,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               {showParticipants && (
                 <div className="flex-1 flex flex-col">
                   <div className="p-4 border-b border-slate-700">
-                    <h3 className="text-white font-bold text-sm">Participants ({participants.length + 1})</h3>
+                    <h3 className="text-white font-bold text-sm">Participants ({remoteParticipants.length + 1})</h3>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-1">
                     {/* Self */}
@@ -917,8 +936,48 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
             </button>
           )}
 
-          {/* Leave / End */}
-          {isHostOrCohost ? (
+          {/* Camera switch (mobile ARL only) */}
+          {isArl && (
+            <button onClick={async () => {
+              const newMode = facingMode === "user" ? "environment" : "user";
+              setFacingMode(newMode);
+              try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                  video: { facingMode: newMode, width: 1280, height: 720 },
+                  audio: true,
+                });
+                // Replace video track in all peer connections
+                const newVideoTrack = newStream.getVideoTracks()[0];
+                if (newVideoTrack) {
+                  peerConnectionsRef.current.forEach(pc => {
+                    const sender = pc.getSenders().find(s => s.track?.kind === "video");
+                    if (sender) sender.replaceTrack(newVideoTrack);
+                  });
+                  // Update local preview
+                  const oldStream = localStreamRef.current;
+                  if (oldStream) {
+                    oldStream.getVideoTracks().forEach(t => t.stop());
+                    oldStream.removeTrack(oldStream.getVideoTracks()[0]);
+                    oldStream.addTrack(newVideoTrack);
+                  }
+                  if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = oldStream;
+                  }
+                }
+                // Keep existing audio track, stop new one
+                newStream.getAudioTracks().forEach(t => t.stop());
+              } catch (err) {
+                console.error("Camera switch failed:", err);
+              }
+            }}
+              className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+              title="Switch camera">
+              <SwitchCamera className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* Leave / End — only host can end for all */}
+          {myRole === "host" ? (
             <button onClick={endMeeting}
               className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-6" title="End meeting for all">
               <PhoneOff className="h-5 w-5" />

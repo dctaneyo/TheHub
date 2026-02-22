@@ -9,6 +9,7 @@ import {
   MessageCircle,
   CalendarDays,
   ChevronLeft,
+  Video,
   ChevronRight,
   X,
   Clock,
@@ -237,6 +238,8 @@ export default function DashboardPage() {
   const [coinRainAmount, setCoinRainAmount] = useState(0);
   const [showFireworks, setShowFireworks] = useState(false);
   const [activeStream, setActiveStream] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
+  const [pendingMeeting, setPendingMeeting] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
+  const [showMeetingNotification, setShowMeetingNotification] = useState(false);
   const playConfettiSound = useConfettiSound();
 
   const localTimeParams = () => {
@@ -346,10 +349,13 @@ export default function DashboardPage() {
     
     // Listen for meeting events
     const handleMeetingStarted = (data: { meetingId: string; hostName: string; title: string }) => {
-      setActiveStream({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
+      setPendingMeeting({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
+      setShowMeetingNotification(true);
     };
     const handleMeetingEnded = (data: { meetingId: string }) => {
       setActiveStream(prev => prev?.broadcastId === data.meetingId ? null : prev);
+      setPendingMeeting(prev => prev?.broadcastId === data.meetingId ? null : prev);
+      setShowMeetingNotification(false);
     };
     socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:ended", handleMeetingEnded);
@@ -752,6 +758,51 @@ export default function DashboardPage() {
 
       {/* High-Five Animation */}
       <HighFiveAnimation />
+
+      {/* Meeting Join Notification */}
+      <AnimatePresence>
+        {showMeetingNotification && pendingMeeting && !activeStream && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl border border-red-200 p-5 max-w-sm w-full">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <Video className="h-5 w-5 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-xs font-bold text-red-600 uppercase">Live Meeting</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 truncate">{pendingMeeting.title}</p>
+                  <p className="text-xs text-slate-500">by {pendingMeeting.arlName}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setActiveStream(pendingMeeting);
+                    setShowMeetingNotification(false);
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 px-4 rounded-xl transition-colors"
+                >
+                  Join Meeting
+                </button>
+                <button
+                  onClick={() => setShowMeetingNotification(false)}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Live Stream Viewer */}
       {activeStream && (

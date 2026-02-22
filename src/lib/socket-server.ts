@@ -489,13 +489,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // ── End meeting (host/cohost only) ──
+    // ── End meeting (host only) ──
     socket.on("meeting:end", (data: { meetingId: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
       const p = meeting.participants.get(socket.id);
-      if (!p || (p.role !== "host" && p.role !== "cohost")) return;
+      if (!p || p.role !== "host") return;
 
       io!.to(`meeting:${data.meetingId}`).emit("meeting:ended", { meetingId: data.meetingId });
       io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
