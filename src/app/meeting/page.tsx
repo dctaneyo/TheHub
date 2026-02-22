@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Video, Lock, User, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MeetingRoom } from "@/components/meeting-room";
+import { MeetingRoomLiveKit as MeetingRoom } from "@/components/meeting-room-livekit";
 import { SocketProvider } from "@/lib/socket-context";
 import { AuthContext } from "@/lib/auth-context";
 

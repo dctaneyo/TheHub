@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
-import { MeetingRoom } from "@/components/meeting-room";
+import { MeetingRoomLiveKit as MeetingRoom } from "@/components/meeting-room-livekit";
 
 interface ScheduledMeeting {
   id: string;
