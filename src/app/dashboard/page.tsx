@@ -274,6 +274,7 @@ export default function DashboardPage() {
   // Update current time every second for display; task logic still uses HH:mm.
   // Also detects midnight rollover and immediately re-fetches tasks for the new day.
   const currentDateRef = useRef<string>("");
+  const lastMinuteRef = useRef<string>("");
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -286,6 +287,35 @@ export default function DashboardPage() {
       const ampm = h >= 12 ? "PM" : "AM";
       const h12 = h % 12 || 12;
       setDisplayTime(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${ampm}`);
+      
+      // Recalculate task statuses every minute
+      if (lastMinuteRef.current !== hhmm) {
+        lastMinuteRef.current = hhmm;
+        const nowMinutes = h * 60 + m;
+        
+        setData((prev) => {
+          if (!prev) return prev;
+          const updatedTasks = prev.tasks.map((task) => {
+            if (task.isCompleted) return task;
+            const [taskH, taskM] = task.dueTime.split(":").map(Number);
+            const taskMinutes = taskH * 60 + taskM;
+            const isOverdue = taskMinutes < nowMinutes;
+            const isDueSoon = !isOverdue && taskMinutes >= nowMinutes && taskMinutes <= nowMinutes + 30;
+            
+            return {
+              ...task,
+              isOverdue,
+              isDueSoon,
+            };
+          });
+          
+          return {
+            ...prev,
+            tasks: updatedTasks,
+          };
+        });
+      }
+      
       // Detect date rollover (midnight) — emit to server so it reschedules timers;
       // server responds with task:updated which triggers fetchTasks via socket listener.
       if (currentDateRef.current && currentDateRef.current !== dateStr) {
