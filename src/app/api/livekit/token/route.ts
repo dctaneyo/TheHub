@@ -4,12 +4,7 @@ import { getSession } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { roomName, participantName, role } = await req.json();
+    const { roomName, participantName, role, isGuest } = await req.json();
     if (!roomName || !participantName) {
       return NextResponse.json({ error: "Missing roomName or participantName" }, { status: 400 });
     }
@@ -22,15 +17,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "LiveKit not configured" }, { status: 500 });
     }
 
+    let identity: string;
+    let userType: string;
+
+    if (isGuest) {
+      // Guest user - generate temporary identity
+      identity = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      userType = "guest";
+    } else {
+      // Regular authenticated user
+      const session = await getSession();
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      identity = session.userId;
+      userType = session.userType;
+    }
+
     // Include metadata for participant identification
     const metadata = JSON.stringify({
-      userType: session.userType,
+      userType,
       role: role || "participant",
       handRaised: false,
     });
 
     const at = new AccessToken(apiKey, apiSecret, {
-      identity: session.userId,
+      identity,
       name: participantName,
       metadata,
     });

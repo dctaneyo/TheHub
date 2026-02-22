@@ -70,6 +70,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
             roomName: meetingId,
             participantName: user?.name || "Guest",
             role: isHost ? "host" : "participant",
+            isGuest: user?.userType === "guest",
           }),
         });
 
