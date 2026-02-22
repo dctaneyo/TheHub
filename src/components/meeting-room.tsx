@@ -670,12 +670,15 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
           </div>
           <div className="h-4 w-px bg-slate-600" />
           <h2 className="text-white font-semibold text-sm">{title}</h2>
-          <span className="text-slate-400 text-xs">• {remoteParticipants.length + 1} participants</span>
+          <span className="text-slate-500 text-xs font-mono">ID: {meetingId.replace(/^scheduled-/, "")}</span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => { setShowParticipants(!showParticipants); setShowChat(false); setShowQA(false); }}
-            className={cn("p-2 rounded-lg transition-colors text-slate-300", showParticipants ? "bg-slate-600" : "hover:bg-slate-700")} title="Participants">
+            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showParticipants ? "bg-slate-600" : "hover:bg-slate-700")} title="Participants">
             <Users className="h-4 w-4" />
+            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-blue-500 text-[9px] font-bold text-white flex items-center justify-center">
+              {remoteParticipants.length + 1}
+            </span>
           </button>
           <button onClick={() => { setShowChat(!showChat); setShowQA(false); setShowParticipants(false); }}
             className={cn("p-2 rounded-lg transition-colors text-slate-300", showChat ? "bg-slate-600" : "hover:bg-slate-700")} title="Chat">
@@ -775,9 +778,13 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
               /* ── Normal grid layout ── */
               <div className={cn(
                 "h-full grid gap-2",
-                videoParticipants.length === 0 && "grid-cols-1",
-                videoParticipants.length === 1 && "grid-cols-1 lg:grid-cols-2",
-                videoParticipants.length >= 2 && "grid-cols-2",
+                (() => {
+                  const totalTiles = (isArl ? 1 : 0) + videoParticipants.length;
+                  if (totalTiles <= 1) return "grid-cols-1";
+                  if (totalTiles === 2) return "grid-cols-2";
+                  if (totalTiles === 3) return "grid-cols-3";
+                  return "grid-cols-2";
+                })(),
               )}>
                 {/* Local video (self) — only show if ARL/guest with video capability */}
                 {isArl && (

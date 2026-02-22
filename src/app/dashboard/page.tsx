@@ -69,7 +69,7 @@ export default function DashboardPage() {
   const settingsRef = useRef<HTMLDivElement>(null);
 
   const { idle: autoIdle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
-  const idle = screensaverEnabled && (autoIdle || forceIdle);
+  const idleBase = screensaverEnabled && (autoIdle || forceIdle);
 
   // Load sound state from server on mount; listen for ARL-driven toggle
   const { socket: socketForSound } = useSocket();
@@ -242,6 +242,9 @@ export default function DashboardPage() {
   const [showMeetingNotification, setShowMeetingNotification] = useState(false);
   const playConfettiSound = useConfettiSound();
 
+  // Disable screensaver while in a meeting
+  const idle = idleBase && !activeStream;
+
   const localTimeParams = () => {
     const now = new Date();
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -357,14 +360,26 @@ export default function DashboardPage() {
       setPendingMeeting(prev => prev?.broadcastId === data.meetingId ? null : prev);
       setShowMeetingNotification(false);
     };
+    // Check for already-active meetings (location logged in after meeting started)
+    const handleMeetingList = (data: { meetings: Array<{ meetingId: string; hostName: string; title: string }> }) => {
+      if (data.meetings.length > 0 && !pendingMeeting && !activeStream) {
+        const m = data.meetings[0];
+        setPendingMeeting({ broadcastId: m.meetingId, arlName: m.hostName, title: m.title });
+        setShowMeetingNotification(true);
+      }
+    };
     socket.on("meeting:started", handleMeetingStarted);
     socket.on("meeting:ended", handleMeetingEnded);
+    socket.on("meeting:list", handleMeetingList);
+    // Request active meetings on connect
+    socket.emit("meeting:list");
     
     return () => {
       socket.off("task:updated", handleTaskUpdate);
       socket.off("task:completed", handleTaskUpdate);
       socket.off("meeting:started", handleMeetingStarted);
       socket.off("meeting:ended", handleMeetingEnded);
+      socket.off("meeting:list", handleMeetingList);
     };
   }, [socket, fetchTasks]);
 
