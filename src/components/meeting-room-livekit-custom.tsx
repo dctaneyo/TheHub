@@ -569,6 +569,12 @@ function MeetingUI({
       localParticipant.setMicrophoneEnabled(true);
     };
 
+    // When host ends the meeting, disconnect everyone
+    const handleMeetingEnded = () => {
+      room.disconnect();
+      onLeave();
+    };
+
     socket.on("meeting:chat-message", handleChatMessage);
     socket.on("meeting:question", handleQuestion);
     socket.on("meeting:question-upvoted", handleQuestionUpdate);
@@ -583,6 +589,7 @@ function MeetingUI({
     socket.on("meeting:you-were-muted", handleYouWereMuted);
     socket.on("meeting:speak-allowed", handleSpeakAllowed);
     socket.on("meeting:joined", handleJoined);
+    socket.on("meeting:ended", handleMeetingEnded);
 
     return () => {
       socket.off("meeting:chat-message", handleChatMessage);
@@ -599,8 +606,9 @@ function MeetingUI({
       socket.off("meeting:you-were-muted", handleYouWereMuted);
       socket.off("meeting:speak-allowed", handleSpeakAllowed);
       socket.off("meeting:joined", handleJoined);
+      socket.off("meeting:ended", handleMeetingEnded);
     };
-  }, [socket, showChat, showQA, localParticipant]);
+  }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
   // Join meeting via socket
   useEffect(() => {
