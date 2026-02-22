@@ -1,12 +1,22 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { EMOJI_QUICK_REPLIES } from "@/lib/kfc-emojis";
 
 interface EmojiQuickRepliesProps {
   onSelect: (text: string) => void;
   className?: string;
 }
+
+const EMOJI_QUICK_REPLIES = [
+  { emoji: "👍", text: "Great job!" },
+  { emoji: "👏", text: "Well done!" },
+  { emoji: "🔥", text: "On fire!" },
+  { emoji: "💪", text: "Keep it up!" },
+  { emoji: "⭐", text: "Excellent!" },
+  { emoji: "✅", text: "Perfect!" },
+  { emoji: "🎉", text: "Awesome!" },
+  { emoji: "💯", text: "100%!" },
+];
 
 export function EmojiQuickReplies({ onSelect, className = "" }: EmojiQuickRepliesProps) {
   return (
