@@ -446,28 +446,32 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       _activeMeetings.set(data.meetingId, meeting);
       socket.join(`meeting:${data.meetingId}`);
 
-      // Create analytics record
+      // Create analytics record (wrapped in try/catch so notification still fires on DB error)
       const analyticsId = crypto.randomUUID();
-      db.insert(schema.meetingAnalytics).values({
-        id: analyticsId,
-        meetingId: data.meetingId,
-        title: data.title,
-        hostId: user.id,
-        hostName: user.name,
-        totalParticipants: 1,
-        totalArls: 1,
-        peakParticipants: 1,
-      }).run();
-      _meetingAnalytics.set(data.meetingId, {
-        meetingId: data.meetingId,
-        analyticsId,
-        participantRecords: new Map(),
-        messageCount: 0,
-        questionCount: 0,
-        reactionCount: 0,
-        handRaiseCount: 0,
-        peakParticipants: 1,
-      });
+      try {
+        db.insert(schema.meetingAnalytics).values({
+          id: analyticsId,
+          meetingId: data.meetingId,
+          title: data.title,
+          hostId: user.id,
+          hostName: user.name,
+          totalParticipants: 1,
+          totalArls: 1,
+          peakParticipants: 1,
+        }).run();
+        _meetingAnalytics.set(data.meetingId, {
+          meetingId: data.meetingId,
+          analyticsId,
+          participantRecords: new Map(),
+          messageCount: 0,
+          questionCount: 0,
+          reactionCount: 0,
+          handRaiseCount: 0,
+          peakParticipants: 1,
+        });
+      } catch (e) {
+        console.error('Analytics create error:', e);
+      }
 
       // Notify everyone that a meeting started (including guests in "all" room)
       const startedPayload = {

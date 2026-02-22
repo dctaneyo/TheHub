@@ -614,27 +614,26 @@ function MeetingUI({
     };
   }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
-  // Join meeting via socket
+  // Join meeting via socket (runs once when socket + user are ready)
+  const localIdentity = localParticipant.identity;
   useEffect(() => {
-    if (!socket || !user) return;
+    if (!socket || !user || !localIdentity) return;
 
     socket.emit("meeting:join", {
       meetingId,
-      hasVideo: localParticipant.isCameraEnabled ?? false,
-      hasAudio: localParticipant.isMicrophoneEnabled ?? true,
+      hasVideo: false, // will be updated via media-update events
+      hasAudio: true,
       name: user.name,
       userType: user.userType,
-      role: myRole,
-      livekitIdentity: localParticipant.identity, // Pass LiveKit identity for guest matching
+      role: isHost ? "host" : "participant",
+      livekitIdentity: localIdentity, // Pass LiveKit identity for guest matching
     });
 
     return () => {
       socket.emit("meeting:leave", { meetingId });
     };
-    // NOTE: myRole intentionally excluded — server assigns the role during join
-    // and including it here causes a leave→rejoin cycle that breaks mute/unmute
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, meetingId, user, localParticipant]);
+  }, [socket, meetingId, user?.id, localIdentity]);
 
   // Apply RNNoise noise suppression to microphone track
   useEffect(() => {
