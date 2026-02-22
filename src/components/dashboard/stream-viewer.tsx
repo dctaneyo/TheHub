@@ -50,6 +50,7 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
   const joinTimeRef = useRef<number>(Date.now());
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const arlSocketIdRef = useRef<string | null>(null);
+  const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   
   const { socket } = useSocket();
 
@@ -212,6 +213,17 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
         // Set remote description (offer)
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
+        // Add any pending ICE candidates that arrived before the offer
+        console.log("Processing", pendingIceCandidatesRef.current.length, "pending ICE candidates");
+        for (const candidate of pendingIceCandidatesRef.current) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (err) {
+            console.error("Error adding pending ICE candidate:", err);
+          }
+        }
+        pendingIceCandidatesRef.current = [];
+
         // Create and send answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -229,8 +241,17 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
     const handleIceCandidate = async (data: { candidate: RTCIceCandidateInit; senderSocketId: string }) => {
       try {
         arlSocketIdRef.current = data.senderSocketId;
-        if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+        
+        if (peerConnectionRef.current) {
+          if (peerConnectionRef.current.remoteDescription) {
+            // Remote description is set, add candidate immediately
+            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+            console.log("Added ICE candidate from ARL");
+          } else {
+            // Queue candidate until remote description is set
+            console.log("Queuing ICE candidate (no remote description yet)");
+            pendingIceCandidatesRef.current.push(data.candidate);
+          }
         }
       } catch (error) {
         console.error("Error adding ICE candidate:", error);
