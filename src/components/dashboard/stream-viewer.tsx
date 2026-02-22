@@ -1,6 +1,6 @@
 "use client";
 
-import { MeetingRoomLiveKit as MeetingRoom } from "@/components/meeting-room-livekit";
+import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
 interface StreamViewerProps {
   broadcastId: string;

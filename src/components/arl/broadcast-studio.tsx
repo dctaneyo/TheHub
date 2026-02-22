@@ -6,7 +6,7 @@ import { Video, Play, X, Copy, Check, Lock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSocket } from "@/lib/socket-context";
-import { MeetingRoomLiveKit as MeetingRoom } from "@/components/meeting-room-livekit";
+import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
 function generateMeetingCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
