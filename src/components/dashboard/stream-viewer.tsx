@@ -75,6 +75,8 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const arlSocketIdRef = useRef<string | null>(null);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   
   const { socket } = useSocket();
 
@@ -158,7 +160,7 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
     const handleStreamEnded = (data: { broadcastId: string }) => {
       if (data.broadcastId === broadcastId) {
         alert("This broadcast has ended");
-        onClose();
+        onCloseRef.current();
       }
     };
 
@@ -294,7 +296,8 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
         peerConnectionRef.current = null;
       }
     };
-  }, [socket, broadcastId, onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, broadcastId]);
 
   // Auto-scroll messages
   useEffect(() => {
