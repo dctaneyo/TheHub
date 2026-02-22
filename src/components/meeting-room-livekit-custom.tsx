@@ -23,9 +23,10 @@ import {
   AudioTrack,
   useRoomContext,
 } from "@livekit/components-react";
-import { Track, RoomEvent, LocalParticipant, RemoteParticipant } from "livekit-client";
+import { Track, RoomEvent, LocalParticipant, RemoteParticipant, LocalTrackPublication } from "livekit-client";
 import "@livekit/components-styles";
-import { LogOut, DoorOpen, Settings } from "lucide-react";
+import { LogOut, DoorOpen, Settings, AudioLines } from "lucide-react";
+import { RNNoiseProcessor } from "@/lib/rnnoise-processor";
 
 interface ChatMessage {
   id: string;
@@ -433,7 +434,9 @@ function MeetingUI({
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
   const [showParticipants, setShowParticipants] = useState(true);
-  const [noiseSuppression, setNoiseSuppression] = useState(true);
+  const [noiseSuppression, setNoiseSuppression] = useState(false); // RNNoise off by default (user toggles on)
+  const rnnoiseRef = useRef<RNNoiseProcessor | null>(null);
+  const originalMicTrackRef = useRef<MediaStreamTrack | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -628,30 +631,75 @@ function MeetingUI({
     };
   }, [socket, meetingId, user, myRole, localParticipant]);
 
-  // Apply noise suppression to microphone track (WebRTC built-in)
+  // Apply RNNoise noise suppression to microphone track
   useEffect(() => {
-    const applyNoiseSuppression = async () => {
-      const micTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
-      if (!micTrack?.track) return;
+    let cancelled = false;
+
+    const toggleRNNoise = async () => {
+      const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      if (!micPub?.track) return;
 
       try {
-        // Get the underlying MediaStreamTrack
-        const mediaStreamTrack = micTrack.track.mediaStreamTrack;
-        if (mediaStreamTrack && 'applyConstraints' in mediaStreamTrack) {
-          await mediaStreamTrack.applyConstraints({
-            noiseSuppression: noiseSuppression,
-            echoCancellation: true,
-            autoGainControl: true,
-          });
-          console.log(noiseSuppression ? "✅ Noise suppression enabled (WebRTC)" : "❌ Noise suppression disabled");
+        if (noiseSuppression) {
+          // Enable: pipe mic through RNNoise
+          if (rnnoiseRef.current?.isActive) return; // already active
+
+          const originalTrack = micPub.track.mediaStreamTrack;
+          originalMicTrackRef.current = originalTrack.clone(); // save a clone to restore later
+
+          const processor = new RNNoiseProcessor();
+          const processedTrack = await processor.start(originalTrack);
+          if (cancelled) { processor.stop(); return; }
+
+          rnnoiseRef.current = processor;
+
+          // Replace the mic track in LiveKit with the RNNoise-processed version
+          await (micPub as any).track.replaceTrack(processedTrack);
+          console.log("✅ RNNoise noise suppression enabled");
+        } else {
+          // Disable: restore original mic track
+          if (!rnnoiseRef.current?.isActive) return;
+
+          rnnoiseRef.current.stop();
+          rnnoiseRef.current = null;
+
+          // Restore original track
+          if (originalMicTrackRef.current) {
+            // Get a fresh mic track since the original may have been stopped
+            try {
+              const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              const freshTrack = freshStream.getAudioTracks()[0];
+              await (micPub as any).track.replaceTrack(freshTrack);
+              originalMicTrackRef.current = null;
+            } catch {
+              // If we can't get a fresh track, just disable and re-enable the mic
+              await localParticipant.setMicrophoneEnabled(false);
+              await localParticipant.setMicrophoneEnabled(true);
+            }
+          }
+          console.log("❌ RNNoise noise suppression disabled");
         }
       } catch (err) {
-        console.error("Noise suppression error:", err);
+        console.error("RNNoise error:", err);
       }
     };
 
-    applyNoiseSuppression();
+    toggleRNNoise();
+
+    return () => {
+      cancelled = true;
+    };
   }, [noiseSuppression, localParticipant]);
+
+  // Cleanup RNNoise on unmount
+  useEffect(() => {
+    return () => {
+      if (rnnoiseRef.current?.isActive) {
+        rnnoiseRef.current.stop();
+        rnnoiseRef.current = null;
+      }
+    };
+  }, []);
 
   const sendChat = () => {
     if (!newMessage.trim() || !socket) return;
@@ -1308,7 +1356,7 @@ function MeetingUI({
             </button>
           )}
 
-          {/* Noise suppression toggle */}
+          {/* RNNoise noise suppression toggle */}
           <button
             onClick={() => setNoiseSuppression(!noiseSuppression)}
             className={cn(
@@ -1317,9 +1365,9 @@ function MeetingUI({
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : "bg-slate-700 hover:bg-slate-600 text-white"
             )}
-            title={noiseSuppression ? "Noise suppression ON" : "Noise suppression OFF"}
+            title={noiseSuppression ? "RNNoise: ON (click to disable)" : "RNNoise: OFF (click to enable)"}
           >
-            <Settings className="h-5 w-5" />
+            <AudioLines className="h-5 w-5" />
           </button>
 
           {/* Raise hand (restaurants) */}

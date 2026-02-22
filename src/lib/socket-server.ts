@@ -550,6 +550,39 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
         // Note: guest-waiting notification + push already sent on socket connect
       }
+      // Track analytics: participant join
+      if (!alreadyInMeeting) {
+        const analytics = _meetingAnalytics.get(data.meetingId);
+        if (analytics) {
+          const participantRecordId = crypto.randomUUID();
+          analytics.participantRecords.set(socket.id, participantRecordId);
+          const currentCount = meeting.participants.size;
+          if (currentCount > analytics.peakParticipants) analytics.peakParticipants = currentCount;
+          try {
+            db.insert(schema.meetingParticipants).values({
+              id: participantRecordId,
+              meetingId: data.meetingId,
+              participantId: user.id,
+              participantName: user.name,
+              participantType: user.userType as any,
+              role: myParticipant.role,
+              hadVideo: data.hasVideo,
+              hadAudio: data.hasAudio,
+            }).run();
+            // Update meeting analytics totals
+            const typeCol = user.userType === 'arl' ? 'totalArls' : user.userType === 'guest' ? 'totalGuests' : 'totalLocations';
+            db.run(db.update(schema.meetingAnalytics)
+              .set({
+                totalParticipants: meeting.participants.size,
+                peakParticipants: analytics.peakParticipants,
+                ...(typeCol === 'totalArls' ? { totalArls: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'arl'))).all().length } : {}),
+                ...(typeCol === 'totalLocations' ? { totalLocations: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'location'))).all().length } : {}),
+                ...(typeCol === 'totalGuests' ? { totalGuests: db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'guest'))).all().length } : {}),
+              })
+              .where(eq(schema.meetingAnalytics.id, analytics.analyticsId)));
+          } catch (e) { console.error('Analytics insert error:', e); }
+        }
+      }
       console.log(`📹 ${user.name} ${alreadyInMeeting ? "re-joined" : "joined"} meeting "${meeting.title}" as ${myParticipant.role}`);
     });
 
@@ -558,8 +591,23 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
+      const leavingParticipant = meeting.participants.get(socket.id);
       meeting.participants.delete(socket.id);
       socket.leave(`meeting:${data.meetingId}`);
+
+      // Track analytics: participant leave
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics && leavingParticipant) {
+        const recordId = analytics.participantRecords.get(socket.id);
+        if (recordId) {
+          const duration = Math.round((Date.now() - leavingParticipant.joinedAt) / 1000);
+          try {
+            db.update(schema.meetingParticipants)
+              .set({ leftAt: new Date().toISOString(), duration })
+              .where(eq(schema.meetingParticipants.id, recordId)).run();
+          } catch (e) { console.error('Analytics leave error:', e); }
+        }
+      }
 
       io!.to(`meeting:${data.meetingId}`).emit("meeting:participant-left", {
         meetingId: data.meetingId, socketId: socket.id, name: user.name,
@@ -568,6 +616,22 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       // If host left and no participants remain, end the meeting
       if (meeting.participants.size === 0) {
         _activeMeetings.delete(data.meetingId);
+        // Finalize analytics
+        if (analytics) {
+          const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
+          try {
+            db.update(schema.meetingAnalytics).set({
+              endedAt: new Date().toISOString(),
+              duration,
+              totalMessages: analytics.messageCount,
+              totalQuestions: analytics.questionCount,
+              totalReactions: analytics.reactionCount,
+              totalHandRaises: analytics.handRaiseCount,
+              peakParticipants: analytics.peakParticipants,
+            }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
+          } catch (e) { console.error('Analytics finalize error:', e); }
+          _meetingAnalytics.delete(data.meetingId);
+        }
         io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
         io!.to("arls").emit("meeting:ended", { meetingId: data.meetingId });
         console.log(`📹 Meeting "${meeting.title}" ended (empty)`);
@@ -581,6 +645,34 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const p = meeting.participants.get(socket.id);
       if (!p || p.role !== "host") return;
+
+      // Finalize analytics before deleting meeting
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics) {
+        const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
+        try {
+          // Mark all remaining participants as left
+          for (const [sid, participant] of meeting.participants) {
+            const recordId = analytics.participantRecords.get(sid);
+            if (recordId) {
+              const pDuration = Math.round((Date.now() - participant.joinedAt) / 1000);
+              db.update(schema.meetingParticipants)
+                .set({ leftAt: new Date().toISOString(), duration: pDuration })
+                .where(eq(schema.meetingParticipants.id, recordId)).run();
+            }
+          }
+          db.update(schema.meetingAnalytics).set({
+            endedAt: new Date().toISOString(),
+            duration,
+            totalMessages: analytics.messageCount,
+            totalQuestions: analytics.questionCount,
+            totalReactions: analytics.reactionCount,
+            totalHandRaises: analytics.handRaiseCount,
+            peakParticipants: analytics.peakParticipants,
+          }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
+        } catch (e) { console.error('Analytics end error:', e); }
+        _meetingAnalytics.delete(data.meetingId);
+      }
 
       io!.to(`meeting:${data.meetingId}`).emit("meeting:ended", { meetingId: data.meetingId });
       io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
@@ -597,6 +689,18 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const p = meeting.participants.get(socket.id);
       if (!p) return;
       p.handRaised = true;
+      // Track analytics: hand raise
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics) {
+        analytics.handRaiseCount++;
+        const recordId = analytics.participantRecords.get(socket.id);
+        if (recordId) {
+          try {
+            const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+            if (rec) db.update(schema.meetingParticipants).set({ handRaiseCount: (rec.handRaiseCount || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          } catch (e) { /* ignore */ }
+        }
+      }
       io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-raised", {
         meetingId: data.meetingId, socketId: socket.id, odId: p.odId, name: user.name,
       });
@@ -672,6 +776,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
       if (!target || target.role === "host") return;
       target.isMuted = true;
+      // Track analytics: muted by host
+      const muteAnalytics = _meetingAnalytics.get(data.meetingId);
+      if (muteAnalytics) {
+        const recordId = muteAnalytics.participantRecords.get(targetSid);
+        if (recordId) {
+          try { db.update(schema.meetingParticipants).set({ wasMutedByHost: true }).where(eq(schema.meetingParticipants.id, recordId)).run(); } catch (e) { /* ignore */ }
+        }
+      }
       io!.to(targetSid).emit("meeting:you-were-muted", { meetingId: data.meetingId });
       broadcastMeetingState(meeting);
     });
@@ -709,12 +821,36 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         content: data.content,
         timestamp: Date.now(),
       };
+      // Track analytics: chat message
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics) {
+        analytics.messageCount++;
+        const recordId = analytics.participantRecords.get(socket.id);
+        if (recordId) {
+          try {
+            const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+            if (rec) db.update(schema.meetingParticipants).set({ messagesSent: (rec.messagesSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          } catch (e) { /* ignore */ }
+        }
+      }
       io!.to(`meeting:${data.meetingId}`).emit("meeting:chat-message", msg);
     });
 
     // ── Reaction in meeting ──
     socket.on("meeting:reaction", (data: { meetingId: string; emoji: string }) => {
       if (!user) return;
+      // Track analytics: reaction
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics) {
+        analytics.reactionCount++;
+        const recordId = analytics.participantRecords.get(socket.id);
+        if (recordId) {
+          try {
+            const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+            if (rec) db.update(schema.meetingParticipants).set({ reactionsSent: (rec.reactionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          } catch (e) { /* ignore */ }
+        }
+      }
       io!.to(`meeting:${data.meetingId}`).emit("meeting:reaction", {
         emoji: data.emoji, senderName: user.name,
       });
@@ -728,6 +864,18 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         askerName: user.name, question: data.question,
         upvotes: 0, isAnswered: false,
       };
+      // Track analytics: question
+      const analytics = _meetingAnalytics.get(data.meetingId);
+      if (analytics) {
+        analytics.questionCount++;
+        const recordId = analytics.participantRecords.get(socket.id);
+        if (recordId) {
+          try {
+            const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+            if (rec) db.update(schema.meetingParticipants).set({ questionsSent: (rec.questionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          } catch (e) { /* ignore */ }
+        }
+      }
       io!.to(`meeting:${data.meetingId}`).emit("meeting:question", q);
     });
 

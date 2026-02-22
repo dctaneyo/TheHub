@@ -19,6 +19,7 @@
     "@livekit/components-styles": "^1.2.0",
     "@livekit/track-processors": "^0.7.0",
     "@sendgrid/mail": "^8.1.6",
+    "@shiguredo/rnnoise-wasm": "^2025.1.5",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",

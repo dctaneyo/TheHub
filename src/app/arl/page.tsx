@@ -48,6 +48,7 @@ import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { BroadcastStudio } from "@/components/arl/broadcast-studio";
 import { ScheduledMeetings } from "@/components/arl/scheduled-meetings";
+import { MeetingAnalyticsDashboard } from "@/components/arl/meeting-analytics";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -600,7 +601,14 @@ export default function ArlPage() {
                 )}
                 {activeView === "remote-login" && <RemoteLogin />}
                 {activeView === "data-management" && <DataManagement />}
-                {activeView === "meetings" && <ScheduledMeetings onStartOnDemand={() => setActiveView("broadcast")} />}
+                {activeView === "meetings" && (
+                  <div className="space-y-6">
+                    <ScheduledMeetings onStartOnDemand={() => setActiveView("broadcast")} />
+                    <div className="border-t border-slate-700 pt-6">
+                      <MeetingAnalyticsDashboard />
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           ) : null}
