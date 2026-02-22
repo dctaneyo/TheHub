@@ -145,8 +145,11 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
     };
 
     // WebRTC: Handle offer from broadcaster
-    const handleOffer = async (data: { offer: RTCSessionDescriptionInit }) => {
+    const handleOffer = async (data: { offer: RTCSessionDescriptionInit; arlSocketId: string }) => {
       try {
+        console.log("Received offer from ARL socket:", data.arlSocketId);
+        arlSocketIdRef.current = data.arlSocketId;
+        
         // Create peer connection
         const pc = new RTCPeerConnection(rtcConfig);
         peerConnectionRef.current = pc;

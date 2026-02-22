@@ -350,9 +350,10 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ARL sends WebRTC offer to specific location
     socket.on("webrtc:offer", (data: { viewerSocketId: string; offer: RTCSessionDescriptionInit }) => {
       if (user?.userType !== "arl") return;
-      // Send offer directly to the requesting viewer
+      // Send offer directly to the requesting viewer, include ARL socket ID
       io!.to(data.viewerSocketId).emit("webrtc:offer", {
         offer: data.offer,
+        arlSocketId: socket.id,
       });
     });
 
