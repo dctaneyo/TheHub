@@ -177,7 +177,7 @@ function MeetingUI({
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isArl = user?.userType === "arl" || user?.userType === "guest";
-  const isHostOnly = myRole === "host";
+  const isHostOrCohost = myRole === "host" || myRole === "cohost";
 
   // Get video and screen share tracks
   const tracks = useTracks(
@@ -566,10 +566,16 @@ function MeetingUI({
                           <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
                             <span className="text-[9px] text-white">{p.name}</span>
                             {metadata.role === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
+                            {metadata.handRaised && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
                           </div>
                           {p.isMicrophoneEnabled === false && (
                             <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
                               <MicOff className="h-2.5 w-2.5 text-white" />
+                            </div>
+                          )}
+                          {metadata.handRaised && (
+                            <div className="absolute top-1 left-1 bg-yellow-600 rounded-full p-0.5">
+                              <Hand className="h-2.5 w-2.5 text-white" />
                             </div>
                           )}
                         </div>
@@ -694,8 +700,8 @@ function MeetingUI({
                             {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
                             {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
-                            {/* Host-only controls - can mute/unmute anyone except themselves */}
-                            {isHostOnly && metadata.role !== "host" && !isLocal && (
+                            {/* Host/cohost controls - can mute/unmute anyone except the host */}
+                            {isHostOrCohost && metadata.role !== "host" && !isLocal && (
                               <div className="flex gap-1 ml-1">
                                 {p.isMicrophoneEnabled === false ? (
                                   <button
@@ -825,7 +831,7 @@ function MeetingUI({
                                   Answered
                                 </span>
                               )}
-                              {isHostOnly && !q.isAnswered && (
+                              {isHostOrCohost && !q.isAnswered && (
                                 <button
                                   onClick={() => socket?.emit("meeting:answer-question", { meetingId, questionId: q.id })}
                                   className="text-xs text-green-400 hover:text-green-300 font-medium"
