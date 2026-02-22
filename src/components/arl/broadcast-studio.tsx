@@ -86,16 +86,22 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
     try {
       // Request camera/mic permissions
       if (streamMode === "video" || streamMode === "audio") {
-        const constraints = {
-          video: streamMode === "video" ? { width: 1280, height: 720 } : false,
-          audio: true,
-        };
-        
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        streamRef.current = stream;
-        
-        if (videoRef.current && streamMode === "video") {
-          videoRef.current.srcObject = stream;
+        try {
+          const constraints = {
+            video: streamMode === "video" ? { width: 1280, height: 720 } : false,
+            audio: true,
+          };
+          
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          streamRef.current = stream;
+          
+          if (videoRef.current && streamMode === "video") {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (mediaError: any) {
+          console.error("Media error:", mediaError);
+          alert(`Camera/Microphone error: ${mediaError.message || "Permission denied"}`);
+          return;
         }
       }
 
@@ -111,7 +117,10 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to create broadcast");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
 
       const data = await res.json();
       setBroadcastId(data.broadcastId);
@@ -127,9 +136,15 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       if (socket) {
         socket.emit("broadcast:start", { broadcastId: data.broadcastId, title });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to start broadcast:", error);
-      alert("Failed to start broadcast. Please check camera/microphone permissions.");
+      alert(`Failed to start broadcast: ${error.message || "Unknown error"}`);
+      
+      // Clean up media stream if it was created
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
     }
   };
 
