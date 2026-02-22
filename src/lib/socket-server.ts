@@ -555,7 +555,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!p) return;
       p.handRaised = true;
       io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-raised", {
-        meetingId: data.meetingId, socketId: socket.id, name: user.name,
+        meetingId: data.meetingId, socketId: socket.id, odId: p.odId, name: user.name,
       });
     });
 
@@ -568,7 +568,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!p) return;
       p.handRaised = false;
       io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-lowered", {
-        meetingId: data.meetingId, socketId: socket.id,
+        meetingId: data.meetingId, socketId: socket.id, odId: p.odId,
       });
     });
 

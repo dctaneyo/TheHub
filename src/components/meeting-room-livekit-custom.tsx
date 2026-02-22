@@ -22,7 +22,6 @@ import {
   VideoTrack,
   AudioTrack,
   useRoomContext,
-  TrackToggle,
 } from "@livekit/components-react";
 import { Track, RoomEvent, LocalParticipant, RemoteParticipant } from "livekit-client";
 import "@livekit/components-styles";
@@ -176,6 +175,7 @@ function MeetingUI({
   const [showMeetingKeyboard, setShowMeetingKeyboard] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
   const [waitingForHost, setWaitingForHost] = useState(false);
+  const [hostHasLeft, setHostHasLeft] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isArl = user?.userType === "arl" || user?.userType === "guest";
@@ -262,19 +262,35 @@ function MeetingUI({
 
     const handleHostJoined = () => {
       setWaitingForHost(false);
+      setHostHasLeft(false);
     };
 
-    // Hand raise events from server
-    const handleHandRaised = (data: { socketId: string; name: string }) => {
-      setRaisedHands(prev => new Set(prev).add(data.socketId));
+    const handleHostLeft = () => {
+      setHostHasLeft(true);
     };
 
-    const handleHandLowered = (data: { socketId: string }) => {
+    // Hand raise events from server — track by odId which matches LiveKit identity
+    const handleHandRaised = (data: { socketId: string; odId: string; name: string }) => {
       setRaisedHands(prev => {
         const next = new Set(prev);
+        next.add(data.odId);
+        next.add(data.socketId); // also track by socketId for fallback
+        return next;
+      });
+    };
+
+    const handleHandLowered = (data: { socketId: string; odId: string }) => {
+      setRaisedHands(prev => {
+        const next = new Set(prev);
+        next.delete(data.odId);
         next.delete(data.socketId);
         return next;
       });
+    };
+
+    // When we join, server tells us our actual role (ARLs get "cohost")
+    const handleJoined = (data: { yourRole: string }) => {
+      if (data.yourRole) setMyRole(data.yourRole);
     };
 
     // Mute/unmute events from server (when host mutes/unmutes us)
@@ -294,10 +310,12 @@ function MeetingUI({
     socket.on("meeting:role-updated", handleRoleUpdate);
     socket.on("meeting:waiting-for-host", handleWaitingForHost);
     socket.on("meeting:host-joined", handleHostJoined);
+    socket.on("meeting:host-left", handleHostLeft);
     socket.on("meeting:hand-raised", handleHandRaised);
     socket.on("meeting:hand-lowered", handleHandLowered);
     socket.on("meeting:you-were-muted", handleYouWereMuted);
     socket.on("meeting:speak-allowed", handleSpeakAllowed);
+    socket.on("meeting:joined", handleJoined);
 
     return () => {
       socket.off("meeting:chat-message", handleChatMessage);
@@ -308,10 +326,12 @@ function MeetingUI({
       socket.off("meeting:role-updated", handleRoleUpdate);
       socket.off("meeting:waiting-for-host", handleWaitingForHost);
       socket.off("meeting:host-joined", handleHostJoined);
+      socket.off("meeting:host-left", handleHostLeft);
       socket.off("meeting:hand-raised", handleHandRaised);
       socket.off("meeting:hand-lowered", handleHandLowered);
       socket.off("meeting:you-were-muted", handleYouWereMuted);
       socket.off("meeting:speak-allowed", handleSpeakAllowed);
+      socket.off("meeting:joined", handleJoined);
     };
   }, [socket, showChat, showQA, localParticipant]);
 
@@ -578,7 +598,13 @@ function MeetingUI({
                       <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
                         <Users className="h-10 w-10 text-slate-500" />
                       </div>
-                      <p className="text-slate-400 text-sm">Waiting for host to share video...</p>
+                      <p className="text-slate-400 text-sm">
+                        {hostHasLeft
+                          ? "Host has left the meeting..."
+                          : !hostParticipant
+                            ? "Waiting for host to join..."
+                            : "Host\'s camera is off"}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -915,25 +941,52 @@ function MeetingUI({
       <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-center gap-2 shrink-0">
         <div className="flex-1" />
 
-        {/* Center: media controls — all pill-shaped */}
+        {/* Center: media controls — all pill-shaped custom buttons */}
         <div className="flex items-center gap-2">
           {/* Mic toggle */}
-          <TrackToggle source={Track.Source.Microphone} showIcon={false} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
-            <Mic className="h-5 w-5" />
-          </TrackToggle>
+          <button
+            onClick={() => localParticipant.setMicrophoneEnabled(!localParticipant.isMicrophoneEnabled)}
+            className={cn(
+              "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
+              localParticipant.isMicrophoneEnabled
+                ? "bg-slate-700 hover:bg-slate-600 text-white"
+                : "bg-red-600 hover:bg-red-700 text-white"
+            )}
+            title={localParticipant.isMicrophoneEnabled ? "Mute" : "Unmute"}
+          >
+            {localParticipant.isMicrophoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          </button>
 
           {/* Video toggle (ARL only) */}
           {hasVideoCapability && (
-            <TrackToggle source={Track.Source.Camera} showIcon={false} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
-              <Video className="h-5 w-5" />
-            </TrackToggle>
+            <button
+              onClick={() => localParticipant.setCameraEnabled(!localParticipant.isCameraEnabled)}
+              className={cn(
+                "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
+                localParticipant.isCameraEnabled
+                  ? "bg-slate-700 hover:bg-slate-600 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              )}
+              title={localParticipant.isCameraEnabled ? "Turn off camera" : "Turn on camera"}
+            >
+              {localParticipant.isCameraEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </button>
           )}
 
           {/* Screen share (ARL only) */}
           {isArl && (
-            <TrackToggle source={Track.Source.ScreenShare} showIcon={false} captureOptions={{ audio: true, video: true }} className="flex items-center justify-center h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors">
-              <Monitor className="h-5 w-5" />
-            </TrackToggle>
+            <button
+              onClick={() => localParticipant.setScreenShareEnabled(!localParticipant.isScreenShareEnabled)}
+              className={cn(
+                "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
+                localParticipant.isScreenShareEnabled
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-slate-700 hover:bg-slate-600 text-white"
+              )}
+              title={localParticipant.isScreenShareEnabled ? "Stop sharing" : "Share screen"}
+            >
+              {localParticipant.isScreenShareEnabled ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
+            </button>
           )}
 
           {/* Raise hand (restaurants) */}

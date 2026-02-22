@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      identity = session.userId;
+      identity = session.id;
       userType = session.userType;
     }
 
