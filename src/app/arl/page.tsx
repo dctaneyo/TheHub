@@ -47,6 +47,7 @@ import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { BroadcastStudio } from "@/components/arl/broadcast-studio";
+import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -137,6 +138,9 @@ export default function ArlPage() {
   const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null);
   const [toasts, setToasts] = useState<TaskToast[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [activeBroadcast, setActiveBroadcast] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
+  const [showBroadcastNotification, setShowBroadcastNotification] = useState(false);
+  const [watchingBroadcast, setWatchingBroadcast] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const locationNamesRef = useRef<Map<string, string>>(new Map());
 
@@ -256,6 +260,30 @@ export default function ArlPage() {
     socket.on("presence:update", handlePresence);
     return () => { socket.off("presence:update", handlePresence); };
   }, [socket]);
+
+  // Listen for broadcast started/ended from other ARLs
+  useEffect(() => {
+    if (!socket) return;
+    const handleStreamStarted = (data: { broadcastId: string; arlName: string; title: string; broadcasterSocketId?: string }) => {
+      // Don't show notification if this ARL is the broadcaster (they're already in the studio)
+      if (activeView === "broadcast") return;
+      setActiveBroadcast({ broadcastId: data.broadcastId, arlName: data.arlName, title: data.title });
+      setShowBroadcastNotification(true);
+    };
+    const handleStreamEnded = (data: { broadcastId: string }) => {
+      if (activeBroadcast?.broadcastId === data.broadcastId) {
+        setShowBroadcastNotification(false);
+        setActiveBroadcast(null);
+        setWatchingBroadcast(false);
+      }
+    };
+    socket.on("stream:started", handleStreamStarted);
+    socket.on("stream:ended", handleStreamEnded);
+    return () => {
+      socket.off("stream:started", handleStreamStarted);
+      socket.off("stream:ended", handleStreamEnded);
+    };
+  }, [socket, activeView, activeBroadcast]);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -594,6 +622,64 @@ export default function ArlPage() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Broadcast Notification Popup for other ARLs */}
+      <AnimatePresence>
+        {showBroadcastNotification && activeBroadcast && !watchingBroadcast && activeView !== "broadcast" && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl border border-red-200 p-5 max-w-sm w-full">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <Video className="h-5 w-5 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-xs font-bold text-red-600 uppercase">Live Now</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 truncate">{activeBroadcast.title}</p>
+                  <p className="text-xs text-slate-500">by {activeBroadcast.arlName}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setWatchingBroadcast(true);
+                    setShowBroadcastNotification(false);
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 px-4 rounded-xl transition-colors"
+                >
+                  Join Broadcast
+                </button>
+                <button
+                  onClick={() => setShowBroadcastNotification(false)}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ARL watching another ARL's broadcast */}
+      {watchingBroadcast && activeBroadcast && (
+        <StreamViewer
+          broadcastId={activeBroadcast.broadcastId}
+          arlName={activeBroadcast.arlName}
+          title={activeBroadcast.title}
+          onClose={() => {
+            setWatchingBroadcast(false);
+            setActiveBroadcast(null);
+          }}
+        />
+      )}
 
       {/* High-Five Animation */}
       <HighFiveAnimation />

@@ -18,6 +18,8 @@ import {
   Settings,
   Eye,
   EyeOff,
+  Send,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +93,8 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [questions, setQuestions] = useState<StreamQuestion[]>([]);
   const [activeTab, setActiveTab] = useState<"viewers" | "chat" | "questions">("viewers");
+  const [newChatMessage, setNewChatMessage] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   const [duration, setDuration] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -245,6 +249,28 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
     }
   };
 
+  // Send chat message from ARL
+  const sendChatMessage = () => {
+    if (!newChatMessage.trim() || !socket || !broadcastId) return;
+    socket.emit("broadcast:message", {
+      broadcastId,
+      content: newChatMessage.trim(),
+      timestamp: Math.floor((Date.now() - startTimeRef.current) / 1000),
+    });
+    setNewChatMessage("");
+  };
+
+  // Mark question as answered
+  const answerQuestion = (questionId: string) => {
+    if (!socket || !broadcastId) return;
+    socket.emit("broadcast:answer-question", { broadcastId, questionId });
+  };
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   // Socket listeners
   useEffect(() => {
     if (!socket || !isStreaming || !broadcastId) return;
@@ -274,6 +300,19 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
 
     const handleStreamQuestion = (data: StreamQuestion) => {
       setQuestions(prev => [...prev, data]);
+    };
+
+    const handleStreamReaction = (data: { emoji: string; viewerName: string }) => {
+      // Could show floating reactions on ARL side too
+      console.log(`Reaction from ${data.viewerName}: ${data.emoji}`);
+    };
+
+    const handleQuestionAnswered = (data: { questionId: string }) => {
+      setQuestions(prev => prev.map(q => q.id === data.questionId ? { ...q, isAnswered: true } : q));
+    };
+
+    const handleQuestionUpvoted = (data: { questionId: string }) => {
+      setQuestions(prev => prev.map(q => q.id === data.questionId ? { ...q, upvotes: q.upvotes + 1 } : q));
     };
 
     // WebRTC: Handle offer request from viewer
@@ -406,6 +445,9 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
     socket.on("stream:viewer-leave", handleViewerLeave);
     socket.on("stream:message", handleStreamMessage);
     socket.on("stream:question", handleStreamQuestion);
+    socket.on("stream:reaction", handleStreamReaction);
+    socket.on("stream:question-answered", handleQuestionAnswered);
+    socket.on("stream:question-upvoted", handleQuestionUpvoted);
     socket.on("webrtc:offer-requested", handleOfferRequested);
     socket.on("webrtc:answer", handleAnswer);
     socket.on("webrtc:ice-candidate", handleIceCandidate);
@@ -415,6 +457,9 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
       socket.off("stream:viewer-leave", handleViewerLeave);
       socket.off("stream:message", handleStreamMessage);
       socket.off("stream:question", handleStreamQuestion);
+      socket.off("stream:reaction", handleStreamReaction);
+      socket.off("stream:question-answered", handleQuestionAnswered);
+      socket.off("stream:question-upvoted", handleQuestionUpvoted);
       socket.off("webrtc:offer-requested", handleOfferRequested);
       socket.off("webrtc:answer", handleAnswer);
       socket.off("webrtc:ice-candidate", handleIceCandidate);
@@ -666,9 +711,9 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 flex flex-col overflow-hidden">
                 {activeTab === "viewers" && (
-                  <div className="space-y-2">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {viewers.length === 0 ? (
                       <p className="text-sm text-slate-500 text-center py-8">
                         Waiting for viewers...
@@ -691,28 +736,51 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                 )}
 
                 {activeTab === "chat" && (
-                  <div className="space-y-3">
-                    {messages.length === 0 ? (
-                      <p className="text-sm text-slate-500 text-center py-8">
-                        No messages yet
-                      </p>
-                    ) : (
-                      messages.map((msg) => (
-                        <div key={msg.id} className="space-y-1">
-                          <div className="text-xs font-medium text-slate-700">
-                            {msg.senderName}
+                  <>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {messages.length === 0 ? (
+                        <p className="text-sm text-slate-500 text-center py-8">
+                          No messages yet
+                        </p>
+                      ) : (
+                        messages.map((msg) => (
+                          <div key={msg.id} className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
+                              {(msg as any).senderType === "arl" && (
+                                <span className="text-[9px] font-bold bg-red-100 text-red-600 px-1 py-0.5 rounded">ARL</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-slate-600 bg-slate-50 rounded-lg p-2">
+                              {msg.content}
+                            </div>
                           </div>
-                          <div className="text-sm text-slate-600 bg-slate-50 rounded-lg p-2">
-                            {msg.content}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                        ))
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+                    <div className="border-t border-slate-200 p-3 flex gap-2">
+                      <Input
+                        value={newChatMessage}
+                        onChange={(e) => setNewChatMessage(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") sendChatMessage(); }}
+                        placeholder="Send a message..."
+                        className="flex-1 text-sm"
+                      />
+                      <Button
+                        onClick={sendChatMessage}
+                        disabled={!newChatMessage.trim()}
+                        size="icon"
+                        className="h-9 w-9 shrink-0 bg-red-600 hover:bg-red-700"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
                 )}
 
                 {activeTab === "questions" && (
-                  <div className="space-y-3">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {questions.length === 0 ? (
                       <p className="text-sm text-slate-500 text-center py-8">
                         No questions yet
@@ -734,10 +802,21 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                           <div className="text-sm text-slate-900 mb-2">
                             {q.question}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <span>👍 {q.upvotes}</span>
-                            {q.isAnswered && (
-                              <span className="text-green-600">✓ Answered</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <span>👍 {q.upvotes}</span>
+                              {q.isAnswered && (
+                                <span className="text-green-600 font-medium">✓ Answered</span>
+                              )}
+                            </div>
+                            {!q.isAnswered && (
+                              <button
+                                onClick={() => answerQuestion(q.id)}
+                                className="flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-2 py-1 rounded-md transition-colors"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                Mark Answered
+                              </button>
                             )}
                           </div>
                         </div>

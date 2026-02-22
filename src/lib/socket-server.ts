@@ -355,6 +355,87 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Broadcast Chat/Reaction/Q&A Events ──
+    socket.on("broadcast:message", (data: { broadcastId: string; viewerId?: string; content: string; timestamp: number }) => {
+      // Relay message to all connected clients (both ARLs and locations)
+      const senderName = user?.name || "Unknown";
+      const msg = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        senderName,
+        senderType: user?.userType || "location",
+        content: data.content,
+        timestamp: data.timestamp,
+      };
+      io!.to("arls").emit("stream:message", msg);
+      io!.to("locations").emit("stream:message", msg);
+    });
+
+    socket.on("broadcast:reaction", (data: { broadcastId: string; viewerId?: string; emoji: string; timestamp: number }) => {
+      const senderName = user?.name || "Unknown";
+      const reaction = {
+        emoji: data.emoji,
+        viewerName: senderName,
+        broadcastId: data.broadcastId,
+      };
+      io!.to("arls").emit("stream:reaction", reaction);
+      io!.to("locations").emit("stream:reaction", reaction);
+    });
+
+    socket.on("broadcast:start", (data: { broadcastId: string; title: string }) => {
+      // Notify all locations and other ARLs about the broadcast
+      const arlName = user?.name || "Unknown ARL";
+      io!.to("locations").emit("stream:started", {
+        broadcastId: data.broadcastId,
+        arlName,
+        title: data.title,
+      });
+      io!.to("arls").emit("stream:started", {
+        broadcastId: data.broadcastId,
+        arlName,
+        title: data.title,
+        broadcasterSocketId: socket.id,
+      });
+    });
+
+    socket.on("broadcast:end", (data: { broadcastId: string }) => {
+      io!.to("locations").emit("stream:ended", { broadcastId: data.broadcastId });
+      io!.to("arls").emit("stream:ended", { broadcastId: data.broadcastId });
+    });
+
+    socket.on("broadcast:question", (data: { broadcastId: string; question: string }) => {
+      const askerName = user?.name || "Unknown";
+      const q = {
+        id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        askerName,
+        question: data.question,
+        upvotes: 0,
+        isAnswered: false,
+        broadcastId: data.broadcastId,
+      };
+      io!.to("arls").emit("stream:question", q);
+      io!.to("locations").emit("stream:question", q);
+    });
+
+    socket.on("broadcast:answer-question", (data: { broadcastId: string; questionId: string }) => {
+      io!.to("arls").emit("stream:question-answered", { questionId: data.questionId });
+      io!.to("locations").emit("stream:question-answered", { questionId: data.questionId });
+    });
+
+    socket.on("broadcast:upvote-question", (data: { broadcastId: string; questionId: string }) => {
+      io!.to("arls").emit("stream:question-upvoted", { questionId: data.questionId });
+      io!.to("locations").emit("stream:question-upvoted", { questionId: data.questionId });
+    });
+
+    // Allow ARLs to join broadcast as viewers too
+    socket.on("broadcast:arl-join", (data: { broadcastId: string }) => {
+      if (user?.userType !== "arl") return;
+      io!.to("arls").emit("stream:viewer-join", {
+        broadcastId: data.broadcastId,
+        viewerId: user.id,
+        viewerName: user.name + " (ARL)",
+      });
+    });
+
     // ── WebRTC Signaling Events ──
     // Location requests video stream from ARL
     socket.on("webrtc:request-offer", (data: { broadcastId: string; viewerId: string }) => {

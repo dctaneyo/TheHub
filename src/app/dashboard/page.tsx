@@ -760,6 +760,7 @@ export default function DashboardPage() {
         onClose={() => setChatOpen(false)}
         unreadCount={chatUnread}
         onUnreadChange={setChatUnread}
+        currentUserId={user?.id}
       />
     </div>
   );

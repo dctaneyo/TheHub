@@ -83,9 +83,10 @@ interface RestaurantChatProps {
   onClose: () => void;
   unreadCount: number;
   onUnreadChange: (count: number) => void;
+  currentUserId?: string;
 }
 
-export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }: RestaurantChatProps) {
+export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, currentUserId }: RestaurantChatProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
 
@@ -670,6 +671,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             onStopTyping={() => stopTyping(activeConvo.id)}
             knownMessageIds={knownMessageIdsRef.current}
             sendError={sendError}
+            currentUserId={currentUserId}
             onReaction={async (messageId: string, emoji: string) => {
               try {
                 const res = await fetch("/api/messages/reaction", {
@@ -708,6 +710,7 @@ interface ActiveConvoViewProps {
   knownMessageIds: Set<string>;
   sendError: boolean;
   onReaction: (messageId: string, emoji: string) => Promise<void>;
+  currentUserId?: string;
 }
 
 function ActiveConvoView({
@@ -715,6 +718,7 @@ function ActiveConvoView({
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
   typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
+  currentUserId,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -778,7 +782,7 @@ function ActiveConvoView({
             </div>
           )}
           {visibleMessages.map((msg) => {
-            const isMe = msg.senderType === "location";
+            const isMe = currentUserId ? msg.senderId === currentUserId : msg.senderType === "location";
             const hasBeenRead = msg.reads.length > 0;
             return (
               <motion.div key={msg.id}

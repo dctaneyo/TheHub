@@ -14,6 +14,8 @@ import {
   Smile,
   Zap,
   Send,
+  HelpCircle,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,10 +66,13 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showQA, setShowQA] = useState(false);
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
+  const [questions, setQuestions] = useState<Array<{ id: string; askerName: string; question: string; upvotes: number; isAnswered: boolean }>>([]);
+  const [newQuestion, setNewQuestion] = useState("");
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -155,6 +160,18 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
       setTimeout(() => {
         setFloatingReactions(prev => prev.filter(r => r.id !== id));
       }, 3000);
+    };
+
+    const handleStreamQuestion = (data: { id: string; askerName: string; question: string; upvotes: number; isAnswered: boolean }) => {
+      setQuestions(prev => [...prev, data]);
+    };
+
+    const handleQuestionAnswered = (data: { questionId: string }) => {
+      setQuestions(prev => prev.map(q => q.id === data.questionId ? { ...q, isAnswered: true } : q));
+    };
+
+    const handleQuestionUpvoted = (data: { questionId: string }) => {
+      setQuestions(prev => prev.map(q => q.id === data.questionId ? { ...q, upvotes: q.upvotes + 1 } : q));
     };
 
     const handleStreamEnded = (data: { broadcastId: string }) => {
@@ -280,6 +297,9 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
     socket.on("stream:message", handleStreamMessage);
     socket.on("stream:reaction", handleStreamReaction);
     socket.on("stream:ended", handleStreamEnded);
+    socket.on("stream:question", handleStreamQuestion);
+    socket.on("stream:question-answered", handleQuestionAnswered);
+    socket.on("stream:question-upvoted", handleQuestionUpvoted);
     socket.on("webrtc:offer", handleOffer);
     socket.on("webrtc:ice-candidate", handleIceCandidate);
 
@@ -287,6 +307,9 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
       socket.off("stream:message", handleStreamMessage);
       socket.off("stream:reaction", handleStreamReaction);
       socket.off("stream:ended", handleStreamEnded);
+      socket.off("stream:question", handleStreamQuestion);
+      socket.off("stream:question-answered", handleQuestionAnswered);
+      socket.off("stream:question-upvoted", handleQuestionUpvoted);
       socket.off("webrtc:offer", handleOffer);
       socket.off("webrtc:ice-candidate", handleIceCandidate);
       
@@ -328,6 +351,22 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
     });
 
     setNewMessage("");
+  };
+
+  // Send question
+  const sendQuestion = () => {
+    if (!newQuestion.trim() || !socket) return;
+    socket.emit("broadcast:question", {
+      broadcastId,
+      question: newQuestion.trim(),
+    });
+    setNewQuestion("");
+  };
+
+  // Upvote question
+  const upvoteQuestion = (questionId: string) => {
+    if (!socket) return;
+    socket.emit("broadcast:upvote-question", { broadcastId, questionId });
   };
 
   // Handle minimize
@@ -393,13 +432,29 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
         
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowChat(!showChat)}
+            onClick={() => { setShowChat(!showChat); if (!showChat) setShowQA(false); }}
             className={cn(
               "p-2 rounded-lg transition-colors",
               showChat ? "bg-white/20" : "hover:bg-white/10"
             )}
+            title="Chat"
           >
             <MessageCircle className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => { setShowQA(!showQA); if (!showQA) setShowChat(false); }}
+            className={cn(
+              "p-2 rounded-lg transition-colors relative",
+              showQA ? "bg-white/20" : "hover:bg-white/10"
+            )}
+            title="Q&A"
+          >
+            <HelpCircle className="h-5 w-5" />
+            {questions.filter(q => !q.isAnswered).length > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center">
+                {questions.filter(q => !q.isAnswered).length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setIsMuted(!isMuted)}
@@ -520,6 +575,92 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
                     disabled={!newMessage.trim()}
                     size="icon"
                     className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Q&A sidebar */}
+        <AnimatePresence>
+          {showQA && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-80 bg-slate-900 flex flex-col border-l border-slate-700"
+            >
+              <div className="p-4 border-b border-slate-700">
+                <h3 className="text-white font-bold">Q&A</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Ask questions to the broadcaster</p>
+              </div>
+
+              {/* Questions list */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {questions.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-8">
+                    No questions yet. Ask the first one!
+                  </p>
+                ) : (
+                  questions.map((q) => (
+                    <div
+                      key={q.id}
+                      className={cn(
+                        "p-3 rounded-lg border",
+                        q.isAnswered
+                          ? "bg-green-900/30 border-green-700"
+                          : "bg-slate-800 border-slate-700"
+                      )}
+                    >
+                      <div className="text-xs font-medium text-slate-300 mb-1">
+                        {q.askerName}
+                      </div>
+                      <div className="text-sm text-white mb-2">
+                        {q.question}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => upvoteQuestion(q.id)}
+                          className="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-400 transition-colors"
+                        >
+                          <ThumbsUp className="h-3 w-3" />
+                          <span>{q.upvotes}</span>
+                        </button>
+                        {q.isAnswered && (
+                          <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
+                            <CheckCircle className="h-3 w-3" />
+                            Answered
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Question input */}
+              <div className="p-3 border-t border-slate-700">
+                <div className="flex gap-2">
+                  <Input
+                    value={newQuestion}
+                    onChange={(e) => setNewQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendQuestion();
+                      }
+                    }}
+                    placeholder="Ask a question..."
+                    className="flex-1 bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+                  />
+                  <Button
+                    onClick={sendQuestion}
+                    disabled={!newQuestion.trim()}
+                    size="icon"
+                    className="bg-yellow-600 hover:bg-yellow-700"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
