@@ -151,11 +151,28 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
         const pc = new RTCPeerConnection(rtcConfig);
         peerConnectionRef.current = pc;
 
+        // Monitor connection state
+        pc.onconnectionstatechange = () => {
+          console.log("Viewer peer connection state:", pc.connectionState);
+        };
+        
+        pc.oniceconnectionstatechange = () => {
+          console.log("Viewer ICE connection state:", pc.iceConnectionState);
+        };
+
         // Handle incoming video stream
         pc.ontrack = (event) => {
+          console.log("WebRTC track received:", event.track);
+          console.log("Stream received:", event.streams[0]);
+          
           if (videoRef.current && event.streams[0]) {
+            console.log("Setting video srcObject from WebRTC stream...");
             videoRef.current.srcObject = event.streams[0];
-            videoRef.current.play().catch(err => console.error("Video play error:", err));
+            console.log("Video element srcObject set:", videoRef.current.srcObject);
+            
+            videoRef.current.play()
+              .then(() => console.log("Video playing successfully from WebRTC stream"))
+              .catch(err => console.error("Video play error:", err));
           }
         };
 
@@ -350,7 +367,8 @@ export function StreamViewer({ broadcastId, arlName, title, onClose }: StreamVie
             autoPlay
             muted={isMuted}
             playsInline
-            className="max-h-full max-w-full"
+            className="w-full h-full object-contain"
+            style={{ maxHeight: '100%', maxWidth: '100%' }}
           />
           
           {/* Floating reactions */}

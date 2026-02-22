@@ -104,11 +104,19 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
           const stream = await navigator.mediaDevices.getUserMedia(constraints);
           streamRef.current = stream;
           
+          console.log("Media stream obtained:", stream);
+          console.log("Video tracks:", stream.getVideoTracks());
+          console.log("Audio tracks:", stream.getAudioTracks());
+          
           if (videoRef.current && streamMode === "video") {
+            console.log("Setting video srcObject...");
             videoRef.current.srcObject = stream;
+            console.log("Video element srcObject set:", videoRef.current.srcObject);
+            
             // Explicitly play the video
             try {
               await videoRef.current.play();
+              console.log("Video playing successfully");
             } catch (playError) {
               console.error("Video play error:", playError);
             }
@@ -273,8 +281,19 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
         const pc = new RTCPeerConnection(rtcConfig);
         peerConnectionsRef.current.set(data.viewerId, pc);
 
+        // Monitor connection state
+        pc.onconnectionstatechange = () => {
+          console.log(`Peer connection state for viewer ${data.viewerId}:`, pc.connectionState);
+        };
+        
+        pc.oniceconnectionstatechange = () => {
+          console.log(`ICE connection state for viewer ${data.viewerId}:`, pc.iceConnectionState);
+        };
+
         // Add all tracks from the media stream
+        console.log("Adding tracks to peer connection for viewer:", data.viewerId);
         streamRef.current.getTracks().forEach(track => {
+          console.log("Adding track:", track.kind, track.label, track.enabled);
           pc.addTrack(track, streamRef.current!);
         });
 
@@ -491,7 +510,8 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
                       autoPlay
                       playsInline
                       muted
-                      className="max-h-full max-w-full"
+                      className="w-full h-full object-contain"
+                      style={{ maxHeight: '100%', maxWidth: '100%' }}
                     />
                     {!videoEnabled && (
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
