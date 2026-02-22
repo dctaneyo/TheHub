@@ -73,10 +73,11 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const [mySocketId, setMySocketId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<string>(isHost ? "host" : "participant");
   const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
-  const [videoEnabled, setVideoEnabled] = useState(hasVideoCapability);
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(isHost && hasVideoCapability);
+  const [audioEnabled, setAudioEnabled] = useState(isHost);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [screenSharing, setScreenSharing] = useState(false);
+  const [screenSharingParticipant, setScreenSharingParticipant] = useState<string | null>(null);
   const [isMutedByHost, setIsMutedByHost] = useState(user?.userType === "location");
   const [waitingForHost, setWaitingForHost] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
@@ -107,18 +108,24 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     try {
       const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
       const constraints: MediaStreamConstraints = {
+        // Request video if user has capability (we'll disable the track if not host)
         video: wantsVideo ? { width: 1280, height: 720 } : false,
         audio: true,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
 
-      // Restaurants start with audio muted (they need permission to speak)
-      if (!wantsVideo) {
+      // Only host starts with audio enabled; everyone else starts muted
+      if (!isHost) {
         stream.getAudioTracks().forEach(t => { t.enabled = false; });
       }
 
-      if (localVideoRef.current && wantsVideo) {
+      // Only host starts with video enabled; others start with camera off
+      if (!isHost && wantsVideo) {
+        stream.getVideoTracks().forEach(t => { t.enabled = false; });
+      }
+
+      if (localVideoRef.current && wantsVideo && isHost) {
         localVideoRef.current.srcObject = stream;
         localVideoRef.current.play().catch(() => {});
       }
@@ -127,7 +134,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       console.error("Failed to get local media:", err);
       return null;
     }
-  }, [user?.userType]);
+  }, [user?.userType, isHost]);
 
   // ── Create peer connection to a specific participant ──
   const createPeerConnection = useCallback((targetSocketId: string, targetName: string, shouldCreateOffer: boolean) => {
@@ -216,8 +223,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
       socket.emit("meeting:join", {
         meetingId,
-        hasVideo: wantsVideo,
-        hasAudio: true,
+        hasVideo: isHost && wantsVideo,
+        hasAudio: isHost,
       });
     };
 
@@ -279,12 +286,11 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     // When host starts the meeting, auto-retry joining
     const handleMeetingStarted = (data: { meetingId: string }) => {
       if (data.meetingId !== meetingId) return;
-      // Meeting now exists — retry join
-      const wantsVideo = user?.userType === "arl" || user?.userType === "guest";
+      // Meeting now exists — retry join (non-host starts with video/audio off)
       socket.emit("meeting:join", {
         meetingId,
-        hasVideo: wantsVideo,
-        hasAudio: true,
+        hasVideo: false,
+        hasAudio: false,
       });
     };
 
@@ -424,6 +430,11 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       }
     };
 
+    const handleScreenShare = (data: { meetingId: string; socketId: string; sharing: boolean }) => {
+      if (data.meetingId !== meetingId) return;
+      setScreenSharingParticipant(data.sharing ? data.socketId : null);
+    };
+
     socket.on("meeting:joined", handleJoined);
     socket.on("meeting:error", handleMeetingError);
     socket.on("meeting:started", handleMeetingStarted);
@@ -440,6 +451,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     socket.on("meeting:question", handleQuestion);
     socket.on("meeting:question-answered", handleQuestionAnswered);
     socket.on("meeting:question-upvoted", handleQuestionUpvoted);
+    socket.on("meeting:screen-share", handleScreenShare);
     socket.on("webrtc:offer", handleOffer);
     socket.on("webrtc:answer", handleAnswer);
     socket.on("webrtc:ice-candidate", handleIceCandidate);
@@ -461,6 +473,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       socket.off("meeting:question", handleQuestion);
       socket.off("meeting:question-answered", handleQuestionAnswered);
       socket.off("meeting:question-upvoted", handleQuestionUpvoted);
+      socket.off("meeting:screen-share", handleScreenShare);
       socket.off("webrtc:offer", handleOffer);
       socket.off("webrtc:answer", handleAnswer);
       socket.off("webrtc:ice-candidate", handleIceCandidate);
@@ -479,8 +492,14 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
     const tracks = localStreamRef.current.getVideoTracks();
     if (tracks.length > 0) {
       tracks.forEach(t => { t.enabled = !t.enabled; });
-      setVideoEnabled(tracks[0].enabled);
-      socket?.emit("meeting:media-update", { meetingId, hasVideo: tracks[0].enabled });
+      const nowEnabled = tracks[0].enabled;
+      setVideoEnabled(nowEnabled);
+      socket?.emit("meeting:media-update", { meetingId, hasVideo: nowEnabled });
+      // Attach stream to local video element when enabling for the first time
+      if (nowEnabled && localVideoRef.current && !localVideoRef.current.srcObject) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+        localVideoRef.current.play().catch(() => {});
+      }
     }
   };
 
@@ -513,6 +532,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
         if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
         setScreenSharing(true);
         setVideoEnabled(true);
+        socket.emit("meeting:screen-share", { meetingId, sharing: true });
       } else {
         await switchBackToCamera();
       }
@@ -534,6 +554,7 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
       }
       if (localVideoRef.current && localStreamRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       setScreenSharing(false);
+      socket?.emit("meeting:screen-share", { meetingId, sharing: false });
     } catch (err) { console.error("Camera switch error:", err); }
   };
 
@@ -595,6 +616,8 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
   const videoParticipants = remoteParticipants.filter(p => p.userType === "arl" || p.userType === "guest");
   // All participants for the sidebar
   const allParticipants = remoteParticipants;
+  // Presentation mode: someone is sharing their screen
+  const isPresentationMode = screenSharing || !!screenSharingParticipant;
 
   // ── Ref callback for remote video elements ──
   const setRemoteVideoRef = useCallback((socketId: string) => (el: HTMLVideoElement | null) => {
@@ -675,76 +698,152 @@ export function MeetingRoom({ meetingId, title, isHost, onLeave }: MeetingRoomPr
         {/* Video grid */}
         <div className="flex-1 flex flex-col relative">
           <div className="flex-1 p-3 overflow-hidden">
-            <div className={cn(
-              "h-full grid gap-2",
-              videoParticipants.length === 0 && "grid-cols-1",
-              videoParticipants.length === 1 && "grid-cols-1 lg:grid-cols-2",
-              videoParticipants.length >= 2 && "grid-cols-2",
-            )}>
-              {/* Local video (self) — only show if ARL with video */}
-              {isArl && (
-                <div className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
-                  <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                  {!videoEnabled && (
-                    <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                      <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
-                        <span className="text-2xl font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+            {isPresentationMode ? (
+              /* ── Presentation layout: large shared screen + thumbnail strip ── */
+              <div className="h-full flex flex-col gap-2">
+                {/* Main presentation area */}
+                <div className="flex-1 relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-0">
+                  {screenSharing ? (
+                    /* Local user is sharing */
+                    <>
+                      <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <Monitor className="h-3 w-3 text-blue-400" />
+                        <span className="text-xs text-white font-medium">{user?.name} (You) — Screen</span>
                       </div>
-                      <span className="text-sm text-slate-400">{user?.name} (You)</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-                    <span className="text-xs text-white font-medium">{user?.name} (You)</span>
-                    {screenSharing && <Monitor className="h-3 w-3 text-blue-400" />}
-                    {myRole === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
-                    {myRole === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
-                  </div>
-                  {!audioEnabled && (
-                    <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
-                      <MicOff className="h-3 w-3 text-white" />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Remote ARL videos */}
-              {videoParticipants.map(p => (
-                <div key={p.socketId} className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
-                  <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(1)' }} />
-                  {!p.hasVideo && (
-                    <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                      <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
-                        <span className="text-2xl font-bold text-white">{p.name.charAt(0)}</span>
+                    </>
+                  ) : screenSharingParticipant ? (
+                    /* Remote user is sharing */
+                    <>
+                      <video ref={setRemoteVideoRef(screenSharingParticipant)} autoPlay playsInline className="w-full h-full object-contain" />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <Monitor className="h-3 w-3 text-blue-400" />
+                        <span className="text-xs text-white font-medium">
+                          {videoParticipants.find(p => p.socketId === screenSharingParticipant)?.name || "Participant"} — Screen
+                        </span>
                       </div>
-                      <span className="text-sm text-slate-400">{p.name}</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-                    <span className="text-xs text-white font-medium">{p.name}</span>
-                    {p.role === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
-                    {p.role === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
-                    {p.handRaised && <Hand className="h-3 w-3 text-yellow-400" />}
-                  </div>
-                  {p.isMuted && (
-                    <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
-                      <MicOff className="h-3 w-3 text-white" />
-                    </div>
-                  )}
+                    </>
+                  ) : null}
                 </div>
-              ))}
+                {/* Thumbnail strip */}
+                <div className="flex gap-2 overflow-x-auto shrink-0" style={{ height: 120 }}>
+                  {/* Local video thumbnail (if not the one sharing, or always show small) */}
+                  {isArl && (
+                    <div className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
+                      {!screenSharing && <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />}
+                      {screenSharing && (
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                            <span className="text-sm font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">{user?.name}</span>
+                        </div>
+                      )}
+                      {!screenSharing && !videoEnabled && (
+                        <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                            <span className="text-sm font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">{user?.name}</span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                        <span className="text-[9px] text-white">{user?.name}</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Remote video thumbnails (skip the one who is presenting — their video is the main area) */}
+                  {videoParticipants.filter(p => p.socketId !== screenSharingParticipant).map(p => (
+                    <div key={p.socketId} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
+                      <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" />
+                      {!p.hasVideo && (
+                        <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                            <span className="text-sm font-bold text-white">{p.name.charAt(0)}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">{p.name}</span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                        <span className="text-[9px] text-white">{p.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* ── Normal grid layout ── */
+              <div className={cn(
+                "h-full grid gap-2",
+                videoParticipants.length === 0 && "grid-cols-1",
+                videoParticipants.length === 1 && "grid-cols-1 lg:grid-cols-2",
+                videoParticipants.length >= 2 && "grid-cols-2",
+              )}>
+                {/* Local video (self) — only show if ARL/guest with video capability */}
+                {isArl && (
+                  <div className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
+                    <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                    {!videoEnabled && (
+                      <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                        <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
+                          <span className="text-2xl font-bold text-white">{user?.name?.charAt(0) || "?"}</span>
+                        </div>
+                        <span className="text-sm text-slate-400">{user?.name} (You)</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                      <span className="text-xs text-white font-medium">{user?.name} (You)</span>
+                      {screenSharing && <Monitor className="h-3 w-3 text-blue-400" />}
+                      {myRole === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
+                      {myRole === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
+                    </div>
+                    {!audioEnabled && (
+                      <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
+                        <MicOff className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* If no video participants and user is a restaurant, show a centered placeholder */}
-              {!isArl && videoParticipants.length === 0 && (
-                <div className="flex items-center justify-center bg-slate-800 rounded-xl">
-                  <div className="text-center">
-                    <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
-                      <Users className="h-10 w-10 text-slate-500" />
+                {/* Remote ARL/guest videos */}
+                {videoParticipants.map(p => (
+                  <div key={p.socketId} className="relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center">
+                    <video ref={setRemoteVideoRef(p.socketId)} autoPlay playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(1)' }} />
+                    {!p.hasVideo && (
+                      <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
+                        <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center mb-2">
+                          <span className="text-2xl font-bold text-white">{p.name.charAt(0)}</span>
+                        </div>
+                        <span className="text-sm text-slate-400">{p.name}</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                      <span className="text-xs text-white font-medium">{p.name}</span>
+                      {p.role === "host" && <Crown className="h-3 w-3 text-yellow-400" />}
+                      {p.role === "cohost" && <Shield className="h-3 w-3 text-blue-400" />}
+                      {p.handRaised && <Hand className="h-3 w-3 text-yellow-400" />}
                     </div>
-                    <p className="text-slate-400 text-sm">Waiting for host to share video...</p>
+                    {p.isMuted && (
+                      <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1">
+                        <MicOff className="h-3 w-3 text-white" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+
+                {/* If no video participants and user is a restaurant, show a centered placeholder */}
+                {!isArl && videoParticipants.length === 0 && (
+                  <div className="flex items-center justify-center bg-slate-800 rounded-xl">
+                    <div className="text-center">
+                      <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                        <Users className="h-10 w-10 text-slate-500" />
+                      </div>
+                      <p className="text-slate-400 text-sm">Waiting for host to share video...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Audio-only participants strip (restaurants) */}

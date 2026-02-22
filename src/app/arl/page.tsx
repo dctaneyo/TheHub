@@ -544,6 +544,14 @@ export default function ArlPage() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
+            {/* Start Meeting button */}
+            <button
+              onClick={() => setActiveView("broadcast")}
+              className="flex items-center gap-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 transition-colors"
+            >
+              <Video className="h-3.5 w-3.5" />
+              <span className="text-xs font-semibold">Start Meeting</span>
+            </button>
             {/* Notification Status */}
             {pushSubscription ? (
               <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1">

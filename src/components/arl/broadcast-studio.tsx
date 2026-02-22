@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Video, Play, X } from "lucide-react";
+import { Video, Play, X, Copy, Check, Lock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSocket } from "@/lib/socket-context";
 import { MeetingRoom } from "@/components/meeting-room";
+
+function generateMeetingCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
 
 interface BroadcastStudioProps {
   isOpen: boolean;
@@ -17,8 +24,14 @@ interface BroadcastStudioProps {
 
 export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingCode }: BroadcastStudioProps) {
   const [title, setTitle] = useState(initialTitle || "");
+  const [password, setPassword] = useState("");
+  const [copiedCode, setCopiedCode] = useState(false);
 
-  // Sync initialTitle when it changes (e.g. starting from scheduled meeting)
+  // Generate a stable meeting code for this session
+  const generatedCode = useMemo(() => generateMeetingCode(), []);
+  const meetingCode = initialMeetingCode || generatedCode;
+
+  // Sync initialTitle when it changes
   useEffect(() => {
     if (initialTitle) setTitle(initialTitle);
   }, [initialTitle]);
@@ -27,19 +40,28 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
 
   const { socket } = useSocket();
 
+  const copyCode = () => {
+    navigator.clipboard.writeText(meetingCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
   const startMeeting = () => {
     if (!title.trim()) {
       alert("Please enter a meeting title");
       return;
     }
 
-    const id = initialMeetingCode
-      ? `scheduled-${initialMeetingCode}`
-      : `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = `scheduled-${meetingCode}`;
     setMeetingId(id);
 
-    // Create meeting on server
-    socket?.emit("meeting:create", { meetingId: id, title: title.trim() });
+    // Create meeting on server (include password if set)
+    socket?.emit("meeting:create", {
+      meetingId: id,
+      title: title.trim(),
+      password: password.trim() || undefined,
+      meetingCode,
+    });
 
     // Enter the meeting room
     setInMeeting(true);
@@ -49,6 +71,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
     setInMeeting(false);
     setMeetingId(null);
     setTitle("");
+    setPassword("");
     onClose();
   };
 
@@ -80,7 +103,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             <Video className="h-6 w-6" />
             <div>
               <h2 className="text-lg font-bold">Start a Meeting</h2>
-              <p className="text-sm text-red-100">Create a live video meeting with restaurants and ARLs</p>
+              <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -101,26 +124,40 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             />
           </div>
 
-          <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-            <h3 className="text-sm font-semibold text-slate-700">Meeting Features</h3>
-            <ul className="text-sm text-slate-600 space-y-1.5">
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                ARLs join with video &amp; audio (camera + mic)
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                Restaurants join with audio only (mic, no camera)
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                Screen sharing, chat, Q&amp;A, reactions
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
-                Raise hand &amp; host controls for speaking
-              </li>
-            </ul>
+          {/* Meeting Code */}
+          <div className="bg-slate-50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-semibold text-slate-700">Meeting Code</label>
+              <span className="text-[10px] text-slate-400 font-medium">Share with guests to join</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-center">
+                <span className="font-mono text-xl font-bold text-red-600 tracking-[0.3em]">{meetingCode}</span>
+              </div>
+              <button onClick={copyCode}
+                className="p-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-700">
+                {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Password (optional) */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <div className="flex items-center gap-1.5">
+                {password.trim() ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Globe className="h-3.5 w-3.5 text-green-500" />}
+                Password <span className="text-slate-400 font-normal">(optional)</span>
+              </div>
+            </label>
+            <Input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Leave empty for open access"
+              type="password"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              {password.trim() ? "Guests will need this password to join" : "Anyone with the meeting code can join"}
+            </p>
           </div>
 
           <Button

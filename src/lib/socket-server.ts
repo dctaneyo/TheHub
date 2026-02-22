@@ -266,6 +266,22 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         });
       }
 
+      // Notify ARLs immediately when a guest connects (waiting for host)
+      if ((socket as any)._isGuest) {
+        const gMeetingId = (socket as any)._guestMeetingId as string;
+        io!.to("arls").emit("meeting:guest-waiting", {
+          meetingId: gMeetingId,
+          meetingTitle: gMeetingId,
+          guestName: user.name,
+          guestSocketId: socket.id,
+        });
+        sendPushToAllARLs({
+          title: "Guest Waiting for Meeting",
+          body: `${user.name} is waiting for the meeting to start`,
+          url: "/arl",
+        }).catch(() => {});
+      }
+
       const label = (socket as any)._isGuest ? "guest" : user.userType;
       console.log(`🔌 ${label} connected: ${user.name} (${socket.id})`);
     } else {
@@ -489,22 +505,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           },
         });
 
-        // Notify ARLs when a guest joins a meeting
-        if ((socket as any)._isGuest) {
-          io!.to("arls").emit("meeting:guest-waiting", {
-            meetingId: data.meetingId,
-            meetingTitle: meeting.title,
-            guestName: user.name,
-            guestSocketId: socket.id,
-          });
-
-          // Send mobile push notification to all ARLs
-          sendPushToAllARLs({
-            title: "Guest Joined Meeting",
-            body: `${user.name} joined "${meeting.title}"`,
-            url: "/arl",
-          }).catch(() => {});
-        }
+        // Note: guest-waiting notification + push already sent on socket connect
       }
       console.log(`📹 ${user.name} ${alreadyInMeeting ? "re-joined" : "joined"} meeting "${meeting.title}" as ${myParticipant.role}`);
     });
@@ -612,6 +613,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (data.hasVideo !== undefined) p.hasVideo = data.hasVideo;
       if (data.hasAudio !== undefined) p.hasAudio = data.hasAudio;
       broadcastMeetingState(meeting);
+    });
+
+    // ── Screen share notification ──
+    socket.on("meeting:screen-share", (data: { meetingId: string; sharing: boolean }) => {
+      if (!user) return;
+      socket.to(`meeting:${data.meetingId}`).emit("meeting:screen-share", {
+        meetingId: data.meetingId,
+        socketId: socket.id,
+        name: user.name,
+        sharing: data.sharing,
+      });
     });
 
     // ── Chat message in meeting ──
