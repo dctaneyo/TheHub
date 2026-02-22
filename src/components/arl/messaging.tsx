@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
-import { KFCEmojiPicker } from "@/components/kfc-emoji-picker";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -262,7 +261,6 @@ export function Messaging() {
   const [directSearch, setDirectSearch] = useState("");
   const [startingDirect, setStartingDirect] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const reactions = ["❤️", "👍", "😂", "😊"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -977,41 +975,22 @@ export function Messaging() {
       <div className="border-t border-slate-200">
         {/* Emoji Quick Replies */}
         <div className="px-3 pt-3">
-          <EmojiQuickReplies onSelect={(text) => { setNewMessage(text); handleSend(); }} />
+          <EmojiQuickReplies onSelect={(text) => {
+            setNewMessage(text);
+            // Send immediately with the selected text
+            setTimeout(() => handleSend(), 0);
+          }} />
         </div>
 
         <div className="p-3">
           <div className="flex gap-2 relative">
-            <div className="relative flex-1">
-              <Input
-                value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  if (activeConvo) startTyping(activeConvo.id);
-                }}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { if (activeConvo) stopTyping(activeConvo.id); handleSend(); } }}
-                placeholder={activeConvo.type === "global" ? "Send to everyone..." : "Type a message..."}
-                className="rounded-xl pr-10"
-              />
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-lg"
-                title="KFC Emojis"
-              >
-                🍗
-              </button>
-              <AnimatePresence>
-                {showEmojiPicker && (
-                  <KFCEmojiPicker
-                    onSelect={(emoji) => {
-                      setNewMessage((prev: string) => prev + emoji);
-                      setShowEmojiPicker(false);
-                    }}
-                    onClose={() => setShowEmojiPicker(false)}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
+              placeholder="Type a message..."
+              className="rounded-xl flex-1"
+            />
             <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
             >

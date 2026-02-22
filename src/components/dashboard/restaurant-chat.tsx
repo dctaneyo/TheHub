@@ -35,7 +35,6 @@ import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
-import { KFCEmojiPicker } from "@/components/kfc-emoji-picker";
 
 interface Message {
   id: string;
@@ -98,7 +97,6 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [newChatMode, setNewChatMode] = useState<"direct" | "group">("direct");
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -672,8 +670,6 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange }:
             onStopTyping={() => stopTyping(activeConvo.id)}
             knownMessageIds={knownMessageIdsRef.current}
             sendError={sendError}
-            showEmojiPicker={showEmojiPicker}
-            setShowEmojiPicker={setShowEmojiPicker}
             onReaction={async (messageId: string, emoji: string) => {
               try {
                 const res = await fetch("/api/messages/reaction", {
@@ -712,8 +708,6 @@ interface ActiveConvoViewProps {
   knownMessageIds: Set<string>;
   sendError: boolean;
   onReaction: (messageId: string, emoji: string) => Promise<void>;
-  showEmojiPicker: boolean;
-  setShowEmojiPicker: (v: boolean) => void;
 }
 
 function ActiveConvoView({
@@ -721,7 +715,6 @@ function ActiveConvoView({
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
   typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
-  showEmojiPicker, setShowEmojiPicker,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
@@ -900,7 +893,11 @@ function ActiveConvoView({
         {/* Emoji Quick Replies */}
         {!showKeyboard && (
           <div className="px-3 pt-3">
-            <EmojiQuickReplies onSelect={(text) => { setNewMessage(text); handleSend(); }} />
+            <EmojiQuickReplies onSelect={(text) => {
+              setNewMessage(text);
+              // Send immediately with the selected text
+              setTimeout(() => handleSend(), 0);
+            }} />
           </div>
         )}
 
@@ -917,33 +914,13 @@ function ActiveConvoView({
           >
             <Keyboard className="h-4 w-4" />
           </button>
-          <div className="relative flex-1">
-            <Input
-              value={newMessage}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
-              placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
-              className="rounded-xl pr-10"
-            />
-            <button
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-lg"
-              title="KFC Emojis"
-            >
-              🍗
-            </button>
-            <AnimatePresence>
-              {showEmojiPicker && (
-                <KFCEmojiPicker
-                  onSelect={(emoji) => {
-                    setNewMessage(newMessage + emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                  onClose={() => setShowEmojiPicker(false)}
-                />
-              )}
-            </AnimatePresence>
-          </div>
+          <Input
+            value={newMessage}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
+            placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
+            className="rounded-xl flex-1"
+          />
           <Shake trigger={sendError} intensity="medium">
             <Button onClick={handleSend} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
