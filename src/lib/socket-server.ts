@@ -408,22 +408,34 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
 
+      const alreadyInMeeting = meeting.participants.has(socket.id);
       const isHost = meeting.hostId === user.id;
       const isArl = user.userType === "arl";
-      const participant: MeetingParticipant = {
-        odId: user.id,
-        socketId: socket.id,
-        name: user.name,
-        userType: user.userType as "location" | "arl",
-        role: isHost ? "host" : (isArl ? "cohost" : "participant"),
-        hasVideo: data.hasVideo,
-        hasAudio: data.hasAudio,
-        isMuted: !isArl, // restaurants start muted, ARLs start unmuted
-        handRaised: false,
-        joinedAt: Date.now(),
-      };
-      meeting.participants.set(socket.id, participant);
-      socket.join(`meeting:${data.meetingId}`);
+
+      if (alreadyInMeeting) {
+        // Host was pre-added during meeting:create — just update media state
+        const existing = meeting.participants.get(socket.id)!;
+        existing.hasVideo = data.hasVideo;
+        existing.hasAudio = data.hasAudio;
+      } else {
+        // New participant joining
+        const participant: MeetingParticipant = {
+          odId: user.id,
+          socketId: socket.id,
+          name: user.name,
+          userType: user.userType as "location" | "arl",
+          role: isHost ? "host" : (isArl ? "cohost" : "participant"),
+          hasVideo: data.hasVideo,
+          hasAudio: data.hasAudio,
+          isMuted: !isArl, // restaurants start muted, ARLs start unmuted
+          handRaised: false,
+          joinedAt: Date.now(),
+        };
+        meeting.participants.set(socket.id, participant);
+        socket.join(`meeting:${data.meetingId}`);
+      }
+
+      const myParticipant = meeting.participants.get(socket.id)!;
 
       // Tell the joiner about all existing participants (so they can create peer connections)
       const existingParticipants = Array.from(meeting.participants.entries())
@@ -438,20 +450,22 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         title: meeting.title,
         hostName: meeting.hostName,
         participants: existingParticipants,
-        yourRole: participant.role,
+        yourRole: myParticipant.role,
       });
 
-      // Tell all OTHER participants about the new joiner (so they create a peer connection to them)
-      socket.to(`meeting:${data.meetingId}`).emit("meeting:participant-joined", {
-        meetingId: data.meetingId,
-        participant: {
-          odId: participant.odId, socketId: socket.id, name: participant.name,
-          userType: participant.userType, role: participant.role,
-          hasVideo: participant.hasVideo, hasAudio: participant.hasAudio,
-          isMuted: participant.isMuted, handRaised: participant.handRaised,
-        },
-      });
-      console.log(`📹 ${user.name} joined meeting "${meeting.title}" as ${participant.role}`);
+      // Only broadcast participant-joined if this is a NEW joiner (not the host re-joining)
+      if (!alreadyInMeeting) {
+        socket.to(`meeting:${data.meetingId}`).emit("meeting:participant-joined", {
+          meetingId: data.meetingId,
+          participant: {
+            odId: myParticipant.odId, socketId: socket.id, name: myParticipant.name,
+            userType: myParticipant.userType, role: myParticipant.role,
+            hasVideo: myParticipant.hasVideo, hasAudio: myParticipant.hasAudio,
+            isMuted: myParticipant.isMuted, handRaised: myParticipant.handRaised,
+          },
+        });
+      }
+      console.log(`📹 ${user.name} ${alreadyInMeeting ? "re-joined" : "joined"} meeting "${meeting.title}" as ${myParticipant.role}`);
     });
 
     // ── Leave meeting ──

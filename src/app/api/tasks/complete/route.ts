@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     db.insert(schema.taskCompletions).values(completion).run();
 
     // Broadcast instant update via WebSocket
-    broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints);
+    broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name);
     broadcastLeaderboardUpdate(session.id);
 
     return NextResponse.json({

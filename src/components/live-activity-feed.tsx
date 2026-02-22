@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Activity, CheckCircle, MessageCircle, Trophy, Zap } from "lucide-react";
+import { Activity, CheckCircle, MessageCircle, Trophy, Zap, Trash2 } from "lucide-react";
 
 interface ActivityItem {
   id: string;
@@ -152,6 +152,13 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
         <Zap className="h-4 w-4 text-yellow-500" />
         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Live Activity</h3>
         <div className="flex items-center gap-1 ml-auto">
+          <button
+            onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
+            className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Clear all activity"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
           <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-[10px] text-slate-400">Live</span>
         </div>

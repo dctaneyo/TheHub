@@ -32,9 +32,10 @@ export function broadcastTaskUpdate(locationId?: string | null) {
   emitToArls("task:updated", { locationId });
 }
 
-export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, pointsEarned: number) {
+export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, pointsEarned: number, locationName?: string) {
   if (!isAvailable()) return;
-  emitToArls("task:completed", { locationId, taskId, taskTitle, pointsEarned });
+  emitToArls("task:completed", { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" });
+  emitToLocations("task:completed", { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" });
   emitToLocation(locationId, "task:updated", { locationId });
 }
 

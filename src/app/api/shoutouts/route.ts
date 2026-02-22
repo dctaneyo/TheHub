@@ -164,3 +164,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// DELETE - Purge all shoutouts (ARL only)
+export async function DELETE() {
+  try {
+    const session = await getSession();
+    if (!session || session.userType !== "arl") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    ensureShoutoutsTable();
+    sqlite.exec("DELETE FROM shoutouts");
+
+    // Broadcast to all clients so they refresh
+    broadcastToAll("shoutout:purged", {});
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Purge shoutouts error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

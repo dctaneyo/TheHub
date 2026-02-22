@@ -48,6 +48,7 @@ import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { AnimatedBackground } from "@/components/animated-background";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
+import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 
@@ -692,6 +693,9 @@ export default function DashboardPage() {
           <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
         </div>
       </div>
+
+      {/* Live Activity Ticker */}
+      <LiveTicker />
 
       {/* Celebrations */}
       <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />

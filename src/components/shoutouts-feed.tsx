@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Megaphone, Heart, ThumbsUp, Star, Sparkles } from "lucide-react";
+import { Megaphone, Heart, ThumbsUp, Star, Sparkles, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface Shoutout {
   id: string;
@@ -18,6 +19,8 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
   const [shoutouts, setShoutouts] = useState<Shoutout[]>([]);
   const [showAll, setShowAll] = useState(false);
   const { socket } = useSocket();
+  const { user } = useAuth();
+  const isArl = user?.userType === "arl";
 
   const fetchShoutouts = useCallback(async () => {
     try {
@@ -51,12 +54,16 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
       ));
     };
 
+    const handlePurged = () => setShoutouts([]);
+
     socket.on("shoutout:new", handleNewShoutout);
     socket.on("shoutout:reaction", handleReaction);
+    socket.on("shoutout:purged", handlePurged);
 
     return () => {
       socket.off("shoutout:new", handleNewShoutout);
       socket.off("shoutout:reaction", handleReaction);
+      socket.off("shoutout:purged", handlePurged);
     };
   }, [socket]);
 
@@ -91,14 +98,28 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
           <Megaphone className="h-5 w-5 text-purple-500" />
           <h3 className="text-sm font-bold text-slate-700">Recent Shoutouts</h3>
         </div>
-        {shoutouts.length > 3 && (
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="text-xs font-semibold text-purple-500 hover:text-purple-600"
-          >
-            {showAll ? "Show Less" : `View All (${shoutouts.length})`}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isArl && shoutouts.length > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm("Clear all shoutouts? This cannot be undone.")) return;
+                try { await fetch("/api/shoutouts", { method: "DELETE" }); } catch {}
+              }}
+              className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Clear all shoutouts"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {shoutouts.length > 3 && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="text-xs font-semibold text-purple-500 hover:text-purple-600"
+            >
+              {showAll ? "Show Less" : `View All (${shoutouts.length})`}
+            </button>
+          )}
+        </div>
       </div>
 
       <AnimatePresence mode="popLayout">
