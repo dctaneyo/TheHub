@@ -25,7 +25,7 @@ import {
 } from "@livekit/components-react";
 import { Track, RoomEvent, LocalParticipant, RemoteParticipant } from "livekit-client";
 import "@livekit/components-styles";
-import { LogOut, DoorOpen } from "lucide-react";
+import { LogOut, DoorOpen, Settings } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -58,6 +58,11 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
   const [wsUrl, setWsUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [setupComplete, setSetupComplete] = useState(false);
+  const [joinWithVideo, setJoinWithVideo] = useState(false);
+  const [joinWithAudio, setJoinWithAudio] = useState(true);
+
+  const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
 
   // Fetch LiveKit token on mount
   useEffect(() => {
@@ -114,13 +119,30 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
     );
   }
 
-  const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
+  // Show setup/lobby page before joining the meeting
+  if (!setupComplete) {
+    return (
+      <MeetingSetup
+        title={title}
+        meetingId={meetingId}
+        hasVideoCapability={hasVideoCapability}
+        isHost={isHost}
+        userName={user?.name || "Guest"}
+        onJoin={(video, audio) => {
+          setJoinWithVideo(video);
+          setJoinWithAudio(audio);
+          setSetupComplete(true);
+        }}
+        onCancel={onLeave}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900">
       <LiveKitRoom
-        video={hasVideoCapability}
-        audio={!isHost ? false : true}
+        video={joinWithVideo}
+        audio={joinWithAudio}
         token={token}
         serverUrl={wsUrl}
         data-lk-theme="default"
@@ -135,6 +157,251 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
           hasVideoCapability={hasVideoCapability}
         />
       </LiveKitRoom>
+    </div>
+  );
+}
+
+// ─── Pre-meeting setup / lobby ───
+function MeetingSetup({
+  title,
+  meetingId,
+  hasVideoCapability,
+  isHost,
+  userName,
+  onJoin,
+  onCancel,
+}: {
+  title: string;
+  meetingId: string;
+  hasVideoCapability: boolean;
+  isHost: boolean;
+  userName: string;
+  onJoin: (video: boolean, audio: boolean) => void;
+  onCancel: () => void;
+}) {
+  const [cameraOn, setCameraOn] = useState(hasVideoCapability);
+  const [micOn, setMicOn] = useState(true);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [micLevel, setMicLevel] = useState(0);
+  const [permissionError, setPermissionError] = useState<string>("");
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const animFrameRef = useRef<number>(0);
+
+  // Request media permissions on mount
+  useEffect(() => {
+    let currentStream: MediaStream | null = null;
+
+    const requestMedia = async () => {
+      try {
+        const constraints: MediaStreamConstraints = {
+          audio: true,
+          video: hasVideoCapability ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } : false,
+        };
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentStream = mediaStream;
+        setStream(mediaStream);
+        setPermissionsGranted(true);
+        setPermissionError("");
+
+        // Set up audio analyser for mic level
+        const audioCtx = new AudioContext();
+        audioCtxRef.current = audioCtx;
+        const source = audioCtx.createMediaStreamSource(mediaStream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(analyser);
+        analyserRef.current = analyser;
+
+        // Start mic level animation
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const updateLevel = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          setMicLevel(Math.min(avg / 128, 1)); // normalize 0-1
+          animFrameRef.current = requestAnimationFrame(updateLevel);
+        };
+        updateLevel();
+      } catch (err: any) {
+        console.error("Media permission error:", err);
+        if (err.name === "NotAllowedError") {
+          setPermissionError("Camera/microphone access was denied. Please allow access in your browser settings.");
+        } else if (err.name === "NotFoundError") {
+          setPermissionError("No camera or microphone found. Please connect a device.");
+        } else {
+          setPermissionError("Could not access camera/microphone. Please check your settings.");
+        }
+      }
+    };
+
+    requestMedia();
+
+    return () => {
+      // Cleanup
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (audioCtxRef.current) audioCtxRef.current.close();
+      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    };
+  }, [hasVideoCapability]);
+
+  // Attach video stream to preview element
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = cameraOn ? stream : null;
+    }
+  }, [stream, cameraOn]);
+
+  // Toggle camera track
+  useEffect(() => {
+    if (!stream) return;
+    stream.getVideoTracks().forEach(t => { t.enabled = cameraOn; });
+  }, [cameraOn, stream]);
+
+  // Toggle mic track
+  useEffect(() => {
+    if (!stream) return;
+    stream.getAudioTracks().forEach(t => { t.enabled = micOn; });
+  }, [micOn, stream]);
+
+  const handleJoin = () => {
+    // Stop the preview stream before joining LiveKit (it will create its own)
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (audioCtxRef.current) audioCtxRef.current.close();
+    onJoin(cameraOn && hasVideoCapability, micOn);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+      <div className="w-full max-w-lg mx-4">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-white mb-1">Ready to join?</h1>
+          <p className="text-slate-400 text-sm">{title}</p>
+          <p className="text-slate-500 text-xs font-mono mt-1">ID: {meetingId.replace(/^scheduled-/, "")}</p>
+        </div>
+
+        {/* Camera preview */}
+        <div className="relative bg-slate-800 rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: "16/9" }}>
+          {hasVideoCapability && cameraOn && permissionsGranted ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover mirror"
+              style={{ transform: "scaleX(-1)" }}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center">
+              <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-3">
+                <span className="text-3xl font-bold text-white">{userName.charAt(0).toUpperCase()}</span>
+              </div>
+              <span className="text-sm text-slate-400">{userName}</span>
+              {!hasVideoCapability && (
+                <span className="text-xs text-slate-500 mt-1">Audio only</span>
+              )}
+              {hasVideoCapability && !cameraOn && (
+                <span className="text-xs text-slate-500 mt-1">Camera off</span>
+              )}
+            </div>
+          )}
+
+          {/* Role badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1">
+            {isHost ? (
+              <>
+                <Crown className="h-3 w-3 text-yellow-400" />
+                <span className="text-xs text-white font-medium">Host</span>
+              </>
+            ) : (
+              <>
+                <Users className="h-3 w-3 text-slate-400" />
+                <span className="text-xs text-white font-medium">Participant</span>
+              </>
+            )}
+          </div>
+
+          {/* Mic level indicator */}
+          {micOn && permissionsGranted && (
+            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1.5">
+              <Mic className="h-3.5 w-3.5 text-green-400" />
+              <div className="flex gap-0.5 items-end h-3">
+                {[0.15, 0.3, 0.45, 0.6, 0.75].map((threshold, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-1 rounded-full transition-all duration-75",
+                      micLevel > threshold ? "bg-green-400" : "bg-slate-600"
+                    )}
+                    style={{ height: `${(i + 1) * 20}%` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Permission error */}
+        {permissionError && (
+          <div className="bg-red-600/20 border border-red-600/40 rounded-xl p-3 mb-4 text-center">
+            <p className="text-red-400 text-sm">{permissionError}</p>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          {/* Mic toggle */}
+          <button
+            onClick={() => setMicOn(!micOn)}
+            className={cn(
+              "flex items-center gap-2 h-11 px-5 rounded-full transition-colors font-medium text-sm",
+              micOn
+                ? "bg-slate-700 hover:bg-slate-600 text-white"
+                : "bg-red-600 hover:bg-red-700 text-white"
+            )}
+          >
+            {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            {micOn ? "Mic on" : "Mic off"}
+          </button>
+
+          {/* Camera toggle (ARLs/guests only) */}
+          {hasVideoCapability && (
+            <button
+              onClick={() => setCameraOn(!cameraOn)}
+              className={cn(
+                "flex items-center gap-2 h-11 px-5 rounded-full transition-colors font-medium text-sm",
+                cameraOn
+                  ? "bg-slate-700 hover:bg-slate-600 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              )}
+            >
+              {cameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+              {cameraOn ? "Camera on" : "Camera off"}
+            </button>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={onCancel}
+            className="h-11 px-6 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleJoin}
+            className="h-11 px-8 rounded-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold transition-colors"
+          >
+            Join Meeting
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
