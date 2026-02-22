@@ -277,6 +277,11 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
         pc.oniceconnectionstatechange = () => {
           console.log(`ICE connection state for viewer ${data.viewerId}:`, pc.iceConnectionState);
         };
+        
+        // Monitor ICE gathering state
+        pc.onicegatheringstatechange = () => {
+          console.log(`ICE gathering state for viewer ${data.viewerId}:`, pc.iceGatheringState);
+        };
 
         // Add all tracks from the media stream
         console.log("Adding tracks to peer connection for viewer:", data.viewerId);
@@ -297,20 +302,27 @@ export function BroadcastStudio({ isOpen, onClose }: BroadcastStudioProps) {
           pc.addTrack(track, streamRef.current!);
         });
 
-        // Handle ICE candidates
+        // Handle ICE candidates - send them as they're discovered
         pc.onicecandidate = (event) => {
           if (event.candidate) {
+            console.log("Sending ICE candidate to viewer:", data.viewerId);
             socket.emit("webrtc:ice-candidate", {
               targetSocketId: data.viewerSocketId,
               candidate: event.candidate.toJSON(),
             });
+          } else {
+            console.log("ICE gathering complete for viewer:", data.viewerId);
           }
         };
 
-        // Create and send offer
-        const offer = await pc.createOffer();
+        // Create offer with all media
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: false,
+          offerToReceiveVideo: false,
+        });
         await pc.setLocalDescription(offer);
         
+        console.log("Sending offer to viewer:", data.viewerId);
         socket.emit("webrtc:offer", {
           viewerSocketId: data.viewerSocketId,
           offer: pc.localDescription!.toJSON(),
