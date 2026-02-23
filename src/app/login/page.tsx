@@ -27,6 +27,7 @@ export default function LoginPage() {
   const [isOnline] = useState(true);
   const userIdRef = useRef("");
   const pinRef = useRef("");
+  const keyboardInputRef = useRef<HTMLInputElement>(null);
 
   // Pending session for remote login
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -97,7 +98,45 @@ export default function LoginPage() {
   }, [socket, pendingId]);
 
   const currentValue = step === "userId" ? userId : pin;
-  const maxLength = 6;
+  const maxLength = 4;
+
+  // Keyboard support (hidden feature)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if keyboard input is focused
+      if (document.activeElement !== keyboardInputRef.current) return;
+      
+      const key = e.key;
+      
+      // Handle digits
+      if (key >= '0' && key <= '9') {
+        e.preventDefault();
+        handleDigit(key);
+      }
+      // Handle backspace
+      else if (key === 'Backspace') {
+        e.preventDefault();
+        handleDelete();
+      }
+      // Handle Enter
+      else if (key === 'Enter') {
+        e.preventDefault();
+        if (step === 'pin' && pin.length === maxLength) {
+          // Trigger login by calling the same logic as the login button
+          const loginButton = document.querySelector('[data-login-button]') as HTMLButtonElement;
+          if (loginButton) loginButton.click();
+        }
+      }
+      // Handle Escape to go back
+      else if (key === 'Escape' && step === 'pin') {
+        e.preventDefault();
+        goBackToUserId();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [step, userId, pin, maxLength]);
 
   const goBackToUserId = () => {
     setStep("userId");
@@ -228,6 +267,18 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center py-6 px-4">
+      {/* Hidden input for keyboard support */}
+      <input
+        ref={keyboardInputRef}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={0}
+        style={{ position: 'absolute', left: -9999 }}
+      />
 
       {/* Top bar: connection + session ID — hidden on mobile (shown inside card instead) */}
       <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
@@ -506,6 +557,7 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.92 }}
                 onClick={() => handleDigit(btn)}
                 disabled={loading || validating}
+                {...(isLastDigit && step === "pin" && { "data-login-button": true })}
                 className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white text-xl font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
               >
                 {showSpinner && isLastDigit ? (
