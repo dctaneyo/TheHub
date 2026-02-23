@@ -6,7 +6,7 @@ import {
   Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Crown, Shield,
-  Keyboard, Loader2, SwitchCamera,
+  Keyboard, Loader2, SwitchCamera, Timer, ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -448,7 +448,10 @@ function MeetingUI({
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
   const [waitingForHost, setWaitingForHost] = useState(false);
   const [hostHasLeft, setHostHasLeft] = useState(false);
+  const [hostLeftCountdown, setHostLeftCountdown] = useState<number | null>(null); // seconds remaining
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isArl = user?.userType === "arl" || user?.userType === "guest";
   const isHostOrCohost = myRole === "host" || myRole === "cohost";
@@ -535,10 +538,36 @@ function MeetingUI({
     const handleHostJoined = () => {
       setWaitingForHost(false);
       setHostHasLeft(false);
+      setHostLeftCountdown(null);
+      if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     };
 
     const handleHostLeft = () => {
       setHostHasLeft(true);
+    };
+
+    const handleHostLeftCountdown = (data: { secondsRemaining: number; hostName?: string }) => {
+      setHostHasLeft(true);
+      setHostLeftCountdown(data.secondsRemaining);
+      // Start a local 1-second interval to tick down the counter smoothly
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      let remaining = data.secondsRemaining;
+      countdownIntervalRef.current = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+          setHostLeftCountdown(0);
+        } else {
+          setHostLeftCountdown(remaining);
+        }
+      }, 1000);
+    };
+
+    const handleHostTransferred = (data: { newHostName: string; previousHostName: string }) => {
+      setHostHasLeft(false);
+      setHostLeftCountdown(null);
+      if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     };
 
     // Hand raise events from server — track by odId which matches LiveKit identity
@@ -589,6 +618,8 @@ function MeetingUI({
     socket.on("meeting:waiting-for-host", handleWaitingForHost);
     socket.on("meeting:host-joined", handleHostJoined);
     socket.on("meeting:host-left", handleHostLeft);
+    socket.on("meeting:host-left-countdown", handleHostLeftCountdown);
+    socket.on("meeting:host-transferred", handleHostTransferred);
     socket.on("meeting:hand-raised", handleHandRaised);
     socket.on("meeting:hand-lowered", handleHandLowered);
     socket.on("meeting:you-were-muted", handleYouWereMuted);
@@ -606,6 +637,8 @@ function MeetingUI({
       socket.off("meeting:waiting-for-host", handleWaitingForHost);
       socket.off("meeting:host-joined", handleHostJoined);
       socket.off("meeting:host-left", handleHostLeft);
+      socket.off("meeting:host-left-countdown", handleHostLeftCountdown);
+      socket.off("meeting:host-transferred", handleHostTransferred);
       socket.off("meeting:hand-raised", handleHandRaised);
       socket.off("meeting:hand-lowered", handleHandLowered);
       socket.off("meeting:you-were-muted", handleYouWereMuted);
@@ -696,12 +729,16 @@ function MeetingUI({
     };
   }, [noiseSuppression, localParticipant]);
 
-  // Cleanup RNNoise on unmount
+  // Cleanup RNNoise + countdown interval on unmount
   useEffect(() => {
     return () => {
       if (rnnoiseRef.current?.isActive) {
         rnnoiseRef.current.stop();
         rnnoiseRef.current = null;
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
       }
     };
   }, []);
@@ -735,14 +772,23 @@ function MeetingUI({
 
   const endMeeting = () => {
     socket?.emit("meeting:end", { meetingId });
-    room.disconnect();
-    onLeave();
+    // Delay disconnect to ensure the server processes the end event and
+    // broadcasts meeting:ended to all participants before our socket drops
+    setTimeout(() => {
+      room.disconnect();
+      onLeave();
+    }, 500);
   };
 
   const leaveMeeting = () => {
     socket?.emit("meeting:leave", { meetingId });
     room.disconnect();
     onLeave();
+  };
+
+  const transferHost = (targetIdentity: string) => {
+    socket?.emit("meeting:transfer-host", { meetingId, targetSocketId: targetIdentity });
+    setShowTransferDialog(false);
   };
 
   // Helper: check if a participant has raised hand (by socket or LiveKit identity)
@@ -788,6 +834,73 @@ function MeetingUI({
       <style>{`
         .lk-host-video video { object-fit: contain !important; }
       `}</style>
+      {/* Host-left countdown banner */}
+      {hostHasLeft && hostLeftCountdown !== null && hostLeftCountdown > 0 && (
+        <div className="bg-orange-600/90 backdrop-blur-sm px-4 py-2 flex items-center justify-center gap-2 shrink-0">
+          <Timer className="h-4 w-4 text-white animate-pulse" />
+          <span className="text-white text-sm font-medium">
+            Host has left — meeting ends in {Math.floor(hostLeftCountdown / 60)}:{String(hostLeftCountdown % 60).padStart(2, "0")}
+          </span>
+        </div>
+      )}
+
+      {/* Host transfer dialog */}
+      <AnimatePresence>
+        {showTransferDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setShowTransferDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-sm"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-white font-bold text-base mb-1">Transfer Host Role</h3>
+              <p className="text-slate-400 text-xs mb-4">Select a participant to become the new host. You will become a co-host.</p>
+              <div className="space-y-1 max-h-60 overflow-y-auto">
+                {participants.filter(p => p !== localParticipant).map(p => {
+                  const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+                  return (
+                    <button
+                      key={p.identity}
+                      onClick={() => transferHost(p.identity)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-700/50 transition-colors text-left"
+                    >
+                      <div className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
+                        metadata.userType === "arl" ? "bg-blue-600" : metadata.userType === "guest" ? "bg-purple-600" : "bg-slate-600"
+                      )}>
+                        {p.name?.charAt(0) || "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-white font-medium truncate block">{p.name}</span>
+                        <span className="text-[10px] text-slate-400 capitalize">{metadata.userType || "participant"}</span>
+                      </div>
+                      <ArrowRightLeft className="h-4 w-4 text-slate-500" />
+                    </button>
+                  );
+                })}
+                {participants.filter(p => p !== localParticipant).length === 0 && (
+                  <p className="text-slate-500 text-xs text-center py-4">No other participants to transfer to</p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowTransferDialog(false)}
+                className="mt-3 w-full h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -1374,8 +1487,8 @@ function MeetingUI({
             <AudioLines className="h-5 w-5" />
           </button>
 
-          {/* Raise hand (restaurants) */}
-          {!isArl && (
+          {/* Raise hand (restaurants + guests) */}
+          {(user?.userType === "location" || user?.userType === "guest") && (
             <button
               onClick={toggleRaiseHand}
               className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}
@@ -1385,9 +1498,17 @@ function MeetingUI({
             </button>
           )}
 
-          {/* Host: separate Leave + End Meeting buttons */}
+          {/* Host: Transfer + Leave + End Meeting buttons */}
           {myRole === "host" ? (
             <>
+              <button
+                onClick={() => setShowTransferDialog(true)}
+                className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                title="Transfer host role to another participant"
+              >
+                <ArrowRightLeft className="h-5 w-5" />
+                <span className="text-xs font-medium hidden sm:inline">Transfer</span>
+              </button>
               <button
                 onClick={leaveMeeting}
                 className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"

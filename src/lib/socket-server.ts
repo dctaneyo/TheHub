@@ -46,6 +46,8 @@ interface ActiveMeeting {
   hostName: string;
   createdAt: number;
   participants: Map<string, MeetingParticipant>; // keyed by socketId
+  hostLeftAt?: number;          // timestamp when host left (for auto-end countdown)
+  hostLeftTimer?: ReturnType<typeof setTimeout>; // 10-min auto-end timer
 }
 
 if (!(globalThis as any).__hubActiveMeetings) {
@@ -75,6 +77,87 @@ if (!(globalThis as any).__hubMeetingAnalytics) {
   (globalThis as any).__hubMeetingAnalytics = new Map<string, MeetingAnalyticsData>();
 }
 const _meetingAnalytics: Map<string, MeetingAnalyticsData> = (globalThis as any).__hubMeetingAnalytics;
+
+// Host-leave auto-end timers (10 minutes)
+if (!(globalThis as any).__hubHostLeftTimers) {
+  (globalThis as any).__hubHostLeftTimers = new Map<string, ReturnType<typeof setTimeout>>();
+}
+const _hostLeftTimers: Map<string, ReturnType<typeof setTimeout>> = (globalThis as any).__hubHostLeftTimers;
+
+const HOST_LEFT_AUTO_END_MS = 10 * 60 * 1000; // 10 minutes
+const HOST_LEFT_WARNING_INTERVALS = [5 * 60, 2 * 60, 60, 30, 10]; // seconds remaining to send warnings
+
+// ── Force-end a meeting (reusable by multiple triggers) ──
+function forceEndMeeting(meetingId: string, reason: string) {
+  const io = getIO();
+  if (!io) return;
+  const meeting = _activeMeetings.get(meetingId);
+  if (!meeting) return;
+
+  // Cancel host-left timer if any
+  const hostTimer = _hostLeftTimers.get(meetingId);
+  if (hostTimer) { clearTimeout(hostTimer); _hostLeftTimers.delete(meetingId); }
+
+  // Finalize analytics
+  const analytics = _meetingAnalytics.get(meetingId);
+  if (analytics) {
+    const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
+    try {
+      for (const [sid, participant] of meeting.participants) {
+        const recordId = analytics.participantRecords.get(sid);
+        if (recordId) {
+          const pDuration = Math.round((Date.now() - participant.joinedAt) / 1000);
+          db.update(schema.meetingParticipants)
+            .set({ leftAt: new Date().toISOString(), duration: pDuration })
+            .where(eq(schema.meetingParticipants.id, recordId)).run();
+        }
+      }
+      db.update(schema.meetingAnalytics).set({
+        endedAt: new Date().toISOString(),
+        duration,
+        totalMessages: analytics.messageCount,
+        totalQuestions: analytics.questionCount,
+        totalReactions: analytics.reactionCount,
+        totalHandRaises: analytics.handRaiseCount,
+        peakParticipants: analytics.peakParticipants,
+      }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
+    } catch (e) { console.error('Analytics force-end error:', e); }
+    _meetingAnalytics.delete(meetingId);
+  }
+
+  // Cancel all disconnect grace timers for this meeting's participants
+  for (const [sid] of meeting.participants) {
+    const timerKey = `${meetingId}:${sid}`;
+    const timer = _disconnectTimers.get(timerKey);
+    if (timer) { clearTimeout(timer); _disconnectTimers.delete(timerKey); }
+  }
+
+  io.to(`meeting:${meetingId}`).emit("meeting:ended", { meetingId, reason });
+  io.to("locations").emit("meeting:ended", { meetingId });
+  io.to("arls").emit("meeting:ended", { meetingId });
+  _activeMeetings.delete(meetingId);
+  console.log(`📹 Meeting "${meeting.title}" force-ended: ${reason}`);
+}
+
+// ── Periodic stale meeting cleanup (every 60s) ──
+if (!(globalThis as any).__hubMeetingCleanupInterval) {
+  (globalThis as any).__hubMeetingCleanupInterval = setInterval(() => {
+    const io = getIO();
+    if (!io) return;
+    for (const [meetingId, meeting] of _activeMeetings.entries()) {
+      // End meetings with no participants
+      if (meeting.participants.size === 0) {
+        forceEndMeeting(meetingId, "No participants remaining");
+        continue;
+      }
+      // End meetings older than 4 hours (safety net)
+      if (Date.now() - meeting.createdAt > 4 * 60 * 60 * 1000) {
+        forceEndMeeting(meetingId, "Meeting exceeded 4-hour maximum duration");
+        continue;
+      }
+    }
+  }, 60_000);
+}
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -290,20 +373,27 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         });
       }
 
-      // Notify ARLs immediately when a guest connects (waiting for host)
+      // Notify ARLs when a guest connects — only if meeting hasn't started or host isn't present
       if ((socket as any)._isGuest) {
         const gMeetingId = (socket as any)._guestMeetingId as string;
+        const existingMeeting = _activeMeetings.get(gMeetingId);
+        const hostIsPresent = existingMeeting && Array.from(existingMeeting.participants.values()).some(p => p.role === "host");
+
         io!.to("arls").emit("meeting:guest-waiting", {
           meetingId: gMeetingId,
           meetingTitle: gMeetingId,
           guestName: user.name,
           guestSocketId: socket.id,
         });
-        sendPushToAllARLs({
-          title: "Guest Waiting for Meeting",
-          body: `${user.name} is waiting for the meeting to start`,
-          url: "/arl",
-        }).catch(() => {});
+
+        // Only send push notification if the meeting hasn't started or host isn't in the meeting
+        if (!existingMeeting || !hostIsPresent) {
+          sendPushToAllARLs({
+            title: "Guest Waiting for Meeting",
+            body: `${user.name} is waiting for the meeting to start`,
+            url: "/arl",
+          }).catch(() => {});
+        }
       }
 
       const label = (socket as any)._isGuest ? "guest" : user.userType;
@@ -658,28 +748,54 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         meetingId: data.meetingId, socketId: socket.id, name: user.name,
       });
 
-      // If host left and no participants remain, end the meeting
+      // If no participants remain, end the meeting immediately
       if (meeting.participants.size === 0) {
-        _activeMeetings.delete(data.meetingId);
-        // Finalize analytics
-        if (analytics) {
-          const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
-          try {
-            db.update(schema.meetingAnalytics).set({
-              endedAt: new Date().toISOString(),
-              duration,
-              totalMessages: analytics.messageCount,
-              totalQuestions: analytics.questionCount,
-              totalReactions: analytics.reactionCount,
-              totalHandRaises: analytics.handRaiseCount,
-              peakParticipants: analytics.peakParticipants,
-            }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
-          } catch (e) { console.error('Analytics finalize error:', e); }
-          _meetingAnalytics.delete(data.meetingId);
+        forceEndMeeting(data.meetingId, "No participants remaining");
+        return;
+      }
+
+      // If the host left (not ended), start 10-minute auto-end countdown
+      if (leavingParticipant?.role === "host") {
+        const hasNewHost = Array.from(meeting.participants.values()).some(p => p.role === "host");
+        if (!hasNewHost) {
+          meeting.hostLeftAt = Date.now();
+          console.log(`⏳ Host left meeting "${meeting.title}" — 10-minute auto-end countdown started`);
+
+          // Notify remaining participants that host has left
+          io!.to(`meeting:${data.meetingId}`).emit("meeting:host-left-countdown", {
+            meetingId: data.meetingId,
+            secondsRemaining: HOST_LEFT_AUTO_END_MS / 1000,
+            hostName: leavingParticipant.name,
+          });
+
+          // Schedule warning broadcasts at key intervals
+          for (const warnSec of HOST_LEFT_WARNING_INTERVALS) {
+            const delay = (HOST_LEFT_AUTO_END_MS / 1000 - warnSec) * 1000;
+            if (delay > 0) {
+              setTimeout(() => {
+                // Only send if meeting still exists and still has no host
+                const m = _activeMeetings.get(data.meetingId);
+                if (m && m.hostLeftAt && !Array.from(m.participants.values()).some(p => p.role === "host")) {
+                  io!.to(`meeting:${data.meetingId}`).emit("meeting:host-left-countdown", {
+                    meetingId: data.meetingId,
+                    secondsRemaining: warnSec,
+                  });
+                }
+              }, delay);
+            }
+          }
+
+          // Cancel any existing timer, then set the 10-min auto-end
+          const existingTimer = _hostLeftTimers.get(data.meetingId);
+          if (existingTimer) clearTimeout(existingTimer);
+          _hostLeftTimers.set(data.meetingId, setTimeout(() => {
+            _hostLeftTimers.delete(data.meetingId);
+            const m = _activeMeetings.get(data.meetingId);
+            if (m && !Array.from(m.participants.values()).some(p => p.role === "host")) {
+              forceEndMeeting(data.meetingId, "Host left — meeting auto-ended after 10 minutes");
+            }
+          }, HOST_LEFT_AUTO_END_MS));
         }
-        io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
-        io!.to("arls").emit("meeting:ended", { meetingId: data.meetingId });
-        console.log(`📹 Meeting "${meeting.title}" ended (empty)`);
       }
     });
 
@@ -690,40 +806,56 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const p = meeting.participants.get(socket.id);
       if (!p || p.role !== "host") return;
+      forceEndMeeting(data.meetingId, `Ended by host ${user.name}`);
+    });
 
-      // Finalize analytics before deleting meeting
-      const analytics = _meetingAnalytics.get(data.meetingId);
-      if (analytics) {
-        const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
-        try {
-          // Mark all remaining participants as left
-          for (const [sid, participant] of meeting.participants) {
-            const recordId = analytics.participantRecords.get(sid);
-            if (recordId) {
-              const pDuration = Math.round((Date.now() - participant.joinedAt) / 1000);
-              db.update(schema.meetingParticipants)
-                .set({ leftAt: new Date().toISOString(), duration: pDuration })
-                .where(eq(schema.meetingParticipants.id, recordId)).run();
-            }
+    // ── Transfer host role (host hands off to another participant) ──
+    socket.on("meeting:transfer-host", (data: { meetingId: string; targetSocketId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      if (!me || me.role !== "host") return;
+
+      // Find target participant (by socketId, odId, or livekitIdentity)
+      let target: MeetingParticipant | undefined;
+      let targetSid = data.targetSocketId;
+      target = meeting.participants.get(data.targetSocketId);
+      if (!target) {
+        for (const [sid, p] of meeting.participants) {
+          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+            target = p; targetSid = sid; break;
           }
-          db.update(schema.meetingAnalytics).set({
-            endedAt: new Date().toISOString(),
-            duration,
-            totalMessages: analytics.messageCount,
-            totalQuestions: analytics.questionCount,
-            totalReactions: analytics.reactionCount,
-            totalHandRaises: analytics.handRaiseCount,
-            peakParticipants: analytics.peakParticipants,
-          }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
-        } catch (e) { console.error('Analytics end error:', e); }
-        _meetingAnalytics.delete(data.meetingId);
+        }
       }
+      if (!target || targetSid === socket.id) return;
 
-      io!.to(`meeting:${data.meetingId}`).emit("meeting:ended", { meetingId: data.meetingId });
-      io!.to("locations").emit("meeting:ended", { meetingId: data.meetingId });
-      io!.to("arls").emit("meeting:ended", { meetingId: data.meetingId });
-      _activeMeetings.delete(data.meetingId);
-      console.log(`📹 Meeting "${meeting.title}" ended by ${user.name}`);
+      // Transfer: demote current host → cohost, promote target → host
+      me.role = "cohost";
+      target.role = "host";
+      meeting.hostId = target.odId;
+      meeting.hostName = target.name;
+
+      // Cancel any host-left countdown since there's a new host
+      meeting.hostLeftAt = undefined;
+      const hostTimer = _hostLeftTimers.get(data.meetingId);
+      if (hostTimer) { clearTimeout(hostTimer); _hostLeftTimers.delete(data.meetingId); }
+
+      // Notify all participants
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:host-transferred", {
+        meetingId: data.meetingId,
+        newHostSocketId: targetSid,
+        newHostName: target.name,
+        previousHostName: me.name,
+      });
+
+      // Tell the new host their role changed
+      io!.to(targetSid).emit("meeting:role-updated", { socketId: targetSid, role: "host" });
+      // Tell the previous host their role changed
+      socket.emit("meeting:role-updated", { socketId: socket.id, role: "cohost" });
+
+      broadcastMeetingState(meeting);
+      console.log(`📹 Host transferred: ${me.name} → ${target.name} in "${meeting.title}"`);
     });
 
     // ── Raise hand (restaurant requests to speak) ──

@@ -33,7 +33,7 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.min(Math.max(0.5, scale * delta), 3);
+    const newScale = Math.min(Math.max(1, scale * delta), 5);
     setScale(newScale);
     
     // Reset position if zooming back to 1x
@@ -87,7 +87,7 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
       const currentDistance = getTouchDistance(e.touches);
       if (lastTouchDistance.current > 0) {
         const delta = currentDistance / lastTouchDistance.current;
-        const newScale = Math.min(Math.max(0.5, scale * delta), 3);
+        const newScale = Math.min(Math.max(1, scale * delta), 5);
         setScale(newScale);
         
         // Reset position if zooming back to 1x
