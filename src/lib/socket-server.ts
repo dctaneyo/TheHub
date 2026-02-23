@@ -859,14 +859,18 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── End meeting (host only) ──
-    // SIMPLIFIED: Verify host by meeting.hostId, not participant list
+    // Check if user is host by comparing hostId against user.id OR their livekitIdentity
     socket.on("meeting:end", (data: { meetingId: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
-      // Only original host or any ARL can end the meeting
-      if (meeting.hostId !== user.id && user.userType !== "arl") {
-        console.log(`📹 meeting:end denied: ${user.name} is not host (hostId=${meeting.hostId})`);
+      // Get the participant's livekitIdentity for comparison
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      // Only host or any ARL can end the meeting
+      if (!isHost && user.userType !== "arl") {
+        console.log(`📹 meeting:end denied: ${user.name} is not host (hostId=${meeting.hostId}, userId=${user.id}, lkId=${myLkIdentity})`);
         return;
       }
       forceEndMeeting(data.meetingId, `Ended by host ${user.name}`);
@@ -881,9 +885,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         console.log(`⚠️ transfer-host: Meeting ${data.meetingId} not found`);
         return;
       }
-      // Only current host can transfer (check by hostId, not participant list)
-      if (meeting.hostId !== user.id) {
-        console.log(`⚠️ transfer-host: User ${user.name} (${user.id}) is not host (hostId=${meeting.hostId})`);
+      // Check if user is host by comparing hostId against user.id OR their livekitIdentity
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      if (!isHost) {
+        console.log(`⚠️ transfer-host: User ${user.name} (${user.id}, lkId=${myLkIdentity}) is not host (hostId=${meeting.hostId})`);
         return;
       }
 
@@ -957,8 +964,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         console.log(`🎤 allow-speak: meeting ${data.meetingId} not found`);
         return;
       }
+      // Check if user is host by comparing hostId against user.id OR their livekitIdentity
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
       // Only host/ARL can unmute
-      if (meeting.hostId !== user.id && user.userType !== "arl") {
+      if (!isHost && user.userType !== "arl") {
         console.log(`🎤 allow-speak: ${user.name} is not host`);
         return;
       }
@@ -981,8 +992,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         console.log(`🔇 mute-participant: meeting ${data.meetingId} not found`);
         return;
       }
-      // Only host can mute (verify by hostId, not participant list)
-      if (meeting.hostId !== user.id && user.userType !== "arl") {
+      // Check if user is host by comparing hostId against user.id OR their livekitIdentity
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      // Only host/ARL can mute
+      if (!isHost && user.userType !== "arl") {
         console.log(`🔇 mute-participant: ${user.name} is not host`);
         return;
       }
