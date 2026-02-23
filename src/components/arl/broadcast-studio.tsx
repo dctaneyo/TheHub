@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Video, Play, X, Copy, Check, Lock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,15 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
   const [title, setTitle] = useState(initialTitle || "");
   const [password, setPassword] = useState("");
   const [copiedCode, setCopiedCode] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState(() => generateMeetingCode());
 
-  // Generate a stable meeting code for this session
-  const generatedCode = useMemo(() => generateMeetingCode(), []);
+  // Regenerate meeting code each time the modal opens
+  useEffect(() => {
+    if (isOpen && !initialMeetingCode) {
+      setGeneratedCode(generateMeetingCode());
+    }
+  }, [isOpen, initialMeetingCode]);
+
   const meetingCode = initialMeetingCode || generatedCode;
 
   // Sync initialTitle when it changes

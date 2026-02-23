@@ -62,11 +62,22 @@ interface TasksResponse {
 }
 
 export default function DashboardPage() {
-  const [screensaverEnabled, setScreensaverEnabled] = useState(true);
+  const [screensaverEnabled, setScreensaverEnabled] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("hub-screensaver-enabled");
+      return saved !== null ? saved === "true" : true;
+    }
+    return true;
+  });
   const [forceIdle, setForceIdle] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Persist screensaver toggle to localStorage
+  useEffect(() => {
+    localStorage.setItem("hub-screensaver-enabled", String(screensaverEnabled));
+  }, [screensaverEnabled]);
 
   const { idle: autoIdle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
   const idleBase = screensaverEnabled && (autoIdle || forceIdle);
