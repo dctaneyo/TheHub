@@ -128,7 +128,7 @@ function GuestMeetingPageWithParams() {
   }, [searchParams]);
 
   // Validate meeting and route to waiting/meeting
-  const validateAndJoinMeeting = async (userName: string) => {
+  const validateAndJoinMeeting = async (userName: string, userObj?: any) => {
     setLoading(true);
     setError("");
 
@@ -154,8 +154,9 @@ function GuestMeetingPageWithParams() {
       setMeetingInfo(data.meeting);
       setActiveMeetingId(`scheduled-${data.meeting.meetingCode}`);
 
-      // Check if authenticated user is the host
-      const isHost = authenticatedUser && data.meeting.hostId && authenticatedUser.id === data.meeting.hostId;
+      // Check if authenticated user is the host (use passed userObj to avoid stale state)
+      const authUser = userObj || authenticatedUser;
+      const isHost = authUser && data.meeting.hostId && authUser.id === data.meeting.hostId;
 
       // If user is the host, start the meeting immediately
       if (isHost) {
@@ -254,7 +255,7 @@ function GuestMeetingPageWithParams() {
             }
 
             setAuthenticatedUser(data.user);
-            await validateAndJoinMeeting(data.user.name);
+            await validateAndJoinMeeting(data.user.name, data.user);
           } catch {
             setError("Authentication failed. Please try again.");
             setPin("");
