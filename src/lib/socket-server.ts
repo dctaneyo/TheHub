@@ -749,8 +749,16 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     socket.on("meeting:leave", (data: { meetingId: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
-      if (!meeting) return;
+      if (!meeting) {
+        console.log(`📹 meeting:leave — meeting ${data.meetingId} not found (already ended?)`);
+        return;
+      }
       const leavingParticipant = meeting.participants.get(socket.id);
+      if (!leavingParticipant) {
+        console.log(`📹 meeting:leave — ${user.name} not in participants (already left?)`);
+        return;
+      }
+      console.log(`📹 meeting:leave — ${user.name} leaving meeting "${meeting.title}" (role: ${leavingParticipant.role}, remaining before: ${meeting.participants.size})`);
       meeting.participants.delete(socket.id);
       socket.leave(`meeting:${data.meetingId}`);
 
@@ -773,13 +781,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
 
       // If no participants remain, end the meeting immediately
+      console.log(`📹 meeting:leave — remaining participants: ${meeting.participants.size}`);
       if (meeting.participants.size === 0) {
+        console.log(`📹 meeting:leave — no participants left, ending meeting`);
         forceEndMeeting(data.meetingId, "No participants remaining");
         return;
       }
 
       // If the host left (not ended), start 10-minute auto-end countdown
-      console.log(`📹 Participant ${user.name} left meeting "${meeting.title}" — role was: ${leavingParticipant?.role}`);
       if (leavingParticipant?.role === "host") {
         const hasNewHost = Array.from(meeting.participants.values()).some(p => p.role === "host");
         console.log(`📹 Host left check: hasNewHost=${hasNewHost}, remaining participants: ${meeting.participants.size}`);
