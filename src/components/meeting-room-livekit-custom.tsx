@@ -1091,18 +1091,31 @@ function MeetingUI({
                         </div>
                       )}
                     </>
-                  ) : hostParticipant && hostParticipant.getTrackPublication(Track.Source.Camera) ? (
+                  ) : hostParticipant ? (
                     <>
-                      <div className="lk-host-video w-full h-full">
-                        <VideoTrack
-                          trackRef={{
-                            participant: hostParticipant,
-                            source: Track.Source.Camera,
-                            publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
-                          }}
-                          className="w-full h-full"
-                        />
-                      </div>
+                      {/* Host with or without video */}
+                      {hostParticipant.getTrackPublication(Track.Source.Camera) ? (
+                        <div className="lk-host-video w-full h-full">
+                          <VideoTrack
+                            trackRef={{
+                              participant: hostParticipant,
+                              source: Track.Source.Camera,
+                              publication: hostParticipant.getTrackPublication(Track.Source.Camera)!,
+                            }}
+                            className="w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800">
+                          <div className="text-center">
+                            <div className="h-24 w-24 rounded-full bg-red-600 flex items-center justify-center mx-auto mb-3 text-white text-3xl font-bold">
+                              {hostParticipant.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'H'}
+                            </div>
+                            <p className="text-white font-medium">{hostParticipant.name}</p>
+                            <p className="text-slate-400 text-xs mt-1">Camera off</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-medium">{hostParticipant.name}</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
@@ -1121,9 +1134,7 @@ function MeetingUI({
                       <p className="text-slate-400 text-sm">
                         {hostHasLeft
                           ? "Host has left the meeting..."
-                          : !hostParticipant
-                            ? "Waiting for host to join..."
-                            : "Host\'s camera is off"}
+                          : "Waiting for host to join..."}
                       </p>
                     </div>
                   )}

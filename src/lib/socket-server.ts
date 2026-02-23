@@ -41,6 +41,7 @@ interface MeetingParticipant {
 
 interface ActiveMeeting {
   meetingId: string;
+  instanceId: string;   // unique ID for this session (allows reusing same meetingId)
   title: string;
   hostId: string;       // ARL user id who created
   hostName: string;
@@ -519,6 +520,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Create meeting (ARL only) ──
     socket.on("meeting:create", (data: { meetingId: string; title: string }) => {
       if (!user || user.userType !== "arl") return;
+      
+      // If a meeting with this ID already exists, force-end it first (handles recurring meetings)
+      const existingMeeting = _activeMeetings.get(data.meetingId);
+      if (existingMeeting) {
+        console.log(`📹 Meeting ${data.meetingId} already exists — ending previous instance before creating new one`);
+        forceEndMeeting(data.meetingId, "New meeting session started with same ID");
+      }
+      
+      const instanceId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const hostParticipant: MeetingParticipant = {
         odId: user.id,
         socketId: socket.id,
@@ -533,6 +543,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       };
       const meeting: ActiveMeeting = {
         meetingId: data.meetingId,
+        instanceId,
         title: data.title,
         hostId: user.id,
         hostName: user.name,
@@ -540,6 +551,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         participants: new Map([[socket.id, hostParticipant]]),
       };
       _activeMeetings.set(data.meetingId, meeting);
+      console.log(`📹 Created meeting ${data.meetingId} (instance: ${instanceId})`);
       socket.join(`meeting:${data.meetingId}`);
 
       // Create analytics record (wrapped in try/catch so notification still fires on DB error)
