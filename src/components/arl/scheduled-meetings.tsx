@@ -330,7 +330,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           {meetings.map(m => {
             const scheduledDate = new Date(m.scheduled_at);
             const isPast = scheduledDate < new Date();
-            const joinUrl = `${getAppUrl()}/meeting`;
+            const joinUrl = getAppUrl();
 
             return (
               <motion.div

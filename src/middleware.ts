@@ -19,6 +19,14 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host');
+
+  // Handle meeting subdomain - rewrite to meeting page
+  if (hostname === 'meeting.meetthehub.com' && pathname === '/') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/meeting';
+    return NextResponse.rewrite(url);
+  }
 
   // Allow public paths and static assets
   if (
