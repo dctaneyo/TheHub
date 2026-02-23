@@ -430,6 +430,8 @@ function MeetingUI({
 
   // State
   const [myRole, setMyRole] = useState<string>(isHost ? "host" : "participant");
+  const myRoleRef = useRef(myRole);
+  useEffect(() => { myRoleRef.current = myRole; }, [myRole]);
   const [handRaised, setHandRaised] = useState(false);
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const [showChat, setShowChat] = useState(false);
@@ -578,9 +580,8 @@ function MeetingUI({
         setMyRole("host");
         setNotification({ message: `You are now the host! ${data.previousHostName} transferred host duties to you.`, type: 'success' });
       } else {
-        // If we were the host before, demote based on user type
-        // ARLs become co-host, restaurants/guests become participant
-        if (myRole === "host") {
+        // Use ref to get current role (avoids stale closure)
+        if (myRoleRef.current === "host") {
           const newRole = user?.userType === "arl" ? "cohost" : "participant";
           setMyRole(newRole);
           setNotification({ message: `You transferred host to ${data.newHostName}. You are now a ${newRole === "cohost" ? "co-host" : "participant"}.`, type: 'info' });
@@ -591,19 +592,21 @@ function MeetingUI({
       setTimeout(() => setNotification(null), 8000);
     };
 
-    // Hand raise events from server — track by odId which matches LiveKit identity
-    const handleHandRaised = (data: { socketId: string; odId: string; name: string }) => {
+    // Hand raise events from server — track by livekitIdentity to match p.identity in isHandRaised
+    const handleHandRaised = (data: { socketId: string; odId: string; livekitIdentity?: string; name: string }) => {
       setRaisedHands(prev => {
         const next = new Set(prev);
+        if (data.livekitIdentity) next.add(data.livekitIdentity);
         next.add(data.odId);
-        next.add(data.socketId); // also track by socketId for fallback
+        next.add(data.socketId);
         return next;
       });
     };
 
-    const handleHandLowered = (data: { socketId: string; odId: string }) => {
+    const handleHandLowered = (data: { socketId: string; odId: string; livekitIdentity?: string }) => {
       setRaisedHands(prev => {
         const next = new Set(prev);
+        if (data.livekitIdentity) next.delete(data.livekitIdentity);
         next.delete(data.odId);
         next.delete(data.socketId);
         return next;
