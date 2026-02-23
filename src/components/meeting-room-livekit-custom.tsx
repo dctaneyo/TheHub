@@ -680,26 +680,49 @@ function MeetingUI({
     };
   }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
-  // Join meeting via socket (runs once when socket + user are ready)
-  const localIdentity = localParticipant.identity;
+  // Join meeting via socket — use RoomEvent.Connected for reliability
+  const hasJoinedRef = useRef(false);
   useEffect(() => {
-    if (!socket || !user || !localIdentity) return;
+    if (!socket || !user) return;
 
-    socket.emit("meeting:join", {
-      meetingId,
-      hasVideo: false, // will be updated via media-update events
-      hasAudio: true,
-      name: user.name,
-      userType: user.userType,
-      role: isHost ? "host" : "participant",
-      livekitIdentity: localIdentity, // Pass LiveKit identity for guest matching
-    });
+    const emitJoin = () => {
+      if (hasJoinedRef.current) return;
+      const identity = localParticipant.identity;
+      if (!identity) return;
+      
+      hasJoinedRef.current = true;
+      console.log(`[MeetingRoom] Emitting meeting:join with identity=${identity}`);
+      socket.emit("meeting:join", {
+        meetingId,
+        hasVideo: false,
+        hasAudio: true,
+        name: user.name,
+        userType: user.userType,
+        role: isHost ? "host" : "participant",
+        livekitIdentity: identity,
+      });
+    };
+
+    // Try immediately if already connected
+    if (room.state === "connected" && localParticipant.identity) {
+      emitJoin();
+    }
+
+    // Also listen for connection event in case we're not connected yet
+    const handleConnected = () => {
+      // Small delay to ensure identity is populated
+      setTimeout(emitJoin, 100);
+    };
+    room.on(RoomEvent.Connected, handleConnected);
 
     return () => {
-      socket.emit("meeting:leave", { meetingId });
+      room.off(RoomEvent.Connected, handleConnected);
+      if (hasJoinedRef.current) {
+        socket.emit("meeting:leave", { meetingId });
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, meetingId, user?.id, localIdentity]);
+  }, [socket, meetingId, user?.id, room, localParticipant.identity]);
 
   // Apply RNNoise noise suppression to microphone track
   useEffect(() => {
