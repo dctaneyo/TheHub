@@ -1053,6 +1053,76 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Mute all participants (host only) ──
+    socket.on("meeting:mute-all", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      if (!isHost) return;
+      
+      console.log(`🔇 mute-all: ${user.name} muting all participants in ${data.meetingId}`);
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:mute-all", { meetingId: data.meetingId });
+    });
+
+    // ── Unmute all participants (host only) ──
+    socket.on("meeting:unmute-all", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      if (!isHost) return;
+      
+      console.log(`🎤 unmute-all: ${user.name} unmuting all participants in ${data.meetingId}`);
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:unmute-all", { meetingId: data.meetingId });
+    });
+
+    // ── Lower all hands (host only) ──
+    socket.on("meeting:lower-all-hands", (data: { meetingId: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      if (!isHost) return;
+      
+      console.log(`✋ lower-all-hands: ${user.name} lowering all hands in ${data.meetingId}`);
+      // Clear all hand raised flags in server state
+      for (const p of meeting.participants.values()) {
+        p.handRaised = false;
+      }
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:lower-all-hands", { meetingId: data.meetingId });
+    });
+
+    // ── Lower hand for specific participant (host/cohost only) ──
+    socket.on("meeting:lower-hand-target", (data: { meetingId: string; targetIdentity: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      const me = meeting.participants.get(socket.id);
+      const myLkIdentity = me?.livekitIdentity;
+      const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
+      if (!isHost && user.userType !== "arl") return;
+      
+      console.log(`✋ lower-hand-target: ${user.name} lowering hand for ${data.targetIdentity} in ${data.meetingId}`);
+      // Find and clear the hand raised flag for the target participant
+      for (const p of meeting.participants.values()) {
+        if (p.livekitIdentity === data.targetIdentity) {
+          p.handRaised = false;
+          break;
+        }
+      }
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:hand-lowered", {
+        meetingId: data.meetingId,
+        livekitIdentity: data.targetIdentity,
+      });
+    });
+
     // ── Chat message in meeting ──
     socket.on("meeting:chat", (data: { meetingId: string; content: string }) => {
       if (!user) return;

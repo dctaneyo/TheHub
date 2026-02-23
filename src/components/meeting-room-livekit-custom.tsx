@@ -181,7 +181,8 @@ function MeetingSetup({
   onJoin: (video: boolean, audio: boolean) => void;
   onCancel: () => void;
 }) {
-  const [cameraOn, setCameraOn] = useState(hasVideoCapability);
+  // Start camera off by default (except for host)
+  const [cameraOn, setCameraOn] = useState(isHost && hasVideoCapability);
   const [micOn, setMicOn] = useState(true);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [micLevel, setMicLevel] = useState(0);
@@ -646,6 +647,25 @@ function MeetingUI({
       onLeave();
     };
 
+    // Mute all / unmute all / lower all hands handlers
+    const handleMuteAll = () => {
+      const myIdentity = localParticipant.identity;
+      // Don't mute the host
+      const myMetadata = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+      if (myMetadata.role !== "host") {
+        localParticipant.setMicrophoneEnabled(false);
+      }
+    };
+
+    const handleUnmuteAll = () => {
+      localParticipant.setMicrophoneEnabled(true);
+    };
+
+    const handleLowerAllHands = () => {
+      setHandRaised(false);
+      setRaisedHands(new Set());
+    };
+
     socket.on("meeting:chat-message", handleChatMessage);
     socket.on("meeting:question", handleQuestion);
     socket.on("meeting:question-upvoted", handleQuestionUpdate);
@@ -663,6 +683,9 @@ function MeetingUI({
     socket.on("meeting:speak-allowed", handleSpeakAllowed);
     socket.on("meeting:joined", handleJoined);
     socket.on("meeting:ended", handleMeetingEnded);
+    socket.on("meeting:mute-all", handleMuteAll);
+    socket.on("meeting:unmute-all", handleUnmuteAll);
+    socket.on("meeting:lower-all-hands", handleLowerAllHands);
 
     return () => {
       socket.off("meeting:chat-message", handleChatMessage);
@@ -682,6 +705,9 @@ function MeetingUI({
       socket.off("meeting:speak-allowed", handleSpeakAllowed);
       socket.off("meeting:joined", handleJoined);
       socket.off("meeting:ended", handleMeetingEnded);
+      socket.off("meeting:mute-all", handleMuteAll);
+      socket.off("meeting:unmute-all", handleUnmuteAll);
+      socket.off("meeting:lower-all-hands", handleLowerAllHands);
     };
   }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
@@ -1357,11 +1383,45 @@ function MeetingUI({
               {/* Participants panel */}
               {showParticipants && (
                 <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 className="text-white font-bold text-sm">Participants ({participants.length})</h3>
-                    <button onClick={() => setShowParticipants(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
-                      <X className="h-4 w-4" />
-                    </button>
+                  <div className="p-4 border-b border-slate-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-white font-bold text-sm">Participants ({participants.length})</h3>
+                      <button onClick={() => setShowParticipants(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {/* Host-only controls */}
+                    {localIsHost && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            socket?.emit("meeting:mute-all", { meetingId });
+                          }}
+                          className="flex-1 px-2 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold transition-colors"
+                          title="Mute all participants"
+                        >
+                          Mute All
+                        </button>
+                        <button
+                          onClick={() => {
+                            socket?.emit("meeting:unmute-all", { meetingId });
+                          }}
+                          className="flex-1 px-2 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 text-xs font-semibold transition-colors"
+                          title="Unmute all participants"
+                        >
+                          Unmute All
+                        </button>
+                        <button
+                          onClick={() => {
+                            socket?.emit("meeting:lower-all-hands", { meetingId });
+                          }}
+                          className="flex-1 px-2 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold transition-colors"
+                          title="Lower all raised hands"
+                        >
+                          Lower All Hands
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-1">
                     {participants.map(p => {
@@ -1392,7 +1452,19 @@ function MeetingUI({
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
                             {/* Host/cohost controls - can mute/unmute anyone except the host */}
                             {isHostOrCohost && metadata.role !== "host" && !isLocal && (
-                              <div className="flex gap-2 ml-2">
+                              <div className="flex gap-1 ml-2">
+                                {/* Lower hand button - only show if hand is raised */}
+                                {isHandRaised(p) && (
+                                  <button
+                                    onClick={() => {
+                                      socket?.emit("meeting:lower-hand-target", { meetingId, targetIdentity: p.identity });
+                                    }}
+                                    title="Lower hand"
+                                    className="p-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 active:scale-95 transition-transform"
+                                  >
+                                    <Hand className="h-4 w-4" />
+                                  </button>
+                                )}
                                 {p.isMicrophoneEnabled === false ? (
                                   <button
                                     onClick={() => {
@@ -1400,9 +1472,9 @@ function MeetingUI({
                                       socket?.emit("meeting:allow-speak", { meetingId, targetIdentity: p.identity });
                                     }}
                                     title="Allow to speak"
-                                    className="p-2.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
+                                    className="p-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
                                   >
-                                    <Mic className="h-5 w-5" />
+                                    <Mic className="h-4 w-4" />
                                   </button>
                                 ) : (
                                   <button
@@ -1411,9 +1483,9 @@ function MeetingUI({
                                       socket?.emit("meeting:mute-participant", { meetingId, targetIdentity: p.identity });
                                     }}
                                     title="Mute"
-                                    className="p-2.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
+                                    className="p-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
                                   >
-                                    <MicOff className="h-5 w-5" />
+                                    <MicOff className="h-4 w-4" />
                                   </button>
                                 )}
                               </div>
