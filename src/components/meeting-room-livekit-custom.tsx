@@ -158,7 +158,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
         serverUrl={wsUrl}
         data-lk-theme="default"
         style={{ height: "100vh" }}
-        onDisconnected={() => onLeave()}
+        onDisconnected={() => onLeave(true)}
       >
         <MeetingUI
           meetingId={meetingId}
@@ -656,7 +656,7 @@ function MeetingUI({
     // When host ends the meeting, disconnect everyone
     const handleMeetingEnded = () => {
       room.disconnect();
-      onLeave();
+      onLeave(true); // true = meeting ended, show ended screen
     };
 
     // Mute all / unmute all / lower all hands handlers
@@ -922,7 +922,7 @@ function MeetingUI({
   const leaveMeeting = () => {
     socket?.emit("meeting:leave", { meetingId });
     room.disconnect();
-    onLeave(false); // false = just left (meeting may continue)
+    onLeave(true); // true = show ended screen for user leaving
   };
 
   const transferHost = (targetIdentity: string, targetName?: string) => {
