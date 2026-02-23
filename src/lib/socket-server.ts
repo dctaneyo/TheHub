@@ -136,7 +136,18 @@ function forceEndMeeting(meetingId: string, reason: string) {
   io.to(`meeting:${meetingId}`).emit("meeting:ended", { meetingId, reason });
   io.to("locations").emit("meeting:ended", { meetingId });
   io.to("arls").emit("meeting:ended", { meetingId });
+  io.to("all").emit("meeting:ended", { meetingId }); // Include guests
   _activeMeetings.delete(meetingId);
+  
+  // Broadcast updated meeting list to all ARLs
+  const remainingMeetings = Array.from(_activeMeetings.values()).map(m => ({
+    meetingId: m.meetingId, title: m.title,
+    hostName: m.hostName, hostId: m.hostId,
+    participantCount: m.participants.size,
+    createdAt: m.createdAt,
+  }));
+  io.to("arls").emit("meeting:list", { meetings: remainingMeetings });
+  
   console.log(`📹 Meeting "${meeting.title}" force-ended: ${reason}`);
 }
 
@@ -810,6 +821,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
               forceEndMeeting(data.meetingId, "Host left — meeting auto-ended after 10 minutes");
             }
           }, HOST_LEFT_AUTO_END_MS));
+          
+          // Broadcast updated meeting list to ARLs (meeting still active but host left)
+          const currentMeetings = Array.from(_activeMeetings.values()).map(m => ({
+            meetingId: m.meetingId, title: m.title,
+            hostName: m.hostName, hostId: m.hostId,
+            participantCount: m.participants.size,
+            createdAt: m.createdAt,
+          }));
+          io!.to("arls").emit("meeting:list", { meetings: currentMeetings });
         }
       }
     });
@@ -1206,6 +1226,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
                   }
                   io!.to("locations").emit("meeting:ended", { meetingId });
                   io!.to("arls").emit("meeting:ended", { meetingId });
+                  io!.to("all").emit("meeting:ended", { meetingId }); // Include guests
+                  
+                  // Broadcast updated meeting list
+                  const remainingMeetings = Array.from(_activeMeetings.values()).map(m => ({
+                    meetingId: m.meetingId, title: m.title,
+                    hostName: m.hostName, hostId: m.hostId,
+                    participantCount: m.participants.size,
+                    createdAt: m.createdAt,
+                  }));
+                  io!.to("arls").emit("meeting:list", { meetings: remainingMeetings });
+                  
                   console.log(`📹 Meeting "${meeting.title}" ended (empty after grace period)`);
                 }
               }

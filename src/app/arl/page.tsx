@@ -616,27 +616,27 @@ export default function ArlPage() {
                 {activeView === "meetings" && (
                   <div className="space-y-6">
                     {activeMeetings.length > 0 && (
-                      <div className="bg-slate-800/50 rounded-2xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
                           Active Meetings
                         </h2>
                         <div className="space-y-3">
                           {activeMeetings.map((meeting) => (
                             <div
                               key={meeting.meetingId}
-                              className="bg-slate-700/50 rounded-xl p-4 flex items-center justify-between hover:bg-slate-700/70 transition-colors"
+                              className="bg-white border border-emerald-100 rounded-xl p-4 flex items-center justify-between hover:border-emerald-300 transition-colors shadow-sm"
                             >
                               <div>
-                                <h3 className="text-white font-semibold">{meeting.title}</h3>
-                                <p className="text-slate-400 text-sm">Host: {meeting.hostName}</p>
+                                <h3 className="text-slate-800 font-semibold">{meeting.title}</h3>
+                                <p className="text-slate-500 text-sm">Host: {meeting.hostName}</p>
                               </div>
                               <button
                                 onClick={() => {
                                   setActiveView("broadcast");
                                   setLeftMeetingId(null);
                                 }}
-                                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2"
+                                className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
                               >
                                 <Video className="h-4 w-4" />
                                 Join
@@ -647,7 +647,7 @@ export default function ArlPage() {
                       </div>
                     )}
                     <ScheduledMeetings onStartOnDemand={() => setActiveView("broadcast")} />
-                    <div className="border-t border-slate-700 pt-6">
+                    <div className="border-t border-slate-200 pt-6">
                       <MeetingAnalyticsDashboard />
                     </div>
                   </div>
