@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
+import { useAuth } from "@/lib/auth-context";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
 interface ScheduledMeeting {
@@ -66,14 +67,15 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   const [creating, setCreating] = useState(false);
 
   // Direct meeting start state
-  const [activeMeeting, setActiveMeeting] = useState<{ id: string; title: string } | null>(null);
+  const [activeMeeting, setActiveMeeting] = useState<{ id: string; title: string; hostId: string } | null>(null);
   const { socket } = useSocket();
+  const { user } = useAuth();
 
-  const handleStartMeetingDirect = (meetingTitle: string, meetingCode: string) => {
+  const handleStartMeetingDirect = (meetingTitle: string, meetingCode: string, hostId: string) => {
     if (!socket) return;
     const meetingId = `scheduled-${meetingCode}`;
     socket.emit("meeting:create", { meetingId, title: meetingTitle });
-    setActiveMeeting({ id: meetingId, title: meetingTitle });
+    setActiveMeeting({ id: meetingId, title: meetingTitle, hostId });
   };
 
   const handleLeaveMeeting = () => {
@@ -170,11 +172,12 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
   // If in a meeting, render MeetingRoom fullscreen
   if (activeMeeting) {
+    const isHost = user?.id === activeMeeting.hostId;
     return (
       <MeetingRoom
         meetingId={activeMeeting.id}
         title={activeMeeting.title}
-        isHost={true}
+        isHost={isHost}
         onLeave={handleLeaveMeeting}
       />
     );
@@ -363,6 +366,10 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        Host: {m.host_name}
+                      </span>
+                      <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {scheduledDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                       </span>
@@ -403,10 +410,10 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                     <div className="flex items-center gap-1">
                       {m.is_active && (
                         <button
-                          onClick={() => handleStartMeetingDirect(m.title, m.meeting_code)}
+                          onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
-                          <Play className="h-3 w-3" />Start
+                          <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                         </button>
                       )}
                       <button
