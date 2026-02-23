@@ -165,11 +165,11 @@ function GuestMeetingPageWithParams() {
   const handlePinPadDigit = (digit: string) => {
     setError("");
     if (pinPadStep === "userId") {
-      if (userId.length < 6) {
+      if (userId.length < 4) {
         setUserId(userId + digit);
       }
     } else {
-      if (pin.length < 6) {
+      if (pin.length < 4) {
         setPin(pin + digit);
       }
     }
@@ -186,9 +186,9 @@ function GuestMeetingPageWithParams() {
 
   // PinPad continue handler
   const handlePinPadContinue = async () => {
-    if (pinPadStep === "userId" && userId.length === 6) {
+    if (pinPadStep === "userId" && userId.length === 4) {
       setPinPadStep("pin");
-    } else if (pinPadStep === "pin" && pin.length === 6) {
+    } else if (pinPadStep === "pin" && pin.length === 4) {
       // Authenticate via login API
       setLoading(true);
       setError("");
@@ -570,18 +570,37 @@ function GuestMeetingPageWithParams() {
                     className="space-y-3"
                   >
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-slate-700 mb-2">
+                      <p className="text-sm font-semibold text-slate-700 mb-4">
                         {pinPadStep === "userId" ? "Enter User ID" : "Enter PIN"}
                       </p>
-                      <div className="flex justify-center gap-2 mb-4">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-12 w-10 rounded-lg border-2 border-slate-300 bg-slate-50 flex items-center justify-center text-2xl font-bold text-slate-700"
-                          >
-                            {pinPadStep === "userId" ? (userId[i] || "") : (pin[i] ? "•" : "")}
-                          </div>
-                        ))}
+                      <div className="flex justify-center gap-3 mb-6">
+                        {Array.from({ length: 4 }).map((_, i) => {
+                          const currentValue = pinPadStep === "userId" ? userId : pin;
+                          const filled = i < currentValue.length;
+                          return (
+                            <div key={i} className="relative flex items-center justify-center">
+                              {/* Ripple ring when dot fills */}
+                              {filled && (
+                                <motion.div
+                                  key={`ripple-${i}-${currentValue.length}`}
+                                  className="absolute rounded-full border-2 border-red-600"
+                                  initial={{ width: 20, height: 20, opacity: 0.7 }}
+                                  animate={{ width: 36, height: 36, opacity: 0 }}
+                                  transition={{ duration: 0.5, ease: "easeOut" }}
+                                />
+                              )}
+                              <motion.div
+                                className={`h-5 w-5 rounded-full border-2 transition-colors duration-200 ${
+                                  filled
+                                    ? "border-red-600 bg-red-600"
+                                    : "border-slate-300 bg-white"
+                                }`}
+                                animate={filled ? { scale: [1, 1.3, 1] } : {}}
+                                transition={{ duration: 0.15 }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
@@ -614,7 +633,7 @@ function GuestMeetingPageWithParams() {
                       </Button>
                       <Button
                         onClick={handlePinPadContinue}
-                        disabled={loading || (pinPadStep === "userId" ? userId.length !== 6 : pin.length !== 6)}
+                        disabled={loading || (pinPadStep === "userId" ? userId.length !== 4 : pin.length !== 4)}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : pinPadStep === "userId" ? "Continue" : "Login"}

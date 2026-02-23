@@ -269,12 +269,12 @@ export default function ArlPage() {
   // Listen for meeting started/ended from other ARLs
   useEffect(() => {
     if (!socket) return;
-    const handleMeetingStarted = (data: { meetingId: string; hostName: string; title: string; hostId?: string }) => {
-      // Don't show notification if this ARL is the host (they're already in the studio)
+    const handleMeetingStarted = (data: { meetingId: string; title: string; hostName: string; hostId: string }) => {
       if (activeView === "broadcast") return;
       if (data.hostId === user?.id) return;
       setActiveBroadcast({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
-      setShowBroadcastNotification(true);
+      // Notification popup removed per user request
+      // setShowBroadcastNotification(true);
     };
     const handleMeetingEnded = (data: { meetingId: string }) => {
       if (activeBroadcast?.broadcastId === data.meetingId) {
@@ -296,7 +296,8 @@ export default function ArlPage() {
         const m = data.meetings.find(m => m.hostId !== user?.id);
         if (m) {
           setActiveBroadcast({ broadcastId: m.meetingId, arlName: m.hostName, title: m.title });
-          setShowBroadcastNotification(true);
+          // Notification popup removed per user request
+          // setShowBroadcastNotification(true);
         }
       }
       // Clear leftMeetingId if that meeting ended
