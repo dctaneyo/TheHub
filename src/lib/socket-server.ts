@@ -958,13 +958,22 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     // ── Allow speak (host/cohost unmutes a participant) ──
     socket.on("meeting:allow-speak", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
-      if (!user) return;
+      if (!user) {
+        console.log(`🎤 allow-speak: no user`);
+        return;
+      }
       const meeting = _activeMeetings.get(data.meetingId);
-      if (!meeting) return;
+      if (!meeting) {
+        console.log(`🎤 allow-speak: meeting ${data.meetingId} not found`);
+        return;
+      }
       const me = meeting.participants.get(socket.id);
-      if (!me || (me.role !== "host" && me.role !== "cohost")) return;
+      if (!me || (me.role !== "host" && me.role !== "cohost")) {
+        console.log(`🎤 allow-speak: ${user.name} is not host/cohost (role=${me?.role})`);
+        return;
+      }
       
-      console.log(`🎤 allow-speak request: target=${data.targetSocketId}`);
+      console.log(`🎤 allow-speak request: target=${data.targetSocketId}, meeting=${data.meetingId}`);
       
       // Look up target by socketId, userId, livekitIdentity, or name
       let target: MeetingParticipant | undefined;
@@ -995,13 +1004,22 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     // ── Mute participant (host/cohost mutes someone) ──
     socket.on("meeting:mute-participant", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
-      if (!user) return;
+      if (!user) {
+        console.log(`🔇 mute-participant: no user`);
+        return;
+      }
       const meeting = _activeMeetings.get(data.meetingId);
-      if (!meeting) return;
+      if (!meeting) {
+        console.log(`🔇 mute-participant: meeting ${data.meetingId} not found`);
+        return;
+      }
       const me = meeting.participants.get(socket.id);
-      if (!me || (me.role !== "host" && me.role !== "cohost")) return;
+      if (!me || (me.role !== "host" && me.role !== "cohost")) {
+        console.log(`🔇 mute-participant: ${user.name} is not host/cohost (role=${me?.role})`);
+        return;
+      }
       
-      console.log(`🔇 mute-participant request: target=${data.targetSocketId}`);
+      console.log(`🔇 mute-participant request: target=${data.targetSocketId}, meeting=${data.meetingId}`);
       
       // Look up target by socketId, userId, livekitIdentity, or name
       let target: MeetingParticipant | undefined;
