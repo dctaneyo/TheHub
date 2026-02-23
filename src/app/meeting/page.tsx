@@ -65,7 +65,7 @@ function WaitingRoomListener({ meetingId, onMeetingStarted }: { meetingId: strin
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"join" | "waiting" | "waiting-for-host" | "meeting">("join");
+  const [step, setStep] = useState<"enter-code" | "choose-auth" | "guest-name" | "pinpad-login" | "waiting" | "waiting-for-host" | "meeting">("enter-code");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -73,6 +73,7 @@ function GuestMeetingPageWithParams() {
   const [loading, setLoading] = useState(false);
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
 
   // Read URL parameters on component mount
   const isOneClickJoin = !!searchParams?.get("code");
@@ -82,8 +83,13 @@ function GuestMeetingPageWithParams() {
     
     if (code) {
       setMeetingCode(code.toUpperCase());
+      // If one-click join, skip to choose-auth step
+      if (pwd) {
+        setPassword(pwd);
+        setStep("choose-auth");
+      }
     }
-    if (pwd) {
+    if (pwd && !code) {
       setPassword(pwd);
     }
   }, [searchParams]);
@@ -142,7 +148,7 @@ function GuestMeetingPageWithParams() {
   };
 
   const handleLeaveMeeting = () => {
-    setStep("join");
+    setStep("enter-code");
     setActiveMeetingId(null);
     setMeetingInfo(null);
     setMeetingCode("");
@@ -286,7 +292,7 @@ function GuestMeetingPageWithParams() {
                   )}
 
                   <button
-                    onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                    onClick={() => { setStep("enter-code"); setMeetingInfo(null); setActiveMeetingId(null); }}
                     className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     &larr; Back
@@ -353,7 +359,7 @@ function GuestMeetingPageWithParams() {
           </SocketProvider>
         )}
 
-        {step === "join" && (
+        {step === "enter-code" && (
           <motion.div
             key="join"
             initial={{ opacity: 0, y: 20 }}
