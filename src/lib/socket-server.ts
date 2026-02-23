@@ -610,6 +610,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       io!.to("locations").emit("meeting:started", startedPayload);
       io!.to("arls").emit("meeting:started", startedPayload);
       io!.to("all").emit("meeting:started", startedPayload);
+      // Also notify anyone already in the meeting room (e.g. guests who joined early)
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:started", startedPayload);
       console.log(`📹 Meeting created: "${data.title}" by ${user.name}`);
     });
 

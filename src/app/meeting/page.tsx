@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Video, Lock, User, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
@@ -19,6 +19,7 @@ interface MeetingInfo {
   scheduledAt: string;
   durationMinutes: number;
   hasPassword: boolean;
+  isLive?: boolean;
 }
 
 function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
@@ -48,7 +49,7 @@ function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"join" | "meeting">("join");
+  const [step, setStep] = useState<"join" | "waiting" | "meeting">("join");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -101,10 +102,19 @@ function GuestMeetingPageWithParams() {
 
       setMeetingInfo(data.meeting);
       setActiveMeetingId(`scheduled-${data.meeting.meetingCode}`);
-      // Go directly to meeting — the MeetingRoom handles the case where
-      // the meeting doesn't exist yet (server returns meeting:error)
-      // We'll connect to socket and listen for meeting:started to retry
-      setStep("meeting");
+
+      // Check if guest is too early for a scheduled meeting
+      const scheduledTime = new Date(data.meeting.scheduledAt).getTime();
+      const now = Date.now();
+      const minutesUntilMeeting = (scheduledTime - now) / 60000;
+
+      // If meeting is already live, or guest is within 30 min of start → join directly
+      if (data.meeting.isLive || minutesUntilMeeting <= 30) {
+        setStep("meeting");
+      } else {
+        // Too early — show waiting room with countdown
+        setStep("waiting");
+      }
     } catch {
       setError("Connection error. Please try again.");
     } finally {
@@ -119,6 +129,70 @@ function GuestMeetingPageWithParams() {
     setMeetingCode("");
     setPassword("");
   };
+
+  // Waiting room: poll to check if meeting has started, countdown timer
+  const [countdown, setCountdown] = useState("");
+  const [minutesEarly, setMinutesEarly] = useState(0);
+
+  useEffect(() => {
+    if (step !== "waiting" || !meetingInfo) return;
+
+    // Countdown tick every second
+    const tick = () => {
+      const scheduledTime = new Date(meetingInfo.scheduledAt).getTime();
+      const now = Date.now();
+      const diff = scheduledTime - now;
+      const minsEarly = diff / 60000;
+      setMinutesEarly(minsEarly);
+
+      if (diff <= 30 * 60000) {
+        // Within 30 min — auto-join
+        setStep("meeting");
+        return;
+      }
+
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      if (hours > 0) {
+        setCountdown(`${hours}h ${mins}m ${secs}s`);
+      } else {
+        setCountdown(`${mins}m ${secs}s`);
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [step, meetingInfo]);
+
+  // Poll every 15s to check if meeting has gone live
+  useEffect(() => {
+    if (step !== "waiting" || !meetingInfo) return;
+
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/meetings/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meetingCode: meetingInfo.meetingCode,
+            password: password,
+            guestName: guestName,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.meeting?.isLive) {
+            setStep("meeting");
+          }
+        }
+      } catch { /* ignore */ }
+    };
+
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, [step, meetingInfo, password, guestName]);
 
   // If in meeting, render the MeetingRoom wrapped with guest providers
   if (step === "meeting" && activeMeetingId && meetingInfo) {
@@ -135,6 +209,65 @@ function GuestMeetingPageWithParams() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <AnimatePresence mode="wait">
+        {step === "waiting" && meetingInfo && (
+          <motion.div
+            key="waiting"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-md"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 text-center">
+                <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                  <Clock className="h-7 w-7" />
+                </div>
+                <h1 className="text-xl font-bold">Meeting Hasn&apos;t Started Yet</h1>
+                <p className="text-sm text-amber-100 mt-1">{meetingInfo.title}</p>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="text-center">
+                  <p className="text-sm text-slate-500 mb-1">Meeting starts in</p>
+                  <p className="text-3xl font-bold font-mono text-slate-800 tracking-wide">{countdown}</p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Scheduled for {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>You&apos;ll be automatically connected when the meeting is about to start.</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                  <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                  Checking if meeting has started...
+                </div>
+
+                {/* Join Anyway — only if 30-60 min early */}
+                {minutesEarly <= 60 && (
+                  <Button
+                    onClick={() => setStep("meeting")}
+                    variant="outline"
+                    className="w-full h-11 text-sm font-semibold rounded-xl border-slate-300"
+                  >
+                    Join Anyway <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+
+                <button
+                  onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  &larr; Back
+                </button>
+              </div>
+            </div>
+            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+          </motion.div>
+        )}
+
         {step === "join" && (
           <motion.div
             key="join"

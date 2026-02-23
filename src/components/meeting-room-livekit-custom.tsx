@@ -729,9 +729,20 @@ function MeetingUI({
     };
     socket.on("connect", handleSocketReconnect);
 
+    // If guest joined before host, meeting:join was rejected. When host creates
+    // the meeting, server broadcasts meeting:started to the room — retry join.
+    const handleMeetingStarted = (data: { meetingId: string }) => {
+      if (data.meetingId === meetingId) {
+        console.log(`[MeetingRoom] Meeting started — retrying meeting:join`);
+        setTimeout(emitJoin, 300);
+      }
+    };
+    socket.on("meeting:started", handleMeetingStarted);
+
     return () => {
       room.off(RoomEvent.Connected, handleConnected);
       socket.off("connect", handleSocketReconnect);
+      socket.off("meeting:started", handleMeetingStarted);
       if (hasJoinedRef.current) {
         socket.emit("meeting:leave", { meetingId });
         hasJoinedRef.current = false;

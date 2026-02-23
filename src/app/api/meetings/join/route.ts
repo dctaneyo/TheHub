@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
       }
 
+      // Check if the meeting is already live (host has started it)
+      const liveCheck = findActiveMeetingByCode(code);
+
       return NextResponse.json({
         success: true,
         meeting: {
@@ -37,6 +40,7 @@ export async function POST(req: NextRequest) {
           scheduledAt: meeting.scheduled_at,
           durationMinutes: meeting.duration_minutes,
           hasPassword: !!meeting.password,
+          isLive: !!liveCheck,
         },
       });
     }
