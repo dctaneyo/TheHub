@@ -6,7 +6,7 @@ import {
   Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Crown, Shield,
-  Keyboard, Loader2, SwitchCamera, Timer, ArrowRightLeft,
+  Keyboard, Loader2, SwitchCamera, Timer, ArrowRightLeft, Edit3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -455,6 +455,9 @@ function MeetingUI({
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true); // Loading state while feeds load
   const [notification, setNotification] = useState<{ message: string; type: 'info' | 'success' | 'warning' } | null>(null);
+  const [participantNicknames, setParticipantNicknames] = useState<Map<string, string>>(new Map()); // livekitIdentity -> nickname
+  const [renamingParticipant, setRenamingParticipant] = useState<{ identity: string; currentName: string } | null>(null);
+  const [renameInput, setRenameInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -666,6 +669,14 @@ function MeetingUI({
       setRaisedHands(new Set());
     };
 
+    const handleNicknameUpdated = (data: { livekitIdentity: string; nickname: string }) => {
+      setParticipantNicknames(prev => {
+        const next = new Map(prev);
+        next.set(data.livekitIdentity, data.nickname);
+        return next;
+      });
+    };
+
     socket.on("meeting:chat-message", handleChatMessage);
     socket.on("meeting:question", handleQuestion);
     socket.on("meeting:question-upvoted", handleQuestionUpdate);
@@ -686,6 +697,7 @@ function MeetingUI({
     socket.on("meeting:mute-all", handleMuteAll);
     socket.on("meeting:unmute-all", handleUnmuteAll);
     socket.on("meeting:lower-all-hands", handleLowerAllHands);
+    socket.on("meeting:nickname-updated", handleNicknameUpdated);
 
     return () => {
       socket.off("meeting:chat-message", handleChatMessage);
@@ -708,6 +720,7 @@ function MeetingUI({
       socket.off("meeting:mute-all", handleMuteAll);
       socket.off("meeting:unmute-all", handleUnmuteAll);
       socket.off("meeting:lower-all-hands", handleLowerAllHands);
+      socket.off("meeting:nickname-updated", handleNicknameUpdated);
     };
   }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
@@ -1046,6 +1059,71 @@ function MeetingUI({
               >
                 Cancel
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rename participant dialog */}
+      <AnimatePresence>
+        {renamingParticipant && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setRenamingParticipant(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
+            >
+              <h3 className="text-white font-bold text-base mb-1">Rename Participant</h3>
+              <p className="text-slate-400 text-xs mb-4">Set a nickname for this participant. Original name will be preserved.</p>
+              <Input
+                value={renameInput}
+                onChange={(e) => setRenameInput(e.target.value)}
+                placeholder="Enter nickname"
+                className="mb-4 bg-slate-800 border-slate-700 text-white"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && renameInput.trim()) {
+                    socket?.emit("meeting:set-nickname", {
+                      meetingId,
+                      targetIdentity: renamingParticipant.identity,
+                      nickname: renameInput.trim(),
+                    });
+                    setRenamingParticipant(null);
+                  }
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setRenamingParticipant(null)}
+                  className="flex-1 h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (renameInput.trim()) {
+                      socket?.emit("meeting:set-nickname", {
+                        meetingId,
+                        targetIdentity: renamingParticipant.identity,
+                        nickname: renameInput.trim(),
+                      });
+                      setRenamingParticipant(null);
+                    }
+                  }}
+                  disabled={!renameInput.trim()}
+                  className="flex-1 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-semibold transition-colors"
+                >
+                  Save
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -1439,10 +1517,11 @@ function MeetingUI({
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm text-white font-medium truncate block">
-                              {p.name} {isLocal && "(You)"}
+                              {participantNicknames.get(p.identity) || p.name} {isLocal && "(You)"}
                             </span>
                             <span className="text-[10px] text-slate-400 capitalize">
                               {metadata.role || "participant"} • {metadata.userType || "guest"}
+                              {participantNicknames.has(p.identity) && <span className="text-slate-500"> • {p.name}</span>}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -1450,6 +1529,18 @@ function MeetingUI({
                             {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
                             {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
+                            {/* Rename button - available to everyone */}
+                            <button
+                              onClick={() => {
+                                const currentName = participantNicknames.get(p.identity) || p.name || "";
+                                setRenamingParticipant({ identity: p.identity, currentName });
+                                setRenameInput(currentName);
+                              }}
+                              title="Rename participant"
+                              className="p-1 rounded-lg hover:bg-slate-600 text-slate-400 hover:text-slate-200 transition-colors"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </button>
                             {/* Host/cohost controls - can mute/unmute anyone except the host */}
                             {isHostOrCohost && metadata.role !== "host" && !isLocal && (
                               <div className="flex gap-1 ml-2">

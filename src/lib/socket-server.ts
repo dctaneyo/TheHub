@@ -1123,6 +1123,30 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Set participant nickname (available to all users) ──
+    socket.on("meeting:set-nickname", (data: { meetingId: string; targetIdentity: string; nickname: string }) => {
+      if (!user) return;
+      const meeting = _activeMeetings.get(data.meetingId);
+      if (!meeting) return;
+      
+      console.log(`✏️ set-nickname: ${user.name} setting nickname for ${data.targetIdentity} to "${data.nickname}"`);
+      
+      // Store nickname in participant metadata (optional - for server-side tracking)
+      for (const p of meeting.participants.values()) {
+        if (p.livekitIdentity === data.targetIdentity) {
+          // Could store nickname in participant object if needed
+          break;
+        }
+      }
+      
+      // Broadcast to all participants so everyone sees the nickname
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:nickname-updated", {
+        meetingId: data.meetingId,
+        livekitIdentity: data.targetIdentity,
+        nickname: data.nickname,
+      });
+    });
+
     // ── Chat message in meeting ──
     socket.on("meeting:chat", (data: { meetingId: string; content: string }) => {
       if (!user) return;
