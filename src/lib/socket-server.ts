@@ -45,6 +45,8 @@ interface ActiveMeeting {
   title: string;
   hostId: string;       // ARL user id who created
   hostName: string;
+  meetingCode?: string; // the short code guests use to join
+  password?: string;    // optional meeting password
   createdAt: number;
   participants: Map<string, MeetingParticipant>; // keyed by socketId
   hostLeftAt?: number;          // timestamp when host left (for auto-end countdown)
@@ -534,7 +536,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     };
 
     // ── Create meeting (ARL only) ──
-    socket.on("meeting:create", (data: { meetingId: string; title: string }) => {
+    socket.on("meeting:create", (data: { meetingId: string; title: string; password?: string; meetingCode?: string }) => {
       if (!user || user.userType !== "arl") return;
       
       // If a meeting with this ID already exists, force-end it first (handles recurring meetings)
@@ -563,6 +565,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         title: data.title,
         hostId: user.id,
         hostName: user.name,
+        meetingCode: data.meetingCode,
+        password: data.password,
         createdAt: Date.now(),
         participants: new Map([[socket.id, hostParticipant]]),
       };
@@ -1249,6 +1253,23 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
   console.log("⚡ Socket.io server initialized");
   return io;
+}
+
+// ── Helper: find an active meeting by its meeting code (for guest join API) ──
+export function findActiveMeetingByCode(code: string): { meetingId: string; title: string; hostName: string; password?: string } | null {
+  const activeMeetings: Map<string, ActiveMeeting> = (globalThis as any).__hubActiveMeetings;
+  if (!activeMeetings) return null;
+  const upperCode = code.toUpperCase().trim();
+  for (const [, meeting] of activeMeetings) {
+    // Check stored meetingCode or extract from meetingId (format: scheduled-CODE)
+    if (meeting.meetingCode?.toUpperCase() === upperCode) {
+      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, password: meeting.password };
+    }
+    if (meeting.meetingId === `scheduled-${upperCode}`) {
+      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, password: meeting.password };
+    }
+  }
+  return null;
 }
 
 // ── Helper: emit to specific targets ──

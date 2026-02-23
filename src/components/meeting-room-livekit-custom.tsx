@@ -683,12 +683,12 @@ function MeetingUI({
   }, [socket, showChat, showQA, localParticipant, room, onLeave]);
 
   // Join meeting via socket — use RoomEvent.Connected for reliability
+  // Also re-join on Socket.io reconnect so server re-adds us to the room
   const hasJoinedRef = useRef(false);
   useEffect(() => {
     if (!socket || !user) return;
 
     const emitJoin = () => {
-      if (hasJoinedRef.current) return;
       const identity = localParticipant.identity;
       if (!identity) return;
       
@@ -705,22 +705,33 @@ function MeetingUI({
       });
     };
 
-    // Try immediately if already connected
+    // Try immediately if already connected to LiveKit
     if (room.state === "connected" && localParticipant.identity) {
       emitJoin();
     }
 
-    // Also listen for connection event in case we're not connected yet
+    // Listen for LiveKit connection event in case we're not connected yet
     const handleConnected = () => {
       // Small delay to ensure identity is populated
       setTimeout(emitJoin, 100);
     };
     room.on(RoomEvent.Connected, handleConnected);
 
+    // Re-join on Socket.io reconnect — the server gives us a new socket ID,
+    // so we must re-emit meeting:join to rejoin the Socket.io room and
+    // re-register in the participants map with the new socket ID
+    const handleSocketReconnect = () => {
+      console.log(`[MeetingRoom] Socket reconnected — re-emitting meeting:join`);
+      emitJoin();
+    };
+    socket.on("connect", handleSocketReconnect);
+
     return () => {
       room.off(RoomEvent.Connected, handleConnected);
+      socket.off("connect", handleSocketReconnect);
       if (hasJoinedRef.current) {
         socket.emit("meeting:leave", { meetingId });
+        hasJoinedRef.current = false;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
