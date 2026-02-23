@@ -844,78 +844,55 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── End meeting (host only) ──
+    // SIMPLIFIED: Verify host by meeting.hostId, not participant list
     socket.on("meeting:end", (data: { meetingId: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) return;
-      const p = meeting.participants.get(socket.id);
-      if (!p || p.role !== "host") return;
+      // Only original host or any ARL can end the meeting
+      if (meeting.hostId !== user.id && user.userType !== "arl") {
+        console.log(`📹 meeting:end denied: ${user.name} is not host (hostId=${meeting.hostId})`);
+        return;
+      }
       forceEndMeeting(data.meetingId, `Ended by host ${user.name}`);
     });
 
-    // ── Transfer host role (host hands off to another participant) ──
-    socket.on("meeting:transfer-host", (data: { meetingId: string; targetSocketId: string }) => {
+    // ── Transfer host to another participant ──
+    // SIMPLIFIED: Use LiveKit identity to identify target, broadcast to all
+    socket.on("meeting:transfer-host", (data: { meetingId: string; targetIdentity: string; targetName?: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) {
         console.log(`⚠️ transfer-host: Meeting ${data.meetingId} not found`);
         return;
       }
-      const me = meeting.participants.get(socket.id);
-      if (!me || me.role !== "host") {
-        console.log(`⚠️ transfer-host: User ${user.name} is not host (role=${me?.role})`);
+      // Only current host can transfer (check by hostId, not participant list)
+      if (meeting.hostId !== user.id) {
+        console.log(`⚠️ transfer-host: User ${user.name} (${user.id}) is not host (hostId=${meeting.hostId})`);
         return;
       }
 
-      console.log(`📹 Transfer host request: target=${data.targetSocketId}`);
-      console.log(`📹 Current participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
+      console.log(`📹 Transfer host request: target=${data.targetIdentity}, targetName=${data.targetName}`);
 
-      // Find target participant (by socketId, odId, livekitIdentity, or name)
-      let target: MeetingParticipant | undefined;
-      let targetSid = data.targetSocketId;
-      target = meeting.participants.get(data.targetSocketId);
-      if (!target) {
-        for (const [sid, p] of meeting.participants) {
-          // Match by odId, livekitIdentity, or partial name match
-          if (p.odId === data.targetSocketId || 
-              p.livekitIdentity === data.targetSocketId ||
-              p.name === data.targetSocketId) {
-            target = p; targetSid = sid; break;
-          }
-        }
-      }
-      if (!target || targetSid === socket.id) {
-        console.log(`⚠️ transfer-host: Target not found for ${data.targetSocketId}`);
-        return;
-      }
-
-      // Transfer: demote current host → cohost, promote target → host
-      me.role = "cohost";
-      target.role = "host";
-      meeting.hostId = target.odId;
-      meeting.hostName = target.name;
+      // Update meeting metadata
+      const previousHostName = meeting.hostName;
+      meeting.hostId = data.targetIdentity; // LiveKit identity becomes new hostId
+      meeting.hostName = data.targetName || data.targetIdentity;
 
       // Cancel any host-left countdown since there's a new host
       meeting.hostLeftAt = undefined;
       const hostTimer = _hostLeftTimers.get(data.meetingId);
       if (hostTimer) { clearTimeout(hostTimer); _hostLeftTimers.delete(data.meetingId); }
 
-      // Notify all participants (include newHostSocketId so the new host knows it's them)
+      // Broadcast to ALL participants - they check their own identity to see if they're the new host
       io!.to(`meeting:${data.meetingId}`).emit("meeting:host-transferred", {
         meetingId: data.meetingId,
-        newHostSocketId: targetSid,
-        newHostName: target.name,
-        previousHostName: me.name,
+        newHostIdentity: data.targetIdentity,
+        newHostName: meeting.hostName,
+        previousHostName: previousHostName,
       });
-      console.log(`📹 Emitted host-transferred to all: newHostSocketId=${targetSid}, newHostName=${target.name}`);
-
-      // Tell the new host their role changed
-      io!.to(targetSid).emit("meeting:role-updated", { socketId: targetSid, role: "host" });
-      // Tell the previous host their role changed
-      socket.emit("meeting:role-updated", { socketId: socket.id, role: "cohost" });
-
-      broadcastMeetingState(meeting);
-      console.log(`📹 Host transferred: ${me.name} → ${target.name} in "${meeting.title}"`);
+      console.log(`📹 Emitted host-transferred to all: newHostIdentity=${data.targetIdentity}, newHostName=${meeting.hostName}`);
+      console.log(`📹 Host transferred: ${user.name} → ${meeting.hostName} in "${meeting.title}"`);
     });
 
     // ── Raise hand (restaurant requests to speak) ──
@@ -957,102 +934,51 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── Allow speak (host/cohost unmutes a participant) ──
-    socket.on("meeting:allow-speak", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
-      if (!user) {
-        console.log(`🎤 allow-speak: no user`);
-        return;
-      }
+    // SIMPLIFIED: Broadcast to all participants, let clients filter by their LiveKit identity
+    socket.on("meeting:allow-speak", (data: { meetingId: string; targetIdentity: string }) => {
+      if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) {
         console.log(`🎤 allow-speak: meeting ${data.meetingId} not found`);
         return;
       }
-      const me = meeting.participants.get(socket.id);
-      if (!me || (me.role !== "host" && me.role !== "cohost")) {
-        console.log(`🎤 allow-speak: ${user.name} is not host/cohost (role=${me?.role})`);
+      // Only host/ARL can unmute
+      if (meeting.hostId !== user.id && user.userType !== "arl") {
+        console.log(`🎤 allow-speak: ${user.name} is not host`);
         return;
       }
       
-      console.log(`🎤 allow-speak request: target=${data.targetSocketId}, meeting=${data.meetingId}`);
+      console.log(`🎤 allow-speak: ${user.name} unmuting ${data.targetIdentity} in ${data.meetingId}`);
       
-      // Look up target by socketId, userId, livekitIdentity, or name
-      let target: MeetingParticipant | undefined;
-      let targetSid = data.targetSocketId;
-      target = meeting.participants.get(data.targetSocketId);
-      if (!target) {
-        for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId || 
-              p.livekitIdentity === data.targetSocketId ||
-              p.name === data.targetSocketId ||
-              (data.targetUserId && p.odId === data.targetUserId)) {
-            target = p; targetSid = sid; break;
-          }
-        }
-      }
-      if (!target) {
-        console.warn(`⚠️ allow-speak: target not found for targetSocketId=${data.targetSocketId}`);
-        console.warn(`   Participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
-        return;
-      }
-      if (target.role === "host") return;
-      target.isMuted = false;
-      target.handRaised = false;
-      io!.to(targetSid).emit("meeting:speak-allowed", { meetingId: data.meetingId });
-      console.log(`🎤 ${user.name} allowed ${target.name} to speak (emitted to ${targetSid})`);
-      broadcastMeetingState(meeting);
+      // Broadcast to ALL participants - let clients check their own identity
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:speak-allowed", { 
+        meetingId: data.meetingId,
+        targetIdentity: data.targetIdentity,
+      });
     });
 
     // ── Mute participant (host/cohost mutes someone) ──
-    socket.on("meeting:mute-participant", (data: { meetingId: string; targetSocketId: string; targetUserId?: string }) => {
-      if (!user) {
-        console.log(`🔇 mute-participant: no user`);
-        return;
-      }
+    // SIMPLIFIED: Broadcast to all participants, let clients filter by their LiveKit identity
+    socket.on("meeting:mute-participant", (data: { meetingId: string; targetIdentity: string }) => {
+      if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) {
         console.log(`🔇 mute-participant: meeting ${data.meetingId} not found`);
         return;
       }
-      const me = meeting.participants.get(socket.id);
-      if (!me || (me.role !== "host" && me.role !== "cohost")) {
-        console.log(`🔇 mute-participant: ${user.name} is not host/cohost (role=${me?.role})`);
+      // Only host can mute (verify by hostId, not participant list)
+      if (meeting.hostId !== user.id && user.userType !== "arl") {
+        console.log(`🔇 mute-participant: ${user.name} is not host`);
         return;
       }
       
-      console.log(`🔇 mute-participant request: target=${data.targetSocketId}, meeting=${data.meetingId}`);
+      console.log(`🔇 mute-participant: ${user.name} muting ${data.targetIdentity} in ${data.meetingId}`);
       
-      // Look up target by socketId, userId, livekitIdentity, or name
-      let target: MeetingParticipant | undefined;
-      let targetSid = data.targetSocketId;
-      target = meeting.participants.get(data.targetSocketId);
-      if (!target) {
-        for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId || 
-              p.livekitIdentity === data.targetSocketId ||
-              p.name === data.targetSocketId ||
-              (data.targetUserId && p.odId === data.targetUserId)) {
-            target = p; targetSid = sid; break;
-          }
-        }
-      }
-      if (!target) {
-        console.warn(`⚠️ mute: target not found for targetSocketId=${data.targetSocketId}`);
-        console.warn(`   Participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
-        return;
-      }
-      if (target.role === "host") return;
-      target.isMuted = true;
-      console.log(`� ${user.name} muted ${target.name} (emitted to ${targetSid})`);
-      // Track analytics: muted by host
-      const muteAnalytics = _meetingAnalytics.get(data.meetingId);
-      if (muteAnalytics) {
-        const recordId = muteAnalytics.participantRecords.get(targetSid);
-        if (recordId) {
-          try { db.update(schema.meetingParticipants).set({ wasMutedByHost: true }).where(eq(schema.meetingParticipants.id, recordId)).run(); } catch (e) { /* ignore */ }
-        }
-      }
-      io!.to(targetSid).emit("meeting:you-were-muted", { meetingId: data.meetingId });
-      broadcastMeetingState(meeting);
+      // Broadcast to ALL participants in the meeting room - let clients check their own identity
+      io!.to(`meeting:${data.meetingId}`).emit("meeting:you-were-muted", { 
+        meetingId: data.meetingId,
+        targetIdentity: data.targetIdentity,
+      });
     });
 
     // ── Update own media state (toggle video/audio) ──

@@ -566,17 +566,19 @@ function MeetingUI({
       }, 1000);
     };
 
-    const handleHostTransferred = (data: { newHostName: string; previousHostName: string; newHostSocketId?: string }) => {
+    const handleHostTransferred = (data: { newHostName: string; previousHostName: string; newHostIdentity?: string }) => {
       setHostHasLeft(false);
       setHostLeftCountdown(null);
       if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
       
-      // Show notification to all participants
-      if (data.newHostSocketId === socket.id) {
+      // Check if we're the new host by comparing LiveKit identity
+      const myIdentity = localParticipant.identity;
+      if (data.newHostIdentity === myIdentity) {
         // This user is the new host
+        setMyRole("host");
         setNotification({ message: `You are now the host! ${data.previousHostName} transferred host duties to you.`, type: 'success' });
       } else {
-        setNotification({ message: `${data.previousHostName} left and made ${data.newHostName} the new host.`, type: 'info' });
+        setNotification({ message: `${data.previousHostName} transferred host to ${data.newHostName}.`, type: 'info' });
       }
       setTimeout(() => setNotification(null), 8000);
     };
@@ -606,11 +608,24 @@ function MeetingUI({
     };
 
     // Mute/unmute events from server (when host mutes/unmutes us)
-    const handleYouWereMuted = () => {
+    // Now broadcasts to all participants with targetIdentity - check if it matches our LiveKit identity
+    const handleYouWereMuted = (data: { targetIdentity?: string }) => {
+      const myIdentity = localParticipant.identity;
+      // If targetIdentity is specified, only apply if it matches us
+      if (data?.targetIdentity && data.targetIdentity !== myIdentity) {
+        return; // Not for us
+      }
+      console.log(`🔇 Muted by host (targetIdentity: ${data?.targetIdentity}, myIdentity: ${myIdentity})`);
       localParticipant.setMicrophoneEnabled(false);
     };
 
-    const handleSpeakAllowed = () => {
+    const handleSpeakAllowed = (data: { targetIdentity?: string }) => {
+      const myIdentity = localParticipant.identity;
+      // If targetIdentity is specified, only apply if it matches us
+      if (data?.targetIdentity && data.targetIdentity !== myIdentity) {
+        return; // Not for us
+      }
+      console.log(`🎤 Unmuted by host (targetIdentity: ${data?.targetIdentity}, myIdentity: ${myIdentity})`);
       localParticipant.setMicrophoneEnabled(true);
     };
 
@@ -806,8 +821,8 @@ function MeetingUI({
     onLeave(false); // false = just left (meeting may continue)
   };
 
-  const transferHost = (targetIdentity: string) => {
-    socket?.emit("meeting:transfer-host", { meetingId, targetSocketId: targetIdentity });
+  const transferHost = (targetIdentity: string, targetName?: string) => {
+    socket?.emit("meeting:transfer-host", { meetingId, targetIdentity, targetName });
     setShowTransferDialog(false);
   };
 
@@ -922,7 +937,7 @@ function MeetingUI({
                   return (
                     <button
                       key={p.identity}
-                      onClick={() => transferHost(p.identity)}
+                      onClick={() => transferHost(p.identity, p.name)}
                       className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-700/50 transition-colors text-left"
                     >
                       <div className={cn(
@@ -1325,8 +1340,8 @@ function MeetingUI({
                                 {p.isMicrophoneEnabled === false ? (
                                   <button
                                     onClick={() => {
-                                      // Send unmute request via Socket.io
-                                      socket?.emit("meeting:allow-speak", { meetingId, targetSocketId: p.identity });
+                                      // Send unmute request via Socket.io (using LiveKit identity)
+                                      socket?.emit("meeting:allow-speak", { meetingId, targetIdentity: p.identity });
                                     }}
                                     title="Allow to speak"
                                     className="p-2.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
@@ -1336,8 +1351,8 @@ function MeetingUI({
                                 ) : (
                                   <button
                                     onClick={() => {
-                                      // Send mute request via Socket.io
-                                      socket?.emit("meeting:mute-participant", { meetingId, targetSocketId: p.identity });
+                                      // Send mute request via Socket.io (using LiveKit identity)
+                                      socket?.emit("meeting:mute-participant", { meetingId, targetIdentity: p.identity });
                                     }}
                                     title="Mute"
                                     className="p-2.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
