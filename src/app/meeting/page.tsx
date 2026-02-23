@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -75,7 +75,7 @@ function WaitingRoomListener({ meetingId, onMeetingStarted }: { meetingId: strin
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"enter-code" | "waiting" | "waiting-for-host" | "meeting">("enter-code");
+  const [step, setStep] = useState<"enter-code" | "waiting" | "waiting-for-host" | "meeting" | "meeting-ended">("enter-code");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -92,6 +92,9 @@ function GuestMeetingPageWithParams() {
   const [userId, setUserId] = useState("");
   const [pin, setPin] = useState("");
   const [pinPadStep, setPinPadStep] = useState<"userId" | "pin">("userId");
+  
+  // Hidden keyboard input ref
+  const keyboardInputRef = useRef<HTMLInputElement>(null);
 
   // Read URL parameters on component mount and fetch meeting info for one-click join
   const isOneClickJoin = !!searchParams?.get("code");
@@ -293,13 +296,40 @@ function GuestMeetingPageWithParams() {
     }
   };
 
-  const handleLeaveMeeting = () => {
-    setStep("enter-code");
-    setActiveMeetingId(null);
-    setMeetingInfo(null);
-    setMeetingCode("");
-    setPassword("");
+  const handleLeaveMeeting = (didEndMeeting?: boolean) => {
+    if (didEndMeeting) {
+      setStep("meeting-ended");
+    } else {
+      setStep("enter-code");
+      setActiveMeetingId(null);
+      setMeetingInfo(null);
+      setMeetingCode("");
+      setPassword("");
+    }
   };
+
+  // Keyboard support for PinPad (hidden input field)
+  useEffect(() => {
+    if (!showPinPad) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if keyboard input is focused
+      if (document.activeElement !== keyboardInputRef.current) return;
+      
+      const key = e.key;
+      
+      if (key >= '0' && key <= '9') {
+        handlePinPadDigit(key);
+      } else if (key === 'Backspace' || key === 'Delete') {
+        handlePinPadDelete();
+      } else if (key === 'Enter') {
+        // Could trigger continue/login if ready
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showPinPad, pinPadStep, userId, pin]);
 
   // Waiting room: poll to check if meeting has started, countdown timer
   const [countdown, setCountdown] = useState("");
@@ -509,6 +539,55 @@ function GuestMeetingPageWithParams() {
           </SocketProvider>
         )}
 
+        {step === "meeting-ended" && (
+          <motion.div
+            key="meeting-ended"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-md"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white p-6 text-center">
+                <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="h-7 w-7" />
+                </div>
+                <h1 className="text-xl font-bold">Meeting Ended</h1>
+                <p className="text-sm text-slate-300 mt-1">{meetingInfo?.title || "Video Meeting"}</p>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="text-center">
+                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="h-8 w-8 text-slate-600" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">The meeting has ended</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Thank you for joining!
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    setStep("enter-code");
+                    setActiveMeetingId(null);
+                    setMeetingInfo(null);
+                    setMeetingCode("");
+                    setPassword("");
+                    setGuestName("");
+                    setAuthenticatedUser(null);
+                    setIsHostStartingMeeting(false);
+                  }}
+                  className="w-full h-11 text-sm font-semibold rounded-xl bg-red-600 hover:bg-red-700"
+                >
+                  Join Another Meeting
+                </Button>
+              </div>
+            </div>
+            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+          </motion.div>
+        )}
+
         {step === "enter-code" && (
           <motion.div
             key="join"
@@ -646,6 +725,18 @@ function GuestMeetingPageWithParams() {
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-3"
                   >
+                    {/* Hidden input for keyboard support */}
+                    <input
+                      ref={keyboardInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      className="sr-only"
+                      aria-hidden="true"
+                      tabIndex={0}
+                      style={{ position: 'absolute', left: -9999 }}
+                    />
                     <div className="text-center">
                       <p className="text-sm font-semibold text-slate-700 mb-4">
                         {pinPadStep === "userId" ? "Enter User ID" : "Enter PIN"}
