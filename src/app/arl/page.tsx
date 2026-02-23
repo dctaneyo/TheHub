@@ -50,6 +50,7 @@ import { BroadcastStudio } from "@/components/arl/broadcast-studio";
 import { ScheduledMeetings } from "@/components/arl/scheduled-meetings";
 import { MeetingAnalyticsDashboard } from "@/components/arl/meeting-analytics";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
+import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -144,6 +145,7 @@ export default function ArlPage() {
   const [watchingBroadcast, setWatchingBroadcast] = useState(false);
   const [leftMeetingId, setLeftMeetingId] = useState<string | null>(null); // Track meeting user left for rejoin
   const [activeMeetings, setActiveMeetings] = useState<Array<{ meetingId: string; title: string; hostName: string; hostId: string }>>([]);
+  const [joiningMeeting, setJoiningMeeting] = useState<{ meetingId: string; title: string } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const locationNamesRef = useRef<Map<string, string>>(new Map());
 
@@ -633,8 +635,7 @@ export default function ArlPage() {
                               </div>
                               <button
                                 onClick={() => {
-                                  setActiveView("broadcast");
-                                  setLeftMeetingId(null);
+                                  setJoiningMeeting({ meetingId: meeting.meetingId, title: meeting.title });
                                 }}
                                 className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
                               >
@@ -671,6 +672,19 @@ export default function ArlPage() {
           }
         }}
       />
+
+      {/* Direct join: ARL joining an existing meeting from active meetings list */}
+      {joiningMeeting && (
+        <MeetingRoom
+          meetingId={joiningMeeting.meetingId}
+          title={joiningMeeting.title}
+          isHost={false}
+          onLeave={() => {
+            setJoiningMeeting(null);
+            socket?.emit("meeting:list");
+          }}
+        />
+      )}
 
       {/* Task completion toasts */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">

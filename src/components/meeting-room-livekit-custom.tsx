@@ -455,7 +455,7 @@ function MeetingUI({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isArl = user?.userType === "arl" || user?.userType === "guest";
+  const isArlUser = user?.userType === "arl";
   const isHostOrCohost = myRole === "host" || myRole === "cohost";
 
   // Get video and screen share tracks
@@ -578,10 +578,12 @@ function MeetingUI({
         setMyRole("host");
         setNotification({ message: `You are now the host! ${data.previousHostName} transferred host duties to you.`, type: 'success' });
       } else {
-        // If we were the host before, demote to cohost
+        // If we were the host before, demote based on user type
+        // ARLs become co-host, restaurants/guests become participant
         if (myRole === "host") {
-          setMyRole("cohost");
-          setNotification({ message: `You transferred host to ${data.newHostName}. You are now a co-host.`, type: 'info' });
+          const newRole = user?.userType === "arl" ? "cohost" : "participant";
+          setMyRole(newRole);
+          setNotification({ message: `You transferred host to ${data.newHostName}. You are now a ${newRole === "cohost" ? "co-host" : "participant"}.`, type: 'info' });
         } else {
           setNotification({ message: `${data.previousHostName} transferred host to ${data.newHostName}.`, type: 'info' });
         }
@@ -1424,7 +1426,7 @@ function MeetingUI({
                     )}
                     <div ref={chatEndRef} />
                   </div>
-                  {!isArl && showMeetingKeyboard && (
+                  {!isArlUser && showMeetingKeyboard && (
                     <OnscreenKeyboard
                       value={newMessage}
                       onChange={setNewMessage}
@@ -1434,7 +1436,7 @@ function MeetingUI({
                     />
                   )}
                   <div className="p-3 border-t border-slate-700 flex gap-2">
-                    {!isArl && (
+                    {!isArlUser && (
                       <button
                         onClick={() => setShowMeetingKeyboard(k => !k)}
                         className={cn(
@@ -1565,8 +1567,8 @@ function MeetingUI({
             </button>
           )}
 
-          {/* Screen share (ARL only) */}
-          {isArl && (
+          {/* Screen share (host only per spec) */}
+          {myRole === "host" && (
             <button
               onClick={() => localParticipant.setScreenShareEnabled(!localParticipant.isScreenShareEnabled)}
               className={cn(
@@ -1595,8 +1597,8 @@ function MeetingUI({
             <AudioLines className="h-5 w-5" />
           </button>
 
-          {/* Raise hand (restaurants + guests) */}
-          {(user?.userType === "location" || user?.userType === "guest") && (
+          {/* Raise hand (all non-host roles: participants + co-hosts) */}
+          {myRole !== "host" && (
             <button
               onClick={toggleRaiseHand}
               className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}

@@ -868,8 +868,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const me = meeting.participants.get(socket.id);
       const myLkIdentity = me?.livekitIdentity;
       const isHost = meeting.hostId === user.id || meeting.hostId === myLkIdentity;
-      // Only host or any ARL can end the meeting
-      if (!isHost && user.userType !== "arl") {
+      // Only host can end the meeting for all
+      if (!isHost) {
         console.log(`📹 meeting:end denied: ${user.name} is not host (hostId=${meeting.hostId}, userId=${user.id}, lkId=${myLkIdentity})`);
         return;
       }
@@ -900,6 +900,19 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const previousHostName = meeting.hostName;
       meeting.hostId = data.targetIdentity; // LiveKit identity becomes new hostId
       meeting.hostName = data.targetName || data.targetIdentity;
+
+      // Update participant roles in the map
+      // Old host: ARL → cohost, restaurant/guest → participant
+      if (me) {
+        me.role = me.userType === "arl" ? "cohost" : "participant";
+      }
+      // New host: find by livekitIdentity and set role to host
+      for (const [, p] of meeting.participants) {
+        if (p.livekitIdentity === data.targetIdentity || p.odId === data.targetIdentity) {
+          p.role = "host";
+          break;
+        }
+      }
 
       // Cancel any host-left countdown since there's a new host
       meeting.hostLeftAt = undefined;
