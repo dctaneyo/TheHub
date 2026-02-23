@@ -154,7 +154,16 @@ function GuestMeetingPageWithParams() {
       setMeetingInfo(data.meeting);
       setActiveMeetingId(`scheduled-${data.meeting.meetingCode}`);
 
-      // Check if too early for scheduled meeting
+      // Check if authenticated user is the host
+      const isHost = authenticatedUser && data.meeting.hostId && authenticatedUser.id === data.meeting.hostId;
+
+      // If user is the host, start the meeting immediately
+      if (isHost) {
+        setStep("meeting");
+        return;
+      }
+
+      // For non-hosts, check if too early for scheduled meeting
       const scheduledTime = new Date(data.meeting.scheduledAt).getTime();
       const now = Date.now();
       const minutesUntilMeeting = (scheduledTime - now) / 60000;

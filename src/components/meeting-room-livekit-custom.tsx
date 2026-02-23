@@ -1213,7 +1213,7 @@ function MeetingUI({
                     >
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <Monitor className="h-3 w-3 text-blue-400" />
-                        <span className="text-xs text-white font-medium">{screenShareTrack.participant.name} — Screen</span>
+                        <span className="text-xs text-white font-medium">{participantNicknames.get(screenShareTrack.participant.identity) || screenShareTrack.participant.name} — Screen</span>
                       </div>
                     </ZoomableVideo>
                   )}
@@ -1224,7 +1224,7 @@ function MeetingUI({
                     <div key={track.participant.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
                       <VideoTrack trackRef={track as any} className="w-full h-full object-cover" />
                       <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
-                        <span className="text-[9px] text-white">{track.participant.name}</span>
+                        <span className="text-[9px] text-white">{participantNicknames.get(track.participant.identity) || track.participant.name}</span>
                       </div>
                     </div>
                   ))}
@@ -1286,13 +1286,13 @@ function MeetingUI({
                             <div className="h-24 w-24 rounded-full bg-red-600 flex items-center justify-center mx-auto mb-3 text-white text-3xl font-bold">
                               {hostParticipant.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'H'}
                             </div>
-                            <p className="text-white font-medium">{hostParticipant.name}</p>
+                            <p className="text-white font-medium">{participantNicknames.get(hostParticipant.identity) || hostParticipant.name}</p>
                             <p className="text-slate-400 text-xs mt-1">Camera off</p>
                           </div>
                         </div>
                       )}
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-                        <span className="text-xs text-white font-medium">{hostParticipant.name}</span>
+                        <span className="text-xs text-white font-medium">{participantNicknames.get(hostParticipant.identity) || hostParticipant.name}</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
                       </div>
                       {hostParticipant.isMicrophoneEnabled === false && (
@@ -1346,11 +1346,11 @@ function MeetingUI({
                               <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
                                 <span className="text-sm font-bold text-white">{p.name?.charAt(0) || "?"}</span>
                               </div>
-                              <span className="text-[10px] text-slate-400">{p.name}</span>
+                              <span className="text-[10px] text-slate-400">{participantNicknames.get(p.identity) || p.name}</span>
                             </div>
                           )}
                           <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
-                            <span className="text-[9px] text-white">{p.name}</span>
+                            <span className="text-[9px] text-white">{participantNicknames.get(p.identity) || p.name}</span>
                             {metadata.role === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
                             {isHandRaised(p) && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
                           </div>
@@ -1397,7 +1397,7 @@ function MeetingUI({
                       {p.name?.charAt(0) || "?"}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs text-white font-medium truncate block max-w-[100px]">{p.name}</span>
+                      <span className="text-xs text-white font-medium truncate block max-w-[100px]">{participantNicknames.get(p.identity) || p.name}</span>
                       <span className="text-[10px] text-slate-400">{p.isMicrophoneEnabled ? "Speaking" : "Muted"}</span>
                     </div>
                     {isHandRaised(p) && <Hand className="h-3.5 w-3.5 text-yellow-400 shrink-0" />}
