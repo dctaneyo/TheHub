@@ -50,11 +50,12 @@ interface MeetingRoomLiveKitCustomProps {
   title: string;
   isHost: boolean;
   onLeave: (didEndMeeting?: boolean) => void;
+  shouldStartMeeting?: boolean;
 }
 
 const REACTION_EMOJIS = ["❤️", "👍", "🔥", "😂", "👏", "💯"];
 
-export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: MeetingRoomLiveKitCustomProps) {
+export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, shouldStartMeeting }: MeetingRoomLiveKitCustomProps) {
   const { user } = useAuth();
   const [token, setToken] = useState<string>("");
   const [wsUrl, setWsUrl] = useState<string>("");
@@ -65,6 +66,14 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
   const [joinWithAudio, setJoinWithAudio] = useState(true);
 
   const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
+  const { socket } = useSocket();
+
+  // Emit meeting:create when host starts meeting via URL
+  useEffect(() => {
+    if (shouldStartMeeting && isHost && socket) {
+      socket.emit("meeting:create", { meetingId, title });
+    }
+  }, [shouldStartMeeting, isHost, socket, meetingId, title]);
 
   // Fetch LiveKit token on mount
   useEffect(() => {
@@ -97,7 +106,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
     };
 
     fetchToken();
-  }, [meetingId, user?.name]);
+  }, [meetingId, user?.name, isHost]);
 
   if (loading) {
     return (

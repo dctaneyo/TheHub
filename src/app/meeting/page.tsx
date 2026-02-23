@@ -23,8 +23,8 @@ interface MeetingInfo {
   isLive?: boolean;
 }
 
-function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, hostId, onLeave }: {
-  meetingId: string; title: string; guestName: string; authenticatedUser?: any; hostId?: string; onLeave: () => void;
+function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, hostId, onLeave, shouldStartMeeting }: {
+  meetingId: string; title: string; guestName: string; authenticatedUser?: any; hostId?: string; onLeave: () => void; shouldStartMeeting?: boolean;
 }) {
   // Determine if the authenticated user is the host
   const isHost = authenticatedUser && hostId && authenticatedUser.id === hostId;
@@ -50,6 +50,7 @@ function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, h
           title={title}
           isHost={isHost}
           onLeave={onLeave}
+          shouldStartMeeting={shouldStartMeeting}
         />
       </SocketProvider>
     </AuthContext.Provider>
@@ -83,6 +84,7 @@ function GuestMeetingPageWithParams() {
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
+  const [isHostStartingMeeting, setIsHostStartingMeeting] = useState(false); // Track if host is starting meeting
   
   // Auth choice state
   const [showGuestInput, setShowGuestInput] = useState(false);
@@ -160,6 +162,7 @@ function GuestMeetingPageWithParams() {
 
       // If user is the host, start the meeting immediately
       if (isHost) {
+        setIsHostStartingMeeting(true); // Flag that host is starting the meeting
         setStep("meeting");
         return;
       }
@@ -380,6 +383,7 @@ function GuestMeetingPageWithParams() {
         authenticatedUser={authenticatedUser}
         hostId={meetingInfo.hostId}
         onLeave={handleLeaveMeeting}
+        shouldStartMeeting={isHostStartingMeeting}
       />
     );
   }
