@@ -147,7 +147,10 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
-      style={{ cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+      style={{ 
+        cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+        touchAction: "none"
+      }}
     >
       <div
         ref={videoRef}
