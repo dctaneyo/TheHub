@@ -87,7 +87,7 @@ function GuestMeetingPageWithParams() {
   const [pin, setPin] = useState("");
   const [pinPadStep, setPinPadStep] = useState<"userId" | "pin">("userId");
 
-  // Read URL parameters on component mount
+  // Read URL parameters on component mount and fetch meeting info for one-click join
   const isOneClickJoin = !!searchParams?.get("code");
   useEffect(() => {
     const code = searchParams?.get("code");
@@ -95,8 +95,30 @@ function GuestMeetingPageWithParams() {
     
     if (code) {
       setMeetingCode(code.toUpperCase());
+      
+      // Fetch meeting info to display title on one-click join
+      if (pwd) {
+        setPassword(pwd);
+        // Fetch meeting details
+        fetch("/api/meetings/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meetingCode: code.toUpperCase(),
+            password: pwd,
+            guestName: "temp", // Temporary name just to validate
+          }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.meeting) {
+              setMeetingInfo(data.meeting);
+            }
+          })
+          .catch(() => {});
+      }
     }
-    if (pwd) {
+    if (pwd && !code) {
       setPassword(pwd);
     }
   }, [searchParams]);
@@ -161,16 +183,71 @@ function GuestMeetingPageWithParams() {
     await validateAndJoinMeeting(guestName.trim());
   };
 
-  // PinPad digit handler
-  const handlePinPadDigit = (digit: string) => {
+  // PinPad digit handler with auto-validation
+  const handlePinPadDigit = async (digit: string) => {
     setError("");
     if (pinPadStep === "userId") {
       if (userId.length < 4) {
-        setUserId(userId + digit);
+        const newVal = userId + digit;
+        setUserId(newVal);
+        
+        // Auto-validate and advance when 4 digits entered
+        if (newVal.length === 4) {
+          setLoading(true);
+          try {
+            const res = await fetch("/api/auth/validate-user", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: newVal }),
+            });
+            const data = await res.json();
+            if (res.ok && data.found) {
+              setError("");
+              setPinPadStep("pin");
+            } else {
+              setError(data.error || "User ID not found");
+              setUserId("");
+            }
+          } catch {
+            setError("Connection error. Please try again.");
+            setUserId("");
+          }
+          setLoading(false);
+        }
       }
     } else {
       if (pin.length < 4) {
-        setPin(pin + digit);
+        const newVal = pin + digit;
+        setPin(newVal);
+        
+        // Auto-login when 4 digits entered
+        if (newVal.length === 4) {
+          setLoading(true);
+          setError("");
+          try {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, pin: newVal }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              setError(data.error || "Invalid credentials");
+              setPin("");
+              setLoading(false);
+              return;
+            }
+
+            setAuthenticatedUser(data.user);
+            await validateAndJoinMeeting(data.user.name);
+          } catch {
+            setError("Authentication failed. Please try again.");
+            setPin("");
+            setLoading(false);
+          }
+        }
       }
     }
   };
@@ -184,38 +261,18 @@ function GuestMeetingPageWithParams() {
     }
   };
 
-  // PinPad continue handler
-  const handlePinPadContinue = async () => {
-    if (pinPadStep === "userId" && userId.length === 4) {
-      setPinPadStep("pin");
-    } else if (pinPadStep === "pin" && pin.length === 4) {
-      // Authenticate via login API
-      setLoading(true);
+  // PinPad back handler
+  const handlePinPadBack = () => {
+    if (pinPadStep === "pin") {
+      setPinPadStep("userId");
+      setPin("");
       setError("");
-      try {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, pin }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || "Invalid credentials");
-          setLoading(false);
-          return;
-        }
-
-        // Store authenticated user
-        setAuthenticatedUser(data.user);
-        
-        // Join meeting with authenticated user's name
-        await validateAndJoinMeeting(data.user.name);
-      } catch {
-        setError("Authentication failed. Please try again.");
-        setLoading(false);
-      }
+    } else {
+      setShowPinPad(false);
+      setUserId("");
+      setPin("");
+      setPinPadStep("userId");
+      setError("");
     }
   };
 
@@ -449,7 +506,7 @@ function GuestMeetingPageWithParams() {
                   {isOneClickJoin ? "You're Invited!" : "Join a Meeting"}
                 </h1>
                 <p className="text-sm text-red-100 mt-1">
-                  {isOneClickJoin ? "Enter your name to join the meeting" : "Enter the meeting code to join"}
+                  {isOneClickJoin && meetingInfo ? meetingInfo.title : isOneClickJoin ? "Loading meeting..." : "Enter the meeting code to join"}
                 </p>
               </div>
 
@@ -618,27 +675,14 @@ function GuestMeetingPageWithParams() {
                         </button>
                       ))}
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setShowPinPad(false);
-                          setUserId("");
-                          setPin("");
-                          setPinPadStep("userId");
-                        }}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={handlePinPadContinue}
-                        disabled={loading || (pinPadStep === "userId" ? userId.length !== 4 : pin.length !== 4)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      >
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : pinPadStep === "userId" ? "Continue" : "Login"}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handlePinPadBack}
+                      variant="outline"
+                      className="w-full"
+                      disabled={loading}
+                    >
+                      {pinPadStep === "pin" ? "← Back to User ID" : "← Cancel"}
+                    </Button>
                   </motion.div>
                 )}
               </div>
