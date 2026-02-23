@@ -17,7 +17,7 @@ function generateMeetingCode(): string {
 
 interface BroadcastStudioProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (leftMeetingId?: string) => void;
   initialTitle?: string;
   initialMeetingCode?: string;
 }
@@ -67,12 +67,14 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
     setInMeeting(true);
   };
 
-  const handleLeaveMeeting = () => {
+  const handleLeaveMeeting = (didEndMeeting?: boolean) => {
+    const leftId = meetingId;
     setInMeeting(false);
     setMeetingId(null);
     setTitle("");
     setPassword("");
-    onClose();
+    // Pass the meeting ID if user left (not ended) so they can rejoin
+    onClose(didEndMeeting ? undefined : leftId || undefined);
   };
 
   if (!isOpen) return null;
@@ -84,7 +86,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
         meetingId={meetingId}
         title={title}
         isHost={true}
-        onLeave={handleLeaveMeeting}
+        onLeave={(didEnd) => handleLeaveMeeting(didEnd)}
       />
     );
   }
@@ -106,7 +108,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button onClick={() => onClose()} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>

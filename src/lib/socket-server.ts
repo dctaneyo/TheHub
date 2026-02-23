@@ -859,13 +859,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const hostTimer = _hostLeftTimers.get(data.meetingId);
       if (hostTimer) { clearTimeout(hostTimer); _hostLeftTimers.delete(data.meetingId); }
 
-      // Notify all participants
+      // Notify all participants (include newHostSocketId so the new host knows it's them)
       io!.to(`meeting:${data.meetingId}`).emit("meeting:host-transferred", {
         meetingId: data.meetingId,
         newHostSocketId: targetSid,
         newHostName: target.name,
         previousHostName: me.name,
       });
+      console.log(`📹 Emitted host-transferred to all: newHostSocketId=${targetSid}, newHostName=${target.name}`);
 
       // Tell the new host their role changed
       io!.to(targetSid).emit("meeting:role-updated", { socketId: targetSid, role: "host" });
@@ -921,32 +922,33 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      // Look up target by socketId first, then fall back to userId or livekitIdentity
+      
+      console.log(`🎤 allow-speak request: target=${data.targetSocketId}`);
+      
+      // Look up target by socketId, userId, livekitIdentity, or name
       let target: MeetingParticipant | undefined;
       let targetSid = data.targetSocketId;
       target = meeting.participants.get(data.targetSocketId);
-      if (!target && data.targetUserId) {
-        for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetUserId) { target = p; targetSid = sid; break; }
-        }
-      }
       if (!target) {
-        // Try matching targetSocketId as odId or livekitIdentity (for guests)
         for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+          if (p.odId === data.targetSocketId || 
+              p.livekitIdentity === data.targetSocketId ||
+              p.name === data.targetSocketId ||
+              (data.targetUserId && p.odId === data.targetUserId)) {
             target = p; targetSid = sid; break;
           }
         }
       }
       if (!target) {
-        console.warn(`⚠️ allow-speak: target not found for targetSocketId=${data.targetSocketId}, participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity })));
+        console.warn(`⚠️ allow-speak: target not found for targetSocketId=${data.targetSocketId}`);
+        console.warn(`   Participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
         return;
       }
       if (target.role === "host") return;
       target.isMuted = false;
       target.handRaised = false;
       io!.to(targetSid).emit("meeting:speak-allowed", { meetingId: data.meetingId });
-      console.log(`📹 ${user.name} allowed ${target.name} to speak`);
+      console.log(`🎤 ${user.name} allowed ${target.name} to speak (emitted to ${targetSid})`);
       broadcastMeetingState(meeting);
     });
 
@@ -957,30 +959,31 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (!meeting) return;
       const me = meeting.participants.get(socket.id);
       if (!me || (me.role !== "host" && me.role !== "cohost")) return;
-      // Look up target by socketId first, then fall back to userId or livekitIdentity
+      
+      console.log(`🔇 mute-participant request: target=${data.targetSocketId}`);
+      
+      // Look up target by socketId, userId, livekitIdentity, or name
       let target: MeetingParticipant | undefined;
       let targetSid = data.targetSocketId;
       target = meeting.participants.get(data.targetSocketId);
-      if (!target && data.targetUserId) {
-        for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetUserId) { target = p; targetSid = sid; break; }
-        }
-      }
       if (!target) {
-        // Try matching targetSocketId as odId or livekitIdentity (for guests)
         for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+          if (p.odId === data.targetSocketId || 
+              p.livekitIdentity === data.targetSocketId ||
+              p.name === data.targetSocketId ||
+              (data.targetUserId && p.odId === data.targetUserId)) {
             target = p; targetSid = sid; break;
           }
         }
       }
       if (!target) {
-        console.warn(`⚠️ mute: target not found for targetSocketId=${data.targetSocketId}, participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity })));
+        console.warn(`⚠️ mute: target not found for targetSocketId=${data.targetSocketId}`);
+        console.warn(`   Participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
         return;
       }
       if (target.role === "host") return;
       target.isMuted = true;
-      console.log(`📹 ${user.name} muted ${target.name}`);
+      console.log(`� ${user.name} muted ${target.name} (emitted to ${targetSid})`);
       // Track analytics: muted by host
       const muteAnalytics = _meetingAnalytics.get(data.meetingId);
       if (muteAnalytics) {

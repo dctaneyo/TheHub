@@ -49,7 +49,7 @@ interface MeetingRoomLiveKitCustomProps {
   meetingId: string;
   title: string;
   isHost: boolean;
-  onLeave: () => void;
+  onLeave: (didEndMeeting?: boolean) => void;
 }
 
 const REACTION_EMOJIS = ["❤️", "👍", "🔥", "😂", "👏", "💯"];
@@ -115,7 +115,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
       <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 text-lg mb-4">{error}</p>
-          <Button onClick={onLeave}>Go Back</Button>
+          <Button onClick={() => onLeave()}>Go Back</Button>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
           setJoinWithAudio(audio);
           setSetupComplete(true);
         }}
-        onCancel={onLeave}
+        onCancel={() => onLeave()}
       />
     );
   }
@@ -149,7 +149,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave }: 
         serverUrl={wsUrl}
         data-lk-theme="default"
         style={{ height: "100vh" }}
-        onDisconnected={onLeave}
+        onDisconnected={() => onLeave()}
       >
         <MeetingUI
           meetingId={meetingId}
@@ -419,7 +419,7 @@ function MeetingUI({
   meetingId: string;
   title: string;
   isHost: boolean;
-  onLeave: () => void;
+  onLeave: (didEndMeeting?: boolean) => void;
   hasVideoCapability: boolean;
 }) {
   const { user } = useAuth();
@@ -450,6 +450,8 @@ function MeetingUI({
   const [hostHasLeft, setHostHasLeft] = useState(false);
   const [hostLeftCountdown, setHostLeftCountdown] = useState<number | null>(null); // seconds remaining
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true); // Loading state while feeds load
+  const [notification, setNotification] = useState<{ message: string; type: 'info' | 'success' | 'warning' } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -564,10 +566,19 @@ function MeetingUI({
       }, 1000);
     };
 
-    const handleHostTransferred = (data: { newHostName: string; previousHostName: string }) => {
+    const handleHostTransferred = (data: { newHostName: string; previousHostName: string; newHostSocketId?: string }) => {
       setHostHasLeft(false);
       setHostLeftCountdown(null);
       if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
+      
+      // Show notification to all participants
+      if (data.newHostSocketId === socket.id) {
+        // This user is the new host
+        setNotification({ message: `You are now the host! ${data.previousHostName} transferred host duties to you.`, type: 'success' });
+      } else {
+        setNotification({ message: `${data.previousHostName} left and made ${data.newHostName} the new host.`, type: 'info' });
+      }
+      setTimeout(() => setNotification(null), 8000);
     };
 
     // Hand raise events from server — track by odId which matches LiveKit identity
@@ -743,6 +754,15 @@ function MeetingUI({
     };
   }, []);
 
+  // Clear loading state once we have participants and room is connected
+  useEffect(() => {
+    if (room.state === "connected" && participants.length > 0) {
+      // Small delay to let video feeds initialize
+      const timer = setTimeout(() => setIsInitializing(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [room.state, participants.length]);
+
   const sendChat = () => {
     if (!newMessage.trim() || !socket) return;
     socket.emit("meeting:chat", { meetingId, content: newMessage.trim() });
@@ -776,14 +796,14 @@ function MeetingUI({
     // broadcasts meeting:ended to all participants before our socket drops
     setTimeout(() => {
       room.disconnect();
-      onLeave();
+      onLeave(true); // true = meeting ended (not just left)
     }, 500);
   };
 
   const leaveMeeting = () => {
     socket?.emit("meeting:leave", { meetingId });
     room.disconnect();
-    onLeave();
+    onLeave(false); // false = just left (meeting may continue)
   };
 
   const transferHost = (targetIdentity: string) => {
@@ -818,7 +838,7 @@ function MeetingUI({
           </div>
           <p className="text-xs text-slate-500 mb-6">You&apos;ll be connected automatically</p>
           <button
-            onClick={onLeave}
+            onClick={() => onLeave()}
             className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
           >
             Leave
@@ -834,6 +854,39 @@ function MeetingUI({
       <style>{`
         .lk-host-video video { object-fit: contain !important; }
       `}</style>
+      {/* Loading overlay while meeting initializes */}
+      {isInitializing && (
+        <div className="absolute inset-0 z-[70] bg-slate-900/95 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-12 w-12 text-red-500 animate-spin" />
+          <div className="text-center">
+            <h3 className="text-white font-semibold text-lg mb-1">Joining Meeting</h3>
+            <p className="text-slate-400 text-sm">Connecting to {title}...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Notification banner (host transfer, etc.) */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={cn(
+              "px-4 py-2.5 flex items-center justify-center gap-2 shrink-0 text-white text-sm font-medium",
+              notification.type === 'success' ? "bg-green-600/90" : 
+              notification.type === 'warning' ? "bg-orange-600/90" : "bg-blue-600/90"
+            )}
+          >
+            {notification.type === 'success' && <Crown className="h-4 w-4" />}
+            {notification.message}
+            <button onClick={() => setNotification(null)} className="ml-2 p-0.5 hover:bg-white/20 rounded">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Host-left countdown banner */}
       {hostHasLeft && hostLeftCountdown !== null && hostLeftCountdown > 0 && (
         <div className="bg-orange-600/90 backdrop-blur-sm px-4 py-2 flex items-center justify-center gap-2 shrink-0">

@@ -142,6 +142,8 @@ export default function ArlPage() {
   const [activeBroadcast, setActiveBroadcast] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
   const [showBroadcastNotification, setShowBroadcastNotification] = useState(false);
   const [watchingBroadcast, setWatchingBroadcast] = useState(false);
+  const [leftMeetingId, setLeftMeetingId] = useState<string | null>(null); // Track meeting user left for rejoin
+  const [activeMeetings, setActiveMeetings] = useState<Array<{ meetingId: string; title: string; hostName: string; hostId: string }>>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const locationNamesRef = useRef<Map<string, string>>(new Map());
 
@@ -278,15 +280,26 @@ export default function ArlPage() {
         setActiveBroadcast(null);
         setWatchingBroadcast(false);
       }
+      // Clear leftMeetingId if that meeting ended
+      if (leftMeetingId === data.meetingId) {
+        setLeftMeetingId(null);
+      }
+      // Update activeMeetings
+      setActiveMeetings(prev => prev.filter(m => m.meetingId !== data.meetingId));
     };
     // Check for already-active meetings (ARL connected after meeting started)
     const handleMeetingList = (data: { meetings: Array<{ meetingId: string; hostName: string; title: string; hostId: string }> }) => {
+      setActiveMeetings(data.meetings);
       if (data.meetings.length > 0 && !activeBroadcast && activeView !== "broadcast") {
         const m = data.meetings.find(m => m.hostId !== user?.id);
         if (m) {
           setActiveBroadcast({ broadcastId: m.meetingId, arlName: m.hostName, title: m.title });
           setShowBroadcastNotification(true);
         }
+      }
+      // Clear leftMeetingId if that meeting ended
+      if (leftMeetingId && !data.meetings.find(m => m.meetingId === leftMeetingId)) {
+        setLeftMeetingId(null);
       }
     };
     socket.on("meeting:started", handleMeetingStarted);
@@ -614,10 +627,50 @@ export default function ArlPage() {
         </main>
       </div>
 
+      {/* Rejoin Meeting Banner */}
+      <AnimatePresence>
+        {leftMeetingId && activeMeetings.find(m => m.meetingId === leftMeetingId) && activeView !== "broadcast" && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-blue-600 text-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-4"
+          >
+            <div className="text-sm">
+              <span className="font-semibold">Meeting still active:</span>{" "}
+              {activeMeetings.find(m => m.meetingId === leftMeetingId)?.title || "Untitled"}
+            </div>
+            <button
+              onClick={() => {
+                setActiveView("broadcast");
+                setLeftMeetingId(null);
+              }}
+              className="bg-white text-blue-600 font-semibold text-sm px-4 py-1.5 rounded-xl hover:bg-blue-50 transition-colors"
+            >
+              Rejoin
+            </button>
+            <button
+              onClick={() => setLeftMeetingId(null)}
+              className="text-white/70 hover:text-white text-xs"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Broadcast Studio */}
       <BroadcastStudio 
         isOpen={activeView === "broadcast"} 
-        onClose={() => setActiveView("meetings")}
+        onClose={(leftMeeting?: string) => {
+          setActiveView("meetings");
+          // If they left (not ended) a meeting, track it for rejoin
+          if (leftMeeting) {
+            setLeftMeetingId(leftMeeting);
+            // Refresh active meetings list
+            socket?.emit("meeting:list");
+          }
+        }}
       />
 
       {/* Task completion toasts */}
