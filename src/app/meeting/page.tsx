@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -8,7 +8,7 @@ import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
-import { SocketProvider } from "@/lib/socket-context";
+import { SocketProvider, useSocket } from "@/lib/socket-context";
 import { AuthContext } from "@/lib/auth-context";
 
 interface MeetingInfo {
@@ -45,6 +45,22 @@ function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
       </SocketProvider>
     </AuthContext.Provider>
   );
+}
+
+// Lightweight listener — connects to Socket.io, listens for meeting:started, no LiveKit
+function WaitingRoomListener({ meetingId, onMeetingStarted }: { meetingId: string; onMeetingStarted: () => void }) {
+  const { socket } = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { meetingId: string }) => {
+      if (data.meetingId === meetingId) {
+        onMeetingStarted();
+      }
+    };
+    socket.on("meeting:started", handler);
+    return () => { socket.off("meeting:started", handler); };
+  }, [socket, meetingId, onMeetingStarted]);
+  return null; // renders nothing — just listens
 }
 
 function GuestMeetingPageWithParams() {
@@ -169,7 +185,12 @@ function GuestMeetingPageWithParams() {
     return () => clearInterval(interval);
   }, [step, meetingInfo]);
 
-  // Poll every 10s to check if meeting has gone live (shared by both waiting steps)
+  // Stable callback for the Socket.io listener
+  const handleMeetingStarted = useCallback(() => {
+    setStep("meeting");
+  }, []);
+
+  // Fallback poll every 60s in case the socket event is missed
   useEffect(() => {
     if ((step !== "waiting" && step !== "waiting-for-host") || !meetingInfo) return;
 
@@ -193,9 +214,10 @@ function GuestMeetingPageWithParams() {
       } catch { /* ignore */ }
     };
 
-    // Poll immediately on entering waiting-for-host, then every 10s
+    // One immediate check on entering waiting-for-host
     if (step === "waiting-for-host") poll();
-    const interval = setInterval(poll, 10000);
+    // Infrequent fallback — primary detection is via Socket.io real-time event
+    const interval = setInterval(poll, 60000);
     return () => clearInterval(interval);
   }, [step, meetingInfo, password, guestName]);
 
@@ -214,115 +236,121 @@ function GuestMeetingPageWithParams() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <AnimatePresence mode="wait">
-        {step === "waiting" && meetingInfo && (
-          <motion.div
-            key="waiting"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-md"
-          >
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
-                  <Clock className="h-7 w-7" />
-                </div>
-                <h1 className="text-xl font-bold">Meeting Hasn&apos;t Started Yet</h1>
-                <p className="text-sm text-amber-100 mt-1">{meetingInfo.title}</p>
-              </div>
-
-              <div className="p-6 space-y-5">
-                <div className="text-center">
-                  <p className="text-sm text-slate-500 mb-1">Meeting starts in</p>
-                  <p className="text-3xl font-bold font-mono text-slate-800 tracking-wide">{countdown}</p>
-                  <p className="text-xs text-slate-400 mt-2">
-                    Scheduled for {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                  </p>
+        {step === "waiting" && meetingInfo && activeMeetingId && (
+          <SocketProvider guestName={guestName} guestMeetingId={activeMeetingId}>
+            <WaitingRoomListener meetingId={activeMeetingId} onMeetingStarted={handleMeetingStarted} />
+            <motion.div
+              key="waiting"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full max-w-md"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 text-center">
+                  <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                    <Clock className="h-7 w-7" />
+                  </div>
+                  <h1 className="text-xl font-bold">Meeting Hasn&apos;t Started Yet</h1>
+                  <p className="text-sm text-amber-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>You&apos;ll be automatically connected when the meeting is about to start.</span>
-                </div>
+                <div className="p-6 space-y-5">
+                  <div className="text-center">
+                    <p className="text-sm text-slate-500 mb-1">Meeting starts in</p>
+                    <p className="text-3xl font-bold font-mono text-slate-800 tracking-wide">{countdown}</p>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Scheduled for {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    </p>
+                  </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
-                  <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                  Checking if meeting has started...
-                </div>
+                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>You&apos;ll be automatically connected when the host starts the meeting.</span>
+                  </div>
 
-                {/* Join Anyway — only if 30-60 min early, goes to waiting-for-host (no LiveKit yet) */}
-                {minutesEarly <= 60 && (
-                  <Button
-                    onClick={() => setStep("waiting-for-host")}
-                    variant="outline"
-                    className="w-full h-11 text-sm font-semibold rounded-xl border-slate-300"
+                  <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                    <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                    Listening for host...
+                  </div>
+
+                  {/* Join Anyway — only if 30-60 min early, goes to waiting-for-host (no LiveKit yet) */}
+                  {minutesEarly <= 60 && (
+                    <Button
+                      onClick={() => setStep("waiting-for-host")}
+                      variant="outline"
+                      className="w-full h-11 text-sm font-semibold rounded-xl border-slate-300"
+                    >
+                      Join Anyway <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+
+                  <button
+                    onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                    className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    Join Anyway <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
-
-                <button
-                  onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
-                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  &larr; Back
-                </button>
+                    &larr; Back
+                  </button>
+                </div>
               </div>
-            </div>
             <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
           </motion.div>
+          </SocketProvider>
         )}
 
-        {step === "waiting-for-host" && meetingInfo && (
-          <motion.div
-            key="waiting-for-host"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-md"
-          >
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
-                  <Video className="h-7 w-7" />
-                </div>
-                <h1 className="text-xl font-bold">Waiting for Host</h1>
-                <p className="text-sm text-blue-100 mt-1">{meetingInfo.title}</p>
-              </div>
-
-              <div className="p-6 space-y-5">
-                <div className="text-center">
-                  <div className="h-16 w-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
-                    <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+        {step === "waiting-for-host" && meetingInfo && activeMeetingId && (
+          <SocketProvider guestName={guestName} guestMeetingId={activeMeetingId}>
+            <WaitingRoomListener meetingId={activeMeetingId} onMeetingStarted={handleMeetingStarted} />
+            <motion.div
+              key="waiting-for-host"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full max-w-md"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
+                  <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                    <Video className="h-7 w-7" />
                   </div>
-                  <p className="text-sm font-medium text-slate-700">The host hasn&apos;t started the meeting yet</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    You&apos;ll be connected automatically once it begins
-                  </p>
+                  <h1 className="text-xl font-bold">Waiting for Host</h1>
+                  <p className="text-sm text-blue-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
-                  <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                  Checking every 10 seconds...
-                </div>
+                <div className="p-6 space-y-5">
+                  <div className="text-center">
+                    <div className="h-16 w-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                      <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-700">The host hasn&apos;t started the meeting yet</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      You&apos;ll be connected automatically once it begins
+                    </p>
+                  </div>
 
-                <div className="bg-slate-50 rounded-xl p-3 text-center">
-                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
-                  <p className="text-sm font-medium text-slate-600">
-                    {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                  </p>
-                </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                    <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                    Listening for host...
+                  </div>
 
-                <button
-                  onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
-                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  &larr; Back
-                </button>
+                  <div className="bg-slate-50 rounded-xl p-3 text-center">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
+                    <p className="text-sm font-medium text-slate-600">
+                      {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                    className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    &larr; Back
+                  </button>
+                </div>
               </div>
-            </div>
-            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
-          </motion.div>
+              <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+            </motion.div>
+          </SocketProvider>
         )}
 
         {step === "join" && (
