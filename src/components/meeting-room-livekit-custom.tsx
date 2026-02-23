@@ -23,6 +23,7 @@ import {
   AudioTrack,
   useRoomContext,
 } from "@livekit/components-react";
+import { ZoomableVideo } from "./meeting-room/zoomable-video";
 import { Track, RoomEvent, LocalParticipant, RemoteParticipant, LocalTrackPublication } from "livekit-client";
 import "@livekit/components-styles";
 import { LogOut, DoorOpen, Settings, AudioLines } from "lucide-react";
@@ -865,16 +866,15 @@ function MeetingUI({
                 {/* Main presentation area */}
                 <div className="flex-1 relative bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-0">
                   {screenShareTrack && screenShareTrack.publication && (
-                    <>
-                      <VideoTrack
-                        trackRef={screenShareTrack as any}
-                        className="w-full h-full object-contain"
-                      />
+                    <ZoomableVideo
+                      trackRef={screenShareTrack as any}
+                      className="w-full h-full"
+                    >
                       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <Monitor className="h-3 w-3 text-blue-400" />
                         <span className="text-xs text-white font-medium">{screenShareTrack.participant.name} — Screen</span>
                       </div>
-                    </>
+                    </ZoomableVideo>
                   )}
                 </div>
                 {/* Thumbnail strip */}
