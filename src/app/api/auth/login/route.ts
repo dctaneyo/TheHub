@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
           id: location.id,
           name: location.name,
           storeNumber: location.storeNumber,
+          userType: "location",
         },
       });
 
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
           id: arl.id,
           name: arl.name,
           role: arl.role,
+          userType: "arl",
         },
       });
 
