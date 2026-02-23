@@ -127,29 +127,6 @@ function runMigrations() {
     )`);
   } catch {}
   try {
-    s.exec(`CREATE TABLE IF NOT EXISTS meeting_analytics (
-      id TEXT PRIMARY KEY NOT NULL,
-      meeting_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      host_id TEXT NOT NULL,
-      host_name TEXT NOT NULL,
-      started_at TEXT NOT NULL,
-      ended_at TEXT,
-      duration INTEGER,
-      total_participants INTEGER NOT NULL DEFAULT 0,
-      total_locations INTEGER NOT NULL DEFAULT 0,
-      total_arls INTEGER NOT NULL DEFAULT 0,
-      total_guests INTEGER NOT NULL DEFAULT 0,
-      peak_participants INTEGER NOT NULL DEFAULT 0,
-      total_messages INTEGER NOT NULL DEFAULT 0,
-      total_questions INTEGER NOT NULL DEFAULT 0,
-      total_reactions INTEGER NOT NULL DEFAULT 0,
-      total_hand_raises INTEGER NOT NULL DEFAULT 0,
-      screen_share_duration INTEGER NOT NULL DEFAULT 0,
-      recording_url TEXT
-    )`);
-  } catch {}
-  try {
     s.exec(`CREATE TABLE IF NOT EXISTS meeting_participants (
       id TEXT PRIMARY KEY NOT NULL,
       meeting_id TEXT NOT NULL,

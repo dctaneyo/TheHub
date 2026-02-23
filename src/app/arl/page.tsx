@@ -97,7 +97,6 @@ const navItems = [
   { id: "calendar" as const, label: "Calendar", icon: CalendarDays },
   { id: "leaderboard" as const, label: "Leaderboard", icon: Trophy },
   { id: "locations" as const, label: "Locations", icon: Store },
-  { id: "forms" as const, label: "Forms", icon: FileText },
   { id: "meetings" as const, label: "Meetings", icon: Video },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },

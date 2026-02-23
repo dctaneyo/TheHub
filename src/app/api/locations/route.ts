@@ -226,10 +226,7 @@ export async function DELETE(req: NextRequest) {
     // 2. Delete task completions for this location
     db.delete(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, id)).run();
 
-    // 3. Delete gamification scores
-    db.delete(schema.locationScores).where(eq(schema.locationScores.locationId, id)).run();
-
-    // 4. Delete notifications
+    // 3. Delete notifications
     db.delete(schema.notifications).where(eq(schema.notifications.locationId, id)).run();
 
     // 5. Delete sessions

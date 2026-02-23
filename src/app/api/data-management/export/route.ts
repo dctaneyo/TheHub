@@ -25,7 +25,6 @@ export async function GET() {
         messageReactions: db.select().from(schema.messageReactions).all(),
         sessions: db.select().from(schema.sessions).all(),
         forms: db.select().from(schema.forms).all(),
-        locationScores: db.select().from(schema.locationScores).all(),
         emergencyMessages: db.select().from(schema.emergencyMessages).all(),
         notifications: db.select().from(schema.notifications).all(),
         pendingSessions: db.select().from(schema.pendingSessions).all(),

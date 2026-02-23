@@ -154,9 +154,9 @@ export const forms = sqliteTable("forms", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-// Gamification - location scores
-export const locationScores = sqliteTable("location_scores", {
-  id: text("id").primaryKey(), // UUID
+// Daily leaderboard (points, streaks, etc.)
+export const dailyLeaderboard = sqliteTable("daily_leaderboard", {
+  id: text("id").primaryKey(),
   locationId: text("location_id").notNull(),
   date: text("date").notNull(), // YYYY-MM-DD
   pointsEarned: integer("points_earned").notNull().default(0),
