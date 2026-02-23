@@ -158,8 +158,8 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   };
 
   const getAppUrl = () => {
-    // Use meeting subdomain for all meeting URLs
-    return "https://meeting.meetthehub.com";
+    // Use join subdomain for all meeting URLs
+    return "https://join.meetthehub.com";
   };
 
   const toggleDay = (day: string) => {

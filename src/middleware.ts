@@ -21,8 +21,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host');
 
-  // Handle meeting subdomain - rewrite to meeting page
-  if (hostname === 'meeting.meetthehub.com' && pathname === '/') {
+  // Handle join subdomain - rewrite to meeting page
+  if (hostname === 'join.meetthehub.com' && pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/meeting';
     return NextResponse.rewrite(url);
