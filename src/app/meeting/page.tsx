@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle2, LogIn, UserPlus, Delete } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
@@ -22,11 +22,16 @@ interface MeetingInfo {
   isLive?: boolean;
 }
 
-function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
-  meetingId: string; title: string; guestName: string; onLeave: () => void;
+function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, onLeave }: {
+  meetingId: string; title: string; guestName: string; authenticatedUser?: any; onLeave: () => void;
 }) {
-  // Provide a mock auth context so useAuth() inside MeetingRoom gets the guest user
-  const guestAuth = {
+  // If authenticated user exists, use their context; otherwise use guest context
+  const authContext = authenticatedUser ? {
+    user: authenticatedUser,
+    loading: false,
+    login: async () => ({ success: false as const, error: "Already logged in" }),
+    logout: async () => {},
+  } : {
     user: { id: `guest-temp`, userType: "guest" as const, userId: "000000", name: guestName },
     loading: false,
     login: async () => ({ success: false as const, error: "Guest mode" }),
@@ -34,8 +39,8 @@ function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
   };
 
   return (
-    <AuthContext.Provider value={guestAuth}>
-      <SocketProvider guestName={guestName} guestMeetingId={meetingId}>
+    <AuthContext.Provider value={authContext}>
+      <SocketProvider guestName={authenticatedUser ? undefined : guestName} guestMeetingId={authenticatedUser ? undefined : meetingId}>
         <MeetingRoom
           meetingId={meetingId}
           title={title}
@@ -65,7 +70,7 @@ function WaitingRoomListener({ meetingId, onMeetingStarted }: { meetingId: strin
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"enter-code" | "choose-auth" | "guest-name" | "pinpad-login" | "waiting" | "waiting-for-host" | "meeting">("enter-code");
+  const [step, setStep] = useState<"enter-code" | "waiting" | "waiting-for-host" | "meeting">("enter-code");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -74,6 +79,13 @@ function GuestMeetingPageWithParams() {
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
+  
+  // Auth choice state
+  const [showGuestInput, setShowGuestInput] = useState(false);
+  const [showPinPad, setShowPinPad] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinPadStep, setPinPadStep] = useState<"userId" | "pin">("userId");
 
   // Read URL parameters on component mount
   const isOneClickJoin = !!searchParams?.get("code");
@@ -83,23 +95,14 @@ function GuestMeetingPageWithParams() {
     
     if (code) {
       setMeetingCode(code.toUpperCase());
-      // If one-click join, skip to choose-auth step
-      if (pwd) {
-        setPassword(pwd);
-        setStep("choose-auth");
-      }
     }
-    if (pwd && !code) {
+    if (pwd) {
       setPassword(pwd);
     }
   }, [searchParams]);
 
-  const handleJoin = async () => {
-    if (!meetingCode.trim() || !guestName.trim()) {
-      setError("Please enter a meeting code and your name");
-      return;
-    }
-
+  // Validate meeting and route to waiting/meeting
+  const validateAndJoinMeeting = async (userName: string) => {
     setLoading(true);
     setError("");
 
@@ -110,7 +113,7 @@ function GuestMeetingPageWithParams() {
         body: JSON.stringify({
           meetingCode: meetingCode.trim().toUpperCase(),
           password: password.trim(),
-          guestName: guestName.trim(),
+          guestName: userName,
         }),
       });
 
@@ -125,25 +128,94 @@ function GuestMeetingPageWithParams() {
       setMeetingInfo(data.meeting);
       setActiveMeetingId(`scheduled-${data.meeting.meetingCode}`);
 
-      // Check if guest is too early for a scheduled meeting
+      // Check if too early for scheduled meeting
       const scheduledTime = new Date(data.meeting.scheduledAt).getTime();
       const now = Date.now();
       const minutesUntilMeeting = (scheduledTime - now) / 60000;
 
-      // Only connect to LiveKit if meeting is already live (saves LiveKit minutes)
+      // Only connect to LiveKit if meeting is already live
       if (data.meeting.isLive) {
         setStep("meeting");
       } else if (minutesUntilMeeting > 30) {
-        // Way too early — show countdown timer
         setStep("waiting");
       } else {
-        // Within 30 min but host hasn't started — wait without LiveKit
         setStep("waiting-for-host");
       }
     } catch {
       setError("Connection error. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Guest join handler
+  const handleGuestJoin = async () => {
+    if (!meetingCode.trim()) {
+      setError("Please enter a meeting code");
+      return;
+    }
+    if (!guestName.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+    await validateAndJoinMeeting(guestName.trim());
+  };
+
+  // PinPad digit handler
+  const handlePinPadDigit = (digit: string) => {
+    setError("");
+    if (pinPadStep === "userId") {
+      if (userId.length < 6) {
+        setUserId(userId + digit);
+      }
+    } else {
+      if (pin.length < 6) {
+        setPin(pin + digit);
+      }
+    }
+  };
+
+  // PinPad delete handler
+  const handlePinPadDelete = () => {
+    if (pinPadStep === "userId") {
+      setUserId(userId.slice(0, -1));
+    } else {
+      setPin(pin.slice(0, -1));
+    }
+  };
+
+  // PinPad continue handler
+  const handlePinPadContinue = async () => {
+    if (pinPadStep === "userId" && userId.length === 6) {
+      setPinPadStep("pin");
+    } else if (pinPadStep === "pin" && pin.length === 6) {
+      // Authenticate via login API
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, pin }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || "Invalid credentials");
+          setLoading(false);
+          return;
+        }
+
+        // Store authenticated user
+        setAuthenticatedUser(data.user);
+        
+        // Join meeting with authenticated user's name
+        await validateAndJoinMeeting(data.user.name);
+      } catch {
+        setError("Authentication failed. Please try again.");
+        setLoading(false);
+      }
     }
   };
 
@@ -227,13 +299,14 @@ function GuestMeetingPageWithParams() {
     return () => clearInterval(interval);
   }, [step, meetingInfo, password, guestName]);
 
-  // If in meeting, render the MeetingRoom wrapped with guest providers
+  // If in meeting, render the MeetingRoom wrapped with guest or authenticated user providers
   if (step === "meeting" && activeMeetingId && meetingInfo) {
     return (
       <GuestMeetingWrapper
         meetingId={activeMeetingId}
         title={meetingInfo.title}
-        guestName={guestName}
+        guestName={authenticatedUser ? authenticatedUser.name : guestName}
+        authenticatedUser={authenticatedUser}
         onLeave={handleLeaveMeeting}
       />
     );
@@ -347,7 +420,7 @@ function GuestMeetingPageWithParams() {
                   </div>
 
                   <button
-                    onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                    onClick={() => { setStep("enter-code"); setMeetingInfo(null); setActiveMeetingId(null); }}
                     className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     &larr; Back
@@ -381,6 +454,7 @@ function GuestMeetingPageWithParams() {
               </div>
 
               <div className="p-6 space-y-4">
+                {/* Meeting Code and Password */}
                 {!isOneClickJoin && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Meeting Code</label>
@@ -393,20 +467,6 @@ function GuestMeetingPageWithParams() {
                     />
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      value={guestName}
-                      onChange={(e) => { setGuestName(e.target.value); setError(""); }}
-                      placeholder="Enter your name"
-                      className="pl-10"
-                      autoFocus={isOneClickJoin}
-                    />
-                  </div>
-                </div>
 
                 {!isOneClickJoin && (
                   <div>
@@ -436,17 +496,132 @@ function GuestMeetingPageWithParams() {
                   </motion.div>
                 )}
 
-                <Button
-                  onClick={handleJoin}
-                  disabled={loading || !meetingCode.trim() || !guestName.trim()}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold rounded-xl"
-                >
-                  {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>Join Meeting <ArrowRight className="h-5 w-5 ml-2" /></>
-                  )}
-                </Button>
+                {/* Choice: Login or Join as Guest */}
+                {!showGuestInput && !showPinPad && (
+                  <div className="space-y-3">
+                    <div className="text-center text-sm font-medium text-slate-600 mb-2">How would you like to join?</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => { setShowPinPad(true); setError(""); }}
+                        disabled={!meetingCode.trim()}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <LogIn className="h-6 w-6 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-900">Login</span>
+                        <span className="text-xs text-blue-600">Restaurant/ARL</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowGuestInput(true); setError(""); }}
+                        disabled={!meetingCode.trim()}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <UserPlus className="h-6 w-6 text-green-600" />
+                        <span className="text-sm font-semibold text-green-900">Join as Guest</span>
+                        <span className="text-xs text-green-600">No login needed</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Guest Name Input */}
+                {showGuestInput && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3"
+                  >
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your Name</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          value={guestName}
+                          onChange={(e) => { setGuestName(e.target.value); setError(""); }}
+                          placeholder="Enter your name"
+                          className="pl-10"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => { setShowGuestInput(false); setGuestName(""); }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={handleGuestJoin}
+                        disabled={loading || !guestName.trim()}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join"}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* PinPad Login */}
+                {showPinPad && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3"
+                  >
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-slate-700 mb-2">
+                        {pinPadStep === "userId" ? "Enter User ID" : "Enter PIN"}
+                      </p>
+                      <div className="flex justify-center gap-2 mb-4">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-12 w-10 rounded-lg border-2 border-slate-300 bg-slate-50 flex items-center justify-center text-2xl font-bold text-slate-700"
+                          >
+                            {pinPadStep === "userId" ? (userId[i] || "") : (pin[i] ? "•" : "")}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"].map((digit, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            if (digit === "⌫") handlePinPadDelete();
+                            else if (digit) handlePinPadDigit(digit);
+                          }}
+                          disabled={!digit || loading}
+                          className="h-14 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-0 font-semibold text-lg text-slate-700 transition-colors"
+                        >
+                          {digit === "⌫" ? <Delete className="h-5 w-5 mx-auto" /> : digit}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setShowPinPad(false);
+                          setUserId("");
+                          setPin("");
+                          setPinPadStep("userId");
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={handlePinPadContinue}
+                        disabled={loading || (pinPadStep === "userId" ? userId.length !== 6 : pin.length !== 6)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : pinPadStep === "userId" ? "Continue" : "Login"}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
             <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
