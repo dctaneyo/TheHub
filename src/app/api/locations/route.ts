@@ -127,9 +127,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (userId.length !== 6 || pin.length !== 6) {
+    if (userId.length !== 4 || pin.length !== 4) {
       return NextResponse.json(
-        { error: "User ID and PIN must be 6 digits" },
+        { error: "User ID and PIN must be 4 digits" },
         { status: 400 }
       );
     }
@@ -199,7 +199,7 @@ export async function PUT(req: NextRequest) {
     if (email !== undefined) updates.email = email;
     if (address !== undefined) updates.address = address;
     if (isActive !== undefined) updates.isActive = isActive;
-    if (pin && pin.length === 6) updates.pinHash = hashSync(pin, 10);
+    if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
 
     db.update(schema.locations).set(updates).where(eq(schema.locations.id, id)).run();
     broadcastUserUpdate();

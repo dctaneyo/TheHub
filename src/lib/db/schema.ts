@@ -7,8 +7,8 @@ export const locations = sqliteTable("locations", {
   storeNumber: text("store_number").notNull().unique(),
   address: text("address"),
   email: text("email"), // for sending forms
-  userId: text("user_id").notNull().unique(), // 6-digit login ID
-  pinHash: text("pin_hash").notNull(), // hashed 6-digit PIN
+  userId: text("user_id").notNull().unique(), // 4-digit login ID
+  pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
@@ -20,8 +20,8 @@ export const arls = sqliteTable("arls", {
   id: text("id").primaryKey(), // UUID
   name: text("name").notNull(),
   email: text("email"),
-  userId: text("user_id").notNull().unique(), // 6-digit login ID
-  pinHash: text("pin_hash").notNull(), // hashed 6-digit PIN
+  userId: text("user_id").notNull().unique(), // 4-digit login ID
+  pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
   role: text("role").notNull().default("arl"), // 'arl' | 'admin'
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),

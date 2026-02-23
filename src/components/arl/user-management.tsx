@@ -105,12 +105,12 @@ export function UserManagement() {
 
   const handleSave = async () => {
     setError("");
-    if (!form.name.trim() || !form.userId || form.userId.length !== 6) {
-      setError("Name and 6-digit User ID are required");
+    if (!form.name.trim() || !form.userId || form.userId.length !== 4) {
+      setError("Name and 4-digit User ID are required");
       return;
     }
-    if (!editTarget && (!form.pin || form.pin.length !== 6)) {
-      setError("6-digit PIN is required for new users");
+    if (!editTarget && (!form.pin || form.pin.length !== 4)) {
+      setError("4-digit PIN is required for new users");
       return;
     }
     if (tab === "locations" && !form.storeNumber.trim()) {
@@ -333,29 +333,29 @@ export function UserManagement() {
 
                 {!editTarget && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">User ID * (6 digits)</label>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">User ID * (4 digits)</label>
                     <Input
                       value={form.userId}
-                      onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                      placeholder="000000"
+                      onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                      placeholder="0000"
                       className="rounded-xl font-mono"
-                      maxLength={6}
+                      maxLength={4}
                     />
                   </div>
                 )}
 
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">
-                    PIN {editTarget ? "(leave blank to keep current)" : "* (6 digits)"}
+                    PIN {editTarget ? "(leave blank to keep current)" : "* (4 digits)"}
                   </label>
                   <div className="relative">
                     <Input
                       type={showPin ? "text" : "password"}
                       value={form.pin}
-                      onChange={(e) => setForm((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                      placeholder="000000"
+                      onChange={(e) => setForm((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                      placeholder="0000"
                       className="rounded-xl font-mono pr-10"
-                      maxLength={6}
+                      maxLength={4}
                     />
                     <button
                       type="button"

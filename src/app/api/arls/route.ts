@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
     const { name, email, userId, pin, role } = await req.json();
-    if (!name || !userId || !pin || userId.length !== 6 || pin.length !== 6) {
-      return NextResponse.json({ error: "name, 6-digit userId, and 6-digit pin required" }, { status: 400 });
+    if (!name || !userId || !pin || userId.length !== 4 || pin.length !== 4) {
+      return NextResponse.json({ error: "name, 4-digit userId, and 4-digit pin required" }, { status: 400 });
     }
     const existing = db.select().from(schema.arls).where(eq(schema.arls.userId, userId)).get();
     if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest) {
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name;
     if (email !== undefined) updates.email = email;
-    if (pin && pin.length === 6) updates.pinHash = hashSync(pin, 10);
+    if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
     if (role !== undefined) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
 

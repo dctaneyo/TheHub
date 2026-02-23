@@ -471,7 +471,7 @@ export default function LoginPage() {
                 </div>
               )}
               {step === "userId" && (
-                <p className="mt-1 text-xs text-slate-400">6-digit User ID</p>
+                <p className="mt-1 text-xs text-slate-400">4-digit User ID</p>
               )}
             </motion.div>
           </AnimatePresence>

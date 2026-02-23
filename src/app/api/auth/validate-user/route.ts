@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await req.json();
-    if (!userId || userId.length !== 6) {
+    if (!userId || userId.length !== 4) {
       return NextResponse.json({ error: "Invalid User ID" }, { status: 400 });
     }
 

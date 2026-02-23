@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const { userId, pin } = await req.json();
 
-    if (!userId || !pin || userId.length !== 6 || pin.length !== 6) {
+    if (!userId || !pin || userId.length !== 4 || pin.length !== 4) {
       return NextResponse.json(
         { error: "Invalid credentials format" },
         { status: 400 }
