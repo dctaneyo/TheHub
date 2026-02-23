@@ -4,6 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent iOS Safari page-level pinch-to-zoom (Safari ignores viewport user-scalable=no) */
+html {
+  touch-action: manipulation;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

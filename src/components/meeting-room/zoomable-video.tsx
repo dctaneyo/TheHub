@@ -69,6 +69,7 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
   // Handle touch move
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (e.touches.length === 1 && isDragging && scale > 1) {
       // Drag when zoomed in

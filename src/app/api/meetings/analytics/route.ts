@@ -11,25 +11,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const analyticsId = req.nextUrl.searchParams.get("id");
   const meetingId = req.nextUrl.searchParams.get("meetingId");
 
-  if (meetingId) {
+  if (analyticsId || meetingId) {
     // Single meeting detail with participants
-    const meeting = db
-      .select()
-      .from(schema.meetingAnalytics)
-      .where(eq(schema.meetingAnalytics.meetingId, meetingId))
-      .get();
+    // Prefer unique analytics record ID; fall back to meetingId for backwards compat
+    const meeting = analyticsId
+      ? db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.id, analyticsId)).get()
+      : db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.meetingId, meetingId!)).get();
 
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
 
-    const participants = db
+    // Use the specific analytics record's meetingId + startedAt to scope participants
+    // This avoids mixing data from different meetings with the same meetingId
+    const allParticipants = db
       .select()
       .from(schema.meetingParticipants)
-      .where(eq(schema.meetingParticipants.meetingId, meetingId))
+      .where(eq(schema.meetingParticipants.meetingId, meeting.meetingId))
       .all();
+
+    // Filter participants to only those who joined during this specific meeting session
+    const meetingStart = new Date(meeting.startedAt).getTime();
+    const meetingEnd = meeting.endedAt ? new Date(meeting.endedAt).getTime() + 60_000 : Date.now() + 86400_000;
+    const participants = allParticipants.filter(p => {
+      const joinedAt = new Date(p.joinedAt).getTime();
+      return joinedAt >= meetingStart - 60_000 && joinedAt <= meetingEnd;
+    });
 
     return NextResponse.json({ meeting, participants });
   }

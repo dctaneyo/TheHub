@@ -53,6 +53,12 @@ if (!(globalThis as any).__hubActiveMeetings) {
 }
 const _activeMeetings: Map<string, ActiveMeeting> = (globalThis as any).__hubActiveMeetings;
 
+// Grace period timers for disconnected participants (prevent premature removal on brief disconnects)
+if (!(globalThis as any).__hubDisconnectTimers) {
+  (globalThis as any).__hubDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+}
+const _disconnectTimers: Map<string, ReturnType<typeof setTimeout>> = (globalThis as any).__hubDisconnectTimers;
+
 // ── Meeting analytics tracking ──
 interface MeetingAnalyticsData {
   meetingId: string;
@@ -491,6 +497,38 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const meeting = _activeMeetings.get(data.meetingId);
       if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
 
+      // Check if this user was previously in the meeting with a different socket (reconnection)
+      // Cancel any pending disconnect grace timer and transfer their participation
+      let reconnected = false;
+      for (const [oldSid, p] of meeting.participants) {
+        if (oldSid !== socket.id && p.odId === user.id) {
+          // Cancel grace period timer for old socket
+          const timerKey = `${data.meetingId}:${oldSid}`;
+          const timer = _disconnectTimers.get(timerKey);
+          if (timer) { clearTimeout(timer); _disconnectTimers.delete(timerKey); }
+          // Transfer participation to new socket
+          meeting.participants.delete(oldSid);
+          p.socketId = socket.id;
+          p.hasVideo = data.hasVideo;
+          p.hasAudio = data.hasAudio;
+          if (data.livekitIdentity) p.livekitIdentity = data.livekitIdentity;
+          meeting.participants.set(socket.id, p);
+          socket.join(`meeting:${data.meetingId}`);
+          // Transfer analytics record to new socket ID
+          const analytics = _meetingAnalytics.get(data.meetingId);
+          if (analytics) {
+            const recordId = analytics.participantRecords.get(oldSid);
+            if (recordId) {
+              analytics.participantRecords.delete(oldSid);
+              analytics.participantRecords.set(socket.id, recordId);
+            }
+          }
+          reconnected = true;
+          console.log(`📹 ${user.name} reconnected to meeting "${meeting.title}" (${oldSid} → ${socket.id})`);
+          break;
+        }
+      }
+
       const alreadyInMeeting = meeting.participants.has(socket.id);
       const isHost = meeting.hostId === user.id;
       const isArl = user.userType === "arl";
@@ -498,7 +536,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       const hasVideoCapability = isArl || isGuest;
 
       if (alreadyInMeeting) {
-        // Host was pre-added during meeting:create — just update media state
+        // Host was pre-added during meeting:create or reconnected above — just update media state
         const existing = meeting.participants.get(socket.id)!;
         existing.hasVideo = data.hasVideo;
         existing.hasAudio = data.hasAudio;
@@ -961,19 +999,55 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           timers.forEach(clearTimeout);
           _taskTimers.delete(user.id);
         }
-        // Clean up meetings: remove from any active meeting
+        // Clean up meetings: use grace period before removing participant
+        // This prevents hosts from being kicked during brief disconnects (e.g. screen share on mobile)
+        const DISCONNECT_GRACE_MS = 20_000; // 20 seconds
         for (const [meetingId, meeting] of _activeMeetings.entries()) {
           if (meeting.participants.has(socket.id)) {
-            meeting.participants.delete(socket.id);
-            io!.to(`meeting:${meetingId}`).emit("meeting:participant-left", {
-              meetingId, socketId: socket.id, name: user.name,
-            });
-            // If meeting is now empty, clean it up
-            if (meeting.participants.size === 0) {
-              _activeMeetings.delete(meetingId);
-              io!.to("locations").emit("meeting:ended", { meetingId });
-              io!.to("arls").emit("meeting:ended", { meetingId });
-            }
+            const participant = meeting.participants.get(socket.id)!;
+            const timerKey = `${meetingId}:${socket.id}`;
+
+            // Cancel any existing timer for this participant
+            const existing = _disconnectTimers.get(timerKey);
+            if (existing) clearTimeout(existing);
+
+            // Set grace period timer — if they reconnect before it fires, we cancel it
+            const timer = setTimeout(() => {
+              _disconnectTimers.delete(timerKey);
+              // Only remove if still in the meeting (they may have reconnected with a new socket)
+              if (meeting.participants.has(socket.id)) {
+                meeting.participants.delete(socket.id);
+                io!.to(`meeting:${meetingId}`).emit("meeting:participant-left", {
+                  meetingId, socketId: socket.id, name: participant.name,
+                });
+                if (meeting.participants.size === 0) {
+                  _activeMeetings.delete(meetingId);
+                  // Finalize analytics
+                  const analytics = _meetingAnalytics.get(meetingId);
+                  if (analytics) {
+                    const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
+                    try {
+                      db.update(schema.meetingAnalytics).set({
+                        endedAt: new Date().toISOString(),
+                        duration,
+                        totalMessages: analytics.messageCount,
+                        totalQuestions: analytics.questionCount,
+                        totalReactions: analytics.reactionCount,
+                        totalHandRaises: analytics.handRaiseCount,
+                        peakParticipants: analytics.peakParticipants,
+                      }).where(eq(schema.meetingAnalytics.id, analytics.analyticsId)).run();
+                    } catch (e) { console.error('Analytics finalize error:', e); }
+                    _meetingAnalytics.delete(meetingId);
+                  }
+                  io!.to("locations").emit("meeting:ended", { meetingId });
+                  io!.to("arls").emit("meeting:ended", { meetingId });
+                  console.log(`📹 Meeting "${meeting.title}" ended (empty after grace period)`);
+                }
+              }
+            }, DISCONNECT_GRACE_MS);
+
+            _disconnectTimers.set(timerKey, timer);
+            console.log(`⏳ ${user.name} disconnected from meeting "${meeting.title}" — ${DISCONNECT_GRACE_MS / 1000}s grace period`);
           }
         }
         console.log(`🔌 ${user.userType} disconnected: ${user.name} (${socket.id})`);

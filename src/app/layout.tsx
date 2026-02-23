@@ -43,6 +43,15 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
+        {/* Block iOS Safari page-level pinch-to-zoom (Safari ignores viewport user-scalable=no).
+            Elements with touch-action:none (like ZoomableVideo) handle their own zoom. */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          document.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) {
+              e.preventDefault();
+            }
+          }, { passive: false });
+        `}} />
         <AuthProvider>
           <SocketProvider>
             {children}

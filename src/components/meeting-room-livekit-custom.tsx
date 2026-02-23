@@ -434,7 +434,7 @@ function MeetingUI({
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const [showChat, setShowChat] = useState(false);
   const [showQA, setShowQA] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(true);
+  const [showParticipants, setShowParticipants] = useState(() => typeof window !== "undefined" && window.innerWidth >= 640);
   const [noiseSuppression, setNoiseSuppression] = useState(false); // RNNoise off by default (user toggles on)
   const rnnoiseRef = useRef<RNNoiseProcessor | null>(null);
   const originalMicTrackRef = useRef<MediaStreamTrack | null>(null);

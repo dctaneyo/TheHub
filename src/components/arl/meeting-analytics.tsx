@@ -106,11 +106,11 @@ export function MeetingAnalyticsDashboard() {
     }
   };
 
-  const fetchDetail = async (meetingId: string) => {
+  const fetchDetail = async (analyticsId: string) => {
     setDetailLoading(true);
-    setSelectedMeeting(meetingId);
+    setSelectedMeeting(analyticsId);
     try {
-      const res = await fetch(`/api/meetings/analytics?meetingId=${meetingId}`);
+      const res = await fetch(`/api/meetings/analytics?id=${analyticsId}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setMeetingDetail(data);
@@ -265,7 +265,7 @@ export function MeetingAnalyticsDashboard() {
             {meetings.map(m => (
               <button
                 key={m.id}
-                onClick={() => fetchDetail(m.meetingId)}
+                onClick={() => fetchDetail(m.id)}
                 className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors text-left"
               >
                 <div className="min-w-0 flex-1">
