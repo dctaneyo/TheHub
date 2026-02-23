@@ -58,6 +58,7 @@ function GuestMeetingPageWithParams() {
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
 
   // Read URL parameters on component mount
+  const isOneClickJoin = !!searchParams?.get("code");
   useEffect(() => {
     const code = searchParams?.get("code");
     const pwd = searchParams?.get("password");
@@ -147,21 +148,27 @@ function GuestMeetingPageWithParams() {
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <Video className="h-7 w-7" />
                 </div>
-                <h1 className="text-xl font-bold">Join a Meeting</h1>
-                <p className="text-sm text-red-100 mt-1">Enter the meeting code to join</p>
+                <h1 className="text-xl font-bold">
+                  {isOneClickJoin ? "You're Invited!" : "Join a Meeting"}
+                </h1>
+                <p className="text-sm text-red-100 mt-1">
+                  {isOneClickJoin ? "Enter your name to join the meeting" : "Enter the meeting code to join"}
+                </p>
               </div>
 
               <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Meeting Code</label>
-                  <Input
-                    value={meetingCode}
-                    onChange={(e) => { setMeetingCode(e.target.value.toUpperCase()); setError(""); }}
-                    placeholder="e.g. ABC123"
-                    className="text-center text-lg font-mono tracking-widest uppercase"
-                    maxLength={6}
-                  />
-                </div>
+                {!isOneClickJoin && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Meeting Code</label>
+                    <Input
+                      value={meetingCode}
+                      onChange={(e) => { setMeetingCode(e.target.value.toUpperCase()); setError(""); }}
+                      placeholder="e.g. ABC123"
+                      className="text-center text-lg font-mono tracking-widest uppercase"
+                      maxLength={6}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your Name</label>
@@ -172,24 +179,27 @@ function GuestMeetingPageWithParams() {
                       onChange={(e) => { setGuestName(e.target.value); setError(""); }}
                       placeholder="Enter your name"
                       className="pl-10"
+                      autoFocus={isOneClickJoin}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5" />
-                      Password <span className="text-slate-400 font-normal">(if required)</span>
-                    </div>
-                  </label>
-                  <Input
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                    placeholder="Enter meeting password"
-                    type="password"
-                  />
-                </div>
+                {!isOneClickJoin && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Lock className="h-3.5 w-3.5" />
+                        Password <span className="text-slate-400 font-normal">(if required)</span>
+                      </div>
+                    </label>
+                    <Input
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                      placeholder="Enter meeting password"
+                      type="password"
+                    />
+                  </div>
+                )}
 
                 {error && (
                   <motion.div
