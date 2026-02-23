@@ -606,9 +606,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     // ── Join meeting ──
     socket.on("meeting:join", (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean; livekitIdentity?: string }) => {
-      if (!user) return;
+      console.log(`📹 meeting:join received from ${user?.name || 'unknown'} (${socket.id}) for meeting ${data.meetingId}, lkIdentity=${data.livekitIdentity}`);
+      if (!user) {
+        console.log(`📹 meeting:join rejected: no user`);
+        return;
+      }
       const meeting = _activeMeetings.get(data.meetingId);
-      if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
+      if (!meeting) { 
+        console.log(`📹 meeting:join rejected: meeting ${data.meetingId} not found`);
+        socket.emit("meeting:error", { error: "Meeting not found" }); 
+        return; 
+      }
 
       // Check if this user was previously in the meeting with a different socket (reconnection)
       // Cancel any pending disconnect grace timer and transfer their participation
@@ -654,6 +662,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         existing.hasVideo = data.hasVideo;
         existing.hasAudio = data.hasAudio;
         if (data.livekitIdentity) existing.livekitIdentity = data.livekitIdentity;
+        console.log(`📹 ${user.name} already in meeting, updated media state (lkIdentity=${data.livekitIdentity})`);
       } else {
         // New participant joining
         const participant: MeetingParticipant = {
@@ -671,6 +680,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         };
         meeting.participants.set(socket.id, participant);
         socket.join(`meeting:${data.meetingId}`);
+        console.log(`📹 ${user.name} joined meeting "${meeting.title}" as ${participant.role} (socket=${socket.id}, lkIdentity=${data.livekitIdentity})`);
       }
 
       const myParticipant = meeting.participants.get(socket.id)!;
