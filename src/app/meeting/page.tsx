@@ -49,7 +49,7 @@ function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"join" | "waiting" | "meeting">("join");
+  const [step, setStep] = useState<"join" | "waiting" | "waiting-for-host" | "meeting">("join");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -108,12 +108,15 @@ function GuestMeetingPageWithParams() {
       const now = Date.now();
       const minutesUntilMeeting = (scheduledTime - now) / 60000;
 
-      // If meeting is already live, or guest is within 30 min of start → join directly
-      if (data.meeting.isLive || minutesUntilMeeting <= 30) {
+      // Only connect to LiveKit if meeting is already live (saves LiveKit minutes)
+      if (data.meeting.isLive) {
         setStep("meeting");
-      } else {
-        // Too early — show waiting room with countdown
+      } else if (minutesUntilMeeting > 30) {
+        // Way too early — show countdown timer
         setStep("waiting");
+      } else {
+        // Within 30 min but host hasn't started — wait without LiveKit
+        setStep("waiting-for-host");
       }
     } catch {
       setError("Connection error. Please try again.");
@@ -146,8 +149,8 @@ function GuestMeetingPageWithParams() {
       setMinutesEarly(minsEarly);
 
       if (diff <= 30 * 60000) {
-        // Within 30 min — auto-join
-        setStep("meeting");
+        // Within 30 min — move to waiting-for-host (still no LiveKit until host starts)
+        setStep("waiting-for-host");
         return;
       }
 
@@ -166,9 +169,9 @@ function GuestMeetingPageWithParams() {
     return () => clearInterval(interval);
   }, [step, meetingInfo]);
 
-  // Poll every 15s to check if meeting has gone live
+  // Poll every 10s to check if meeting has gone live (shared by both waiting steps)
   useEffect(() => {
-    if (step !== "waiting" || !meetingInfo) return;
+    if ((step !== "waiting" && step !== "waiting-for-host") || !meetingInfo) return;
 
     const poll = async () => {
       try {
@@ -190,7 +193,9 @@ function GuestMeetingPageWithParams() {
       } catch { /* ignore */ }
     };
 
-    const interval = setInterval(poll, 15000);
+    // Poll immediately on entering waiting-for-host, then every 10s
+    if (step === "waiting-for-host") poll();
+    const interval = setInterval(poll, 10000);
     return () => clearInterval(interval);
   }, [step, meetingInfo, password, guestName]);
 
@@ -245,16 +250,68 @@ function GuestMeetingPageWithParams() {
                   Checking if meeting has started...
                 </div>
 
-                {/* Join Anyway — only if 30-60 min early */}
+                {/* Join Anyway — only if 30-60 min early, goes to waiting-for-host (no LiveKit yet) */}
                 {minutesEarly <= 60 && (
                   <Button
-                    onClick={() => setStep("meeting")}
+                    onClick={() => setStep("waiting-for-host")}
                     variant="outline"
                     className="w-full h-11 text-sm font-semibold rounded-xl border-slate-300"
                   >
                     Join Anyway <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
+
+                <button
+                  onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
+                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  &larr; Back
+                </button>
+              </div>
+            </div>
+            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+          </motion.div>
+        )}
+
+        {step === "waiting-for-host" && meetingInfo && (
+          <motion.div
+            key="waiting-for-host"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-md"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
+                <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                  <Video className="h-7 w-7" />
+                </div>
+                <h1 className="text-xl font-bold">Waiting for Host</h1>
+                <p className="text-sm text-blue-100 mt-1">{meetingInfo.title}</p>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="text-center">
+                  <div className="h-16 w-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                    <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">The host hasn&apos;t started the meeting yet</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    You&apos;ll be connected automatically once it begins
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                  <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                  Checking every 10 seconds...
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-3 text-center">
+                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
+                  <p className="text-sm font-medium text-slate-600">
+                    {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
 
                 <button
                   onClick={() => { setStep("join"); setMeetingInfo(null); setActiveMeetingId(null); }}
