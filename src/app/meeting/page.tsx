@@ -408,6 +408,7 @@ function GuestMeetingPageWithParams() {
 
                 <div className="p-6 space-y-5">
                   <div className="text-center">
+                    <p className="text-lg font-semibold text-slate-700 mb-3">Welcome, {authenticatedUser ? authenticatedUser.name : guestName}!</p>
                     <p className="text-sm text-slate-500 mb-1">Meeting starts in</p>
                     <p className="text-3xl font-bold font-mono text-slate-800 tracking-wide">{countdown}</p>
                     <p className="text-xs text-slate-400 mt-2">
