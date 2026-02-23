@@ -16,15 +16,19 @@ interface MeetingInfo {
   meetingCode: string;
   title: string;
   hostName: string;
+  hostId: string;
   scheduledAt: string;
   durationMinutes: number;
   hasPassword: boolean;
   isLive?: boolean;
 }
 
-function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, onLeave }: {
-  meetingId: string; title: string; guestName: string; authenticatedUser?: any; onLeave: () => void;
+function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, hostId, onLeave }: {
+  meetingId: string; title: string; guestName: string; authenticatedUser?: any; hostId?: string; onLeave: () => void;
 }) {
+  // Determine if the authenticated user is the host
+  const isHost = authenticatedUser && hostId && authenticatedUser.id === hostId;
+
   // If authenticated user exists, use their context; otherwise use guest context
   const authContext = authenticatedUser ? {
     user: authenticatedUser,
@@ -44,7 +48,7 @@ function GuestMeetingWrapper({ meetingId, title, guestName, authenticatedUser, o
         <MeetingRoom
           meetingId={meetingId}
           title={title}
-          isHost={false}
+          isHost={isHost}
           onLeave={onLeave}
         />
       </SocketProvider>
@@ -364,6 +368,7 @@ function GuestMeetingPageWithParams() {
         title={meetingInfo.title}
         guestName={authenticatedUser ? authenticatedUser.name : guestName}
         authenticatedUser={authenticatedUser}
+        hostId={meetingInfo.hostId}
         onLeave={handleLeaveMeeting}
       />
     );

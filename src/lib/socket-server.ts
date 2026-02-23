@@ -1352,17 +1352,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 }
 
 // ── Helper: find an active meeting by its meeting code (for guest join API) ──
-export function findActiveMeetingByCode(code: string): { meetingId: string; title: string; hostName: string; password?: string } | null {
+export function findActiveMeetingByCode(code: string): { meetingId: string; title: string; hostName: string; hostId: string; password?: string } | null {
   const activeMeetings: Map<string, ActiveMeeting> = (globalThis as any).__hubActiveMeetings;
   if (!activeMeetings) return null;
   const upperCode = code.toUpperCase().trim();
   for (const [, meeting] of activeMeetings) {
     // Check stored meetingCode or extract from meetingId (format: scheduled-CODE)
     if (meeting.meetingCode?.toUpperCase() === upperCode) {
-      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, password: meeting.password };
+      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, hostId: meeting.hostId, password: meeting.password };
     }
     if (meeting.meetingId === `scheduled-${upperCode}`) {
-      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, password: meeting.password };
+      return { meetingId: meeting.meetingId, title: meeting.title, hostName: meeting.hostName, hostId: meeting.hostId, password: meeting.password };
     }
   }
   return null;

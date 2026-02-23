@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
           meetingCode: meeting.meeting_code,
           title: meeting.title,
           hostName: meeting.host_name,
+          hostId: meeting.host_id,
           scheduledAt: meeting.scheduled_at,
           durationMinutes: meeting.duration_minutes,
           hasPassword: !!meeting.password,
@@ -59,9 +60,11 @@ export async function POST(req: NextRequest) {
           meetingCode: code,
           title: activeMeeting.title,
           hostName: activeMeeting.hostName,
+          hostId: activeMeeting.hostId,
           scheduledAt: new Date().toISOString(),
           durationMinutes: 60,
           hasPassword: !!activeMeeting.password,
+          isLive: true,
         },
       });
     }
