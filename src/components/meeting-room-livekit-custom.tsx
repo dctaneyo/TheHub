@@ -49,7 +49,7 @@ interface MeetingRoomLiveKitCustomProps {
   meetingId: string;
   title: string;
   isHost: boolean;
-  onLeave: (didEndMeeting?: boolean) => void;
+  onLeave: (didEndMeeting?: boolean, wasDisconnected?: boolean) => void;
   shouldStartMeeting?: boolean;
 }
 
@@ -64,6 +64,8 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
   const [setupComplete, setSetupComplete] = useState(false);
   const [joinWithVideo, setJoinWithVideo] = useState(false);
   const [joinWithAudio, setJoinWithAudio] = useState(true);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
   const { socket } = useSocket();
@@ -158,7 +160,48 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
         serverUrl={wsUrl}
         data-lk-theme="default"
         style={{ height: "100vh" }}
-        onDisconnected={() => onLeave(false)}
+        onDisconnected={(reason) => {
+          // Connection lost - attempt to reconnect
+          setIsReconnecting(true);
+          setReconnectAttempts(prev => prev + 1);
+          
+          // Try to reconnect after a short delay
+          setTimeout(async () => {
+            try {
+              // Fetch a new token
+              const res = await fetch("/api/livekit/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  roomName: meetingId,
+                  participantName: user?.name || "Guest",
+                  role: isHost ? "host" : "participant",
+                  isGuest: user?.userType === "guest",
+                }),
+              });
+              
+              if (res.ok) {
+                const data = await res.json();
+                setToken(data.token);
+                setWsUrl(data.wsUrl);
+                setIsReconnecting(false);
+                setReconnectAttempts(0);
+              } else {
+                // Failed to get new token after 3 attempts - give up
+                if (reconnectAttempts >= 2) {
+                  setIsReconnecting(false);
+                  onLeave(false, true);
+                }
+              }
+            } catch {
+              // Failed to reconnect after 3 attempts - give up
+              if (reconnectAttempts >= 2) {
+                setIsReconnecting(false);
+                onLeave(false, true);
+              }
+            }
+          }, 2000);
+        }}
       >
         <MeetingUI
           meetingId={meetingId}
@@ -166,6 +209,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
           isHost={isHost}
           onLeave={onLeave}
           hasVideoCapability={hasVideoCapability}
+          isReconnecting={isReconnecting}
         />
       </LiveKitRoom>
     </div>
@@ -425,12 +469,14 @@ function MeetingUI({
   isHost,
   onLeave,
   hasVideoCapability,
+  isReconnecting,
 }: {
   meetingId: string;
   title: string;
   isHost: boolean;
-  onLeave: (didEndMeeting?: boolean) => void;
+  onLeave: (didEndMeeting?: boolean, wasDisconnected?: boolean) => void;
   hasVideoCapability: boolean;
+  isReconnecting?: boolean;
 }) {
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -1847,6 +1893,21 @@ function MeetingUI({
 
         <div className="flex-1" />
       </div>
+
+      {/* Reconnecting Overlay */}
+      {isReconnecting && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md mx-4 text-center">
+            <div className="h-16 w-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="h-8 w-8 text-amber-400 animate-spin" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Connection Lost</h3>
+            <p className="text-slate-300 text-sm">
+              Attempting to reconnect to the meeting. Please wait...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

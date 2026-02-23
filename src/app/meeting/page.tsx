@@ -75,7 +75,7 @@ function WaitingRoomListener({ meetingId, onMeetingStarted }: { meetingId: strin
 
 function GuestMeetingPageWithParams() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<"enter-code" | "waiting" | "waiting-for-host" | "meeting" | "meeting-ended">("enter-code");
+  const [step, setStep] = useState<"enter-code" | "waiting" | "waiting-for-host" | "meeting" | "meeting-ended" | "disconnected">("enter-code");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -85,6 +85,7 @@ function GuestMeetingPageWithParams() {
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
   const [isHostStartingMeeting, setIsHostStartingMeeting] = useState(false); // Track if host is starting meeting
+  const [canRejoin, setCanRejoin] = useState(false); // Track if user can rejoin after disconnect
   
   // Auth choice state
   const [showGuestInput, setShowGuestInput] = useState(false);
@@ -296,16 +297,28 @@ function GuestMeetingPageWithParams() {
     }
   };
 
-  const handleLeaveMeeting = (didEndMeeting?: boolean) => {
+  const handleLeaveMeeting = (didEndMeeting?: boolean, wasDisconnected?: boolean) => {
     if (didEndMeeting) {
       setStep("meeting-ended");
+      setCanRejoin(false);
+    } else if (wasDisconnected && meetingInfo && (authenticatedUser || guestName)) {
+      // Connection lost but can rejoin
+      setStep("disconnected");
+      setCanRejoin(true);
     } else {
+      // Intentional leave - clear everything
       setStep("enter-code");
       setActiveMeetingId(null);
       setMeetingInfo(null);
       setMeetingCode("");
       setPassword("");
+      setCanRejoin(false);
     }
+  };
+
+  const handleRejoin = () => {
+    if (!canRejoin || !meetingInfo) return;
+    setStep("meeting");
   };
 
   // Keyboard support for PinPad (hidden input field)
