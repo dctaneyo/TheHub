@@ -391,6 +391,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         const existingMeeting = _activeMeetings.get(gMeetingId);
         const hostIsPresent = existingMeeting && Array.from(existingMeeting.participants.values()).some(p => p.role === "host");
 
+        // Auto-join guest to the meeting Socket.io room so they receive broadcasts
+        // This is needed because guest clients may have timing issues with meeting:join
+        socket.join(`meeting:${gMeetingId}`);
+        console.log(`📹 Guest ${user.name} auto-joined Socket.io room meeting:${gMeetingId}`);
+
         io!.to("arls").emit("meeting:guest-waiting", {
           meetingId: gMeetingId,
           meetingTitle: gMeetingId,

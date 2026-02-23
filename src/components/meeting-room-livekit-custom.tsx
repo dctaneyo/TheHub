@@ -578,7 +578,13 @@ function MeetingUI({
         setMyRole("host");
         setNotification({ message: `You are now the host! ${data.previousHostName} transferred host duties to you.`, type: 'success' });
       } else {
-        setNotification({ message: `${data.previousHostName} transferred host to ${data.newHostName}.`, type: 'info' });
+        // If we were the host before, demote to cohost
+        if (myRole === "host") {
+          setMyRole("cohost");
+          setNotification({ message: `You transferred host to ${data.newHostName}. You are now a co-host.`, type: 'info' });
+        } else {
+          setNotification({ message: `${data.previousHostName} transferred host to ${data.newHostName}.`, type: 'info' });
+        }
       }
       setTimeout(() => setNotification(null), 8000);
     };
