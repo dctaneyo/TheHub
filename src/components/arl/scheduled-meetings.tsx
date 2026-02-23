@@ -429,14 +429,21 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                     {m.allow_guests && (
                       <button
                         onClick={() => {
-                          const text = `Join meeting "${m.title}"\nCode: ${m.meeting_code}${m.password ? `\nPassword: ${m.password}` : ""}\nJoin at: ${joinUrl}`;
+                          // Create one-click join URL with pre-filled parameters
+                          const params = new URLSearchParams({
+                            code: m.meeting_code,
+                            ...(m.password && { password: m.password })
+                          });
+                          const oneClickUrl = `${joinUrl}?${params.toString()}`;
+                          
+                          const text = `Join meeting "${m.title}"\nOne-click join: ${oneClickUrl}\n${m.password ? `Or enter manually:\nCode: ${m.meeting_code}\nPassword: ${m.password}` : `Meeting code: ${m.meeting_code}`}`;
                           navigator.clipboard.writeText(text);
                           setCopiedCode(`invite-${m.id}`);
                           setTimeout(() => setCopiedCode(null), 2000);
                         }}
                         className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                       >
-                        {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
+                        {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy one-click link"}
                       </button>
                     )}
                   </div>

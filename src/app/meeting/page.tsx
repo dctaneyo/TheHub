@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Video, Lock, User, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +46,8 @@ function GuestMeetingWrapper({ meetingId, title, guestName, onLeave }: {
   );
 }
 
-export default function GuestMeetingPage() {
+function GuestMeetingPageWithParams() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"join" | "meeting">("join");
   const [meetingCode, setMeetingCode] = useState("");
   const [password, setPassword] = useState("");
@@ -53,6 +56,19 @@ export default function GuestMeetingPage() {
   const [loading, setLoading] = useState(false);
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+
+  // Read URL parameters on component mount
+  useEffect(() => {
+    const code = searchParams?.get("code");
+    const pwd = searchParams?.get("password");
+    
+    if (code) {
+      setMeetingCode(code.toUpperCase());
+    }
+    if (pwd) {
+      setPassword(pwd);
+    }
+  }, [searchParams]);
 
   const handleJoin = async () => {
     if (!meetingCode.trim() || !guestName.trim()) {
@@ -205,5 +221,21 @@ export default function GuestMeetingPage() {
 
       </AnimatePresence>
     </div>
+  );
+}
+
+// Main export with Suspense boundary
+export default function GuestMeetingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-red-600 mx-auto mb-4" />
+          <p className="text-slate-600">Loading meeting...</p>
+        </div>
+      </div>
+    }>
+      <GuestMeetingPageWithParams />
+    </Suspense>
   );
 }
