@@ -691,6 +691,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           const currentCount = meeting.participants.size;
           if (currentCount > analytics.peakParticipants) analytics.peakParticipants = currentCount;
           try {
+            console.log(`📊 Analytics: Tracking ${user.userType} participant ${user.name} (${user.id}) joining meeting ${data.meetingId}`);
             db.insert(schema.meetingParticipants).values({
               id: participantRecordId,
               meetingId: data.meetingId,
@@ -755,11 +756,13 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
 
       // If the host left (not ended), start 10-minute auto-end countdown
+      console.log(`📹 Participant ${user.name} left meeting "${meeting.title}" — role was: ${leavingParticipant?.role}`);
       if (leavingParticipant?.role === "host") {
         const hasNewHost = Array.from(meeting.participants.values()).some(p => p.role === "host");
+        console.log(`📹 Host left check: hasNewHost=${hasNewHost}, remaining participants: ${meeting.participants.size}`);
         if (!hasNewHost) {
           meeting.hostLeftAt = Date.now();
-          console.log(`⏳ Host left meeting "${meeting.title}" — 10-minute auto-end countdown started`);
+          console.log(`⏳ Host left meeting "${meeting.title}" — 10-minute auto-end countdown started, emitting countdown event`);
 
           // Notify remaining participants that host has left
           io!.to(`meeting:${data.meetingId}`).emit("meeting:host-left-countdown", {
@@ -813,22 +816,37 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     socket.on("meeting:transfer-host", (data: { meetingId: string; targetSocketId: string }) => {
       if (!user) return;
       const meeting = _activeMeetings.get(data.meetingId);
-      if (!meeting) return;
+      if (!meeting) {
+        console.log(`⚠️ transfer-host: Meeting ${data.meetingId} not found`);
+        return;
+      }
       const me = meeting.participants.get(socket.id);
-      if (!me || me.role !== "host") return;
+      if (!me || me.role !== "host") {
+        console.log(`⚠️ transfer-host: User ${user.name} is not host (role=${me?.role})`);
+        return;
+      }
 
-      // Find target participant (by socketId, odId, or livekitIdentity)
+      console.log(`📹 Transfer host request: target=${data.targetSocketId}`);
+      console.log(`📹 Current participants:`, Array.from(meeting.participants.entries()).map(([sid, p]) => ({ sid, odId: p.odId, lkId: p.livekitIdentity, name: p.name })));
+
+      // Find target participant (by socketId, odId, livekitIdentity, or name)
       let target: MeetingParticipant | undefined;
       let targetSid = data.targetSocketId;
       target = meeting.participants.get(data.targetSocketId);
       if (!target) {
         for (const [sid, p] of meeting.participants) {
-          if (p.odId === data.targetSocketId || p.livekitIdentity === data.targetSocketId) {
+          // Match by odId, livekitIdentity, or partial name match
+          if (p.odId === data.targetSocketId || 
+              p.livekitIdentity === data.targetSocketId ||
+              p.name === data.targetSocketId) {
             target = p; targetSid = sid; break;
           }
         }
       }
-      if (!target || targetSid === socket.id) return;
+      if (!target || targetSid === socket.id) {
+        console.log(`⚠️ transfer-host: Target not found for ${data.targetSocketId}`);
+        return;
+      }
 
       // Transfer: demote current host → cohost, promote target → host
       me.role = "cohost";

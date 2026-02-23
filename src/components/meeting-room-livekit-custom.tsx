@@ -1257,7 +1257,7 @@ function MeetingUI({
                             {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
                             {/* Host/cohost controls - can mute/unmute anyone except the host */}
                             {isHostOrCohost && metadata.role !== "host" && !isLocal && (
-                              <div className="flex gap-1 ml-1">
+                              <div className="flex gap-2 ml-2">
                                 {p.isMicrophoneEnabled === false ? (
                                   <button
                                     onClick={() => {
@@ -1265,9 +1265,9 @@ function MeetingUI({
                                       socket?.emit("meeting:allow-speak", { meetingId, targetSocketId: p.identity });
                                     }}
                                     title="Allow to speak"
-                                    className="p-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-400"
+                                    className="p-2.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
                                   >
-                                    <Mic className="h-3 w-3" />
+                                    <Mic className="h-5 w-5" />
                                   </button>
                                 ) : (
                                   <button
@@ -1276,9 +1276,9 @@ function MeetingUI({
                                       socket?.emit("meeting:mute-participant", { meetingId, targetSocketId: p.identity });
                                     }}
                                     title="Mute"
-                                    className="p-1 rounded bg-red-600/20 hover:bg-red-600/40 text-red-400"
+                                    className="p-2.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
                                   >
-                                    <MicOff className="h-3 w-3" />
+                                    <MicOff className="h-5 w-5" />
                                   </button>
                                 )}
                               </div>
