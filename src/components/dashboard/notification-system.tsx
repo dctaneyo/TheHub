@@ -321,7 +321,8 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
 
   return (
     <>
-      {/* ── FULLSCREEN OVERDUE OVERLAY ── */}
+      <div className="relative">
+        {/* ── FULLSCREEN OVERDUE OVERLAY ── */}
       <AnimatePresence>
         {overdueNotifications.length > 0 && (
           <motion.div
@@ -402,7 +403,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute right-4 top-14 z-[100] w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="absolute right-4 top-14 z-[105] w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
@@ -480,6 +481,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
     </>
   );
 }

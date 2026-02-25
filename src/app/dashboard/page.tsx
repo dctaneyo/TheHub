@@ -530,7 +530,7 @@ export default function DashboardPage() {
       <AnimatedBackground variant="subtle" />
 
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-10 overflow-x-auto overflow-y-hidden">
+      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-[100] overflow-x-auto overflow-y-hidden">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
@@ -617,7 +617,7 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+                  className="absolute right-0 top-full mt-2 z-[110] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dashboard Settings</p>
