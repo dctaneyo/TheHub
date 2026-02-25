@@ -653,7 +653,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     {convo.type !== "global" && (
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
-                        className="absolute right-2 top-2 hidden h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 group-hover:flex"
+                        className="absolute right-2 top-2 flex md:hidden h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 md:group-hover:flex"
                         title="Delete conversation"
                       >
                         <Trash2 className="h-3 w-3" />

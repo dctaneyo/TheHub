@@ -76,6 +76,7 @@ export async function GET(
       description: conversation.description,
       avatarColor: conversation.avatarColor,
       createdBy: conversation.createdBy,
+      createdByType: conversation.createdByType,
       createdAt: conversation.createdAt,
       members: memberDetails,
       memberCount: memberDetails.length,

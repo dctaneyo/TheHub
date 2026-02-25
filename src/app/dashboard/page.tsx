@@ -529,7 +529,7 @@ export default function DashboardPage() {
       <AnimatedBackground variant="subtle" />
 
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-10 overflow-x-auto">
+      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-10 overflow-x-auto overflow-y-hidden">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
@@ -543,8 +543,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 ml-auto shrink-0">
-          {/* Gamification */}
-          <GamificationBar />
+          {/* Gamification - hidden on mobile */}
+          <div className="hidden md:block">
+            <GamificationBar />
+          </div>
 
           {/* Connection status */}
           <ConnectionStatus />

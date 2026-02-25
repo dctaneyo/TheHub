@@ -142,13 +142,11 @@ export function GroupInfoModal({
           id: `location-${l.id}`,
           name: l.name,
           type: "location" as const,
-          actualId: l.id,
         })),
         ...arls.map((a: any) => ({
           id: `arl-${a.id}`,
           name: a.name,
           type: "arl" as const,
-          actualId: a.id,
         })),
       ].filter((m) => !currentMemberIds.has(m.id));
 
