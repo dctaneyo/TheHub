@@ -38,11 +38,27 @@ if (needsSeed) {
   console.log("🌱 Database not found or empty, running seed...");
   const { spawn } = require("child_process");
   const seed = spawn("npm", ["run", "db:seed"], { stdio: "inherit" });
+  
+  // Add timeout to prevent hanging
+  const timeout = setTimeout(() => {
+    console.error("Seed process timed out after 60 seconds");
+    seed.kill("SIGTERM");
+    process.exit(1);
+  }, 60000);
+  
   seed.on("exit", (code: number) => {
+    clearTimeout(timeout);
     if (code !== 0) {
-      console.error("Seed failed");
+      console.error("Seed failed with exit code:", code);
       process.exit(1);
     }
+    console.log("✅ Seed completed successfully");
+  });
+  
+  seed.on("error", (err: any) => {
+    clearTimeout(timeout);
+    console.error("Seed process error:", err);
+    process.exit(1);
   });
 } else {
   console.log("✅ Database already initialized, skipping seed");

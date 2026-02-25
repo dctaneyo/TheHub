@@ -16,16 +16,16 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#dc2626' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
 };
 
 export const metadata: Metadata = {
   title: "The Hub",
   description: "All-in-one franchise management dashboard",
   manifest: "/manifest.json",
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#dc2626' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
