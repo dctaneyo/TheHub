@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SocketProvider } from "@/lib/socket-context";
 import { ThemeProvider } from "next-themes";
+import { ApolloProvider } from "@/lib/apollo-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -41,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationMismatch>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
@@ -75,11 +76,13 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="hub-theme"
         >
-          <AuthProvider>
-            <SocketProvider>
-              {children}
-            </SocketProvider>
-          </AuthProvider>
+          <ApolloProvider>
+            <AuthProvider>
+              <SocketProvider>
+                {children}
+              </SocketProvider>
+            </AuthProvider>
+          </ApolloProvider>
         </ThemeProvider>
       </body>
     </html>

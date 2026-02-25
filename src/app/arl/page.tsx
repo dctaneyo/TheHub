@@ -29,6 +29,7 @@ import {
   Wifi,
   Database,
   Video,
+  TrendingUp,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -54,9 +55,11 @@ import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-ro
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
+import { GlobalSearch } from "@/components/global-search";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -104,6 +107,7 @@ const navItems = [
   { id: "users" as const, label: "Users", icon: Users },
   { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
   { id: "data-management" as const, label: "Data Management", icon: Database },
+  { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
 ];
 
 interface TaskToast {
@@ -122,7 +126,7 @@ export default function ArlPage() {
   // Restore active view from sessionStorage after mount (prevents hydration mismatch)
   useEffect(() => {
     const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast","meetings"].includes(saved)) {
+    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast","meetings","analytics"].includes(saved)) {
       setActiveView(saved);
     }
     setMounted(true);
@@ -579,6 +583,12 @@ export default function ArlPage() {
                 <span className="text-xs font-medium text-slate-700">Enable</span>
               </button>
             )}
+            <GlobalSearch onNavigate={(type, id) => {
+              if (type === "task") setActiveView("tasks");
+              else if (type === "message") setActiveView("messages");
+              else if (type === "form") setActiveView("forms");
+              else if (type === "location") setActiveView("locations");
+            }} />
             <ThemeToggle />
             <ConnectionStatus />
           </div>
@@ -618,6 +628,7 @@ export default function ArlPage() {
                 )}
                 {activeView === "remote-login" && <RemoteLogin />}
                 {activeView === "data-management" && <DataManagement />}
+                {activeView === "analytics" && <AnalyticsDashboard />}
                 {activeView === "meetings" && (
                   <div className="space-y-6">
                     {activeMeetings.length > 0 && (
