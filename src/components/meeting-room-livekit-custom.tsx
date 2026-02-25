@@ -165,8 +165,8 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
           dynacast: true,
           videoCaptureDefaults: {
             resolution: {
-              width: 1280,
-              height: 720,
+              width: 1920,
+              height: 1080,
             },
           },
           publishDefaults: {
