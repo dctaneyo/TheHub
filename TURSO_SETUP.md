@@ -42,23 +42,81 @@ TURSO_DATABASE_URL=libsql://the-hub-[your-org].turso.io
 TURSO_AUTH_TOKEN=eyJhbGc...your-token-here
 ```
 
-## Step 4: Run Migration Script
+## Step 4: Download Railway Database
+
+**IMPORTANT:** The migration script needs to migrate from your Railway production database, not your local database.
 
 ```bash
-# Install dotenv for the migration script
-npm install dotenv --save-dev
+# Install Railway CLI if you haven't already
+npm install -g @railway/cli
 
-# Run the migration
-npx tsx scripts/migrate-to-turso.ts
+# Login to Railway
+railway login
+
+# Link to your project
+railway link
+
+# Download the production database from Railway
+railway run --service the-hub "cat /data/hub.db" > railway-hub.db
+
+# Verify the download
+ls -lh railway-hub.db
+```
+
+This will download your production SQLite database to a file called `railway-hub.db` in your current directory.
+
+## Step 5: Run Migration Script
+
+```bash
+# Run the migration with the Railway database
+npx tsx scripts/migrate-to-turso.ts railway-hub.db
 ```
 
 The script will:
-1. Export schema from SQLite
+1. Export schema from Railway SQLite database
 2. Create tables in Turso
-3. Migrate all data (batched for performance)
+3. Migrate all data (batched for performance, 1000 rows at a time)
 4. Verify data integrity (row counts must match)
 
-## Step 5: Deploy to Railway
+**Expected output:**
+```
+📍 Database source: railway-hub.db
+🎯 Turso destination: libsql://the-hub-[your-org].turso.io
+
+🚀 Starting migration from SQLite to Turso...
+
+📋 Step 1: Exporting schema from SQLite...
+🏗️  Step 2: Creating tables in Turso...
+  ✅ Created table: locations
+  ✅ Created table: arls
+  ✅ Created table: tasks
+  ... (more tables)
+
+📑 Step 3: Creating indexes...
+  ✅ Created index: idx_tasks_location_id
+  ... (more indexes)
+
+📦 Step 4: Migrating data...
+  ✅ locations: 10 rows migrated
+  ✅ arls: 5 rows migrated
+  ✅ tasks: 150 rows migrated
+  ... (more tables)
+
+🔍 Step 5: Verifying data integrity...
+  ✅ locations: 10 rows (match)
+  ✅ arls: 5 rows (match)
+  ✅ tasks: 150 rows (match)
+  ... (more tables)
+
+============================================================
+✅ Migration completed successfully!
+📊 Total rows migrated: 1,234
+🎉 All data verified - counts match between SQLite and Turso
+```
+
+If any row counts don't match, the script will show an error and you should NOT proceed to deployment.
+
+## Step 6: Deploy to Railway
 
 1. Go to Railway dashboard
 2. Add environment variables:
@@ -66,7 +124,7 @@ The script will:
    - `TURSO_AUTH_TOKEN` = your Turso token
 3. Deploy (Railway will auto-deploy on push)
 
-## Step 6: Verify Production
+## Step 7: Verify Production
 
 After deployment:
 1. Check Railway logs for "✅ Using Turso database"

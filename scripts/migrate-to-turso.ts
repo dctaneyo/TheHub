@@ -6,13 +6,38 @@ import path from 'path';
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
-const DB_PATH = process.env.DATABASE_PATH || './data/hub.db';
+// Get database path from command line argument or environment variable
+const dbPathArg = process.argv[2];
+const DB_PATH = dbPathArg || process.env.DATABASE_PATH || './data/hub.db';
+
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
+console.log('📍 Database source:', DB_PATH);
+console.log('🎯 Turso destination:', TURSO_URL);
+console.log('');
+
 if (!TURSO_URL || !TURSO_TOKEN) {
   console.error('❌ Missing Turso credentials. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN');
+  console.error('');
+  console.error('Add to .env.local:');
+  console.error('TURSO_DATABASE_URL=libsql://your-db.turso.io');
+  console.error('TURSO_AUTH_TOKEN=your-token-here');
   process.exit(1);
+}
+
+if (!dbPathArg) {
+  console.log('⚠️  WARNING: No database path specified.');
+  console.log('');
+  console.log('To migrate from Railway:');
+  console.log('1. Download the database from Railway:');
+  console.log('   railway run --service the-hub "cat /data/hub.db" > railway-hub.db');
+  console.log('');
+  console.log('2. Run migration with the downloaded file:');
+  console.log('   npx tsx scripts/migrate-to-turso.ts railway-hub.db');
+  console.log('');
+  console.log('Proceeding with local database:', DB_PATH);
+  console.log('');
 }
 
 const TABLES = [
