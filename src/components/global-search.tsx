@@ -154,9 +154,9 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[150] bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm"
             />
-            <div className="fixed inset-0 z-[151] flex items-start justify-center pt-[15vh]">
+            <div className="fixed inset-0 z-[10000] flex items-start justify-center pt-[15vh]">
               <motion.div
                 ref={containerRef}
                 initial={{ opacity: 0, scale: 0.95, y: -10 }}

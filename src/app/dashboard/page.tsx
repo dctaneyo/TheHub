@@ -743,16 +743,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content - 3 column layout, no scrolling */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative z-[900]">
         {/* Left Column - Completed/Missed + Points */}
         <div className={cn(
           "w-[280px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto",
           "md:block",
-          mobilePanelOpen === "left" ? "block absolute inset-0 z-[110] w-full" : "hidden"
+          mobilePanelOpen === "left" ? "block absolute inset-0 z-[999] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "left" && (
-            <div className="md:hidden sticky top-0 z-[120] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+            <div className="md:hidden sticky top-0 z-[1000] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Completed & Missed</h3>
               <button
                 onClick={() => setMobilePanelOpen(null)}
@@ -791,7 +791,7 @@ export default function DashboardPage() {
         <div className={cn(
           "w-[300px] shrink-0 border-l border-slate-200 bg-white overflow-hidden",
           "lg:flex lg:flex-col",
-          mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[110] w-full" : "hidden"
+          mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "right" && (
