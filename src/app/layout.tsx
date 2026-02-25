@@ -20,11 +20,14 @@ export const metadata: Metadata = {
   title: "The Hub",
   description: "All-in-one franchise management dashboard",
   manifest: "/manifest.json",
+  themeColor: "#dc2626",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ARL Hub",
+  },
   other: {
     "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
-    "apple-mobile-web-app-title": "ARL Hub",
   },
 };
 
