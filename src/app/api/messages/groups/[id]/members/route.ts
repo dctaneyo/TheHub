@@ -154,12 +154,31 @@ export async function DELETE(
 
     // Can't remove yourself this way (use leave endpoint)
     if (
-      memberIdToRemove === session.userId &&
+      memberIdToRemove === session.id &&
       memberTypeToRemove === session.userType
     ) {
       return NextResponse.json(
         { error: "Use leave endpoint to leave group" },
         { status: 400 }
+      );
+    }
+
+    // Get conversation to check creator
+    const conversation = db
+      .select()
+      .from(schema.conversations)
+      .where(eq(schema.conversations.id, conversationId))
+      .get();
+
+    // Can't remove the group creator
+    if (
+      conversation &&
+      conversation.createdBy === memberIdToRemove &&
+      conversation.createdByType === memberTypeToRemove
+    ) {
+      return NextResponse.json(
+        { error: "Cannot remove group creator. Creator must leave to delete the group." },
+        { status: 403 }
       );
     }
 

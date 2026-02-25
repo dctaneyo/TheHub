@@ -76,6 +76,7 @@ function runMigrations() {
   try { s.exec(`ALTER TABLE tasks ADD COLUMN show_in_calendar INTEGER NOT NULL DEFAULT 1`); } catch {}
   try { s.exec(`ALTER TABLE task_completions ADD COLUMN bonus_points INTEGER NOT NULL DEFAULT 0`); } catch {}
   try { s.exec(`ALTER TABLE conversations ADD COLUMN deleted_by TEXT NOT NULL DEFAULT '[]'`); } catch {}
+  try { s.exec(`ALTER TABLE conversations ADD COLUMN created_by_type TEXT`); } catch {}
   try {
     s.exec(`CREATE TABLE IF NOT EXISTS message_reactions (
       id TEXT PRIMARY KEY,

@@ -44,6 +44,7 @@ interface GroupInfo {
   description?: string;
   avatarColor?: string;
   createdBy: string;
+  createdByType: "location" | "arl";
   createdAt: string;
   members: GroupMember[];
   memberCount: number;
@@ -91,6 +92,9 @@ export function GroupInfoModal({
     (m) => m.memberId === user?.id && m.memberType === user?.userType
   );
   const isAdmin = currentUserMember?.role === "admin";
+  
+  // Check if current user is the group creator
+  const isCreator = groupInfo?.createdBy === user?.id && groupInfo?.createdByType === user?.userType;
   
   // Check if this is the global chat (which shouldn't be editable)
   const isGlobalChat = groupInfo?.name === "Global Chat" || groupInfo?.id === "global";
@@ -232,7 +236,12 @@ export function GroupInfoModal({
   };
 
   const handleLeaveGroup = async () => {
-    if (!confirm("Are you sure you want to leave this group?")) return;
+    // Warn creator that leaving will delete the group
+    const confirmMessage = isCreator
+      ? "⚠️ WARNING: You are the group creator. Leaving this group will DELETE it permanently for all members. Are you sure?"
+      : "Are you sure you want to leave this group?";
+    
+    if (!confirm(confirmMessage)) return;
 
     setIsLoading(true);
     try {
@@ -446,12 +455,24 @@ export function GroupInfoModal({
                     key={member.id}
                     className="flex items-center gap-3 p-3 rounded-lg border"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{member.name}</span>
-                        {member.role === "admin" && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <p className="font-medium">{member.name}</p>
+                        <div className="flex gap-2 mt-1">
+                          {groupInfo.createdBy === member.memberId &&
+                            groupInfo.createdByType === member.memberType && (
+                              <Badge variant="default" className="bg-amber-500">
+                                <Crown className="h-3 w-3 mr-1" />
+                                Creator
+                              </Badge>
+                            )}
+                          {member.role === "admin" && (
+                            <Badge variant="secondary">
+                              <Crown className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Joined {format(new Date(member.joinedAt), "MMM d, yyyy")}
@@ -463,7 +484,8 @@ export function GroupInfoModal({
                     {isAdmin &&
                       !isGlobalChat &&
                       member.memberId !== user?.id &&
-                      member.memberType !== user?.userType && (
+                      member.memberType !== user?.userType &&
+                      !(groupInfo.createdBy === member.memberId && groupInfo.createdByType === member.memberType) && (
                         <Button
                           variant="ghost"
                           size="sm"

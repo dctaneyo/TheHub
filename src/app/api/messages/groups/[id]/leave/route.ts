@@ -17,6 +17,20 @@ export async function POST(
   try {
     const { id: conversationId } = await params;
 
+    // Get conversation details
+    const conversation = db
+      .select()
+      .from(schema.conversations)
+      .where(eq(schema.conversations.id, conversationId))
+      .get();
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Group not found" },
+        { status: 404 }
+      );
+    }
+
     // Find user's membership
     const member = db
       .select()
@@ -38,44 +52,36 @@ export async function POST(
       );
     }
 
-    // Check if user is the last admin
-    const activeMembers = db
-      .select()
-      .from(schema.conversationMembers)
-      .where(
-        and(
-          eq(schema.conversationMembers.conversationId, conversationId),
-          isNull(schema.conversationMembers.leftAt)
-        )
-      )
-      .all();
+    // Check if user is the group creator
+    const isCreator = conversation.createdBy === session.id && conversation.createdByType === session.userType;
 
-    const admins = activeMembers.filter((m) => m.role === "admin");
+    if (isCreator) {
+      // Creator leaving = delete the entire group
+      // Delete all members
+      db.delete(schema.conversationMembers)
+        .where(eq(schema.conversationMembers.conversationId, conversationId))
+        .run();
+      
+      // Delete all messages
+      db.delete(schema.messages)
+        .where(eq(schema.messages.conversationId, conversationId))
+        .run();
+      
+      // Delete the conversation
+      db.delete(schema.conversations)
+        .where(eq(schema.conversations.id, conversationId))
+        .run();
 
-    if (member.role === "admin" && admins.length === 1) {
-      // Last admin - need to promote someone else or can't leave
-      const otherMembers = activeMembers.filter(
-        (m) => m.id !== member.id && m.role === "member"
-      );
-
-      if (otherMembers.length > 0) {
-        // Promote the first other member to admin
-        db.update(schema.conversationMembers)
-          .set({ role: "admin" })
-          .where(eq(schema.conversationMembers.id, otherMembers[0].id))
-          .run();
-      } else {
-        // No one else to promote - this is the last member, they can leave
-      }
+      return NextResponse.json({ success: true, deleted: true });
     }
 
-    // Mark as left
+    // Non-creator leaving = just mark as left
     db.update(schema.conversationMembers)
       .set({ leftAt: new Date().toISOString() })
       .where(eq(schema.conversationMembers.id, member.id))
       .run();
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deleted: false });
   } catch (error) {
     console.error("Failed to leave group:", error);
     return NextResponse.json(

@@ -35,6 +35,8 @@ import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
+import { GroupInfoModal } from "@/components/arl/group-info-modal";
+import { Info } from "lucide-react";
 
 interface Message {
   id: string;
@@ -98,6 +100,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
 
   const [newChatMode, setNewChatMode] = useState<"direct" | "group">("direct");
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -448,6 +451,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                   <Plus className="h-4 w-4" />
                 </button>
               )}
+              {activeConvo && (activeConvo.type === "group" || activeConvo.type === "global") && (
+                <button
+                  onClick={() => setShowGroupInfo(true)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  title="Group info"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={() => setIsFullscreen((f) => !f)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
@@ -685,8 +697,24 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                 }
               } catch {}
             }}
+            onOpenGroupInfo={() => setShowGroupInfo(true)}
           />}
         </motion.div>
+      )}
+
+      {/* Group Info Modal */}
+      {activeConvo && (activeConvo.type === "group" || activeConvo.type === "global") && (
+        <GroupInfoModal
+          conversationId={activeConvo.id}
+          isOpen={showGroupInfo}
+          onClose={() => setShowGroupInfo(false)}
+          onUpdate={() => {
+            fetchConversations();
+            if (activeConvo) {
+              fetchMessages(activeConvo.id);
+            }
+          }}
+        />
       )}
     </AnimatePresence>
   );
@@ -712,6 +740,7 @@ interface ActiveConvoViewProps {
   sendError: boolean;
   onReaction: (messageId: string, emoji: string) => Promise<void>;
   currentUserId?: string;
+  onOpenGroupInfo: () => void;
 }
 
 function ActiveConvoView({
@@ -719,7 +748,7 @@ function ActiveConvoView({
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
   typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
-  currentUserId,
+  currentUserId, onOpenGroupInfo,
 }: ActiveConvoViewProps) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {

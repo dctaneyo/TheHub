@@ -305,10 +305,12 @@ export async function PUT(req: NextRequest) {
     } else if (type === "group") {
       if (!name) return NextResponse.json({ error: "Group name required" }, { status: 400 });
       db.insert(schema.conversations).values({
-        id: convId, type: "group", name, createdBy: session.id, createdAt: now,
+        id: convId, type: "group", name, createdBy: session.id, createdByType: session.userType, createdAt: now,
       }).run();
       // Add creator + all specified members
-      // ARLs are always admins, locations are members
+      // Creator is always admin (location or ARL)
+      // All ARLs are admins
+      // Locations are members (unless they're the creator)
       const allMembers = [{ id: session.id, type: session.userType }, ...memberIds.map((id: string, i: number) => ({ id, type: memberTypes[i] }))];
       const unique = allMembers.filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i);
       db.insert(schema.conversationMembers).values(
@@ -317,7 +319,8 @@ export async function PUT(req: NextRequest) {
           conversationId: convId, 
           memberId: m.id, 
           memberType: m.type, 
-          role: m.type === "arl" ? "admin" : "member",
+          // Creator is always admin, all ARLs are admins, other locations are members
+          role: (m.id === session.id || m.type === "arl") ? "admin" : "member",
           joinedAt: now 
         }))
       ).run();
