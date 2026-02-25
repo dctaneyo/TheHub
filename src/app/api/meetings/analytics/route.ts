@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 // GET /api/meetings/analytics — list all meeting analytics (ARL only)
@@ -78,4 +78,25 @@ export async function GET(req: NextRequest) {
       totalHandRaises,
     },
   });
+}
+
+// DELETE /api/meetings/analytics — delete all meeting analytics data (ARL only)
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session || session.userType !== "arl") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Delete all meeting participants
+    db.delete(schema.meetingParticipants).run();
+    
+    // Delete all meeting analytics
+    db.delete(schema.meetingAnalytics).run();
+
+    return NextResponse.json({ success: true, message: "All meeting data deleted" });
+  } catch (error) {
+    console.error("Failed to delete meeting analytics:", error);
+    return NextResponse.json({ error: "Failed to delete meeting data" }, { status: 500 });
+  }
 }

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   BarChart3, Users, Clock, MessageCircle, Hand, ThumbsUp,
   HelpCircle, TrendingUp, Video, ChevronRight, ChevronLeft,
-  Calendar, Loader2, ArrowLeft,
+  Calendar, Loader2, ArrowLeft, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +87,8 @@ export function MeetingAnalyticsDashboard() {
   const [selectedMeeting, setSelectedMeeting] = useState<string | null>(null);
   const [meetingDetail, setMeetingDetail] = useState<{ meeting: MeetingAnalytics; participants: MeetingParticipant[] } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchAnalytics();
@@ -118,6 +120,26 @@ export function MeetingAnalyticsDashboard() {
       console.error("Failed to fetch meeting detail");
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/meetings/analytics", {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      // Refresh analytics after deletion
+      setMeetings([]);
+      setSummary(null);
+      setShowDeleteConfirm(false);
+      await fetchAnalytics();
+    } catch {
+      console.error("Failed to delete analytics");
+      alert("Failed to delete meeting data. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -230,10 +252,72 @@ export function MeetingAnalyticsDashboard() {
   // Overview
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold text-black flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-blue-400" />
-        Meeting Analytics
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-black flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-blue-400" />
+          Meeting Analytics
+        </h2>
+        {meetings.length > 0 && (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete All
+          </button>
+        )}
+      </div>
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 border border-slate-700">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-full bg-red-600/20 flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Delete All Meeting Data?</h3>
+                <p className="text-sm text-slate-400">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-300 mb-6">
+              This will permanently delete all meeting analytics data including:
+            </p>
+            <ul className="text-sm text-slate-400 space-y-1 mb-6 ml-4">
+              <li>• All meeting records ({meetings.length} meetings)</li>
+              <li>• All participant data</li>
+              <li>• All statistics and summaries</li>
+            </ul>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Delete All
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       {summary && (
