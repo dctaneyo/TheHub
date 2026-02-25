@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import fs from "fs";
 import path from "path";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // Read the build ID written by the build script (package.json "build" command).
 // Both the client bundle and the custom Node server read from this same file,
@@ -23,4 +24,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});
