@@ -24,7 +24,7 @@ export async function POST(
       .where(
         and(
           eq(schema.conversationMembers.conversationId, conversationId),
-          eq(schema.conversationMembers.memberId, session.userId),
+          eq(schema.conversationMembers.memberId, session.id),
           eq(schema.conversationMembers.memberType, session.userType),
           isNull(schema.conversationMembers.leftAt)
         )

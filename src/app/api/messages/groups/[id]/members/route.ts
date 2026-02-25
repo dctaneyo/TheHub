@@ -34,7 +34,7 @@ export async function PUT(
       .where(
         and(
           eq(schema.conversationMembers.conversationId, conversationId),
-          eq(schema.conversationMembers.memberId, session.userId),
+          eq(schema.conversationMembers.memberId, session.id),
           eq(schema.conversationMembers.memberType, session.userType),
           isNull(schema.conversationMembers.leftAt)
         )
@@ -132,15 +132,14 @@ export async function DELETE(
       );
     }
 
-    // Check if user is admin of this group
+    // Check if user is admin
     const userMember = db
       .select()
       .from(schema.conversationMembers)
       .where(
         and(
           eq(schema.conversationMembers.conversationId, conversationId),
-          eq(schema.conversationMembers.memberId, session.userId),
-          eq(schema.conversationMembers.memberType, session.userType),
+          eq(schema.conversationMembers.memberId, session.id),
           isNull(schema.conversationMembers.leftAt)
         )
       )
