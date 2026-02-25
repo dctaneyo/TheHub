@@ -166,6 +166,28 @@ function runMigrations() {
       updated_at TEXT NOT NULL
     )`);
   } catch {}
+
+  // Migration: Assign roles to existing group members (ARLs = admin, locations = member)
+  try {
+    const membersWithoutRoles = s.prepare(`
+      SELECT id, memberType FROM conversation_members WHERE role IS NULL
+    `).all() as Array<{ id: string; memberType: string }>;
+    
+    if (membersWithoutRoles.length > 0) {
+      console.log(`🔄 Assigning roles to ${membersWithoutRoles.length} existing group members...`);
+      for (const member of membersWithoutRoles) {
+        const role = member.memberType === "arl" ? "admin" : "member";
+        s.prepare(`
+          UPDATE conversation_members SET role = ? WHERE id = ?
+        `).run(role, member.id);
+      }
+      console.log(`✅ Assigned roles: ARLs = admin, Locations = member`);
+    }
+  } catch (error) {
+    console.log("⚠️  Role assignment migration skipped (may already be complete)");
+  }
+
+  console.log("✅ All migrations complete");
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

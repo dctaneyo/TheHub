@@ -308,10 +308,18 @@ export async function PUT(req: NextRequest) {
         id: convId, type: "group", name, createdBy: session.id, createdAt: now,
       }).run();
       // Add creator + all specified members
+      // ARLs are always admins, locations are members
       const allMembers = [{ id: session.id, type: session.userType }, ...memberIds.map((id: string, i: number) => ({ id, type: memberTypes[i] }))];
       const unique = allMembers.filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i);
       db.insert(schema.conversationMembers).values(
-        unique.map((m) => ({ id: uuid(), conversationId: convId, memberId: m.id, memberType: m.type, joinedAt: now }))
+        unique.map((m) => ({ 
+          id: uuid(), 
+          conversationId: convId, 
+          memberId: m.id, 
+          memberType: m.type, 
+          role: m.type === "arl" ? "admin" : "member",
+          joinedAt: now 
+        }))
       ).run();
     }
 

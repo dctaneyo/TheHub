@@ -81,13 +81,14 @@ export async function PUT(
         }
       } else {
         // Add new member
+        // ARLs are always admins, locations are members
         db.insert(schema.conversationMembers)
           .values({
             id: uuidv4(),
             conversationId,
             memberId,
             memberType,
-            role: "member",
+            role: memberType === "arl" ? "admin" : "member",
             joinedAt: new Date().toISOString(),
           })
           .run();
