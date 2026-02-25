@@ -148,6 +148,24 @@ function runMigrations() {
       device_type TEXT
     )`);
   } catch {}
+  
+  // Group chat enhancements
+  try { s.exec(`ALTER TABLE conversation_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member'`); } catch {}
+  try { s.exec(`ALTER TABLE conversation_members ADD COLUMN left_at TEXT`); } catch {}
+  try { s.exec(`ALTER TABLE conversations ADD COLUMN description TEXT`); } catch {}
+  try { s.exec(`ALTER TABLE conversations ADD COLUMN avatar_color TEXT`); } catch {}
+  try {
+    s.exec(`CREATE TABLE IF NOT EXISTS conversation_settings (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      is_muted INTEGER NOT NULL DEFAULT 0,
+      muted_until TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+  } catch {}
 }
 
 // Proxy objects so all existing `db.xxx` and `sqlite.xxx` calls work unchanged

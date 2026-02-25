@@ -99,6 +99,8 @@ export const conversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
   type: text("type").notNull().default("direct"), // 'direct' | 'global' | 'group'
   name: text("name"), // for group chats; null for direct
+  description: text("description"), // group purpose/description
+  avatarColor: text("avatar_color"), // hex color for group icon
   // For direct chats: participantAId + participantBId identify the pair
   participantAId: text("participant_a_id"), // location.id or arl.id
   participantAType: text("participant_a_type"), // 'location' | 'arl'
@@ -117,7 +119,9 @@ export const conversationMembers = sqliteTable("conversation_members", {
   conversationId: text("conversation_id").notNull(),
   memberId: text("member_id").notNull(), // location.id or arl.id
   memberType: text("member_type").notNull(), // 'location' | 'arl'
+  role: text("role").notNull().default("member"), // 'admin' | 'member'
   joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
+  leftAt: text("left_at"), // null = active member
 });
 
 // Message read receipts
@@ -138,6 +142,18 @@ export const messageReactions = sqliteTable("message_reactions", {
   userName: text("user_name").notNull(),
   emoji: text("emoji").notNull(),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Conversation settings - per-user notification preferences
+export const conversationSettings = sqliteTable("conversation_settings", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").notNull(),
+  userId: text("user_id").notNull(),
+  userType: text("user_type").notNull(), // 'location' | 'arl'
+  isMuted: integer("is_muted", { mode: "boolean" }).notNull().default(false),
+  mutedUntil: text("muted_until"), // null = muted forever
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 // Forms repository
