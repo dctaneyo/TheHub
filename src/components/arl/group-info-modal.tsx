@@ -91,6 +91,9 @@ export function GroupInfoModal({
     (m) => m.memberId === user?.id && m.memberType === user?.userType
   );
   const isAdmin = currentUserMember?.role === "admin";
+  
+  // Check if this is the global chat (which shouldn't be editable)
+  const isGlobalChat = groupInfo?.name === "Global Chat" || groupInfo?.id === "global";
 
   useEffect(() => {
     if (isOpen && conversationId) {
@@ -272,7 +275,7 @@ export function GroupInfoModal({
                 <span>{groupInfo.name}</span>
               )}
             </div>
-            {isAdmin && !isEditing && (
+            {isAdmin && !isEditing && !isGlobalChat && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -362,7 +365,7 @@ export function GroupInfoModal({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <Label>Members ({groupInfo.memberCount})</Label>
-                {isAdmin && !showAddMember && (
+                {isAdmin && !showAddMember && !isGlobalChat && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -455,6 +458,7 @@ export function GroupInfoModal({
                       {member.memberType === "location" ? "Location" : "ARL"}
                     </Badge>
                     {isAdmin &&
+                      !isGlobalChat &&
                       member.memberId !== user?.id &&
                       member.memberType !== user?.userType && (
                         <Button
@@ -473,18 +477,20 @@ export function GroupInfoModal({
               </div>
             </div>
 
-            {/* Leave Group Button */}
-            <div className="pt-4 border-t">
-              <Button
-                variant="destructive"
-                onClick={handleLeaveGroup}
-                disabled={isLoading}
-                className="w-full"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Leave Group
-              </Button>
-            </div>
+            {/* Leave Group Button - hidden for global chat */}
+            {!isGlobalChat && (
+              <div className="pt-4 border-t">
+                <Button
+                  variant="destructive"
+                  onClick={handleLeaveGroup}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Leave Group
+                </Button>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

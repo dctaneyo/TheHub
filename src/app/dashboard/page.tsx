@@ -81,7 +81,9 @@ export default function DashboardPage() {
   }, [screensaverEnabled]);
 
   const { idle: autoIdle, reset: resetIdle } = useIdleTimer(2 * 60 * 1000);
-  const idleBase = screensaverEnabled && (autoIdle || forceIdle);
+  // Disable screensaver on mobile devices
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const idleBase = !isMobile && screensaverEnabled && (autoIdle || forceIdle);
 
   // Load sound state from server on mount; listen for ARL-driven toggle
   const { socket: socketForSound } = useSocket();
@@ -728,16 +730,30 @@ export default function DashboardPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Column - Completed/Missed + Points */}
         <div className={cn(
-          "w-[280px] shrink-0 border-r border-slate-200 bg-white p-4 overflow-y-auto",
+          "w-[280px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto",
           "md:block",
           mobilePanelOpen === "left" ? "block absolute inset-0 z-20 w-full" : "hidden"
         )}>
-          <CompletedMissed
-            completedToday={completedTasks}
-            missedYesterday={data?.missedYesterday || []}
-            pointsToday={data?.pointsToday || 0}
-            totalToday={data?.totalToday || 0}
-          />
+          {/* Mobile close button */}
+          {mobilePanelOpen === "left" && (
+            <div className="md:hidden sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800">Completed & Missed</h3>
+              <button
+                onClick={() => setMobilePanelOpen(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <div className="p-4">
+            <CompletedMissed
+              completedToday={completedTasks}
+              missedYesterday={data?.missedYesterday || []}
+              pointsToday={data?.pointsToday || 0}
+              totalToday={data?.totalToday || 0}
+            />
+          </div>
         </div>
 
         {/* Center Column - Main Timeline */}
@@ -761,6 +777,18 @@ export default function DashboardPage() {
           "lg:flex lg:flex-col",
           mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-20 w-full" : "hidden"
         )}>
+          {/* Mobile close button */}
+          {mobilePanelOpen === "right" && (
+            <div className="md:hidden sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+              <h3 className="text-sm font-bold text-slate-800">Upcoming & Leaderboard</h3>
+              <button
+                onClick={() => setMobilePanelOpen(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
         </div>
       </div>
