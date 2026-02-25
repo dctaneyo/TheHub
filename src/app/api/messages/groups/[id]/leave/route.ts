@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth";
 // POST /api/messages/groups/:id/leave - Leave group
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
@@ -15,7 +15,7 @@ export async function POST(
   }
 
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
 
     // Find user's membership
     const member = db

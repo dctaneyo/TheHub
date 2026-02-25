@@ -8,7 +8,7 @@ import { getSession } from "@/lib/auth";
 // GET /api/messages/groups/:id - Get group details
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
@@ -16,7 +16,7 @@ export async function GET(
   }
 
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
 
     // Get conversation details
     const conversation = db
@@ -92,7 +92,7 @@ export async function GET(
 // PATCH /api/messages/groups/:id - Update group info (name, description, avatarColor)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
@@ -100,7 +100,7 @@ export async function PATCH(
   }
 
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
     const body = await req.json();
     const { name, description, avatarColor } = body;
 

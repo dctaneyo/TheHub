@@ -10,14 +10,8 @@ dotenv.config({ path: path.join(__dirname, '../.env.local') });
 const dbPathArg = process.argv[2];
 const DB_PATH = dbPathArg || process.env.DATABASE_PATH || './data/hub.db';
 
-const TURSO_URL = process.env.TURSO_DATABASE_URL;
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
-
-console.log('📍 Database source:', DB_PATH);
-console.log('🎯 Turso destination:', TURSO_URL);
-console.log('');
-
-if (!TURSO_URL || !TURSO_TOKEN) {
+// Validate Turso credentials
+if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
   console.error('❌ Missing Turso credentials. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN');
   console.error('');
   console.error('Add to .env.local:');
@@ -25,6 +19,13 @@ if (!TURSO_URL || !TURSO_TOKEN) {
   console.error('TURSO_AUTH_TOKEN=your-token-here');
   process.exit(1);
 }
+
+const TURSO_URL: string = process.env.TURSO_DATABASE_URL;
+const TURSO_TOKEN: string = process.env.TURSO_AUTH_TOKEN;
+
+console.log('📍 Database source:', DB_PATH);
+console.log('🎯 Turso destination:', TURSO_URL);
+console.log('');
 
 if (!dbPathArg) {
   console.log('⚠️  WARNING: No database path specified.');
@@ -154,7 +155,7 @@ async function migrateToTurso() {
         }
 
         // Get column names from first row
-        const columns = Object.keys(rows[0]);
+        const columns = Object.keys(rows[0] as Record<string, unknown>);
 
         // Batch insert into Turso (1000 rows at a time)
         const batchSize = 1000;

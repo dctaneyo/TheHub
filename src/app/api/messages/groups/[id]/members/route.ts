@@ -8,7 +8,7 @@ import { getSession } from "@/lib/auth";
 // PUT /api/messages/groups/:id/members - Add members to group
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
@@ -16,7 +16,7 @@ export async function PUT(
   }
 
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
     const body = await req.json();
     const { memberIds, memberTypes } = body;
 
@@ -111,7 +111,7 @@ export async function PUT(
 // DELETE /api/messages/groups/:id/members/:userId - Remove member from group
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
@@ -119,7 +119,7 @@ export async function DELETE(
   }
 
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
     const url = new URL(req.url);
     const memberIdToRemove = url.searchParams.get("memberId");
     const memberTypeToRemove = url.searchParams.get("memberType");

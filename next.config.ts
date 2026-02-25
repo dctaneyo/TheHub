@@ -171,7 +171,7 @@ const pwaConfig = withPWA({
   ],
 });
 
-const configWithPWA = pwaConfig(nextConfig);
+const configWithPWA = pwaConfig(nextConfig as any);
 
 export default withSentryConfig(configWithPWA, {
   org: process.env.SENTRY_ORG,
