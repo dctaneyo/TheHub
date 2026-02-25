@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
+import { GroupInfoModal } from "@/components/arl/group-info-modal";
+import { Info } from "lucide-react";
 
 interface Conversation {
   id: string;
@@ -261,6 +263,7 @@ export function Messaging() {
   const [directSearch, setDirectSearch] = useState("");
   const [startingDirect, setStartingDirect] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const reactions = ["❤️", "👍", "😂", "😊"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -770,10 +773,19 @@ export function Messaging() {
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", convIconBg(activeConvo.type))}>
           {convIcon(activeConvo.type)}
         </div>
-        <div>
+        <div className="flex-1">
           <h4 className="text-sm font-bold text-slate-800">{activeConvo.name}</h4>
           <p className="text-[10px] text-slate-400">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
         </div>
+        {isGroup && (
+          <button
+            onClick={() => setShowGroupInfo(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            title="Group Info"
+          >
+            <Info className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <ScrollArea className="flex-1 min-h-0 p-4">
@@ -998,6 +1010,21 @@ export function Messaging() {
           </div>
         </div>
       </div>
+
+      {/* Group Info Modal */}
+      {activeConvo && isGroup && (
+        <GroupInfoModal
+          conversationId={activeConvo.id}
+          isOpen={showGroupInfo}
+          onClose={() => setShowGroupInfo(false)}
+          onUpdate={() => {
+            fetchConversations();
+            if (activeConvo) {
+              fetchMessages(activeConvo.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
