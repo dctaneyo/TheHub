@@ -28,6 +28,7 @@ export function ConnectionStatus() {
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [showCode, setShowCode] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const [, setTick] = useState(0);
   const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
   const checkInterval = useRef<NodeJS.Timeout | null>(null);
@@ -151,6 +152,17 @@ export function ConnectionStatus() {
   }, [showCode]);
 
   // API already filters to online-only; multiSession = more than one active session
+  // Compute fixed position when dropdown opens
+  useEffect(() => {
+    if (showCode && popdownRef.current) {
+      const rect = popdownRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
+  }, [showCode]);
+
   const multiSession = sessions.length > 1;
 
   return (
@@ -208,7 +220,8 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 z-[2000] w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+            className="fixed z-[2000] w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+            style={dropdownPos ? { top: dropdownPos.top, right: dropdownPos.right } : {}}
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">

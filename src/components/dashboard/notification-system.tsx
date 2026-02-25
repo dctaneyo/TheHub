@@ -40,8 +40,10 @@ function timeToMinutes(t: string): number {
 export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleSound }: NotificationSystemProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showPanel, setShowPanel] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
 
   // Load dismissed notifications from localStorage on mount
@@ -266,6 +268,17 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   const overdueNotifications = activeNotifications.filter((n) => n.type === "overdue");
   const hasActive = activeNotifications.length > 0;
 
+  // Compute fixed position when notification panel opens
+  useEffect(() => {
+    if (showPanel && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect();
+      setPanelPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
+  }, [showPanel]);
+
   // ── Fullscreen overdue alarm ──
   const overdueAlarmRef = useRef<NodeJS.Timeout | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -321,7 +334,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
 
   return (
     <>
-      <div className="relative">
+      <div className="relative" ref={bellRef}>
         {/* ── FULLSCREEN OVERDUE OVERLAY ── */}
       <AnimatePresence>
         {overdueNotifications.length > 0 && (
@@ -403,7 +416,8 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute right-4 top-14 z-[2005] w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="fixed z-[2005] w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
+            style={panelPos ? { top: panelPos.top, right: panelPos.right } : {}}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h3 className="text-sm font-bold text-slate-800">Notifications</h3>

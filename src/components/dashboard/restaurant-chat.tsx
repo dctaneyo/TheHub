@@ -415,7 +415,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           exit={{ x: "100%" }}
           transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
           style={{ width: isFullscreen ? "100%" : 360, left: isFullscreen ? 0 : "auto" }}
-          className="fixed right-0 top-0 z-40 flex h-dvh flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl"
+          className="fixed right-0 top-0 z-[200] flex h-dvh flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl"
         >
           {/* Header */}
           <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">

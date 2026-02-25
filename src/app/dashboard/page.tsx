@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [forceIdle, setForceIdle] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsPos, setSettingsPos] = useState<{ top: number; right: number } | null>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState<"left" | "right" | null>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -239,6 +240,17 @@ export default function DashboardPage() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
+  // Compute fixed position when settings dropdown opens
+  useEffect(() => {
+    if (settingsOpen && settingsRef.current) {
+      const rect = settingsRef.current.getBoundingClientRect();
+      setSettingsPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
   }, [settingsOpen]);
 
   const { user, logout } = useAuth();
@@ -617,7 +629,8 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 z-[2010] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+                  className="fixed z-[2010] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+                  style={settingsPos ? { top: settingsPos.top, right: settingsPos.right } : {}}
                 >
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dashboard Settings</p>
@@ -1129,7 +1142,7 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
   const selectedTasks = selectedDate ? getTasksForDate(selectedDate) : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 px-5">
