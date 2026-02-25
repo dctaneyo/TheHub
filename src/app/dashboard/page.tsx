@@ -748,11 +748,11 @@ export default function DashboardPage() {
         <div className={cn(
           "w-[280px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto",
           "md:block",
-          mobilePanelOpen === "left" ? "block absolute inset-0 z-20 w-full" : "hidden"
+          mobilePanelOpen === "left" ? "block absolute inset-0 z-[110] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "left" && (
-            <div className="md:hidden sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+            <div className="md:hidden sticky top-0 z-[120] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Completed & Missed</h3>
               <button
                 onClick={() => setMobilePanelOpen(null)}
@@ -791,11 +791,11 @@ export default function DashboardPage() {
         <div className={cn(
           "w-[300px] shrink-0 border-l border-slate-200 bg-white overflow-hidden",
           "lg:flex lg:flex-col",
-          mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-20 w-full" : "hidden"
+          mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[110] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "right" && (
-            <div className="md:hidden sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+            <div className="md:hidden sticky top-0 z-[120] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-slate-800">Upcoming & Leaderboard</h3>
               <button
                 onClick={() => setMobilePanelOpen(null)}

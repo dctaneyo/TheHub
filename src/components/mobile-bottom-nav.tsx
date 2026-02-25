@@ -41,14 +41,14 @@ export function MobileBottomNav({ activeView, onViewChange, unreadCount = 0, use
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/20"
+              className="fixed inset-0 z-[140] bg-black/20"
               onClick={() => setMoreOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-[calc(env(safe-area-inset-bottom)+64px)] left-2 right-2 z-50 rounded-2xl border border-border bg-card p-2 shadow-xl"
+              className="fixed bottom-[calc(env(safe-area-inset-bottom)+64px)] left-2 right-2 z-[141] rounded-2xl border border-border bg-card p-2 shadow-xl"
             >
               {[
                 { id: "locations", label: "Locations" },
@@ -75,7 +75,7 @@ export function MobileBottomNav({ activeView, onViewChange, unreadCount = 0, use
       </AnimatePresence>
 
       {/* Bottom nav bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-lg md:hidden"
+      <nav className="fixed bottom-0 left-0 right-0 z-[130] border-t border-border bg-card/95 backdrop-blur-lg md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex h-16 items-center justify-around px-2">
