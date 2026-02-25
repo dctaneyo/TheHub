@@ -52,6 +52,7 @@ import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -616,7 +617,7 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+                  className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dashboard Settings</p>
@@ -675,16 +676,29 @@ export default function DashboardPage() {
                       </div>
                     </button>
 
+                    {/* Theme toggle */}
+                    <div className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                        <Sun className="h-4 w-4 dark:hidden" />
+                        <Moon className="h-4 w-4 hidden dark:block" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Theme</p>
+                        <p className="text-[11px] text-slate-400">Light / Dark / System</p>
+                      </div>
+                      <ThemeToggle />
+                    </div>
+
                     {/* Manual invoke */}
                     <button
                       onClick={() => { setForceIdle(true); setSettingsOpen(false); }}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
                         <Play className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">Show Screensaver</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Show Screensaver</p>
                         <p className="text-[11px] text-slate-400">Preview now</p>
                       </div>
                     </button>

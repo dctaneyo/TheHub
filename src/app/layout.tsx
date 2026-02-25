@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SocketProvider } from "@/lib/socket-context";
+import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,7 +21,10 @@ export const metadata: Metadata = {
   title: "The Hub",
   description: "All-in-one franchise management dashboard",
   manifest: "/manifest.json",
-  themeColor: "#dc2626",
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#dc2626' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -37,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationMismatch>
       <head>
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
@@ -64,11 +68,19 @@ export default function RootLayout({
             e.preventDefault();
           }, { passive: false });
         `}} />
-        <AuthProvider>
-          <SocketProvider>
-            {children}
-          </SocketProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+          storageKey="hub-theme"
+        >
+          <AuthProvider>
+            <SocketProvider>
+              {children}
+            </SocketProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

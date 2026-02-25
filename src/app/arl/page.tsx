@@ -53,6 +53,7 @@ import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings";
@@ -542,7 +543,7 @@ export default function ArlPage() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
               <button
@@ -578,6 +579,7 @@ export default function ArlPage() {
                 <span className="text-xs font-medium text-slate-700">Enable</span>
               </button>
             )}
+            <ThemeToggle />
             <ConnectionStatus />
           </div>
         </header>

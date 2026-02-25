@@ -98,6 +98,51 @@ html {
   --hub-purple-light: #f5f3ff;
 }
 
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --primary: #e4002b;
+  --primary-foreground: #ffffff;
+  --secondary: #334155;
+  --secondary-foreground: #cbd5e1;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #422006;
+  --accent-foreground: #fef3c7;
+  --destructive: #dc2626;
+  --border: #334155;
+  --input: #334155;
+  --ring: #ef4444;
+  --chart-1: #ef4444;
+  --chart-2: #60a5fa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #e4002b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #fca5a5;
+  --sidebar-border: #334155;
+  --sidebar-ring: #ef4444;
+
+  --hub-red: #ef4444;
+  --hub-red-light: #450a0a;
+  --hub-blue: #60a5fa;
+  --hub-blue-light: #172554;
+  --hub-green: #34d399;
+  --hub-green-light: #052e16;
+  --hub-amber: #fbbf24;
+  --hub-amber-light: #422006;
+  --hub-purple: #a78bfa;
+  --hub-purple-light: #2e1065;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

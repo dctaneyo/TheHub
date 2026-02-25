@@ -1,0 +1,415 @@
+scalar DateTime
+scalar JSON
+
+# ===== CORE TYPES =====
+
+type Location {
+  id: ID!
+  name: String!
+  storeNumber: String!
+  address: String
+  email: String
+  userId: String!
+  isActive: Boolean!
+  soundMuted: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  tasks(completed: Boolean, date: String): [Task!]!
+  completions(startDate: String, endDate: String, limit: Int): [TaskCompletion!]!
+  gamification(localDate: String): GamificationStats!
+  achievements: AchievementSummary!
+  notifications(unreadOnly: Boolean): [Notification!]!
+}
+
+type ARL {
+  id: ID!
+  name: String!
+  email: String
+  userId: String!
+  role: String!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  type: String!
+  priority: String!
+  dueTime: String!
+  dueDate: String
+  isRecurring: Boolean!
+  recurringType: String
+  recurringDays: JSON
+  biweeklyStart: String
+  locationId: ID
+  createdBy: ID!
+  createdByType: String!
+  isHidden: Boolean!
+  allowEarlyComplete: Boolean!
+  showInToday: Boolean!
+  showIn7Day: Boolean!
+  showInCalendar: Boolean!
+  points: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  location: Location
+  completions(startDate: String, endDate: String): [TaskCompletion!]!
+  isCompletedForDate(locationId: ID!, date: String!): Boolean!
+}
+
+type TaskCompletion {
+  id: ID!
+  taskId: ID!
+  locationId: ID!
+  completedAt: DateTime!
+  completedDate: String!
+  notes: String
+  pointsEarned: Int!
+  bonusPoints: Int!
+
+  task: Task
+  location: Location
+}
+
+# ===== MESSAGING =====
+
+type Conversation {
+  id: ID!
+  type: String!
+  name: String
+  description: String
+  avatarColor: String
+  lastMessageAt: DateTime
+  lastMessagePreview: String
+  createdBy: ID
+  createdByType: String
+  createdAt: DateTime!
+
+  messages(limit: Int, offset: Int): [Message!]!
+  members: [ConversationMember!]!
+  unreadCount(userId: ID!, userType: String!): Int!
+}
+
+type Message {
+  id: ID!
+  conversationId: ID!
+  senderType: String!
+  senderId: ID!
+  senderName: String!
+  content: String!
+  messageType: String!
+  createdAt: DateTime!
+
+  reactions: [MessageReaction!]!
+}
+
+type ConversationMember {
+  id: ID!
+  conversationId: ID!
+  memberId: ID!
+  memberType: String!
+  role: String!
+  joinedAt: DateTime!
+  leftAt: DateTime
+}
+
+type MessageReaction {
+  id: ID!
+  messageId: ID!
+  userId: ID!
+  userType: String!
+  userName: String!
+  emoji: String!
+  createdAt: DateTime!
+}
+
+# ===== GAMIFICATION =====
+
+type GamificationStats {
+  streak: StreakInfo!
+  level: LevelInfo!
+  badges: [Badge!]!
+  stats: GamificationNumbers!
+}
+
+type StreakInfo {
+  current: Int!
+  currentMilestone: StreakMilestone
+  nextMilestone: StreakMilestone
+  daysToNext: Int!
+}
+
+type StreakMilestone {
+  days: Int!
+  name: String!
+  icon: String!
+}
+
+type LevelInfo {
+  level: Int!
+  title: String!
+  totalXP: Int!
+  xpToNext: Int!
+  progress: Int!
+  xpRequired: Int!
+  nextLevel: LevelThreshold
+}
+
+type LevelThreshold {
+  level: Int!
+  xpRequired: Int!
+  title: String!
+}
+
+type Badge {
+  id: String!
+  name: String!
+  description: String!
+  icon: String!
+  earned: Boolean!
+  earnedDate: String
+}
+
+type GamificationNumbers {
+  totalTasksCompleted: Int!
+  totalXP: Int!
+  totalBonusPoints: Int!
+}
+
+# ===== ACHIEVEMENTS =====
+
+type Achievement {
+  id: String!
+  name: String!
+  desc: String!
+  tier: String!
+  icon: String!
+  earned: Boolean!
+  earnedDate: DateTime
+}
+
+type AchievementSummary {
+  badges: [Achievement!]!
+  earnedCount: Int!
+  totalCount: Int!
+}
+
+# ===== NOTIFICATIONS =====
+
+type Notification {
+  id: ID!
+  locationId: ID!
+  type: String!
+  title: String!
+  body: String
+  referenceId: String
+  isRead: Boolean!
+  isDismissed: Boolean!
+  createdAt: DateTime!
+}
+
+# ===== MEETINGS =====
+
+type Meeting {
+  id: ID!
+  meetingId: String!
+  title: String!
+  hostId: ID!
+  hostName: String!
+  startedAt: DateTime!
+  endedAt: DateTime
+  duration: Int
+  totalParticipants: Int!
+  totalLocations: Int!
+  totalArls: Int!
+  totalGuests: Int!
+  peakParticipants: Int!
+  totalMessages: Int!
+  totalQuestions: Int!
+  totalReactions: Int!
+  totalHandRaises: Int!
+
+  participants: [MeetingParticipant!]!
+}
+
+type MeetingParticipant {
+  id: ID!
+  meetingId: String!
+  participantId: String!
+  participantName: String!
+  participantType: String!
+  role: String!
+  joinedAt: DateTime!
+  leftAt: DateTime
+  duration: Int
+  hadVideo: Boolean!
+  hadAudio: Boolean!
+  messagesSent: Int!
+  reactionsSent: Int!
+  handRaiseCount: Int!
+  connectionQuality: String
+  deviceType: String
+}
+
+# ===== ANALYTICS =====
+
+type MeetingAnalyticsSummary {
+  meetings: [Meeting!]!
+  summary: MeetingSummaryStats!
+}
+
+type MeetingSummaryStats {
+  totalMeetings: Int!
+  completedMeetings: Int!
+  totalDuration: Int!
+  avgDuration: Int!
+  avgParticipants: Int!
+  totalMessages: Int!
+  totalReactions: Int!
+  totalQuestions: Int!
+  totalHandRaises: Int!
+}
+
+type TaskAnalytics {
+  completionsByDate: [CompletionByDate!]!
+  topLocations: [LocationPerformance!]!
+  timeOfDayPattern: [HourlyPattern!]!
+}
+
+type CompletionByDate {
+  date: String!
+  count: Int!
+  totalPoints: Int!
+  bonusPoints: Int!
+}
+
+type LocationPerformance {
+  locationId: ID!
+  completions: Int!
+  totalPoints: Int!
+}
+
+type HourlyPattern {
+  hour: Int!
+  count: Int!
+}
+
+# ===== QUERIES =====
+
+type Query {
+  # Auth
+  me: MeResult
+
+  # Locations
+  location(id: ID!): Location
+  locations(isActive: Boolean): [Location!]!
+
+  # ARLs
+  arls(isActive: Boolean): [ARL!]!
+
+  # Tasks
+  task(id: ID!): Task
+  tasks(locationId: ID, type: String, priority: String): [Task!]!
+
+  # Task Completions
+  taskCompletions(
+    locationId: ID
+    taskId: ID
+    startDate: String
+    endDate: String
+    limit: Int
+  ): [TaskCompletion!]!
+
+  # Gamification
+  gamification(locationId: ID!, localDate: String): GamificationStats!
+  leaderboard(limit: Int): [LocationPerformance!]!
+
+  # Achievements
+  achievements(locationId: ID): AchievementSummary!
+
+  # Messaging
+  conversation(id: ID!): Conversation
+  conversations: [Conversation!]!
+  messages(conversationId: ID!, limit: Int, offset: Int): [Message!]!
+
+  # Meetings
+  meeting(id: ID!): Meeting
+  meetings(limit: Int, startDate: String, endDate: String): [Meeting!]!
+  meetingAnalytics: MeetingAnalyticsSummary!
+
+  # Notifications
+  notifications(locationId: ID!, unreadOnly: Boolean): [Notification!]!
+}
+
+# ===== MUTATIONS =====
+
+type Mutation {
+  # Tasks
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(id: ID!, input: UpdateTaskInput!): Task!
+  deleteTask(id: ID!): Boolean!
+  completeTask(taskId: ID!, locationId: ID!, date: String!, notes: String): TaskCompletion!
+  uncompleteTask(taskId: ID!, locationId: ID!, date: String!): Boolean!
+
+  # Messages
+  sendMessage(conversationId: ID!, content: String!, messageType: String): Message!
+  reactToMessage(messageId: ID!, emoji: String!): MessageReaction!
+
+  # Notifications
+  markNotificationRead(id: ID!): Notification!
+  dismissNotification(id: ID!): Notification!
+  clearAllNotifications(locationId: ID!): Boolean!
+
+  # Achievements
+  unlockAchievement(achievementId: String!, locationId: ID!): Achievement!
+}
+
+# ===== INPUT TYPES =====
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  type: String!
+  priority: String!
+  dueTime: String!
+  dueDate: String
+  isRecurring: Boolean
+  recurringType: String
+  recurringDays: JSON
+  biweeklyStart: String
+  locationId: ID
+  points: Int
+  allowEarlyComplete: Boolean
+  showInToday: Boolean
+  showIn7Day: Boolean
+  showInCalendar: Boolean
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  type: String
+  priority: String
+  dueTime: String
+  dueDate: String
+  isRecurring: Boolean
+  recurringType: String
+  recurringDays: JSON
+  biweeklyStart: String
+  locationId: ID
+  points: Int
+  isHidden: Boolean
+  allowEarlyComplete: Boolean
+  showInToday: Boolean
+  showIn7Day: Boolean
+  showInCalendar: Boolean
+}
+
+# ===== UNION TYPES =====
+
+union MeResult = Location | ARL
