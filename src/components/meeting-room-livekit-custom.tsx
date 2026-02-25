@@ -160,6 +160,19 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
         serverUrl={wsUrl}
         data-lk-theme="default"
         style={{ height: "100vh" }}
+        options={{
+          adaptiveStream: true,
+          dynacast: true,
+          videoCaptureDefaults: {
+            resolution: {
+              width: 1280,
+              height: 720,
+            },
+          },
+          publishDefaults: {
+            simulcast: true,
+          },
+        }}
         onDisconnected={(reason) => {
           // Connection lost - attempt to reconnect
           setIsReconnecting(true);
