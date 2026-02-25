@@ -547,7 +547,7 @@ export default function ArlPage() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 relative z-[100]">
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
               <button

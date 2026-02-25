@@ -530,7 +530,7 @@ export default function DashboardPage() {
       <AnimatedBackground variant="subtle" />
 
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-[100] overflow-x-auto overflow-y-hidden">
+      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-[100] overflow-x-auto">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
@@ -743,7 +743,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content - 3 column layout, no scrolling */}
-      <div className="flex flex-1 overflow-hidden relative z-[900]">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Left Column - Completed/Missed + Points */}
         <div className={cn(
           "w-[280px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto",
