@@ -246,16 +246,16 @@ export function GamificationBar() {
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              className="absolute left-0 top-full mt-2 z-50 w-64 rounded-2xl border border-cyan-200 bg-white shadow-2xl p-4"
+              className="absolute left-0 top-full mt-2 z-[2005] w-64 rounded-2xl border border-cyan-200 bg-card shadow-2xl p-4"
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">🧊</span>
                 <div>
-                  <p className="text-sm font-black text-slate-800">Streak Freeze</p>
-                  <p className="text-[10px] text-slate-400">{freezeInfo.available} of {freezeInfo.maxPerMonth} left this month</p>
+                  <p className="text-sm font-black text-foreground">Streak Freeze</p>
+                  <p className="text-[10px] text-muted-foreground">{freezeInfo.available} of {freezeInfo.maxPerMonth} left this month</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mb-3">Apply a freeze to yesterday — it counts as a perfect day and protects your streak.</p>
+              <p className="text-xs text-muted-foreground mb-3">Apply a freeze to yesterday — it counts as a perfect day and protects your streak.</p>
               <div className="flex gap-2">
                 <button
                   onClick={applyStreakFreeze}
@@ -266,7 +266,7 @@ export function GamificationBar() {
                 </button>
                 <button
                   onClick={() => setShowFreezeConfirm(false)}
-                  className="flex-1 rounded-xl bg-slate-100 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                  className="flex-1 rounded-xl bg-muted py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted/80 transition-colors"
                 >
                   Cancel
                 </button>
