@@ -58,7 +58,9 @@ export function GamificationBar() {
   const [showFreezeConfirm, setShowFreezeConfirm] = useState(false);
   const [freezing, setFreezing] = useState(false);
   const [freezeSuccess, setFreezeSuccess] = useState(false);
+  const [freezePopoverPos, setFreezePopoverPos] = useState<{ top: number; left: number } | null>(null);
   const knownEarnedIdsRef = useRef<Set<string> | null>(null);
+  const freezeButtonRef = useRef<HTMLButtonElement>(null);
   const { socket } = useSocket();
 
   const fetchData = useCallback(async () => {
@@ -132,6 +134,19 @@ export function GamificationBar() {
       socket.off("leaderboard:updated", handler);
     };
   }, [socket, fetchData]);
+
+  // Compute fixed position when freeze popover opens
+  useEffect(() => {
+    if (showFreezeConfirm && freezeButtonRef.current) {
+      const rect = freezeButtonRef.current.getBoundingClientRect();
+      setFreezePopoverPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    } else {
+      setFreezePopoverPos(null);
+    }
+  }, [showFreezeConfirm]);
 
   if (!data) return null;
 
@@ -226,6 +241,7 @@ export function GamificationBar() {
         {/* Streak Freeze button */}
         {freezeInfo && freezeInfo.available > 0 && (
           <motion.button
+            ref={freezeButtonRef}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowFreezeConfirm((v) => !v)}
@@ -246,7 +262,8 @@ export function GamificationBar() {
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              className="absolute left-0 top-full mt-2 z-[2005] w-64 rounded-2xl border border-cyan-200 bg-card shadow-2xl p-4"
+              className="fixed z-[2005] w-64 rounded-2xl border border-cyan-200 bg-card shadow-2xl p-4"
+              style={freezePopoverPos ? { top: freezePopoverPos.top, left: freezePopoverPos.left } : {}}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">🧊</span>
