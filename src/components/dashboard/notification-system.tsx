@@ -348,7 +348,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
             <motion.div
               animate={{ boxShadow: ["0 0 0 0 rgba(220,38,38,0.7)", "0 0 0 20px rgba(220,38,38,0)", "0 0 0 0 rgba(220,38,38,0)"] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-full max-w-lg mx-4 rounded-3xl bg-white overflow-hidden"
+              className="w-full max-w-lg mx-4 rounded-3xl bg-card overflow-hidden"
             >
               {/* Red header */}
               <div className="bg-[var(--hub-red)] px-6 py-5 flex items-center gap-3">
@@ -364,12 +364,12 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
               {/* Task list */}
               <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">
                 {overdueNotifications.map((notif) => (
-                  <div key={notif.id} className="flex items-center gap-3 rounded-xl bg-red-50 p-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100">
+                  <div key={notif.id} className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-950/50 p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900">
                       <Clock className="h-4 w-4 text-red-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800">{notif.title}</p>
+                      <p className="text-sm font-bold text-foreground">{notif.title}</p>
                       <p className="text-xs text-red-500">Due at {formatTime12(notif.dueTime)}</p>
                     </div>
                   </div>
@@ -381,7 +381,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={handleDismissOverdue}
-                  className="w-full rounded-2xl border-2 border-slate-200 py-4 text-base font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="w-full rounded-2xl border-2 border-border py-4 text-base font-bold text-muted-foreground hover:bg-muted transition-colors"
                 >
                   Acknowledge &amp; Dismiss
                 </motion.button>
@@ -397,8 +397,8 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
         className={cn(
           "relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
           hasActive
-            ? "bg-red-50 text-[var(--hub-red)] animate-pulse"
-            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            ? "bg-red-50 dark:bg-red-950/50 text-[var(--hub-red)] animate-pulse"
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
         )}
       >
         <Bell className="h-4 w-4" />
@@ -416,23 +416,23 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="fixed z-[2005] w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="fixed z-[2005] w-80 rounded-2xl border border-border bg-card shadow-xl"
             style={panelPos ? { top: panelPos.top, right: panelPos.right } : {}}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h3 className="text-sm font-bold text-foreground">Notifications</h3>
               <div className="flex items-center gap-2">
                 {hasActive && (
                   <button
                     onClick={handleDismissAll}
-                    className="text-[10px] font-medium text-slate-400 hover:text-slate-600"
+                    className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
                   >
                     Dismiss all
                   </button>
                 )}
                 <button
                   onClick={() => setShowPanel(false)}
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -442,7 +442,7 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
             <div className="max-h-64 overflow-y-auto p-2">
               {activeNotifications.length === 0 ? (
                 <div className="flex h-20 items-center justify-center">
-                  <p className="text-xs text-slate-400">No active notifications</p>
+                  <p className="text-xs text-muted-foreground">No active notifications</p>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -453,15 +453,15 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
                       animate={{ opacity: 1, x: 0 }}
                       className={cn(
                         "flex items-start gap-2.5 rounded-xl p-3",
-                        notif.type === "overdue" ? "bg-red-50" : "bg-amber-50"
+                        notif.type === "overdue" ? "bg-red-50 dark:bg-red-950/50" : "bg-amber-50 dark:bg-amber-950/50"
                       )}
                     >
                       <div
                         className={cn(
                           "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                           notif.type === "overdue"
-                            ? "bg-red-100 text-red-600"
-                            : "bg-amber-100 text-amber-600"
+                            ? "bg-red-100 dark:bg-red-900 text-red-600"
+                            : "bg-amber-100 dark:bg-amber-900 text-amber-600"
                         )}
                       >
                         {notif.type === "overdue" ? (
@@ -471,19 +471,19 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-800">
+                        <p className="text-xs font-semibold text-foreground">
                           {notif.type === "overdue" ? "Overdue Task" : "Due Soon"}
                         </p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-600">
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                           {notif.title}
                         </p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-muted-foreground">
                           Due at {formatTime12(notif.dueTime)}
                         </p>
                       </div>
                       <button
                         onClick={() => handleDismissNotification(notif.id)}
-                        className="shrink-0 text-slate-300 hover:text-slate-500"
+                        className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>

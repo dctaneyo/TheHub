@@ -336,6 +336,17 @@ export const meetingAnalytics = sqliteTable("meeting_analytics", {
   recordingUrl: text("recording_url"), // If recorded
 });
 
+// ARL-pushed ticker messages shown on location dashboards
+export const tickerMessages = sqliteTable("ticker_messages", {
+  id: text("id").primaryKey(),
+  content: text("content").notNull(),
+  icon: text("icon").notNull().default("📢"),
+  arlId: text("arl_id").notNull(),
+  arlName: text("arl_name").notNull(),
+  expiresAt: text("expires_at"), // null = never expires
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Meeting participants - detailed per-participant analytics
 export const meetingParticipants = sqliteTable("meeting_participants", {
   id: text("id").primaryKey(), // UUID

@@ -75,7 +75,7 @@ export function MiniCalendar({ upcomingTasks = {}, onEarlyComplete }: MiniCalend
     <div className="flex h-full flex-col">
       <div className="mb-3 flex items-center gap-2 px-1">
         <CalendarDays className="h-4.5 w-4.5 text-[var(--hub-blue)]" />
-        <h2 className="text-sm font-bold text-slate-800">Upcoming 7 Days</h2>
+        <h2 className="text-sm font-bold text-foreground">Upcoming 7 Days</h2>
       </div>
 
       <div className="flex-1 space-y-1.5 overflow-y-auto">
@@ -85,17 +85,17 @@ export function MiniCalendar({ upcomingTasks = {}, onEarlyComplete }: MiniCalend
             className={cn(
               "rounded-xl border border-transparent p-2.5 transition-colors",
               day.tasks.length > 0
-                ? "border-slate-200 bg-white shadow-sm"
-                : "bg-slate-50/50"
+                ? "border-border bg-card shadow-sm"
+                : "bg-muted/30"
             )}
           >
             <div className="flex items-center gap-3">
               {/* Date badge */}
-              <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-100">
-                <span className="text-[10px] font-semibold uppercase leading-none text-slate-500">
+              <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-muted">
+                <span className="text-[10px] font-semibold uppercase leading-none text-muted-foreground">
                   {day.dayName}
                 </span>
-                <span className="text-sm font-bold leading-tight text-slate-800">
+                <span className="text-sm font-bold leading-tight text-foreground">
                   {day.dayNum}
                 </span>
               </div>
@@ -103,7 +103,7 @@ export function MiniCalendar({ upcomingTasks = {}, onEarlyComplete }: MiniCalend
               {/* Tasks for this day */}
               <div className="flex-1 min-w-0">
                 {day.tasks.length === 0 ? (
-                  <p className="text-xs text-slate-400">No tasks scheduled</p>
+                  <p className="text-xs text-muted-foreground">No tasks scheduled</p>
                 ) : (
                   <div className="space-y-1">
                     {day.tasks.slice(0, 3).map((task) => (
@@ -128,10 +128,10 @@ export function MiniCalendar({ upcomingTasks = {}, onEarlyComplete }: MiniCalend
                             )}
                           />
                         )}
-                        <span className={cn("truncate text-xs font-medium", task.isCompleted ? "text-slate-400 line-through" : "text-slate-700")}>
+                        <span className={cn("truncate text-xs font-medium", task.isCompleted ? "text-muted-foreground line-through" : "text-foreground")}>
                           {task.title}
                         </span>
-                        <span className="shrink-0 text-[10px] text-slate-400">
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
                           {formatTime12(task.dueTime)}
                         </span>
                       </div>

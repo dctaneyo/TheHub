@@ -31,7 +31,10 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
-import { Info } from "lucide-react";
+import { Info, BellOff, Bell, Search, XCircle } from "lucide-react";
+import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
+import { MentionInput, MessageContent } from "@/components/mention-input";
+import type { Mentionable } from "@/components/mention-input";
 
 interface Conversation {
   id: string;
@@ -262,14 +265,20 @@ export function Messaging() {
   const [showNewDirect, setShowNewDirect] = useState(false);
   const [directSearch, setDirectSearch] = useState("");
   const [startingDirect, setStartingDirect] = useState(false);
+  const [mentionables, setMentionables] = useState<Mentionable[]>([]);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [mutedConvos, setMutedConvos] = useState<Set<string>>(new Set());
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const reactions = ["❤️", "👍", "😂", "😊"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevUnreadRef = useRef<number>(0);
   const initializedRef = useRef(false);
   const knownMessageIdsRef = useRef<Set<string>>(new Set());
+  const prevConvsRef = useRef<Conversation[]>([]);
 
   const playMessageChime = useCallback(() => {
     try {
@@ -292,6 +301,35 @@ export function Messaging() {
     } catch {}
   }, []);
 
+  const toggleMute = useCallback(async (conversationId: string) => {
+    try {
+      const res = await fetch("/api/messages/mute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+      });
+      if (res.ok) {
+        const { isMuted } = await res.json();
+        setMutedConvos((prev) => {
+          const next = new Set(prev);
+          if (isMuted) next.add(conversationId);
+          else next.delete(conversationId);
+          return next;
+        });
+      }
+    } catch {}
+  }, []);
+
+  const fetchMentionables = useCallback(async () => {
+    try {
+      const [locRes, arlRes] = await Promise.all([fetch("/api/locations"), fetch("/api/arls")]);
+      const items: Mentionable[] = [];
+      if (locRes.ok) { const d = await locRes.json(); for (const l of d.locations || []) items.push({ id: l.id, name: l.name, type: "location", storeNumber: l.storeNumber }); }
+      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.arls || []) items.push({ id: a.id, name: a.name, type: "arl" }); }
+      setMentionables(items);
+    } catch {}
+  }, []);
+
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/messages");
@@ -299,10 +337,16 @@ export function Messaging() {
         const data = await res.json();
         const convs: Conversation[] = data.conversations;
         const newTotal = convs.reduce((s, c) => s + c.unreadCount, 0);
-        // Only chime for messages that arrive after the initial load
+        // Only chime for messages that arrive after the initial load, and not for muted convos
         if (initializedRef.current && newTotal > prevUnreadRef.current) {
-          playMessageChime();
+          const prevConvs = prevConvsRef.current;
+          const hasUnmutedIncrease = convs.some((c) => {
+            const prev = prevConvs.find((p) => p.id === c.id);
+            return !mutedConvos.has(c.id) && c.unreadCount > (prev?.unreadCount ?? 0);
+          });
+          if (hasUnmutedIncrease) playMessageChime();
         }
+        prevConvsRef.current = convs;
         prevUnreadRef.current = newTotal;
         initializedRef.current = true;
         setConversations(convs);
@@ -312,7 +356,7 @@ export function Messaging() {
     } finally {
       setLoading(false);
     }
-  }, [playMessageChime]);
+  }, [playMessageChime, mutedConvos]);
 
   const fetchMemberInfo = useCallback(async () => {
     try {
@@ -386,12 +430,9 @@ export function Messaging() {
   useEffect(() => {
     fetchConversations();
     fetchParticipants();
-  }, [fetchConversations, fetchParticipants]);
-
-  useEffect(() => {
-    fetchConversations();
+    fetchMentionables();
     fetchMemberInfo();
-  }, [fetchConversations, fetchMemberInfo]);
+  }, [fetchConversations, fetchParticipants, fetchMentionables, fetchMemberInfo]);
 
   // Socket listeners
   useEffect(() => {
@@ -715,23 +756,23 @@ export function Messaging() {
   // Conversation list
   if (!activeConvo) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Messages</h3>
-            <p className="text-xs text-slate-400">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
+            <h3 className="text-base font-bold text-foreground">Messages</h3>
+            <p className="text-xs text-muted-foreground">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200"
+              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               Direct
             </button>
             <button
               onClick={() => { setShowNewGroup(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200"
+              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               Group
@@ -765,28 +806,76 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onClick={() => setReceiptPopover(null)}>
-      <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
-        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm" onClick={() => setReceiptPopover(null)}>
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", convIconBg(activeConvo.type))}>
           {convIcon(activeConvo.type)}
         </div>
         <div className="flex-1">
-          <h4 className="text-sm font-bold text-slate-800">{activeConvo.name}</h4>
-          <p className="text-[10px] text-slate-400">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
+          <h4 className="text-sm font-bold text-foreground">{activeConvo.name}</h4>
+          <p className="text-[10px] text-muted-foreground">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
         </div>
         {isGroup && (
           <button
             onClick={() => setShowGroupInfo(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
             title="Group Info"
           >
             <Info className="h-4 w-4" />
           </button>
         )}
+        <button
+          onClick={() => { setShowSearch((v) => !v); setSearchQuery(""); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+            showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"
+          )}
+          title="Search messages"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => toggleMute(activeConvo.id)}
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+            mutedConvos.has(activeConvo.id)
+              ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+              : "text-muted-foreground hover:bg-muted"
+          )}
+          title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
+        >
+          {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+        </button>
       </div>
+
+      {/* Search bar */}
+      {showSearch && (
+        <div className="border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messages..."
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              {messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase())).length} result(s)
+            </p>
+          )}
+        </div>
+      )}
 
       <ScrollArea className="flex-1 min-h-0 p-4">
         {(() => {
@@ -795,13 +884,16 @@ export function Messaging() {
           const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
           const yesterdayStart = todayStart - 86400000;
           
-          const visibleMessages = showAllMessages
+          const searchFiltered = searchQuery
+            ? messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+            : null;
+          const visibleMessages = searchFiltered ?? (showAllMessages
             ? messages
             : messages.filter((m) => {
                 const msgTime = new Date(m.createdAt).getTime();
                 return msgTime >= yesterdayStart;
-              });
-          const hasPast = messages.some((m) => {
+              }));
+          const hasPast = !searchFiltered && messages.some((m) => {
             const msgTime = new Date(m.createdAt).getTime();
             return msgTime < yesterdayStart;
           });
@@ -811,7 +903,7 @@ export function Messaging() {
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors"
+                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
               >
                 View Past Messages
               </button>
@@ -834,12 +926,17 @@ export function Messaging() {
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (
-                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
+                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
                 )}
                 <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
                 )}>
-                  <p className="text-sm">{msg.content}</p>
+                  {msg.messageType === "voice" ? (() => {
+                    try {
+                      const meta = JSON.parse((msg as any).metadata || "{}");
+                      return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
+                    } catch { return <MessageContent content={msg.content} />; }
+                  })() : <MessageContent content={msg.content} />}
                   
                   {/* Reactions display - inline */}
                   {msg.reactions && msg.reactions.length > 0 && (() => {
@@ -852,10 +949,10 @@ export function Messaging() {
                         {Object.entries(grouped).map(([emoji, count]) => (
                           <div key={emoji} className={cn(
                             "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
-                            isMe ? "bg-white/20" : "bg-white border border-slate-200"
+                            isMe ? "bg-white/20" : "bg-card border border-border"
                           )}>
                             <Emoji emoji={emoji} size={14} />
-                            {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-slate-600")}>{count}</span>}
+                            {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-muted-foreground")}>{count}</span>}
                           </div>
                         ))}
                       </div>
@@ -863,7 +960,7 @@ export function Messaging() {
                   })()}
                 
                   <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
+                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-muted-foreground")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
                     {isMe && (
@@ -888,7 +985,7 @@ export function Messaging() {
                         {/* Read receipt popover for group/global */}
                         {isGroup && showPopover && receiptDetail && (
                           <div
-                            className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-slate-200 bg-white p-3 shadow-xl text-left"
+                            className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-border bg-card p-3 shadow-xl text-left"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {receiptDetail.readMembers.length > 0 && (
@@ -899,7 +996,7 @@ export function Messaging() {
                                   return (
                                     <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
                                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                      <span className="text-xs text-slate-700">{info?.name ?? m.memberId}</span>
+                                      <span className="text-xs text-foreground">{info?.name ?? m.memberId}</span>
                                     </div>
                                   );
                                 })}
@@ -913,14 +1010,14 @@ export function Messaging() {
                                   return (
                                     <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
                                       <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                      <span className="text-xs text-slate-400">{info?.name ?? m.memberId}</span>
+                                      <span className="text-xs text-muted-foreground">{info?.name ?? m.memberId}</span>
                                     </div>
                                   );
                                 })}
                               </div>
                             )}
                             {receiptDetail.readMembers.length === 0 && receiptDetail.unreadMembers.length === 0 && (
-                              <p className="text-xs text-slate-400">No other members</p>
+                              <p className="text-xs text-muted-foreground">No other members</p>
                             )}
                           </div>
                         )}
@@ -944,7 +1041,7 @@ export function Messaging() {
                     initial={{ opacity: 0, scale: 0.8, y: 5 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                    className="mt-1 flex gap-1.5 rounded-full bg-white shadow-lg border border-slate-200 px-2.5 py-1.5"
+                    className="mt-1 flex gap-1.5 rounded-full bg-card shadow-lg border border-border px-2.5 py-1.5"
                   >
                     {reactions.map((emoji) => (
                       <button
@@ -985,7 +1082,7 @@ export function Messaging() {
         })()}
       </ScrollArea>
 
-      <div className="border-t border-slate-200">
+      <div className="border-t border-border">
         {/* Emoji Quick Replies */}
         <div className="px-3 pt-3">
           <EmojiQuickReplies onSelect={(text) => {
@@ -994,13 +1091,25 @@ export function Messaging() {
         </div>
 
         <div className="p-3">
-          <div className="flex gap-2 relative">
-            <Input
+          <div className="flex items-center gap-2 relative">
+            <MentionInput
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={setNewMessage}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
               placeholder="Type a message..."
-              className="rounded-xl flex-1"
+              mentionables={mentionables}
+            />
+            <VoiceRecorder
+              onSend={async (audioBlob, durationMs) => {
+                const formData = new FormData();
+                formData.append("audio", audioBlob, "voice.webm");
+                formData.append("conversationId", activeConvo.id);
+                formData.append("duration", String(durationMs));
+                try {
+                  await fetch("/api/messages/voice", { method: "POST", body: formData });
+                  fetchMessages(activeConvo.id);
+                } catch {}
+              }}
             />
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"

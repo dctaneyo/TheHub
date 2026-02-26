@@ -188,6 +188,19 @@ function runMigrations() {
     console.log("⚠️  Role assignment migration skipped (may already be complete)");
   }
 
+  // Ticker messages pushed by ARLs to location dashboards
+  try {
+    s.exec(`CREATE TABLE IF NOT EXISTS ticker_messages (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '📢',
+      arl_id TEXT NOT NULL,
+      arl_name TEXT NOT NULL,
+      expires_at TEXT,
+      created_at TEXT NOT NULL
+    )`);
+  } catch {}
+
   console.log("✅ All migrations complete");
 }
 

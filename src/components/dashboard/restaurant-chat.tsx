@@ -36,7 +36,10 @@ import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
-import { Info } from "lucide-react";
+import { Info, BellOff, Bell, XCircle } from "lucide-react";
+import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
+import { MentionInput, MessageContent } from "@/components/mention-input";
+import type { Mentionable } from "@/components/mention-input";
 
 interface Message {
   id: string;
@@ -101,6 +104,28 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [mutedConvos, setMutedConvos] = useState<Set<string>>(new Set());
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const toggleMute = useCallback(async (conversationId: string) => {
+    try {
+      const res = await fetch("/api/messages/mute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+      });
+      if (res.ok) {
+        const { isMuted } = await res.json();
+        setMutedConvos((prev) => {
+          const next = new Set(prev);
+          if (isMuted) next.add(conversationId);
+          else next.delete(conversationId);
+          return next;
+        });
+      }
+    } catch {}
+  }, []);
 
   const [newChatMode, setNewChatMode] = useState<"direct" | "group">("direct");
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -415,15 +440,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           exit={{ x: "100%" }}
           transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
           style={{ width: isFullscreen ? "100%" : 360, left: isFullscreen ? 0 : "auto" }}
-          className="fixed right-0 top-0 z-[200] flex h-dvh flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl"
+          className="fixed right-0 top-0 z-[200] flex h-dvh flex-col overflow-hidden border-l border-border bg-card shadow-xl"
         >
           {/* Header */}
-          <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">
+          <div className="flex h-14 items-center justify-between border-b border-border px-4">
             <div className="flex items-center gap-2">
               {(activeConvo || showNewChat) ? (
                 <button
                   onClick={() => { setActiveConvo(null); setShowNewChat(false); setParticipantSearch(""); }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
@@ -433,10 +458,10 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                 </div>
               )}
               <div>
-                <h3 className="text-sm font-bold text-slate-800">
+                <h3 className="text-sm font-bold text-foreground">
                   {activeConvo ? activeConvo.name : showNewChat ? "New Chat" : "Messages"}
                 </h3>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-muted-foreground">
                   {activeConvo ? activeConvo.subtitle : showNewChat ? "Select someone to message" : `${conversations.length} conversations`}
                 </p>
               </div>
@@ -445,7 +470,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               {!activeConvo && !showNewChat && (
                 <button
                   onClick={() => { setShowNewChat(true); fetchParticipants(); }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                   title="New chat"
                 >
                   <Plus className="h-4 w-4" />
@@ -454,20 +479,46 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               {activeConvo && (activeConvo.type === "group" || activeConvo.type === "global") && (
                 <button
                   onClick={() => setShowGroupInfo(true)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                   title="Group info"
                 >
                   <Info className="h-4 w-4" />
                 </button>
               )}
+              {activeConvo && (
+                <button
+                  onClick={() => { setShowSearch((v) => !v); setSearchQuery(""); }}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                    showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"
+                  )}
+                  title="Search messages"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
+              {activeConvo && (
+                <button
+                  onClick={() => toggleMute(activeConvo.id)}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                    mutedConvos.has(activeConvo.id)
+                      ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                  title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
+                >
+                  {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                </button>
+              )}
               <button
                 onClick={() => setIsFullscreen((f) => !f)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                 title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
-              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -477,35 +528,35 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           {!activeConvo && showNewChat && (
             <div className="flex flex-1 flex-col overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
               {/* Direct / Group tabs */}
-              <div className="flex gap-1 border-b border-slate-100 px-3 py-2">
+              <div className="flex gap-1 border-b border-border px-3 py-2">
                 <button
                   onClick={() => setNewChatMode("direct")}
                   className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
-                    newChatMode === "direct" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-100"
+                    newChatMode === "direct" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
                   )}
                 >Direct</button>
                 <button
                   onClick={() => setNewChatMode("group")}
                   className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
-                    newChatMode === "group" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-100"
+                    newChatMode === "group" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
                   )}
                 >Group</button>
               </div>
 
               {/* Group name input */}
               {newChatMode === "group" && (
-                <div className="border-b border-slate-100 px-3 py-2">
+                <div className="border-b border-border px-3 py-2">
                   <input
                     value={groupName}
                     onChange={(e) => setGroupName(e.target.value)}
                     placeholder="Group name..."
-                    className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 outline-none"
+                    className="w-full rounded-xl bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
                   />
                   {groupMembers.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {groupMembers.map((m) => (
                         <button key={m.id} onClick={() => toggleGroupMember(m)}
-                          className="flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-red-100 hover:text-red-600"
+                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950"
                         >
                           {m.name} <X className="h-2.5 w-2.5" />
                         </button>
@@ -516,14 +567,14 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               )}
 
               {/* Search */}
-              <div className="border-b border-slate-100 px-3 py-2">
-                <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
-                  <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <div className="border-b border-border px-3 py-2">
+                <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <input
                     value={participantSearch}
                     onChange={(e) => setParticipantSearch(e.target.value)}
                     placeholder="Search locations & ARLs..."
-                    className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                     tabIndex={-1}
                     onMouseDown={(e) => { e.currentTarget.tabIndex = 0; e.currentTarget.focus(); }}
                   />
@@ -555,18 +606,18 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                           disabled={startingChat && newChatMode === "direct"}
                           className={cn(
                             "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors disabled:opacity-50",
-                            isSelected && newChatMode === "group" ? "bg-red-50" : "hover:bg-slate-50"
+                            isSelected && newChatMode === "group" ? "bg-red-50 dark:bg-red-950/50" : "hover:bg-muted/50"
                           )}
                         >
                           <div className={cn(
                             "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                            p.type === "location" ? "bg-slate-100 text-slate-500" : "bg-purple-100 text-purple-600"
+                            p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
                           )}>
                             {p.type === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-800">{p.name}</p>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
                               {p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}
                             </p>
                           </div>
@@ -582,7 +633,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
 
               {/* Create group button */}
               {newChatMode === "group" && (
-                <div className="border-t border-slate-100 p-3">
+                <div className="border-t border-border p-3">
                   <Button
                     onClick={createGroupChat}
                     disabled={!groupName.trim() || groupMembers.length === 0 || startingChat}
@@ -628,7 +679,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                       onClick={() => setActiveConvo(convo)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
-                        convo.unreadCount > 0 ? "bg-red-50" : "hover:bg-slate-50"
+                        convo.unreadCount > 0 ? "bg-red-50 dark:bg-red-950/40" : "hover:bg-muted/50"
                       )}
                     >
                       <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
@@ -636,7 +687,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
+                          <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
                           {convo.unreadCount > 0 && (
                             <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
                               {convo.unreadCount}
@@ -644,7 +695,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                           )}
                         </div>
                         {convo.lastMessage && (
-                          <p className="truncate text-[11px] text-slate-400">
+                          <p className="truncate text-[11px] text-muted-foreground">
                             {convo.lastMessage.senderName}: {convo.lastMessage.content}
                           </p>
                         )}
@@ -685,6 +736,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
             knownMessageIds={knownMessageIdsRef.current}
             sendError={sendError}
             currentUserId={currentUserId}
+            conversationId={activeConvo.id}
+            onVoiceSent={() => fetchMessages(activeConvo.id)}
+            mentionables={participants}
+            isMuted={mutedConvos.has(activeConvo.id)}
+            onMute={() => toggleMute(activeConvo.id)}
+            showSearch={showSearch}
+            searchQuery={searchQuery}
+            onSearchToggle={() => { setShowSearch((v) => !v); setSearchQuery(""); }}
+            onSearchChange={(q) => setSearchQuery(q)}
             onReaction={async (messageId: string, emoji: string) => {
               try {
                 const res = await fetch("/api/messages/reaction", {
@@ -741,6 +801,15 @@ interface ActiveConvoViewProps {
   onReaction: (messageId: string, emoji: string) => Promise<void>;
   currentUserId?: string;
   onOpenGroupInfo: () => void;
+  conversationId: string;
+  onVoiceSent?: () => void;
+  mentionables: Mentionable[];
+  isMuted: boolean;
+  onMute: () => void;
+  showSearch?: boolean;
+  searchQuery?: string;
+  onSearchToggle?: () => void;
+  onSearchChange?: (q: string) => void;
 }
 
 function ActiveConvoView({
@@ -748,8 +817,20 @@ function ActiveConvoView({
   messagesEndRef, showKeyboard, setShowKeyboard,
   newMessage, setNewMessage, sending, handleSend, convoType,
   typingUsers, onTyping, onStopTyping, knownMessageIds, sendError, onReaction,
-  currentUserId, onOpenGroupInfo,
+  currentUserId, onOpenGroupInfo, conversationId, onVoiceSent, mentionables, isMuted, onMute,
+  showSearch, searchQuery = "", onSearchToggle, onSearchChange,
 }: ActiveConvoViewProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const handleVoiceSend = async (audioBlob: Blob, durationMs: number) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "voice.webm");
+    formData.append("conversationId", conversationId);
+    formData.append("duration", String(durationMs));
+    try {
+      await fetch("/api/messages/voice", { method: "POST", body: formData });
+      onVoiceSent?.();
+    } catch {}
+  };
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const handleInputChange = (value: string) => {
     setNewMessage(value);
@@ -758,6 +839,7 @@ function ActiveConvoView({
     typingTimerRef.current = setTimeout(onStopTyping, 2000);
   };
   const typingNames = Array.from(typingUsers.values());
+  const searchFiltered = searchQuery ? messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : null;
   
   // Message reactions
   const [showReactions, setShowReactions] = useState<string | null>(null);
@@ -773,26 +855,53 @@ function ActiveConvoView({
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86400000;
   
-  const visibleMessages = showAllMessages
+  const visibleMessages = searchFiltered ?? (showAllMessages
     ? messages
     : messages.filter((m) => {
         const msgTime = new Date(m.createdAt).getTime();
         return msgTime >= yesterdayStart;
-      });
-  const hasPast = messages.some((m) => {
+      }));
+  const hasPast = !searchFiltered && messages.some((m) => {
     const msgTime = new Date(m.createdAt).getTime();
     return msgTime < yesterdayStart;
   });
 
   return (
     <>
+      {/* Search bar */}
+      {showSearch && (
+        <div className="border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="Search messages..."
+              autoFocus
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => onSearchChange?.("")}
+                className="text-muted-foreground hover:text-foreground">
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              {searchFiltered?.length ?? 0} result(s)
+            </p>
+          )}
+        </div>
+      )}
       <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-3">
           {!showAllMessages && hasPast && (
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors"
+                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
               >
                 View Past Messages
               </button>
@@ -821,13 +930,18 @@ function ActiveConvoView({
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (
-                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-slate-400">{msg.senderName}</span>
+                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
                 )}
                 <div className={cn(
                   "rounded-2xl px-3 py-2 shadow-sm max-w-[75%]",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
                 )}>
-                  <p className="text-sm">{msg.content}</p>
+                  {msg.messageType === "voice" ? (() => {
+                    try {
+                      const meta = JSON.parse((msg as any).metadata || "{}");
+                      return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
+                    } catch { return <MessageContent content={msg.content} />; }
+                  })() : <MessageContent content={msg.content} />}
                   
                   {/* Reactions display - inline */}
                   {msg.reactions && msg.reactions.length > 0 && (() => {
@@ -923,7 +1037,7 @@ function ActiveConvoView({
         />
       )}
 
-      <div className="border-t border-slate-200">
+      <div className="border-t border-border">
         {/* Emoji Quick Replies */}
         {!showKeyboard && (
           <div className="px-3 pt-3">
@@ -933,26 +1047,27 @@ function ActiveConvoView({
           </div>
         )}
 
-        <div className="flex gap-2 p-3 relative">
+        <div className="flex items-center gap-2 p-3 relative">
           <button
             onClick={() => setShowKeyboard((k) => !k)}
             className={cn(
               "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
               showKeyboard
                 ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
             )}
             title="Onscreen keyboard"
           >
             <Keyboard className="h-4 w-4" />
           </button>
-          <Input
+          <MentionInput
             value={newMessage}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={(val) => handleInputChange(val)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { onStopTyping(); handleSend(); } }}
             placeholder={convoType === "global" ? "Send to everyone..." : "Type a message..."}
-            className="rounded-xl flex-1"
+            mentionables={mentionables}
           />
+          <VoiceRecorder onSend={handleVoiceSend} />
           <Shake trigger={sendError} intensity="medium">
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"

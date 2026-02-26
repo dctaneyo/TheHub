@@ -42,10 +42,10 @@ const typeIcons: Record<string, typeof Clock> = {
 };
 
 const priorityColors: Record<string, { bg: string; border: string; text: string }> = {
-  urgent: { bg: "bg-red-50", border: "border-red-300", text: "text-red-700" },
-  high: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700" },
-  normal: { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-700" },
-  low: { bg: "bg-slate-50", border: "border-slate-300", text: "text-slate-600" },
+  urgent: { bg: "bg-red-50 dark:bg-red-950/50", border: "border-red-300 dark:border-red-800", text: "text-red-700 dark:text-red-400" },
+  high: { bg: "bg-orange-50 dark:bg-orange-950/50", border: "border-orange-300 dark:border-orange-800", text: "text-orange-700 dark:text-orange-400" },
+  normal: { bg: "bg-blue-50 dark:bg-blue-950/50", border: "border-blue-300 dark:border-blue-800", text: "text-blue-700 dark:text-blue-400" },
+  low: { bg: "bg-muted", border: "border-border", text: "text-muted-foreground" },
 };
 
 // Animated color transitions for due-soon tasks
@@ -199,7 +199,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   return (
     <div ref={outerRef} className="flex h-full flex-col relative">
       <div className="mb-4 px-1">
-        <h2 className="text-lg font-bold text-slate-800">Today&apos;s Tasks</h2>
+        <h2 className="text-lg font-bold text-foreground">Today&apos;s Tasks</h2>
       </div>
 
       {/* Current time marker — lives outside scroll container so it's never clipped by header */}
@@ -222,7 +222,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin overflow-x-hidden">
         <div className="relative pl-8">
           {/* Timeline line */}
-          <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-200" />
+          <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-border" />
 
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
@@ -280,7 +280,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                 ) : task.isOverdue ? (
                                   <AlertTriangle className="h-[18px] w-[18px] text-[var(--hub-red)]" />
                                 ) : (
-                                  <Circle className={cn("h-[18px] w-[18px]", isPast ? "text-slate-300" : "text-slate-400")} />
+                                  <Circle className={cn("h-[18px] w-[18px]", isPast ? "text-muted-foreground/40" : "text-muted-foreground")} />
                                 )}
                               </div>
                             )}
@@ -290,11 +290,11 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                               className={cn(
                                 "w-full rounded-2xl border-2 p-4 text-left transition-all",
                                 task.isCompleted || isCompleting
-                                  ? "border-emerald-200 bg-emerald-50/50 opacity-60"
+                                  ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30 opacity-60"
                                   : task.isOverdue
-                                  ? "border-red-300 bg-red-50 shadow-sm shadow-red-100"
+                                  ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/50 shadow-sm shadow-red-100"
                                   : task.isDueSoon
-                                  ? "border-amber-300 shadow-sm"
+                                  ? "border-amber-300 dark:border-amber-800 shadow-sm"
                                   : cn(colors.border, colors.bg, "shadow-sm")
                               )}
                               animate={task.isDueSoon && !task.isCompleted ? {
@@ -314,7 +314,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={cn("text-sm font-semibold", task.isCompleted ? "line-through text-slate-400" : "text-slate-800")}>
+                                    <span className={cn("text-sm font-semibold", task.isCompleted ? "line-through text-muted-foreground" : "text-foreground")}>
                                       {task.title}
                                     </span>
                                     {task.isOverdue && !task.isCompleted && (
@@ -325,25 +325,25 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                     )}
                                   </div>
                                   {task.description && (
-                                    <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{task.description}</p>
+                                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                                   )}
                                   <div className="mt-1.5 flex items-center gap-3">
-                                    <span className="text-xs font-medium text-slate-500">{formatTime(task.dueTime)}</span>
+                                    <span className="text-xs font-medium text-muted-foreground">{formatTime(task.dueTime)}</span>
                                     <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
                                       <Sparkles className="h-3 w-3" />{task.points} pts
                                     </span>
                                     <span className={cn(
                                       "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                                      task.type === "cleaning" ? "bg-purple-100 text-purple-600"
-                                        : task.type === "reminder" ? "bg-sky-100 text-sky-600"
-                                        : "bg-slate-100 text-slate-600"
+                                      task.type === "cleaning" ? "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
+                                        : task.type === "reminder" ? "bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400"
+                                        : "bg-muted text-muted-foreground"
                                     )}>{task.type}</span>
                                   </div>
                                 </div>
                                 {!task.isCompleted && !isCompleting && (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleComplete(task.id); }}
-                                    className="mt-1 shrink-0 rounded-xl bg-white/80 hover:bg-emerald-50 active:scale-95 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-600 shadow-sm transition-all cursor-pointer"
+                                    className="mt-1 shrink-0 rounded-xl bg-card/80 hover:bg-emerald-50 dark:hover:bg-emerald-950 active:scale-95 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-emerald-600 shadow-sm transition-all cursor-pointer"
                                   >
                                     Tap
                                   </button>
@@ -357,7 +357,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   <button
                                     onClick={(e) => handleUncomplete(task.id, e)}
                                     disabled={uncomletingId === task.id}
-                                    className="mt-1 shrink-0 flex items-center gap-1 rounded-xl bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-50"
+                                    className="mt-1 shrink-0 flex items-center gap-1 rounded-xl bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground shadow-sm hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 transition-colors disabled:opacity-50"
                                   >
                                     <Undo2 className="h-3 w-3" />Undo
                                   </button>

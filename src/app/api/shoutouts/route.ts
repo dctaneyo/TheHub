@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
+import { sendPushToAllARLs } from "@/lib/push";
 
 // Ensure shoutouts table exists
 function ensureShoutoutsTable() {
@@ -112,6 +113,13 @@ export async function POST(request: Request) {
 
     // Broadcast to all users
     broadcastToAll("shoutout:new", shoutout);
+
+    // Push notification to all ARLs about the shoutout
+    await sendPushToAllARLs({
+      title: `Shoutout to ${toLocationName}! 🎉`,
+      body: `${session.name}: ${message.slice(0, 100)}`,
+      url: `/arl`,
+    });
 
     return NextResponse.json({ shoutout });
   } catch (error) {

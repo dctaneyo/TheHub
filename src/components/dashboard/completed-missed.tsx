@@ -93,16 +93,16 @@ export function CompletedMissed({
       <div className="flex flex-[3] flex-col overflow-hidden">
         <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
           <CheckCircle2 className="h-4 w-4 text-[var(--hub-green)]" />
-          <h3 className="text-sm font-bold text-slate-800">
+          <h3 className="text-sm font-bold text-foreground">
             Completed Today
-            <span className="ml-1.5 text-xs font-normal text-slate-400">
+            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               ({completedToday.length})
             </span>
           </h3>
         </div>
         <div className="flex-1 space-y-1 overflow-y-auto">
           {completedToday.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-400">
+            <p className="rounded-xl bg-muted p-3 text-center text-xs text-muted-foreground">
               No tasks completed yet
             </p>
           ) : (
@@ -111,13 +111,13 @@ export function CompletedMissed({
                 key={task.id}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 rounded-xl bg-emerald-50/50 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 px-3 py-2"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span className="flex-1 truncate text-xs font-medium text-slate-600 line-through">
+                <span className="flex-1 truncate text-xs font-medium text-muted-foreground line-through">
                   {task.title}
                 </span>
-                <span className="shrink-0 text-[10px] text-slate-400">
+                <span className="shrink-0 text-[10px] text-muted-foreground">
                   {formatTime12(task.dueTime)}
                 </span>
               </motion.div>
@@ -130,26 +130,26 @@ export function CompletedMissed({
       <div className="flex flex-[2] flex-col overflow-hidden">
         <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
           <XCircle className="h-4 w-4 text-[var(--hub-red)]" />
-          <h3 className="text-sm font-bold text-slate-800">
+          <h3 className="text-sm font-bold text-foreground">
             Missed Yesterday
-            <span className="ml-1.5 text-xs font-normal text-slate-400">
+            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               ({missedYesterday.length})
             </span>
           </h3>
         </div>
         <div className="flex-1 space-y-1 overflow-y-auto">
           {missedYesterday.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-400">
+            <p className="rounded-xl bg-muted p-3 text-center text-xs text-muted-foreground">
               No missed tasks - great job!
             </p>
           ) : (
             missedYesterday.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-2 rounded-xl bg-red-50/50 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl bg-red-50/50 dark:bg-red-950/30 px-3 py-2"
               >
                 <XCircle className="h-3.5 w-3.5 shrink-0 text-red-400" />
-                <span className="flex-1 truncate text-xs font-medium text-slate-600">
+                <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
                   {task.title}
                 </span>
                 <span className="shrink-0 text-[10px] text-red-400">

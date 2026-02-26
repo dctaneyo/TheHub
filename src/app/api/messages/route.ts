@@ -210,32 +210,49 @@ export async function POST(req: NextRequest) {
       .set({ lastMessageAt: now, lastMessagePreview: content.slice(0, 80) })
       .where(eq(schema.conversations.id, conversationId)).run();
 
-    // Send push notification to ARLs if this is from a location
-    if (session.userType === "location") {
-      if (conv) {
-        // For direct messages, notify the other participant
-        if (conv.type === "direct") {
-          const arlId = conv.participantAId === session.id ? conv.participantBId : conv.participantAId;
-          if (arlId) {
-            await sendPushToARL(arlId, {
-              title: `New message from ${session.name}`,
-              body: content,
-              url: `/arl?tab=messaging&conversation=${conversationId}`,
-              conversationId,
-            });
-          }
-        } else if (conv.type === "global") {
-          const arls = db.select().from(schema.arls)
-            .where(eq(schema.arls.isActive, true))
-            .all();
-          for (const arl of arls) {
+    // Send push notifications to relevant participants
+    if (conv) {
+      const members = db.select().from(schema.conversationMembers)
+        .where(eq(schema.conversationMembers.conversationId, conversationId)).all();
+      // Notify ARL members who are not the sender
+      const arlMemberIds = members
+        .filter((m) => m.memberType === "arl" && m.memberId !== session.id)
+        .map((m) => m.memberId);
+
+      if (conv.type === "direct") {
+        // Direct: notify the other participant if ARL
+        const otherId = conv.participantAId === session.id ? conv.participantBId : conv.participantAId;
+        const otherType = conv.participantAId === session.id ? conv.participantBType : conv.participantAType;
+        if (otherId && otherType === "arl") {
+          await sendPushToARL(otherId, {
+            title: `New message from ${session.name}`,
+            body: content.slice(0, 120),
+            url: `/arl?tab=messaging&conversation=${conversationId}`,
+            conversationId,
+          });
+        }
+      } else if (conv.type === "global") {
+        // Global: notify all active ARLs except sender
+        const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+        for (const arl of allArls) {
+          if (arl.id !== session.id) {
             await sendPushToARL(arl.id, {
               title: `Global Chat: ${session.name}`,
-              body: content,
+              body: content.slice(0, 120),
               url: `/arl?tab=messaging&conversation=${conversationId}`,
               conversationId,
             });
           }
+        }
+      } else if (conv.type === "group") {
+        // Group: notify all ARL members except sender
+        for (const arlId of arlMemberIds) {
+          await sendPushToARL(arlId, {
+            title: `${conv.name || "Group"}: ${session.name}`,
+            body: content.slice(0, 120),
+            url: `/arl?tab=messaging&conversation=${conversationId}`,
+            conversationId,
+          });
         }
       }
     }

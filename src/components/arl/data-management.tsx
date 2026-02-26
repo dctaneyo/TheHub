@@ -9,6 +9,17 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+interface AuditLogEntry {
+  id: string;
+  user_id: string;
+  user_type: string;
+  user_name: string;
+  action: string;
+  details: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
 interface SystemReport {
   database: { size: number; sizeFormatted: string; tables: { name: string; records: number }[] };
   counts: Record<string, number>;
@@ -44,6 +55,12 @@ export function DataManagement() {
   const [integrity, setIntegrity] = useState<IntegrityResult | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateResult | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
+
+  // Audit log state
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditFilter, setAuditFilter] = useState("");
 
   const clearAlerts = () => { setSuccess(null); setError(null); };
 
@@ -225,18 +242,19 @@ export function DataManagement() {
   });
 
   const viewAuditLog = async () => {
-    setProcessing(true);
+    setLoadingAudit(true);
+    setShowAuditLog(true);
     clearAlerts();
     try {
-      const res = await fetch("/api/data-management/audit-log?limit=100");
+      const res = await fetch("/api/data-management/audit-log?limit=200");
       if (!res.ok) throw new Error((await res.json()).error);
       const d = await res.json();
-      setSuccess(`Audit log: ${d.logs.length} recent actions. Check console for details.`);
-      console.table(d.logs);
+      setAuditLogs(d.logs || []);
     } catch (err: any) {
       setError(err?.message || "Failed to fetch audit log");
+      setShowAuditLog(false);
     } finally {
-      setProcessing(false);
+      setLoadingAudit(false);
     }
   };
 
@@ -247,13 +265,7 @@ export function DataManagement() {
       const res = await fetch("/api/data-management/usage-analytics");
       if (!res.ok) throw new Error((await res.json()).error);
       const d = await res.json();
-      setSuccess(`Usage analytics loaded. Check console for detailed charts and stats.`);
-      console.log("=== USAGE ANALYTICS ===");
-      console.log("Top Locations:", d.topLocations);
-      console.log("Peak Hours:", d.peakHours);
-      console.log("Completion Trends:", d.completionTrends);
-      console.log("Top Tasks:", d.topTasks);
-      console.log("Session Stats:", d.sessionStats);
+      setSuccess(`Analytics: ${d.topLocations?.length || 0} locations tracked. ${d.completionTrends?.length || 0} days of trend data.`);
     } catch (err: any) {
       setError(err?.message || "Failed to fetch analytics");
     } finally {
@@ -352,10 +364,10 @@ export function DataManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Data Management</h2>
-          <p className="mt-1 text-sm text-slate-500">Monitor, maintain, and manage all system data.</p>
+          <h2 className="text-2xl font-bold text-foreground">Data Management</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
         </div>
-        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50">
+        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
           <RefreshCw className={cn("h-4 w-4", loadingReport && "animate-spin")} /> Refresh
         </button>
       </div>
@@ -378,13 +390,94 @@ export function DataManagement() {
         )}
       </AnimatePresence>
 
+      {/* ── Audit Log Viewer ── */}
+      <AnimatePresence>
+        {showAuditLog && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    <ScrollText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">Audit Log</h3>
+                    <p className="text-xs text-muted-foreground">{auditLogs.length} recent actions</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={auditFilter}
+                    onChange={(e) => setAuditFilter(e.target.value)}
+                    placeholder="Filter by action or user..."
+                    className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring w-56"
+                  />
+                  <button
+                    onClick={() => { setShowAuditLog(false); setAuditLogs([]); setAuditFilter(""); }}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {loadingAudit ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading audit log...</span>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">No audit log entries found.</p>
+              ) : (
+                <div className="space-y-1 max-h-96 overflow-y-auto">
+                  {auditLogs
+                    .filter((log) => {
+                      if (!auditFilter) return true;
+                      const q = auditFilter.toLowerCase();
+                      return log.action.toLowerCase().includes(q) ||
+                        log.user_name.toLowerCase().includes(q) ||
+                        (log.details || "").toLowerCase().includes(q);
+                    })
+                    .map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-2.5 text-xs">
+                        <div className={cn(
+                          "mt-0.5 shrink-0 h-5 w-5 flex items-center justify-center rounded-md text-[10px] font-bold",
+                          log.user_type === "arl" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                        )}>
+                          {log.user_type === "arl" ? "A" : "L"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground">{log.user_name}</span>
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground">{log.action}</span>
+                            {log.details && <span className="text-muted-foreground truncate">{log.details}</span>}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+                            <span>{new Date(log.created_at).toLocaleString()}</span>
+                            {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Health Dashboard ── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><Activity className="h-5 w-5" /></div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"><Activity className="h-5 w-5" /></div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800">System Health</h3>
-            <p className="text-xs text-slate-400">Real-time database and system status</p>
+            <h3 className="text-lg font-bold text-foreground">System Health</h3>
+            <p className="text-xs text-muted-foreground">Real-time database and system status</p>
           </div>
         </div>
 
@@ -398,8 +491,8 @@ export function DataManagement() {
                 { label: "Memory", value: report.system.memoryFormatted, color: "text-purple-600" },
                 { label: "Node.js", value: report.system.nodeVersion, color: "text-slate-600" },
               ].map((s) => (
-                <div key={s.label} className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{s.label}</p>
+                <div key={s.label} className="rounded-xl bg-muted/50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
                   <p className={cn("mt-1 text-lg font-bold", s.color)}>{s.value}</p>
                 </div>
               ))}
@@ -407,12 +500,12 @@ export function DataManagement() {
 
             {/* Record counts */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Record Counts</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Record Counts</p>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {Object.entries(report.counts).map(([key, val]) => (
-                  <div key={key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                    <span className="text-xs text-slate-500 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
-                    <span className="text-sm font-bold text-slate-700">{val.toLocaleString()}</span>
+                  <div key={key} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                    <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                    <span className="text-sm font-bold text-foreground">{val.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -446,14 +539,14 @@ export function DataManagement() {
 
             {/* Table breakdown */}
             <details className="group">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
                 Table Breakdown ▸
               </summary>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {report.database.tables.map((t) => (
-                  <div key={t.name} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5">
-                    <span className="text-[11px] text-slate-500 truncate mr-2">{t.name}</span>
-                    <span className="text-xs font-bold text-slate-600">{t.records.toLocaleString()}</span>
+                  <div key={t.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-1.5">
+                    <span className="text-[11px] text-muted-foreground truncate mr-2">{t.name}</span>
+                    <span className="text-xs font-bold text-foreground">{t.records.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -461,8 +554,8 @@ export function DataManagement() {
           </div>
         ) : (
           <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-5 w-5 animate-spin text-slate-400 mr-2" />
-            <span className="text-sm text-slate-400">Loading system report...</span>
+            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+            <span className="text-sm text-muted-foreground">Loading system report...</span>
           </div>
         )}
       </div>
@@ -471,19 +564,19 @@ export function DataManagement() {
       {sections.map((section) => (
         <div key={section.title}>
           <div className="mb-3">
-            <h3 className="text-lg font-bold text-slate-800">{section.title}</h3>
-            <p className="text-xs text-slate-400">{section.subtitle}</p>
+            <h3 className="text-lg font-bold text-foreground">{section.title}</h3>
+            <p className="text-xs text-muted-foreground">{section.subtitle}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {section.cards.map((card) => {
               const colors = colorMap[card.color] || colorMap.blue;
               return (
-                <div key={card.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col">
+                <div key={card.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
                   <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-xl", colors.bg, colors.text)}>
                     <card.icon className="h-5 w-5" />
                   </div>
-                  <h4 className="text-sm font-bold text-slate-800">{card.title}</h4>
-                  <p className="mt-1 text-xs text-slate-500 flex-1">{card.desc}</p>
+                  <h4 className="text-sm font-bold text-foreground">{card.title}</h4>
+                  <p className="mt-1 text-xs text-muted-foreground flex-1">{card.desc}</p>
                   <button
                     onClick={card.onClick}
                     disabled={processing}
@@ -505,14 +598,14 @@ export function DataManagement() {
       <AnimatePresence>
         {showConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !processing && setShowConfirm(null)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800">{showConfirm.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{showConfirm.confirmText} This action cannot be undone.</p>
+              <h3 className="text-xl font-bold text-foreground">{showConfirm.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{showConfirm.confirmText} This action cannot be undone.</p>
               <div className="mt-6 flex gap-3">
-                <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+                <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50">Cancel</button>
                 <button onClick={() => showConfirm.action()} disabled={processing} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-red-300">
                   {processing ? "Processing..." : "Yes, Continue"}
                 </button>

@@ -200,3 +200,14 @@ export function broadcastToAll(event: string, data: any) {
 }
 
 // Old broadcast stream functions removed — meeting system handles real-time via socket events directly.
+
+// ── Ticker message events ──
+export function emitTickerMessage(msg: { id: string; content: string; icon: string; arlName: string; expiresAt: string | null; createdAt: string }) {
+  if (!isAvailable()) return;
+  emitToLocations("ticker:new", msg);
+}
+
+export function emitTickerDelete(id: string) {
+  if (!isAvailable()) return;
+  emitToLocations("ticker:delete", { id });
+}

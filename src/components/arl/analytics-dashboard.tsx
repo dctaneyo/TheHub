@@ -127,17 +127,122 @@ export function AnalyticsDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const exportCSV = useCallback(() => {
-    if (!taskData) return;
-    const rows = [["Date", "Completions", "Points", "Bonus Points"]];
-    taskData.completionsByDate.forEach(d => rows.push([d.date, String(d.count), String(d.totalPoints), String(d.bonusPoints)]));
-    const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const downloadCSV = useCallback((filename: string, rows: string[][]) => {
+    const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `analytics-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }, [taskData]);
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const exportTaskCompletions = useCallback(() => {
+    if (!taskData) return;
+    const rows = [["Date", "Completions", "Total Points", "Bonus Points"]];
+    taskData.completionsByDate.forEach(d => rows.push([d.date, String(d.count), String(d.totalPoints), String(d.bonusPoints)]));
+    downloadCSV(`task-completions-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [taskData, downloadCSV]);
+
+  const exportTopLocations = useCallback(() => {
+    if (!taskData) return;
+    const rows = [["Location", "Completions", "Total Points"]];
+    taskData.topLocations.forEach(l => rows.push([l.locationName, String(l.completions), String(l.totalPoints)]));
+    downloadCSV(`top-locations-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [taskData, downloadCSV]);
+
+  const exportTaskPerformance = useCallback(() => {
+    if (!taskData) return;
+    const rows = [["Task", "Completions", "Locations", "Avg Points"]];
+    taskData.taskPerformance.forEach(t => rows.push([t.taskTitle || "Unknown", String(t.completions), String(t.uniqueLocations), String(t.avgPoints)]));
+    downloadCSV(`task-performance-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [taskData, downloadCSV]);
+
+  const exportMessages = useCallback(() => {
+    if (!msgData) return;
+    const rows = [["Date", "Messages", "Unique Senders"]];
+    msgData.messagesByDate.forEach(d => rows.push([d.date, String(d.count), String(d.uniqueSenders)]));
+    downloadCSV(`messaging-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [msgData, downloadCSV]);
+
+  const exportTopSenders = useCallback(() => {
+    if (!msgData) return;
+    const rows = [["Name", "Type", "Messages"]];
+    msgData.topSenders.forEach(s => rows.push([s.senderName || "Unknown", s.senderType, String(s.messageCount)]));
+    downloadCSV(`top-senders-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [msgData, downloadCSV]);
+
+  const exportLeaderboard = useCallback(() => {
+    if (!gamData) return;
+    const rows = [["Rank", "Location", "Total Points", "Completions"]];
+    (gamData.leaderboard ?? []).forEach((l, i) => rows.push([String(i + 1), l.locationName || "Unknown", String(l.totalPoints ?? 0), String(l.completions)]));
+    downloadCSV(`leaderboard-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
+    setShowExportMenu(false);
+  }, [gamData, downloadCSV]);
+
+  const exportAllData = useCallback(() => {
+    const sections: string[] = [];
+    if (taskData) {
+      sections.push("=== TASK COMPLETIONS BY DATE ===");
+      sections.push(["Date", "Completions", "Total Points", "Bonus Points"].join(","));
+      taskData.completionsByDate.forEach(d => sections.push([d.date, d.count, d.totalPoints, d.bonusPoints].join(",")));
+      sections.push("");
+      sections.push("=== TOP LOCATIONS ===");
+      sections.push(["Location", "Completions", "Total Points"].join(","));
+      taskData.topLocations.forEach(l => sections.push([`"${l.locationName}"`, l.completions, l.totalPoints].join(",")));
+      sections.push("");
+      sections.push("=== TASK PERFORMANCE ===");
+      sections.push(["Task", "Completions", "Locations", "Avg Points"].join(","));
+      taskData.taskPerformance.forEach(t => sections.push([`"${t.taskTitle || "Unknown"}"`, t.completions, t.uniqueLocations, t.avgPoints].join(",")));
+    }
+    if (msgData) {
+      sections.push("");
+      sections.push("=== MESSAGES BY DATE ===");
+      sections.push(["Date", "Messages", "Unique Senders"].join(","));
+      msgData.messagesByDate.forEach(d => sections.push([d.date, d.count, d.uniqueSenders].join(",")));
+      sections.push("");
+      sections.push("=== TOP SENDERS ===");
+      sections.push(["Name", "Type", "Messages"].join(","));
+      msgData.topSenders.forEach(s => sections.push([`"${s.senderName || "Unknown"}"`, s.senderType, s.messageCount].join(",")));
+    }
+    if (gamData) {
+      sections.push("");
+      sections.push("=== POINTS LEADERBOARD ===");
+      sections.push(["Rank", "Location", "Total Points", "Completions"].join(","));
+      (gamData.leaderboard ?? []).forEach((l, i) => sections.push([i + 1, `"${l.locationName || "Unknown"}"`, l.totalPoints ?? 0, l.completions].join(",")));
+    }
+    const blob = new Blob([sections.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `hub-analytics-full-${format(new Date(), "yyyy-MM-dd")}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  }, [taskData, msgData, gamData]);
+
+  // Export options per tab
+  const exportOptions = useMemo(() => {
+    if (activeTab === "tasks") return [
+      { label: "Completions by Date", action: exportTaskCompletions, enabled: !!taskData },
+      { label: "Top Locations", action: exportTopLocations, enabled: !!taskData },
+      { label: "Task Performance", action: exportTaskPerformance, enabled: !!taskData },
+      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
+    ];
+    if (activeTab === "messaging") return [
+      { label: "Messages by Date", action: exportMessages, enabled: !!msgData },
+      { label: "Top Senders", action: exportTopSenders, enabled: !!msgData },
+      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
+    ];
+    return [
+      { label: "Points Leaderboard", action: exportLeaderboard, enabled: !!gamData },
+      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
+    ];
+  }, [activeTab, taskData, msgData, gamData, exportTaskCompletions, exportTopLocations, exportTaskPerformance, exportMessages, exportTopSenders, exportLeaderboard, exportAllData]);
 
   const tabs = [
     { id: "tasks" as const, label: "Tasks", icon: CheckCircle2 },
@@ -176,9 +281,29 @@ export function AnalyticsDashboard() {
           <button onClick={fetchData} className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
           </button>
-          <button onClick={exportCSV} className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors">
-            <Download className="h-3.5 w-3.5" /> Export
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu((v) => !v)}
+              className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors"
+            >
+              <Download className="h-3.5 w-3.5" /> Export <ChevronDown className="h-3 w-3" />
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                {exportOptions.map((opt) => (
+                  <button
+                    key={opt.label}
+                    onClick={opt.action}
+                    disabled={!opt.enabled}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-40 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

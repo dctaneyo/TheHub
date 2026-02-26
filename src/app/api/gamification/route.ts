@@ -111,14 +111,30 @@ export async function GET(req: Request) {
     const todayStr = localDate || format(new Date(), "yyyy-MM-dd");
     const today = new Date(`${todayStr}T12:00:00`);
 
+    // ── STREAK FREEZES ──
+    let frozenDates = new Set<string>();
+    try {
+      const { sqlite } = await import("@/lib/db");
+      sqlite.exec(`CREATE TABLE IF NOT EXISTS streak_freezes (id TEXT PRIMARY KEY, location_id TEXT NOT NULL, freeze_date TEXT NOT NULL, created_at TEXT NOT NULL)`);
+      const freezes = sqlite.prepare("SELECT freeze_date FROM streak_freezes WHERE location_id = ?").all(locationId) as any[];
+      frozenDates = new Set(freezes.map((f) => f.freeze_date));
+    } catch {}
+
     // ── STREAK CALCULATION ──
-    // Check each day going backwards. A day counts as "perfect" if all applicable tasks were completed.
+    // Check each day going backwards. A day counts as "perfect" if all applicable tasks were completed,
+    // or if the day is covered by a streak freeze.
     let streak = 0;
     // Start checking from yesterday (today might not be done yet)
     for (let i = 1; i <= 365; i++) {
       const checkDate = subDays(today, i);
       const checkStr = format(checkDate, "yyyy-MM-dd");
       const checkDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][checkDate.getDay()];
+
+      // Frozen dates count as perfect days
+      if (frozenDates.has(checkStr)) {
+        streak++;
+        continue;
+      }
 
       const dayTasks = allTasks.filter((task) => {
         if (locationId && task.locationId && task.locationId !== locationId) return false;

@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
+import { sendPushToAllARLs } from "@/lib/push";
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
     // Broadcast instant update via WebSocket
     broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name);
     broadcastLeaderboardUpdate(session.id);
+
+    // Push notification to all ARLs about the task completion
+    const pointsTotal = task.points + bonusPoints;
+    await sendPushToAllARLs({
+      title: `${session.name} completed a task! ✅`,
+      body: `${task.title} · +${pointsTotal} pts${bonusPoints > 0 ? ` (incl. +${bonusPoints} early bonus)` : ""}`,
+      url: `/arl`,
+    });
 
     return NextResponse.json({
       success: true,

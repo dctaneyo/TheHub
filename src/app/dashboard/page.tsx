@@ -53,6 +53,8 @@ import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -75,6 +77,7 @@ export default function DashboardPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsPos, setSettingsPos] = useState<{ top: number; right: number } | null>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState<"left" | "right" | null>(null);
+  const [mobileView, setMobileView] = useState<string>("tasks");
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // Persist screensaver toggle to localStorage
@@ -413,6 +416,22 @@ export default function DashboardPage() {
     };
   }, [socket, fetchTasks]);
 
+  // Sync mobileView with panel/modal open states
+  useEffect(() => {
+    if (chatOpen) setMobileView("chat");
+    else if (calOpen) setMobileView("calendar");
+    else if (formsOpen) setMobileView("forms");
+    else setMobileView("tasks");
+  }, [chatOpen, calOpen, formsOpen]);
+
+  const handleMobileViewChange = (view: string) => {
+    setMobileView(view);
+    if (view === "chat") { setChatOpen(true); setCalOpen(false); setFormsOpen(false); }
+    else if (view === "calendar") { setCalOpen(true); setChatOpen(false); setFormsOpen(false); }
+    else if (view === "leaderboard") { setMobilePanelOpen("right"); setChatOpen(false); setCalOpen(false); }
+    else { setChatOpen(false); setCalOpen(false); setFormsOpen(false); setMobilePanelOpen(null); }
+  };
+
   // Activity tracking — report which section the location is viewing
   useEffect(() => {
     const page = chatOpen ? "Chat" : calOpen ? "Calendar" : formsOpen ? "Forms" : "Dashboard";
@@ -542,14 +561,14 @@ export default function DashboardPage() {
       <AnimatedBackground variant="subtle" />
 
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 md:px-6 relative z-[100] overflow-x-auto">
+      <header className="flex h-16 shrink-0 items-center border-b border-border bg-card px-4 md:px-6 relative z-[100] overflow-x-auto">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
           </div>
           <div className="hidden md:block">
-            <h1 className="text-base font-bold text-slate-800">The Hub</h1>
-            <p className="text-[11px] text-slate-400">
+            <h1 className="text-base font-bold text-foreground">The Hub</h1>
+            <p className="text-[11px] text-muted-foreground">
               {user?.name} &middot; Store #{user?.storeNumber}
             </p>
           </div>
@@ -566,10 +585,10 @@ export default function DashboardPage() {
 
           {/* Clock */}
           <div className="mx-1 text-right">
-            <p className="text-2xl font-black tabular-nums tracking-tight text-slate-800">
+            <p className="text-2xl font-black tabular-nums tracking-tight text-foreground">
               {displayTime}
             </p>
-            <p className="text-[11px] font-medium text-slate-400">
+            <p className="text-[11px] font-medium text-muted-foreground">
               {format(new Date(), "EEE, MMM d yyyy")}
             </p>
           </div>
@@ -577,7 +596,7 @@ export default function DashboardPage() {
           {/* Action buttons */}
           <button
             onClick={() => setFormsOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
             title="Forms"
           >
             <FileText className="h-[18px] w-[18px]" />
@@ -585,14 +604,14 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setCalOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
           >
             <CalendarDays className="h-[18px] w-[18px]" />
           </button>
 
           <button
             onClick={() => setChatOpen(!chatOpen)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
           >
             <MessageCircle className="h-[18px] w-[18px]" />
             {chatUnread > 0 && (
@@ -615,7 +634,7 @@ export default function DashboardPage() {
               onClick={() => setSettingsOpen((v) => !v)}
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
-                settingsOpen ? "bg-slate-200 text-slate-800" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                settingsOpen ? "bg-muted text-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
               title="Settings"
             >
@@ -632,25 +651,25 @@ export default function DashboardPage() {
                   className="fixed z-[2010] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
                   style={settingsPos ? { top: settingsPos.top, right: settingsPos.right } : {}}
                 >
-                  <div className="px-4 py-3 border-b border-slate-100">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dashboard Settings</p>
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dashboard Settings</p>
                   </div>
 
                   <div className="p-2 space-y-1">
                     {/* Sound toggle */}
                     <button
                       onClick={toggleSound}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
                     >
                       <div className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        soundEnabled ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"
+                        soundEnabled ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-400 dark:bg-red-950 dark:text-red-400"
                       )}>
                         {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">Notification Sound</p>
-                        <p className="text-[11px] text-slate-400">{soundEnabled ? "Sounds on" : "Muted"}</p>
+                        <p className="text-sm font-semibold text-foreground">Notification Sound</p>
+                        <p className="text-[11px] text-muted-foreground">{soundEnabled ? "Sounds on" : "Muted"}</p>
                       </div>
                       <div className={cn(
                         "h-5 w-9 rounded-full transition-colors relative",
@@ -666,17 +685,17 @@ export default function DashboardPage() {
                     {/* Screensaver toggle */}
                     <button
                       onClick={() => setScreensaverEnabled((v) => !v)}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
                     >
                       <div className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        screensaverEnabled ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-400"
+                        screensaverEnabled ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "bg-muted text-muted-foreground"
                       )}>
                         {screensaverEnabled ? <Monitor className="h-4 w-4" /> : <MonitorOff className="h-4 w-4" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">Screensaver</p>
-                        <p className="text-[11px] text-slate-400">{screensaverEnabled ? "Auto after 2 min" : "Disabled"}</p>
+                        <p className="text-sm font-semibold text-foreground">Screensaver</p>
+                        <p className="text-[11px] text-muted-foreground">{screensaverEnabled ? "Auto after 2 min" : "Disabled"}</p>
                       </div>
                       <div className={cn(
                         "h-5 w-9 rounded-full transition-colors relative",
@@ -724,7 +743,7 @@ export default function DashboardPage() {
 
           <button
             onClick={logout}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
           >
             <LogOut className="h-[18px] w-[18px]" />
           </button>
@@ -732,12 +751,12 @@ export default function DashboardPage() {
       </header>
 
       {/* Mobile Panel Toggle Buttons */}
-      <div className="md:hidden flex gap-2 px-4 py-2 border-b border-slate-200 bg-white">
+      <div className="md:hidden flex gap-2 px-4 py-2 border-b border-border bg-card">
         <button
           onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-            mobilePanelOpen === "left" ? "bg-[var(--hub-red)] text-white" : "bg-slate-100 text-slate-600"
+            mobilePanelOpen === "left" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
           )}
         >
           <CheckCircle2 className="h-4 w-4" />
@@ -747,7 +766,7 @@ export default function DashboardPage() {
           onClick={() => setMobilePanelOpen(mobilePanelOpen === "right" ? null : "right")}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-            mobilePanelOpen === "right" ? "bg-[var(--hub-red)] text-white" : "bg-slate-100 text-slate-600"
+            mobilePanelOpen === "right" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
           )}
         >
           <CalendarDays className="h-4 w-4" />
@@ -759,17 +778,17 @@ export default function DashboardPage() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left Column - Completed/Missed + Points */}
         <div className={cn(
-          "w-[280px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto",
+          "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
           "md:block",
           mobilePanelOpen === "left" ? "block absolute inset-0 z-[999] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "left" && (
-            <div className="md:hidden sticky top-0 z-[1000] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-800">Completed & Missed</h3>
+            <div className="md:hidden sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
               <button
                 onClick={() => setMobilePanelOpen(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -787,9 +806,10 @@ export default function DashboardPage() {
 
         {/* Center Column - Main Timeline */}
         <div className={cn(
-          "flex-1 p-5",
+          "flex-1 overflow-y-auto p-5 space-y-4",
           mobilePanelOpen ? "hidden md:block" : "block"
         )}>
+          <SeasonalTheme showFloating={false} />
           {currentTime && (
             <Timeline
               tasks={allTasks}
@@ -802,17 +822,17 @@ export default function DashboardPage() {
 
         {/* Right Column - Mini Calendar + Leaderboard tabs */}
         <div className={cn(
-          "w-[300px] shrink-0 border-l border-slate-200 bg-white overflow-hidden",
+          "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
           "lg:flex lg:flex-col",
           mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden"
         )}>
           {/* Mobile close button */}
           {mobilePanelOpen === "right" && (
-            <div className="md:hidden sticky top-0 z-[120] bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-bold text-slate-800">Upcoming & Leaderboard</h3>
+            <div className="md:hidden sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+              <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
               <button
                 onClick={() => setMobilePanelOpen(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -890,7 +910,7 @@ export default function DashboardPage() {
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-red-200 p-5 max-w-sm w-full">
+            <div className="bg-card rounded-2xl shadow-2xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
                   <Video className="h-5 w-5 text-red-600" />
@@ -900,8 +920,8 @@ export default function DashboardPage() {
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-xs font-bold text-red-600 uppercase">Live Meeting</span>
                   </div>
-                  <p className="text-sm font-bold text-slate-800 truncate">{pendingMeeting.title}</p>
-                  <p className="text-xs text-slate-500">by {pendingMeeting.arlName}</p>
+                  <p className="text-sm font-bold text-foreground truncate">{pendingMeeting.title}</p>
+                  <p className="text-xs text-muted-foreground">by {pendingMeeting.arlName}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -930,6 +950,14 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        activeView={mobileView}
+        onViewChange={handleMobileViewChange}
+        unreadCount={chatUnread}
+        userType="location"
+      />
+
       {/* Restaurant Chat Drawer */}
       <RestaurantChat
         isOpen={chatOpen}
@@ -954,16 +982,16 @@ function RightPanel({
   const [tab, setTab] = useState<"calendar" | "leaderboard">("calendar");
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex shrink-0 border-b border-slate-100">
+      <div className="flex shrink-0 border-b border-border">
         <button
           onClick={() => setTab("calendar")}
-          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "calendar" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-slate-400 hover:text-slate-600"}`}
+          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "calendar" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-muted-foreground hover:text-foreground"}`}
         >
           Upcoming
         </button>
         <button
           onClick={() => setTab("leaderboard")}
-          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "leaderboard" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-slate-400 hover:text-slate-600"}`}
+          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "leaderboard" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-muted-foreground hover:text-foreground"}`}
         >
           🏆 Leaderboard
         </button>
@@ -1143,22 +1171,22 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 px-5">
-          <h2 className="text-sm font-bold text-slate-800">Full Calendar</h2>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
+          <h2 className="text-sm font-bold text-foreground">Full Calendar</h2>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
         <div className="flex flex-1 overflow-hidden">
           {/* Calendar grid */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
-              <button onClick={() => setCurrentMonth(subMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-4 w-4" /></button>
-              <span className="text-sm font-bold text-slate-800">{format(currentMonth,"MMMM yyyy")}</span>
-              <button onClick={() => setCurrentMonth(addMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><ChevronRight className="h-4 w-4" /></button>
+            <div className="flex items-center justify-between border-b border-border px-4 py-2">
+              <button onClick={() => setCurrentMonth(subMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
+              <span className="text-sm font-bold text-foreground">{format(currentMonth,"MMMM yyyy")}</span>
+              <button onClick={() => setCurrentMonth(addMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
             </div>
-            <div className="grid grid-cols-7 border-b border-slate-100">
-              {CAL_DAYS_H.map((d) => <div key={d} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">{d}</div>)}
+            <div className="grid grid-cols-7 border-b border-border">
+              {CAL_DAYS_H.map((d) => <div key={d} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
             </div>
             <div className="flex flex-1 flex-col overflow-hidden">
               {weeks.map((week, wi) => (
@@ -1169,8 +1197,8 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
                     const inMonth = isSameMonth(date, currentMonth);
                     return (
                       <div key={date.toISOString()} role="button" tabIndex={0} onClick={() => setSelectedDate(date)} onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
-                        className={`flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 cursor-pointer ${!inMonth?"bg-slate-50/50":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-slate-50":""}`}>
-                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-slate-700":"text-slate-300"}`}>{format(date,"d")}</span>
+                        className={`flex flex-col items-start justify-start border-r border-border p-1.5 text-left transition-colors last:border-0 cursor-pointer ${!inMonth?"bg-muted/30":""} ${isSelected?"bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20":""} ${inMonth&&!isSelected?"hover:bg-muted/50":""}`}>
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${isToday(date)?"bg-[var(--hub-red)] text-white":inMonth?"text-foreground":"text-muted-foreground/40"}`}>{format(date,"d")}</span>
                         <div className="mt-0.5 w-full space-y-0.5">
                           {dayTasks.slice(0,2).map((task) => {
                             const Icon = calModalTypeIcons[task.type]||ClipboardList;
@@ -1190,11 +1218,11 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
             </div>
           </div>
           {/* Day detail */}
-          <div className="w-[280px] shrink-0 flex flex-col overflow-hidden border-l border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <div className="w-[280px] shrink-0 flex flex-col overflow-hidden border-l border-border">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-800">{selectedDate?format(selectedDate,"EEE, MMMM d"):"Select a day"}</h3>
-                <p className="text-[10px] text-slate-400">{selectedTasks.length} task{selectedTasks.length!==1?"s":""}</p>
+                <h3 className="text-sm font-bold text-foreground">{selectedDate?format(selectedDate,"EEE, MMMM d"):"Select a day"}</h3>
+                <p className="text-[10px] text-muted-foreground">{selectedTasks.length} task{selectedTasks.length!==1?"s":""}</p>
               </div>
               {selectedDate && (
                 <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -38,9 +38,27 @@ interface GamificationData {
   stats: { totalTasksCompleted: number; totalXP: number; totalBonusPoints: number };
 }
 
+interface BadgeToast {
+  id: string;
+  badge: BadgeData;
+}
+
+interface FreezeInfo {
+  available: number;
+  usedThisMonth: number;
+  maxPerMonth: number;
+  frozenDates: string[];
+}
+
 export function GamificationBar() {
   const [data, setData] = useState<GamificationData | null>(null);
   const [showBadges, setShowBadges] = useState(false);
+  const [badgeToasts, setBadgeToasts] = useState<BadgeToast[]>([]);
+  const [freezeInfo, setFreezeInfo] = useState<FreezeInfo | null>(null);
+  const [showFreezeConfirm, setShowFreezeConfirm] = useState(false);
+  const [freezing, setFreezing] = useState(false);
+  const [freezeSuccess, setFreezeSuccess] = useState(false);
+  const knownEarnedIdsRef = useRef<Set<string> | null>(null);
   const { socket } = useSocket();
 
   const fetchData = useCallback(async () => {
@@ -48,17 +66,34 @@ export function GamificationBar() {
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     
     try {
-      // Fetch gamification data (streak, level, stats)
-      const gamRes = await fetch(`/api/gamification?localDate=${localDate}`);
-      if (!gamRes.ok) return;
-      const gamData = await gamRes.json();
-      
-      // Fetch new achievements
-      const achRes = await fetch('/api/achievements');
-      if (!achRes.ok) return;
-      const achData = await achRes.json();
-      
-      // Merge data
+      const [gamRes, achRes, freezeRes] = await Promise.all([
+        fetch(`/api/gamification?localDate=${localDate}`),
+        fetch('/api/achievements'),
+        fetch('/api/gamification/streak-freeze'),
+      ]);
+      if (!gamRes.ok || !achRes.ok) return;
+      const [gamData, achData] = await Promise.all([gamRes.json(), achRes.json()]);
+      if (freezeRes.ok) setFreezeInfo(await freezeRes.json());
+
+      const newlyEarned: BadgeData[] = [];
+      if (knownEarnedIdsRef.current !== null) {
+        for (const badge of (achData.badges as BadgeData[])) {
+          if (badge.earned && !knownEarnedIdsRef.current.has(badge.id)) {
+            newlyEarned.push(badge);
+          }
+        }
+      }
+      knownEarnedIdsRef.current = new Set(
+        (achData.badges as BadgeData[]).filter((b) => b.earned).map((b) => b.id)
+      );
+
+      // Show toast for each newly earned badge
+      for (const badge of newlyEarned) {
+        const toastId = `${badge.id}-${Date.now()}`;
+        setBadgeToasts((prev) => [...prev, { id: toastId, badge }]);
+        setTimeout(() => setBadgeToasts((prev) => prev.filter((t) => t.id !== toastId)), 5000);
+      }
+
       setData({
         streak: gamData.streak,
         level: gamData.level,
@@ -67,6 +102,20 @@ export function GamificationBar() {
       });
     } catch {}
   }, []);
+
+  const applyStreakFreeze = useCallback(async () => {
+    setFreezing(true);
+    try {
+      const res = await fetch("/api/gamification/streak-freeze", { method: "POST" });
+      if (res.ok) {
+        setFreezeSuccess(true);
+        setShowFreezeConfirm(false);
+        setTimeout(() => setFreezeSuccess(false), 3000);
+        fetchData();
+      }
+    } catch {}
+    setFreezing(false);
+  }, [fetchData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -92,8 +141,65 @@ export function GamificationBar() {
 
   return (
     <>
+      {/* Badge unlock toasts */}
+      <AnimatePresence>
+        {badgeToasts.map((toast) => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 60, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed bottom-24 left-1/2 z-[300] -translate-x-1/2 pointer-events-none"
+          >
+            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-5 py-3.5 shadow-2xl shadow-amber-200/50">
+              <motion.span
+                className="text-3xl"
+                animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.3, 1.1, 1.2, 1] }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+              >
+                {toast.badge.icon}
+              </motion.span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Achievement Unlocked!</p>
+                <p className="text-sm font-black text-slate-800">{toast.badge.name}</p>
+                <p className="text-[11px] text-slate-500">{toast.badge.description}</p>
+              </div>
+              <motion.div
+                className="ml-1 text-2xl"
+                animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                🏅
+              </motion.div>
+            </div>
+            {/* Confetti particles */}
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute h-2 w-2 rounded-full"
+                style={{
+                  background: ["#dc2626","#f59e0b","#22c55e","#3b82f6","#8b5cf6","#ec4899","#f97316","#14b8a6"][i],
+                  left: "50%",
+                  top: "50%",
+                }}
+                initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                animate={{
+                  x: (Math.cos((i / 8) * Math.PI * 2) * 60),
+                  y: (Math.sin((i / 8) * Math.PI * 2) * 60),
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+              />
+            ))}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
       <div className="flex items-center gap-3">
-        {/* Streak */}
+        {/* Streak + Freeze */}
+        <div className="relative flex items-center gap-1.5">
         <motion.div
           className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 px-3.5 py-2 cursor-default"
           whileHover={{ scale: 1.05 }}
@@ -116,6 +222,59 @@ export function GamificationBar() {
             {streak.current}
           </span>
         </motion.div>
+
+        {/* Streak Freeze button */}
+        {freezeInfo && freezeInfo.available > 0 && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowFreezeConfirm((v) => !v)}
+            title={`Streak Freeze: ${freezeInfo.available} left this month`}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-lg text-base transition-colors",
+              freezeSuccess ? "bg-cyan-100" : "hover:bg-cyan-100/60"
+            )}
+          >
+            {freezeSuccess ? "✅" : "🧊"}
+          </motion.button>
+        )}
+
+        {/* Freeze confirm popover */}
+        <AnimatePresence>
+          {showFreezeConfirm && freezeInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              className="absolute left-0 top-full mt-2 z-50 w-64 rounded-2xl border border-cyan-200 bg-white shadow-2xl p-4"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">🧊</span>
+                <div>
+                  <p className="text-sm font-black text-slate-800">Streak Freeze</p>
+                  <p className="text-[10px] text-slate-400">{freezeInfo.available} of {freezeInfo.maxPerMonth} left this month</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">Apply a freeze to yesterday — it counts as a perfect day and protects your streak.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={applyStreakFreeze}
+                  disabled={freezing}
+                  className="flex-1 rounded-xl bg-cyan-500 py-1.5 text-xs font-bold text-white hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {freezing ? "Applying..." : "Use Freeze"}
+                </button>
+                <button
+                  onClick={() => setShowFreezeConfirm(false)}
+                  className="flex-1 rounded-xl bg-slate-100 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </div>
 
         {/* Level */}
         <motion.div

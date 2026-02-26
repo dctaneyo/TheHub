@@ -16,6 +16,9 @@ import {
   Sparkles,
   Eye,
   EyeOff,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +77,47 @@ const TYPES = [
   { value: "training", label: "Training", icon: Sparkles },
 ];
 
+interface TaskTemplate {
+  label: string;
+  category: string;
+  fields: {
+    title: string;
+    description?: string;
+    type: string;
+    priority: string;
+    dueTime: string;
+    isRecurring: boolean;
+    recurringType: string;
+    recurringDays?: string[];
+    points: number;
+    allowEarlyComplete?: boolean;
+  };
+}
+
+const TASK_TEMPLATES: TaskTemplate[] = [
+  // Opening
+  { label: "Opening Checklist", category: "Opening", fields: { title: "Opening Checklist", description: "Complete all opening procedures before service", type: "task", priority: "urgent", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 20, allowEarlyComplete: false } },
+  { label: "Cash Drawer Setup", category: "Opening", fields: { title: "Cash Drawer Setup", description: "Count and verify cash drawer balance", type: "task", priority: "high", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 15 } },
+  // Cleaning
+  { label: "Morning Deep Clean", category: "Cleaning", fields: { title: "Morning Deep Clean", description: "Deep clean kitchen equipment and surfaces", type: "cleaning", priority: "high", dueTime: "08:00", isRecurring: true, recurringType: "daily", points: 25 } },
+  { label: "Fryer Cleaning", category: "Cleaning", fields: { title: "Fryer Filter & Clean", description: "Filter fryer oil and clean fryer equipment", type: "cleaning", priority: "urgent", dueTime: "14:00", isRecurring: true, recurringType: "daily", points: 20 } },
+  { label: "Bathroom Check", category: "Cleaning", fields: { title: "Bathroom Inspection & Clean", description: "Inspect and clean customer restrooms", type: "cleaning", priority: "normal", dueTime: "11:00", isRecurring: true, recurringType: "daily", recurringDays: ["mon","tue","wed","thu","fri","sat","sun"], points: 10 } },
+  { label: "Dining Room Wipe", category: "Cleaning", fields: { title: "Dining Room Wipe Down", description: "Wipe all tables, chairs and touch surfaces", type: "cleaning", priority: "normal", dueTime: "12:00", isRecurring: true, recurringType: "daily", points: 10 } },
+  { label: "Weekly Deep Clean", category: "Cleaning", fields: { title: "Weekly Deep Clean", description: "Full restaurant deep clean including walk-in cooler", type: "cleaning", priority: "high", dueTime: "09:00", isRecurring: true, recurringType: "weekly", recurringDays: ["sun"], points: 50 } },
+  // Prep
+  { label: "Food Temp Check", category: "Prep", fields: { title: "Food Temperature Check", description: "Log temperatures for all hot/cold holding equipment", type: "task", priority: "urgent", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 15, allowEarlyComplete: true } },
+  { label: "Chicken Thaw", category: "Prep", fields: { title: "Chicken Thaw & Prep", description: "Move chicken from freezer, begin marination", type: "task", priority: "high", dueTime: "08:00", isRecurring: true, recurringType: "daily", points: 15 } },
+  { label: "Waste Log", category: "Prep", fields: { title: "Waste Log Completion", description: "Record all food waste for the day", type: "task", priority: "normal", dueTime: "22:00", isRecurring: true, recurringType: "daily", points: 10 } },
+  // Closing
+  { label: "Closing Checklist", category: "Closing", fields: { title: "Closing Checklist", description: "Complete all closing procedures", type: "task", priority: "urgent", dueTime: "22:30", isRecurring: true, recurringType: "daily", points: 20 } },
+  { label: "Safe Count", category: "Closing", fields: { title: "End of Day Safe Count", description: "Count and secure all cash in safe", type: "task", priority: "high", dueTime: "23:00", isRecurring: true, recurringType: "daily", points: 20 } },
+  // Compliance
+  { label: "Health Inspection Prep", category: "Compliance", fields: { title: "Health Inspection Prep", description: "Review food safety logs and ensure compliance", type: "task", priority: "urgent", dueTime: "09:00", isRecurring: false, recurringType: "daily", points: 30 } },
+  { label: "Monthly Safety Review", category: "Compliance", fields: { title: "Monthly Safety Review", description: "Review safety procedures and log completion", type: "reminder", priority: "high", dueTime: "10:00", isRecurring: true, recurringType: "monthly", points: 20 } },
+];
+
+const TEMPLATE_CATEGORIES = [...new Set(TASK_TEMPLATES.map((t) => t.category))];
+
 const PRIORITIES = [
   { value: "low", label: "Low", color: "bg-slate-100 text-slate-600" },
   { value: "normal", label: "Normal", color: "bg-blue-100 text-blue-700" },
@@ -95,6 +139,8 @@ export function TaskManager() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterLocationId, setFilterLocationId] = useState<string>("all");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<string>(TEMPLATE_CATEGORIES[0]);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -177,6 +223,23 @@ export function TaskManager() {
 
   const openCreate = () => {
     resetForm();
+    setShowTemplates(false);
+    setShowForm(true);
+  };
+
+  const applyTemplate = (tpl: TaskTemplate) => {
+    resetForm();
+    setTitle(tpl.fields.title);
+    setDescription(tpl.fields.description || "");
+    setType(tpl.fields.type);
+    setPriority(tpl.fields.priority);
+    setDueTime(tpl.fields.dueTime);
+    setIsRecurring(tpl.fields.isRecurring);
+    setRecurringType(tpl.fields.recurringType);
+    if (tpl.fields.recurringDays) setRecurringDays(tpl.fields.recurringDays);
+    setPoints(tpl.fields.points);
+    setAllowEarlyComplete(tpl.fields.allowEarlyComplete ?? false);
+    setShowTemplates(false);
     setShowForm(true);
   };
 
@@ -343,26 +406,94 @@ export function TaskManager() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-slate-800">All Tasks & Reminders</h3>
-          <p className="text-xs text-slate-400">{filteredTasks.length} of {tasks.length} tasks</p>
+          <h3 className="text-base font-bold text-foreground">All Tasks & Reminders</h3>
+          <p className="text-xs text-muted-foreground">{filteredTasks.length} of {tasks.length} tasks</p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={filterLocationId}
             onChange={(e) => setFilterLocationId(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm"
+            className="rounded-xl border border-border bg-card px-3 py-1.5 text-xs text-foreground shadow-sm"
           >
             <option value="all">All Locations</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
           </select>
+          <button
+            onClick={() => setShowTemplates((t) => !t)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:bg-muted transition-colors"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Templates
+            {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
           <Button onClick={openCreate} size="sm" className="gap-1.5 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]">
             <Plus className="h-4 w-4" />
             New Task
           </Button>
         </div>
       </div>
+
+      {/* Template picker */}
+      <AnimatePresence>
+        {showTemplates && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
+                <h4 className="text-sm font-bold text-foreground">Task Templates</h4>
+                <p className="text-xs text-muted-foreground">Click to pre-fill the form</p>
+              </div>
+              {/* Category tabs */}
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setTemplateCategory(cat)}
+                    className={cn(
+                      "rounded-lg px-3 py-1 text-xs font-semibold transition-colors",
+                      templateCategory === cat
+                        ? "bg-[var(--hub-red)] text-white"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              {/* Templates for selected category */}
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {TASK_TEMPLATES.filter((t) => t.category === templateCategory).map((tpl) => (
+                  <button
+                    key={tpl.label}
+                    onClick={() => applyTemplate(tpl)}
+                    className="flex items-start gap-2.5 rounded-xl border border-border bg-background p-3 text-left transition-all hover:border-[var(--hub-red)]/40 hover:bg-[var(--hub-red)]/5 group"
+                  >
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)]/10 text-[var(--hub-red)]">
+                      {tpl.fields.type === "cleaning" ? <SprayCan className="h-4 w-4" /> : tpl.fields.type === "reminder" ? <Clock className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground group-hover:text-[var(--hub-red)] transition-colors">{tpl.label}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground">{tpl.fields.dueTime}</span>
+                        <span className="text-[10px] font-medium text-amber-600">{tpl.fields.points} pts</span>
+                        {tpl.fields.isRecurring && <span className="text-[10px] text-muted-foreground capitalize">{tpl.fields.recurringType}</span>}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Task List */}
       <div className="space-y-2">
@@ -376,11 +507,11 @@ export function TaskManager() {
                 layout
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-slate-800">{task.title}</span>
+                    <span className="text-sm font-semibold text-foreground">{task.title}</span>
                     <Badge variant="secondary" className={cn("text-[10px]", priorityStyle?.color)}>
                       {task.priority}
                     </Badge>
@@ -405,9 +536,9 @@ export function TaskManager() {
                     )}
                   </div>
                   {task.description && (
-                    <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{task.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                   )}
-                  <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
+                  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                     {!task.isRecurring && task.dueDate && (
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
@@ -440,21 +571,21 @@ export function TaskManager() {
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                       task.isHidden
-                        ? "bg-slate-100 text-slate-400 hover:bg-slate-200"
-                        : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                   <button
                     onClick={() => openEdit(task)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(task.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -479,15 +610,15 @@ export function TaskManager() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             >
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-slate-800">
+                <h3 className="text-lg font-bold text-foreground">
                   {editingTask ? "Edit Task" : "New Task"}
                 </h3>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -496,7 +627,7 @@ export function TaskManager() {
               <div className="space-y-4">
                 {/* Title */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Title</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Title</label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -507,7 +638,7 @@ export function TaskManager() {
 
                 {/* Description */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Description / Instructions</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Description / Instructions</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -519,7 +650,7 @@ export function TaskManager() {
 
                 {/* Type */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">Type</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Type</label>
                   <div className="flex gap-2">
                     {TYPES.map((t) => (
                       <button
@@ -528,8 +659,8 @@ export function TaskManager() {
                         className={cn(
                           "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all",
                           type === t.value
-                            ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                            : "border-slate-200 text-slate-500 hover:border-slate-300"
+                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
                         )}
                       >
                         <t.icon className="h-3.5 w-3.5" />
@@ -541,7 +672,7 @@ export function TaskManager() {
 
                 {/* Priority */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">Priority</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Priority</label>
                   <div className="flex gap-2">
                     {PRIORITIES.map((p) => (
                       <button
@@ -550,8 +681,8 @@ export function TaskManager() {
                         className={cn(
                           "rounded-xl border px-3 py-2 text-xs font-medium transition-all",
                           priority === p.value
-                            ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                            : "border-slate-200 text-slate-500 hover:border-slate-300"
+                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
                         )}
                       >
                         {p.label}
@@ -564,7 +695,7 @@ export function TaskManager() {
                 <div className="flex gap-3">
                   {!isRecurring && (
                     <div className="flex-1">
-                      <label className="mb-1 block text-xs font-semibold text-slate-600">Due Date</label>
+                      <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Date</label>
                       <Input
                         type="date"
                         value={dueDate}
@@ -575,7 +706,7 @@ export function TaskManager() {
                   )}
                   {!isReminder && (
                     <div className="flex-1">
-                      <label className="mb-1 block text-xs font-semibold text-slate-600">Due Time</label>
+                      <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Time</label>
                       <Input
                         type="time"
                         value={dueTime}
@@ -585,7 +716,7 @@ export function TaskManager() {
                     </div>
                   )}
                   <div className="w-24">
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">Points</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Points</label>
                     <Input
                       type="number"
                       value={points}
@@ -599,7 +730,7 @@ export function TaskManager() {
 
                 {/* Recurring */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={isRecurring}
@@ -619,8 +750,8 @@ export function TaskManager() {
                             className={cn(
                               "flex-1 rounded-xl border px-2 py-1.5 text-xs font-semibold transition-all",
                               recurringType === rt.value
-                                ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                                : "border-slate-200 text-slate-500 hover:border-slate-300"
+                                ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                                : "border-border text-muted-foreground hover:border-muted-foreground/40"
                             )}
                           >
                             {rt.label}
@@ -631,7 +762,7 @@ export function TaskManager() {
                       {/* Weekly / Biweekly: day-of-week picker */}
                       {(recurringType === "weekly" || recurringType === "biweekly") && (
                         <div>
-                          <p className="mb-1.5 text-[11px] text-slate-400">
+                          <p className="mb-1.5 text-[11px] text-muted-foreground">
                             {recurringType === "biweekly" ? "Repeats every other week on:" : "Repeats on:"}
                           </p>
                           <div className="flex gap-1.5">
@@ -643,7 +774,7 @@ export function TaskManager() {
                                   "flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold transition-all",
                                   recurringDays.includes(d.key)
                                     ? "bg-[var(--hub-red)] text-white"
-                                    : "bg-slate-100 text-slate-400"
+                                    : "bg-muted text-muted-foreground"
                                 )}
                               >
                                 {d.label.charAt(0)}
@@ -656,7 +787,7 @@ export function TaskManager() {
                       {/* Biweekly: start week selection */}
                       {recurringType === "biweekly" && (
                         <div>
-                          <p className="mb-1.5 text-[11px] text-slate-400">First occurrence:</p>
+                          <p className="mb-1.5 text-[11px] text-muted-foreground">First occurrence:</p>
                           <div className="flex gap-2">
                             <button
                               onClick={() => setBiweeklyStart("this")}
@@ -664,7 +795,7 @@ export function TaskManager() {
                                 "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                                 biweeklyStart === "this"
                                   ? "bg-[var(--hub-red)] text-white"
-                                  : "bg-slate-100 text-slate-400"
+                                  : "bg-muted text-muted-foreground"
                               )}
                             >
                               This week
@@ -675,7 +806,7 @@ export function TaskManager() {
                                 "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                                 biweeklyStart === "next"
                                   ? "bg-[var(--hub-red)] text-white"
-                                  : "bg-slate-100 text-slate-400"
+                                  : "bg-muted text-muted-foreground"
                               )}
                             >
                               Next week
@@ -687,7 +818,7 @@ export function TaskManager() {
                       {/* Monthly: day-of-month picker */}
                       {recurringType === "monthly" && (
                         <div>
-                          <p className="mb-1.5 text-[11px] text-slate-400">Repeats on day(s) of month:</p>
+                          <p className="mb-1.5 text-[11px] text-muted-foreground">Repeats on day(s) of month:</p>
                           <div className="flex flex-wrap gap-1">
                             {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                               <button
@@ -699,7 +830,7 @@ export function TaskManager() {
                                   "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-all",
                                   recurringMonthDays.includes(day)
                                     ? "bg-[var(--hub-red)] text-white"
-                                    : "bg-slate-100 text-slate-400"
+                                    : "bg-muted text-muted-foreground"
                                 )}
                               >
                                 {day}
@@ -710,7 +841,7 @@ export function TaskManager() {
                       )}
 
                       {recurringType === "daily" && (
-                        <p className="text-[11px] text-slate-400">Repeats every day.</p>
+                        <p className="text-[11px] text-muted-foreground">Repeats every day.</p>
                       )}
                     </>
                   )}
@@ -718,7 +849,7 @@ export function TaskManager() {
 
                 {/* Location Assignment */}
                 <div className="space-y-2">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Assign to</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Assign to</label>
                   <div className="flex gap-2">
                     {(["all", "single", "multiple"] as const).map((mode) => (
                       <button
@@ -727,8 +858,8 @@ export function TaskManager() {
                         className={cn(
                           "flex-1 rounded-xl border px-3 py-2 text-xs font-medium capitalize transition-all",
                           assignMode === mode
-                            ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                            : "border-slate-200 text-slate-500 hover:border-slate-300"
+                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
                         )}
                       >
                         {mode === "all" ? "All Locations" : mode === "single" ? "One Location" : "Multiple"}
@@ -758,8 +889,8 @@ export function TaskManager() {
                           className={cn(
                             "rounded-xl border px-3 py-1.5 text-xs font-medium transition-all",
                             selectedLocationIds.includes(loc.id)
-                              ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                              ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                              : "border-border text-muted-foreground hover:border-muted-foreground/40"
                           )}
                         >
                           {loc.name}
@@ -768,17 +899,17 @@ export function TaskManager() {
                     </div>
                   )}
                   {assignMode === "multiple" && selectedLocationIds.length > 0 && !editingTask && (
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Will create {selectedLocationIds.length} separate task{selectedLocationIds.length > 1 ? "s" : ""}, one per location.
                     </p>
                   )}
                 </div>
 
                 {/* Options */}
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Options</p>
+                <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Options</p>
 
-                  <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={allowEarlyComplete}
@@ -786,11 +917,11 @@ export function TaskManager() {
                       className="rounded"
                     />
                     <span className="font-medium">Allow early completion</span>
-                    <span className="text-[10px] text-slate-400">(can be completed before due date)</span>
+                    <span className="text-[10px] text-muted-foreground">(can be completed before due date)</span>
                   </label>
 
                   <div>
-                    <p className="mb-1.5 text-[11px] text-slate-400">Show this task in:</p>
+                    <p className="mb-1.5 text-[11px] text-muted-foreground">Show this task in:</p>
                     <div className="flex flex-wrap gap-2">
                       {([
                         { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
@@ -803,8 +934,8 @@ export function TaskManager() {
                           className={cn(
                             "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
                             opt.value
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-white text-slate-400"
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
+                              : "border-border bg-card text-muted-foreground"
                           )}
                         >
                           {opt.label}

@@ -22,12 +22,27 @@ export function LiveTicker({ currentLocationId }: { currentLocationId?: string }
   const animRef = useRef<number>(0);
   const posRef = useRef(0);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount, then merge ARL-pushed messages
   useEffect(() => {
     try {
       const stored = localStorage.getItem("dashboard-ticker");
       if (stored) setItems(JSON.parse(stored).slice(0, MAX_ITEMS));
     } catch {}
+    // Fetch persisted ARL-pushed ticker messages
+    fetch("/api/ticker")
+      .then((r) => r.ok ? r.json() : { messages: [] })
+      .then((data) => {
+        const arlItems: TickerItem[] = (data.messages || []).map((m: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => ({
+          id: `arl-${m.id}`,
+          text: `${m.content} — ${m.arlName}`,
+          icon: m.icon,
+          timestamp: new Date(m.createdAt).getTime(),
+        }));
+        if (arlItems.length > 0) {
+          setItems((prev) => [...arlItems, ...prev].slice(0, MAX_ITEMS));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Save to localStorage
@@ -74,14 +89,31 @@ export function LiveTicker({ currentLocationId }: { currentLocationId?: string }
       });
     };
 
+    const handleTickerNew = (data: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => {
+      addItem({
+        id: `arl-${data.id}`,
+        text: `${data.content} — ${data.arlName}`,
+        icon: data.icon,
+        timestamp: Date.now(),
+      });
+    };
+
+    const handleTickerDelete = (data: { id: string }) => {
+      setItems((prev) => prev.filter((item) => item.id !== `arl-${data.id}`));
+    };
+
     socket.on("task:completed", handleTaskCompleted);
     socket.on("high-five:received", handleHighFive);
     socket.on("shoutout:new", handleShoutout);
+    socket.on("ticker:new", handleTickerNew);
+    socket.on("ticker:delete", handleTickerDelete);
 
     return () => {
       socket.off("task:completed", handleTaskCompleted);
       socket.off("high-five:received", handleHighFive);
       socket.off("shoutout:new", handleShoutout);
+      socket.off("ticker:new", handleTickerNew);
+      socket.off("ticker:delete", handleTickerDelete);
     };
   }, [socket]);
 

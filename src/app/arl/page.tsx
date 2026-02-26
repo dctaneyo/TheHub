@@ -57,6 +57,8 @@ import { useSocket } from "@/lib/socket-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { TickerPush } from "@/components/arl/ticker-push";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -448,7 +450,7 @@ export default function ArlPage() {
 
       <motion.aside
         className={cn(
-          "z-50 flex flex-col border-r border-slate-200 bg-white",
+          "z-50 flex flex-col border-r border-border bg-card",
           isMobileOrTablet
             ? "fixed inset-y-0 left-0 w-[280px] shadow-xl"
             : "relative w-[260px] shrink-0"
@@ -462,20 +464,20 @@ export default function ArlPage() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Sidebar header */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">
+        <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
               <span className="text-sm font-black text-white">H</span>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-800">The Hub</h1>
-              <p className="text-[10px] text-slate-400">ARL Dashboard</p>
+              <h1 className="text-sm font-bold text-foreground">The Hub</h1>
+              <p className="text-[10px] text-muted-foreground">ARL Dashboard</p>
             </div>
           </div>
           {isMobileOrTablet && (
             <button
               onClick={() => setSidebarOpen(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
             >
               <X className="h-4 w-4" />
             </button>
@@ -483,9 +485,9 @@ export default function ArlPage() {
         </div>
 
         {/* User info */}
-        <div className="border-b border-slate-100 px-4 py-3">
-          <p className="text-sm font-semibold text-slate-800">{user?.name}</p>
-          <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+        <div className="border-b border-border px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">{user?.name}</p>
+          <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
         </div>
 
         {/* Nav items */}
@@ -506,7 +508,7 @@ export default function ArlPage() {
                   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
                     ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
-                    : "text-slate-600 hover:bg-slate-100"
+                    : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="h-4.5 w-4.5 shrink-0" />
@@ -533,10 +535,10 @@ export default function ArlPage() {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t border-slate-200 p-3">
+        <div className="border-t border-border p-3">
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
           >
             <LogOut className="h-4.5 w-4.5" />
             Sign Out
@@ -552,12 +554,12 @@ export default function ArlPage() {
             {isMobileOrTablet && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground"
               >
                 <Menu className="h-4.5 w-4.5" />
               </button>
             )}
-            <h2 className="text-base font-bold text-slate-800">
+            <h2 className="text-base font-bold text-foreground">
               {navItems.find((n) => n.id === activeView)?.label ?? ""}
             </h2>
           </div>
@@ -576,11 +578,11 @@ export default function ArlPage() {
             ) : (
               <button
                 onClick={requestNotificationPermission}
-                className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 hover:bg-slate-200 transition-colors"
+                className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 hover:bg-muted/80 transition-colors"
                 title="Enable push notifications"
               >
-                <Bell className="h-3.5 w-3.5 text-slate-600" />
-                <span className="text-xs font-medium text-slate-700">Enable</span>
+                <Bell className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-foreground">Enable</span>
               </button>
             )}
             <GlobalSearch onNavigate={(type, id) => {
@@ -710,14 +712,14 @@ export default function ArlPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-xl shadow-emerald-100"
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-card px-4 py-3 shadow-xl shadow-emerald-100"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{toast.locationName}</p>
-                <p className="text-xs text-slate-500 truncate">Completed: {toast.taskTitle}</p>
+                <p className="text-sm font-semibold text-foreground truncate">{toast.locationName}</p>
+                <p className="text-xs text-muted-foreground truncate">Completed: {toast.taskTitle}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-1">
                 <Zap className="h-3 w-3 text-amber-500" />
@@ -737,9 +739,9 @@ export default function ArlPage() {
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-red-200 p-5 max-w-sm w-full">
+            <div className="bg-card rounded-2xl shadow-2xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center">
                   <Video className="h-5 w-5 text-red-600" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -747,8 +749,8 @@ export default function ArlPage() {
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-xs font-bold text-red-600 uppercase">Live Now</span>
                   </div>
-                  <p className="text-sm font-bold text-slate-800 truncate">{activeBroadcast.title}</p>
-                  <p className="text-xs text-slate-500">by {activeBroadcast.arlName}</p>
+                  <p className="text-sm font-bold text-foreground truncate">{activeBroadcast.title}</p>
+                  <p className="text-xs text-muted-foreground">by {activeBroadcast.arlName}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -763,7 +765,7 @@ export default function ArlPage() {
                 </button>
                 <button
                   onClick={() => setShowBroadcastNotification(false)}
-                  className="px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
                 >
                   Dismiss
                 </button>
@@ -791,6 +793,17 @@ export default function ArlPage() {
 
       {/* Social Actions Menu */}
       <SocialActionsMenu userType="arl" userId={user?.id} userName={user?.name} />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        activeView={activeView}
+        onViewChange={(view) => {
+          setActiveView(view as ArlView);
+          if (view === "messages") setUnreadCount(0);
+        }}
+        unreadCount={unreadCount}
+        userType="arl"
+      />
     </div>
   );
 }
@@ -874,12 +887,12 @@ function OverviewContent() {
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-border bg-card p-5 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">{stat.label}</p>
-                <p className="mt-1 text-2xl font-bold text-slate-800">{stat.value}</p>
+                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">{stat.value}</p>
               </div>
               <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", stat.color)}>
                 <stat.icon className="h-5 w-5" />
@@ -889,28 +902,28 @@ function OverviewContent() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-bold text-slate-800">Active Sessions</h3>
-          <span className="text-[10px] text-slate-400">{onlineLocations.length + onlineArls.length} online</span>
+          <h3 className="text-sm font-bold text-foreground">Active Sessions</h3>
+          <span className="text-[10px] text-muted-foreground">{onlineLocations.length + onlineArls.length} online</span>
         </div>
-        <p className="text-xs text-slate-400 mb-4">Only showing currently connected sessions</p>
+        <p className="text-xs text-muted-foreground mb-4">Only showing currently connected sessions</p>
 
         {onlineArls.length === 0 && onlineLocations.length === 0 && (
-          <p className="text-xs text-slate-400 py-4 text-center">No active sessions right now</p>
+          <p className="text-xs text-muted-foreground py-4 text-center">No active sessions right now</p>
         )}
 
         {onlineArls.length > 0 && (
           <>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-2">ARLs</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">ARLs</p>
             <div className="space-y-2 mb-4">
               {onlineArls.map((arl) => (
                 <div key={arl.id} className="flex items-center justify-between rounded-xl bg-sky-50 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
                     <div>
-                      <span className="text-sm font-medium text-slate-700">{arl.name}</span>
-                      <span className="ml-2 text-[10px] text-slate-400">ARL</span>
+                      <span className="text-sm font-medium text-foreground">{arl.name}</span>
+                      <span className="ml-2 text-[10px] text-muted-foreground">ARL</span>
                       {userActivities.get(arl.id) && (
                         <span className="ml-2 text-[10px] font-medium text-sky-500">· {userActivities.get(arl.id)}</span>
                       )}
@@ -932,15 +945,15 @@ function OverviewContent() {
 
         {onlineLocations.length > 0 && (
           <>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Restaurants</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Restaurants</p>
             <div className="space-y-2">
               {onlineLocations.map((loc) => (
                 <div key={loc.id} className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                     <div>
-                      <span className="text-sm font-medium text-slate-700">{loc.name}</span>
-                      <span className="ml-2 text-[10px] text-slate-400">#{loc.storeNumber}</span>
+                      <span className="text-sm font-medium text-foreground">{loc.name}</span>
+                      <span className="ml-2 text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
                       {userActivities.get(loc.id) && (
                         <span className="ml-2 text-[10px] font-medium text-emerald-500">· {userActivities.get(loc.id)}</span>
                       )}
@@ -961,12 +974,17 @@ function OverviewContent() {
         )}
       </div>
 
+      {/* Ticker Push */}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <TickerPush />
+      </div>
+
       {/* Shoutouts and Live Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <ShoutoutsFeed />
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <LiveActivityFeed maxItems={15} />
         </div>
       </div>
