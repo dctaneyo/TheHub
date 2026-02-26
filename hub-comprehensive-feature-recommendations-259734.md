@@ -217,7 +217,6 @@ A full audit of every feature currently in the codebase, with notes on what work
 
 **Improvements to make:**
 - Voice messages: `VoiceRecorder` component is fully built (`src/components/voice-recorder.tsx`) with record/stop/preview/send UI, but it is **not wired into the chat input in `restaurant-chat.tsx`** — it exists as a standalone component but is never imported or rendered in the chat. This needs to be connected.
-- No typing indicators ("ARL is typing...").
 - No message search within a conversation.
 - No image/file attachment support (schema has `messageType` field with 'image'/'file' but UI only sends text and voice).
 - Chat panel uses hardcoded `bg-white`, `border-slate-200` — no dark mode.
@@ -242,7 +241,6 @@ A full audit of every feature currently in the codebase, with notes on what work
 
 **Improvements to make:**
 - Voice messages: same as restaurant chat — `VoiceRecorder` component is not wired into the ARL messaging input either.
-- No typing indicators.
 - No message search within a conversation.
 - No @mention support.
 - No message pinning.
@@ -1061,10 +1059,6 @@ Currently if the server is unreachable, the dashboard is blank. A service worker
 The `web-push` infrastructure is already there for the manifest side.
 
 ---
-
-### 16. Typing Indicators in Chat — LOW EFFORT
-**Effort:** 2 hours
-Emit a `typing:start` / `typing:stop` socket event when the user types, show "X is typing..." in the conversation header. Auto-stop after 3 seconds of no keystrokes.
 
 ---
 
