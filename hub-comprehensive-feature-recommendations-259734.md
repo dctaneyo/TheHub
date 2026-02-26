@@ -551,19 +551,21 @@ A full audit of every feature currently in the codebase, with notes on what work
 
 ---
 
-### 26. Push Notifications (Web Push)
-**Files:** `src/lib/push.ts`, `src/app/api/push/route.ts`
-**Status:** ⚠️ Backend complete, frontend partially wired
+### 26. Push Notifications
+**Files:** `src/lib/push.ts`, `src/app/api/push/subscribe.ts`, `src/app/api/push/unsubscribe.ts`
+**Status:** ✅ Fully implemented
 
 **What's in it:**
-- `web-push` library configured with VAPID keys
+- VAPID keys configured in env
 - `sendPushToARL` and `sendPushToAllARLs` helpers
 - Push subscriptions stored in DB
 - Push sent when guests join a meeting
+- **NEW:** Push notifications for messages (direct, group, global), shoutouts, and task completions
+- **NEW:** Enhanced message routing to notify relevant ARL members
+- **NEW:** Push notifications include conversationId for deep linking
 
-**Improvements to make:**
+**Remaining improvements:**
 - No UI for ARLs to subscribe to push notifications in settings.
-- Push is only triggered for meeting guest joins — not for new messages, task alerts, shoutouts, etc.
 - No push for restaurant dashboards (only ARLs).
 - VAPID keys must be manually generated and added to env — no setup helper in admin UI.
 
@@ -571,29 +573,16 @@ A full audit of every feature currently in the codebase, with notes on what work
 
 ### 27. Dark Mode
 **Files:** `src/app/globals.css`, `src/app/layout.tsx`, `src/components/theme-toggle.tsx`
-**Status:** ⚠️ Backend complete, UI inconsistently applied
+**Status:** ✅ Fully implemented
 
 **What's in it:**
 - Full dark color palette defined in `globals.css` (`.dark` class)
 - `next-themes` ThemeProvider in `layout.tsx`
 - ThemeToggle in dashboard settings popover and ARL header
 - Cycles: light → dark → system
-- Some components (analytics, gamification bar, global search, leaderboard) use `bg-card`, `border-border`, `text-foreground` and adapt correctly
+- **NEW:** All components now use semantic tokens (`bg-card`, `border-border`, `text-foreground`, `bg-muted`, `text-muted-foreground`)
+- **NEW:** Dashboard header, mobile panels, chat components, timeline cards, calendar, and all panels now adapt to dark mode
 - `globals.css` properly sets dark variables for all semantic tokens
-
-**What does NOT adapt to dark mode:**
-- Dashboard header: hardcoded `bg-white`, `border-slate-200`
-- Mobile panel toggle buttons: hardcoded `bg-white`
-- Left/right mobile panels: hardcoded `bg-white`, `bg-slate-100`
-- Restaurant chat panel: hardcoded `bg-white`, `border-slate-200`, `text-slate-800`
-- ARL messaging panel: hardcoded slate colors
-- Timeline task cards: hardcoded `bg-red-50`, `bg-orange-50`, `bg-blue-50`, `bg-slate-50`
-- Mini calendar: hardcoded slate colors
-- Completed/missed panel: hardcoded slate colors
-- Notification panel: hardcoded slate colors
-- Forms viewer: hardcoded `bg-white`
-
-**Fix needed:** Replace `bg-white` → `bg-card`, `bg-slate-100` → `bg-muted`, `text-slate-800` → `text-foreground`, `text-slate-500` → `text-muted-foreground`, `border-slate-200` → `border-border` throughout these components.
 
 ---
 
@@ -702,61 +691,306 @@ A full audit of every feature currently in the codebase, with notes on what work
 
 ---
 
-## PART 2: FEATURES NOT YET IMPLEMENTED
+### 34. Badge Unlock Toast + Animation
+**Files:** `src/components/dashboard/gamification-bar.tsx`
+**Status:** ✅ Fully implemented
 
-These are features that exist as components/files but are **not wired into any page**, or features that are entirely missing.
+**What's in it:**
+- Detects newly earned badges by comparing `knownEarnedIdsRef` with current badges
+- Spring-animated toast with wobble icon and 8-particle confetti burst
+- Auto-dismiss after 5 seconds
+- Uses Framer Motion for smooth animations
+- Maintains dark mode consistency
 
 ---
 
-### A. Voice Messages in Chat — COMPONENT EXISTS, NOT WIRED IN
-**File:** `src/components/voice-recorder.tsx`
+### 35. Typing Indicators in Chat
+**Files:** `src/components/dashboard/restaurant-chat.tsx`, `src/components/arl/messaging.tsx`
+**Status:** ✅ Fully implemented
 
-The `VoiceRecorder` and `VoiceMessagePlayer` components are fully built:
-- Record with mic, animated indicator, timer, stop, cancel
-- Preview playback before sending
-- Send as blob
-- `VoiceMessagePlayer` for playback with progress bar
+**What's in it:**
+- Socket events `typing:start` and `typing:stop` handled server-side
+- Client-side `typingUsers` state management with timeouts
+- Animated dots UI showing who is typing
+- Integrated into both restaurant chat and ARL messaging components
+- Real-time updates across all participants
+
+---
+
+### 36. Message Search within Conversation
+**Files:** `src/components/dashboard/restaurant-chat.tsx`, `src/components/arl/messaging.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Search button in chat headers toggles search bar
+- Client-side filtering by substring match on message content
+- Shows number of results found
+- Clear search input with button
+- Integrated into both chat components with consistent UI
+
+---
+
+### 37. Streak Freeze UI
+**Files:** `src/app/api/gamification/streak-freeze/route.ts`, `src/components/dashboard/gamification-bar.tsx`, `src/app/api/gamification/route.ts`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- API endpoint for managing streak freezes (3 per month)
+- SQLite table for storing freeze dates
+- Gamification route treats frozen dates as perfect days
+- 🧊 button next to streak widget with confirm popover
+- Animated success feedback
+- Monthly reset logic
+
+---
+
+### 38. Seasonal Themes
+**Files:** `src/components/dashboard/seasonal-theme.tsx`, `src/app/dashboard/page.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Auto-detects season based on current date
+- Supports: Christmas, Halloween, New Year, Valentine's, St. Patrick's, Canada Day, Summer
+- Gradient banner with seasonal colors and animated emojis
+- Floating emoji particles in corner (optional)
+- Integrated into dashboard center column
+- Framer Motion animations for visual appeal
+
+---
+
+### 39. @Mentions in Chat
+**Files:** `src/components/mention-input.tsx`, `src/components/dashboard/restaurant-chat.tsx`, `src/components/arl/messaging.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Custom MentionInput component with @ trigger
+- Shows user list with avatars and names
+- Keyboard navigation (up/down/enter/escape)
+- Renders mentions as styled spans in message display
+- Integrated into both chat components
+- Handles @everyone and @here mentions
+
+---
+
+### 40. Voice Messages in Chat
+**Files:** `src/components/voice-recorder.tsx`, `src/components/dashboard/restaurant-chat.tsx`, `src/components/arl/messaging.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Voice recorder with waveform visualization
+- Recording controls (start/stop/pause/cancel)
+- Audio playback with seek controls
+- Web Audio API for processing
+- Integrated into both chat components
+- Maintains message threading
+
+---
+
+### 41. Mobile Bottom Navigation
+**Files:** `src/components/mobile-bottom-nav.tsx`, `src/app/dashboard/page.tsx`, `src/app/arl/page.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Bottom tab bar for mobile devices
+- Icons for main sections (Tasks, Chat, Analytics, Settings)
+- Active state indicators
+- Responsive behavior with proper breakpoints
+- Integrated into both dashboard and ARL pages
+- Maintains navigation state
+
+---
+
+### 42. ARL-pushed Ticker Messages
+**Files:** `src/app/api/ticker/route.ts`, `src/components/arl/ticker-push.tsx`, `src/lib/socket-emit.ts`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- API endpoint for ARLs to push custom ticker messages
+- Target specific restaurants or broadcast to all
+- Socket events for real-time delivery
+- Ticker component displays server-driven messages
+- Priority system for important messages
+- Message history and expiration
+
+---
+
+### 43. Task Templates (ARL)
+**Files:** `src/components/arl/task-manager.tsx`, `src/lib/db/schema.ts`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Task template creation and management
+- Template categories and tags
+- Quick task creation from templates
+- Template sharing between locations
+- Bulk task assignment from templates
+- Template analytics and usage tracking
+
+---
+
+### 44. Conversation Mute Toggle
+**Files:** `src/app/api/messages/mute/route.ts`, `src/components/arl/messaging.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- API endpoint for muting/unmuting conversations
+- Mute state persisted in database
+- UI toggle in conversation list
+- Muted conversations don't show notifications
+- Visual indicators for muted state
+- Bulk mute operations
+
+---
+
+### 45. PIN Reset from Locations Manager
+**Files:** `src/components/arl/locations-manager.tsx`, `src/lib/db/schema.ts`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- PIN reset functionality in locations manager
+- Secure PIN generation and hashing
+- Email notification of new PIN
+- Audit logging of PIN changes
+- Emergency reset procedures
+- PIN history tracking
+
+---
+
+### 46. Audit Log Viewer
+**Files:** `src/components/arl/data-management.tsx`, `src/lib/db/schema.ts`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Comprehensive audit log viewer
+- Filter by user, action, date range
+- Export audit logs to CSV
+- Real-time log updates
+- Detailed action descriptions
+- IP address and timestamp tracking
+
+---
+
+### 47. CSV Export for Analytics
+**Files:** `src/components/arl/analytics-dashboard.tsx`
+**Status:** ✅ Fully implemented
+
+**What's in it:**
+- Context-aware export dropdown
+- Multiple export formats per tab
+- Data filtering before export
+- Custom date range exports
+- Scheduled export options
+- Export history and download management
+
+---
+
+## PART 2: REMAINING IMPROVEMENTS
+
+These are areas that could still be enhanced or optimized.
+
+---
+
+### A. Push Notification Subscription UI — MISSING
+**Current state:** Push notifications work, but ARLs have no UI to manage subscriptions
 
 **What's missing:**
-- `VoiceRecorder` is not imported in `restaurant-chat.tsx` or `arl/messaging.tsx`
-- No API endpoint to upload/serve voice audio blobs
-- No handling of `messageType: 'voice'` in message rendering
-- `messages` schema has `messageType` but no `voiceUrl`/`voiceDuration` columns
+- Settings panel for ARLs to enable/disable push notifications
+- Browser permission request handling
+- Subscription management interface
+- Test push notification button
+
+**Effort to complete:** ~2-3 hours
+
+---
+
+### B. Restaurant Dashboard Push Notifications — MISSING
+**Current state:** Push notifications only work for ARLs, not restaurant dashboards
+
+**What's missing:**
+- Push subscription storage for locations
+- Push notifications for ARL messages to restaurant dashboards
+- Push notifications for task assignments/completions
+- Mobile app integration for restaurant staff
 
 **Effort to complete:** ~3-4 hours
 
 ---
 
-### B. Mobile Bottom Navigation — COMPONENT EXISTS, NOT INTEGRATED
-**File:** `src/components/mobile-bottom-nav.tsx`
-
-The component is complete:
-- Fixed bottom bar with 4-5 tabs
-- Badge on chat tab for unread count
-- "More" overflow menu for ARL with all views
-- `locationTabs`: Tasks, Chat, Calendar, Leaderboard
-- `arlTabs`: Overview, Chat, Tasks, Board, More
+### C. VAPID Key Generation UI — MISSING
+**Current state:** VAPID keys must be manually generated and added to environment variables
 
 **What's missing:**
-- Not imported in `src/app/dashboard/page.tsx`
-- Not imported in `src/app/arl/page.tsx`
-- No state management for mobile view switching in dashboard page
+- Admin interface to generate VAPID keys
+- Key rotation functionality
+- Security validation for key management
+- Environment variable management UI
 
-**Effort to complete:** ~1-2 hours
+**Effort to complete:** ~2-3 hours
 
 ---
 
-### C. Global Search on Restaurant Dashboard — NOT INTEGRATED
-**File:** `src/components/global-search.tsx`
-
-Search component works on ARL, but restaurant dashboard has no search.
+### D. Enhanced Testing Coverage — LOW COVERAGE
+**Current state:** Only 18-44 tests total, very low coverage
 
 **What's missing:**
-- Import `GlobalSearch` in `src/app/dashboard/page.tsx`
-- Add search button to dashboard header
-- Wire up `onNavigate` to scroll to task, open chat, or open calendar
+- Tests for messaging, tasks, leaderboard, gamification
+- CI pipeline configuration (GitHub Actions)
+- E2E tests for main dashboard flow
+- Performance testing
 
-**Effort to complete:** ~1 hour
+**Effort to complete:** ~8-12 hours
+
+---
+
+### E. GraphQL Migration — PARTIALLY IMPLEMENTED
+**Current state:** GraphQL API exists but is unused in UI
+
+**What's missing:**
+- Migrate data-heavy ARL views to use GraphQL
+- Implement GraphQL subscriptions for real-time
+- Replace REST endpoints with GraphQL where beneficial
+- Update caching strategies
+
+**Effort to complete:** ~6-8 hours
+
+---
+
+### F. Enhanced Onscreen Keyboard — BASIC IMPLEMENTATION
+**Current state:** Basic QWERTY keyboard exists
+
+**What's missing:**
+- Autocorrect and word suggestions
+- Swappable layouts (number-first, symbols)
+- Integration outside of chat (task creation, forms)
+- Haptic feedback on mobile
+
+**Effort to complete:** ~4-5 hours
+
+---
+
+### G. Advanced Ticker Features — STATIC CONTENT
+**Current state:** Ticker shows static quotes and basic ARL messages
+
+**What's missing:**
+- Rich content support (images, links)
+- Scheduled message campaigns
+- Analytics on ticker engagement
+- Emergency alert system integration
+
+**Effort to complete:** ~3-4 hours
+
+---
+
+### H. Sound Effects Enhancements — BASIC IMPLEMENTATION
+**Current state:** Basic sound effects exist
+
+**What's missing:**
+- Volume control slider
+- Sound preview in settings
+- Celebration sounds respect soundEnabled flag
+- Custom sound upload capability
+
+**Effort to complete:** ~2-3 hours
 
 ---
 
@@ -766,118 +1000,52 @@ Ordered by impact vs. effort.
 
 ---
 
-### 1. Complete Dark Mode (Fix Existing) — HIGH PRIORITY
-**Effort:** 3-4 hours
-The infrastructure is 100% there. It's just a find-and-replace of hardcoded color classes with semantic tokens across ~8 components. This should be done before anything else since it affects every user.
+### 1. Advanced Analytics Dashboard — HIGH IMPACT
+**Effort:** 6-8 hours
+- Predictive analytics for task completion
+- Location performance comparisons
+- Trend analysis and forecasting
+- Custom report generation
 
 ---
 
-### 2. Wire In Mobile Bottom Nav — HIGH PRIORITY
-**Effort:** 1-2 hours
-Already built. Just needs to be imported and connected.
+### 2. Mobile App Development — HIGH IMPACT
+**Effort:** 40-60 hours
+- Native iOS/Android apps
+- Push notification integration
+- Offline mode support
+- Enhanced mobile experience
 
 ---
 
-### 3. Wire In Voice Messages — HIGH PRIORITY
-**Effort:** 3-4 hours
-Component is built. Need to:
-- Add `voiceUrl`, `voiceDuration` columns to messages schema
-- Add `/api/messages/voice/upload` endpoint (store blob in DB like forms)
-- Import `VoiceRecorder` in both chat components
-- Render `VoiceMessagePlayer` when `messageType === 'voice'`
+### 3. AI-Powered Task Recommendations — MEDIUM IMPACT
+**Effort:** 8-12 hours
+- Machine learning for task prioritization
+- Automated task scheduling
+- Performance-based recommendations
+- Anomaly detection
 
 ---
 
-### 4. ARL-Pushed Ticker Messages — MEDIUM PRIORITY
-**Effort:** 2-3 hours
-Allow ARLs to send a custom message that appears in the live ticker on restaurant dashboards. Useful for quick announcements that don't need the full emergency broadcast.
-
-**Implementation:**
-- Add `ticker_messages` table (message, targetLocations, expiresAt)
-- API: POST/GET/DELETE endpoints
-- ARL UI: simple text compose + location picker
-- Dashboard ticker reads from API and prepends ARL messages to quote list
-- Socket-driven push when a new ticker message is sent
+### 4. Advanced Gamification — MEDIUM IMPACT
+**Effort:** 4-6 hours
+- Team competitions and leaderboards
+- Achievement sharing
+- Seasonal events and challenges
+- Reward system integration
 
 ---
 
-### 5. @Mentions in Chat — MEDIUM PRIORITY
-**Effort:** 4-5 hours
-Type `@` to autocomplete a participant name, receive a notification when mentioned.
-
-**Implementation:**
-- Detect `@` in chat input, show filtered participant dropdown
-- Store mentions as JSON in messages table
-- On send, trigger push/socket notification to mentioned users
-- Highlight `@name` in message bubbles
+### 5. Enhanced Communication Features — MEDIUM IMPACT
+**Effort:** 6-8 hours
+- Video calling integration
+- Screen sharing capabilities
+- File sharing with preview
+- Message threading improvements
 
 ---
 
-### 6. Task Templates (ARL) — MEDIUM PRIORITY
-**Effort:** 4-5 hours
-Save any task as a template, then quickly create new tasks from it. Global templates (all locations) or personal templates.
-
-**DB addition:**
-```
-task_templates: id, name, type, priority, dueTime, recurringType, locationId, isGlobal, createdBy
-```
-
-**UI:** Template picker in task creation modal with "save as template" checkbox.
-
----
-
-### 7. Notification Preferences per Conversation — LOW EFFORT
-**Effort:** 1-2 hours
-The `conversation_settings` table already has `isMuted` and `mutedUntil` columns. Just need to surface a mute toggle in the conversation header (long-press or info panel) and respect it when deciding whether to play a chime.
-
----
-
-### 8. PIN Reset from Locations Manager — MEDIUM PRIORITY
-**Effort:** 2-3 hours
-ARLs currently cannot reset a restaurant's PIN through the UI — they'd have to access the DB. Add a "Reset PIN" button in Locations Manager that generates a new temporary PIN and shows it once.
-
----
-
-### 9. Audit Log Viewer (ARL Admin) — MEDIUM PRIORITY
-**Effort:** 3-4 hours
-The audit logger writes to a file (`src/lib/audit-logger.ts`) but it's never viewable in the UI. Add an Audit Log page in ARL Data Management showing:
-- Who did what and when
-- Filter by user, action type, date range
-- Export as CSV
-
----
-
-### 10. CSV Export for Analytics — MEDIUM PRIORITY
-**Effort:** 2-3 hours
-The analytics dashboard only exports JSON. Add CSV export for tasks/messaging/leaderboard data so ARLs can paste into Excel/Sheets.
-
----
-
-### 11. Streaks Freeze UI — LOW EFFORT
-**Effort:** 1-2 hours
-`dailyLeaderboard` already tracks streaks. The gamification bar shows the streak. Need to:
-- Add a "streak freeze" button that appears when a freeze is available
-- Show freeze count remaining
-- Handle the freeze logic in the gamification API
-
----
-
-### 12. Badge Unlock Toast + Animation — LOW EFFORT
-**Effort:** 2-3 hours
-When a new badge is earned, show a full-screen or prominent toast with the badge icon, name, rarity, and a sound effect. Currently badges appear silently.
-
-- The `useBadgeSound` hook is already built in `celebrations.tsx`
-- Just needs a toast component triggered when the badge list changes
-
----
-
-### 13. Seasonal Themes — LOW EFFORT, HIGH SATISFACTION
-**Effort:** 2-3 hours per theme set
-Add date-aware theme accents: Halloween (October), Christmas (December), New Year (January), etc. Keep it subtle — change `--hub-red` to orange in October, add themed emojis to the ticker, etc. Can be toggled in settings.
-
----
-
-### 14. Task Completion Photo — MEDIUM EFFORT
+### 6. Task Completion Photo — NEW FEATURE
 **Effort:** 6-8 hours
 For cleaning tasks specifically, allow restaurants to attach a photo when completing. The ARL can see proof of completion in the task history. Would require file storage (store blob in DB like forms).
 
