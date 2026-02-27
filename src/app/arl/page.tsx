@@ -591,8 +591,8 @@ export default function ArlPage() {
         <main className={cn(
           "flex-1 relative",
           activeView === "messages"
-            ? "flex flex-col overflow-hidden p-5 pb-20 md:pb-5"
-            : "overflow-y-auto p-5 pb-20 md:pb-5"
+            ? "flex flex-col overflow-hidden p-5"
+            : "overflow-y-auto p-5"
         )}>
           {mounted ? (
             <AnimatePresence mode="wait">
