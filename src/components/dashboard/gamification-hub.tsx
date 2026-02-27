@@ -73,7 +73,9 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
   const [freezeInfo, setFreezeInfo] = useState<FreezeInfo | null>(null);
   const [freezing, setFreezing] = useState(false);
   const [freezeSuccess, setFreezeSuccess] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
   const knownEarnedIdsRef = useRef<Set<string> | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
 
@@ -161,11 +163,27 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
     };
   }, [socket, fetchData]);
 
+  // Compute fixed position when panel opens
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPanelPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    } else {
+      setPanelPos(null);
+    }
+  }, [isOpen]);
+
   // Close panel on outside click
   useEffect(() => {
     if (!isOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        panelRef.current && !panelRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -227,7 +245,7 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
       </AnimatePresence>
 
       {/* Unified compact trigger */}
-      <div className="relative" ref={panelRef}>
+      <div className="relative" ref={triggerRef}>
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
           whileHover={{ scale: 1.03 }}
@@ -324,7 +342,9 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="absolute right-0 top-full mt-2 z-[200] w-[380px] rounded-2xl border border-border bg-card shadow-2xl shadow-black/10 dark:shadow-black/30 overflow-hidden"
+              ref={panelRef}
+              className="fixed z-[200] w-[380px] rounded-2xl border border-border bg-card shadow-2xl shadow-black/10 dark:shadow-black/30 overflow-hidden"
+              style={panelPos ? { top: panelPos.top, right: panelPos.right } : {}}
             >
               {/* Header gradient */}
               <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-4">
