@@ -355,7 +355,7 @@ export function DataManagement() {
     indigo: { bg: "bg-indigo-50", text: "text-indigo-600", btn: "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300" },
     purple: { bg: "bg-purple-50", text: "text-purple-600", btn: "bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300" },
     sky:    { bg: "bg-sky-50",    text: "text-sky-600",    btn: "bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300" },
-    slate:  { bg: "bg-slate-50",  text: "text-slate-600",  btn: "bg-slate-600 hover:bg-slate-700 disabled:bg-slate-300" },
+    slate:  { bg: "bg-muted",  text: "text-muted-foreground",  btn: "bg-slate-600 hover:bg-slate-700 disabled:bg-slate-300" },
     cyan:   { bg: "bg-cyan-50",   text: "text-cyan-600",   btn: "bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300" },
   };
 
@@ -402,7 +402,7 @@ export function DataManagement() {
             <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                     <ScrollText className="h-5 w-5" />
                   </div>
                   <div>
@@ -489,7 +489,7 @@ export function DataManagement() {
                 { label: "Database Size", value: report.database.sizeFormatted, color: "text-blue-600" },
                 { label: "Uptime", value: report.system.uptimeFormatted, color: "text-emerald-600" },
                 { label: "Memory", value: report.system.memoryFormatted, color: "text-purple-600" },
-                { label: "Node.js", value: report.system.nodeVersion, color: "text-slate-600" },
+                { label: "Node.js", value: report.system.nodeVersion, color: "text-muted-foreground" },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl bg-muted/50 p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>

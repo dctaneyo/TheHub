@@ -95,7 +95,7 @@ function convIcon(type: ConvType) {
 function convIconBg(type: ConvType) {
   if (type === "global") return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
   if (type === "group") return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
-  return "bg-slate-100 text-slate-500";
+  return "bg-muted text-muted-foreground";
 }
 
 const SWIPE_THRESHOLD = 60; // px to reveal delete button
@@ -204,7 +204,7 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
         onClick={handleRowClick}
         className={cn(
           "relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors cursor-pointer select-none",
-          convo.unreadCount > 0 ? "bg-red-50" : "bg-white hover:bg-slate-50"
+          convo.unreadCount > 0 ? "bg-red-50" : "bg-card hover:bg-muted"
         )}
       >
         <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
@@ -214,15 +214,15 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
             {convo.lastMessage && (
-              <span className="shrink-0 text-[10px] text-slate-400">
+              <span className="shrink-0 text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
               </span>
             )}
           </div>
-          <p className="text-[10px] text-slate-400">{convo.subtitle}</p>
+          <p className="text-[10px] text-muted-foreground">{convo.subtitle}</p>
           {convo.lastMessage && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">
-              <span className="text-slate-400">{convo.lastMessage.senderName}: </span>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              <span className="text-muted-foreground">{convo.lastMessage.senderName}: </span>
               {convo.lastMessage.content}
             </p>
           )}
@@ -793,8 +793,8 @@ export function Messaging() {
           {conversations.length === 0 && (
             <div className="flex h-40 items-center justify-center">
               <div className="text-center">
-                <MessageCircle className="mx-auto h-8 w-8 text-slate-200" />
-                <p className="mt-2 text-xs text-slate-400">No conversations yet</p>
+                <MessageCircle className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-xs text-muted-foreground">No conversations yet</p>
               </div>
             </div>
           )}
@@ -911,7 +911,7 @@ export function Messaging() {
           )}
           {visibleMessages.length === 0 && (
             <div className="flex h-40 items-center justify-center">
-              <p className="text-sm text-slate-400">No messages yet. Start the conversation!</p>
+              <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
             </div>
           )}
           {visibleMessages.map((msg) => {
@@ -1004,7 +1004,7 @@ export function Messaging() {
                             )}
                             {receiptDetail.unreadMembers.length > 0 && (
                               <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Not yet read</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
                                 {receiptDetail.unreadMembers.map((m) => {
                                   const info = memberInfoMap.get(m.memberId);
                                   return (
@@ -1026,7 +1026,7 @@ export function Messaging() {
                     {/* Reaction button */}
                     <button
                       onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
+                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
                       title="Add reaction"
                     >
                       <Smile className="h-3 w-3" />
@@ -1070,10 +1070,10 @@ export function Messaging() {
               <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
                 <div className="flex gap-0.5">
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-muted-foreground">
                   {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
                 </span>
               </motion.div>

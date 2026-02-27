@@ -103,7 +103,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">
@@ -122,7 +122,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
         {/* Body */}
         <div className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Meeting Title</label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Title</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -133,17 +133,17 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           </div>
 
           {/* Meeting Code */}
-          <div className="bg-slate-50 rounded-xl p-4">
+          <div className="bg-muted rounded-xl p-4">
             <div className="flex items-center justify-between mb-1">
-              <label className="text-sm font-semibold text-slate-700">Meeting Code</label>
-              <span className="text-[10px] text-slate-400 font-medium">Share with guests to join</span>
+              <label className="text-sm font-semibold text-foreground">Meeting Code</label>
+              <span className="text-[10px] text-muted-foreground font-medium">Share with guests to join</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-center">
+              <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5 text-center">
                 <span className="font-mono text-xl font-bold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}
-                className="p-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-700">
+                className="p-2.5 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                 {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -151,10 +151,10 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
 
           {/* Password (optional) */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            <label className="block text-sm font-semibold text-foreground mb-1.5">
               <div className="flex items-center gap-1.5">
                 {password.trim() ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Globe className="h-3.5 w-3.5 text-green-500" />}
-                Password <span className="text-slate-400 font-normal">(optional)</span>
+                Password <span className="text-muted-foreground font-normal">(optional)</span>
               </div>
             </label>
             <Input
@@ -163,7 +163,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               placeholder="Leave empty for open access"
               type="password"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               {password.trim() ? "Guests will need this password to join" : "Anyone with the meeting code can join"}
             </p>
           </div>

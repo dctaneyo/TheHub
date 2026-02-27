@@ -135,10 +135,10 @@ export function LocationsManager() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+            <div key={i} className="rounded-2xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-slate-200 overflow-hidden shrink-0">
-                  <motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
+                <div className="h-10 w-10 rounded-xl bg-muted overflow-hidden shrink-0">
+                  <motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
                 </div>
                 <div className="flex-1 space-y-1.5">
                   <div className="h-3.5 w-28 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} /></div>
@@ -206,7 +206,7 @@ export function LocationsManager() {
                   ))}
                   <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-xl",
-                    loc.isOnline ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
+                    loc.isOnline ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
                   )}>
                     <Store className="h-5 w-5" />
                   </div>
@@ -254,8 +254,8 @@ export function LocationsManager() {
                   className={cn(
                     "text-[10px]",
                     loc.isOnline
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-slate-100 text-slate-500"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   {loc.isOnline ? (

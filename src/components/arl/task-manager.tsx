@@ -119,7 +119,7 @@ const TASK_TEMPLATES: TaskTemplate[] = [
 const TEMPLATE_CATEGORIES = [...new Set(TASK_TEMPLATES.map((t) => t.category))];
 
 const PRIORITIES = [
-  { value: "low", label: "Low", color: "bg-slate-100 text-slate-600" },
+  { value: "low", label: "Low", color: "bg-muted text-muted-foreground" },
   { value: "normal", label: "Normal", color: "bg-blue-100 text-blue-700" },
   { value: "high", label: "High", color: "bg-orange-100 text-orange-700" },
   { value: "urgent", label: "Urgent", color: "bg-red-100 text-red-700" },
@@ -390,7 +390,7 @@ export function TaskManager() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
       </div>
     );
   }

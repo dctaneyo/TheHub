@@ -205,7 +205,7 @@ export function TickerPush() {
                       <Zap className="h-3 w-3 text-white" />
                       <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live</span>
                     </div>
-                    <span className="text-xs text-slate-300 font-medium px-4 truncate">
+                    <span className="text-xs text-white/80 font-medium px-4 truncate">
                       {icon} {content}  ⏐  by you
                     </span>
                   </div>

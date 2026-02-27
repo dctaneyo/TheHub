@@ -483,7 +483,7 @@ export function AnalyticsDashboard() {
                         <span className={cn(
                           "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                           i === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
-                          i === 1 ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" :
+                          i === 1 ? "bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400" :
                           i === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" :
                           "bg-muted text-muted-foreground"
                         )}>

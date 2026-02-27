@@ -192,8 +192,8 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             <Video className="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Scheduled Meetings</h2>
-            <p className="text-xs text-slate-500">{meetings.length} meeting{meetings.length !== 1 ? "s" : ""}</p>
+            <h2 className="text-lg font-bold text-foreground">Scheduled Meetings</h2>
+            <p className="text-xs text-muted-foreground">{meetings.length} meeting{meetings.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             onClick={() => { setShowCreate(!showCreate); if (showCreate) resetForm(); }}
             className={cn(
               "rounded-xl font-semibold text-sm",
-              showCreate ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-slate-700 hover:bg-slate-800 text-white"
+              showCreate ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
           >
             {showCreate ? <><X className="h-4 w-4 mr-1.5" />Cancel</> : <><Plus className="h-4 w-4 mr-1.5" />Schedule Meeting</>}
@@ -226,16 +226,16 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-              <h3 className="font-bold text-sm text-slate-700">Create New Meeting</h3>
+            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+              <h3 className="font-bold text-sm text-foreground">Create New Meeting</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Title *</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Title *</label>
                   <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Weekly Team Standup" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Password (optional)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Password (optional)</label>
                   <Input value={password} onChange={e => setPassword(e.target.value)} placeholder="Meeting password" />
                 </div>
               </div>
@@ -247,15 +247,15 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Date *</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Date *</label>
                   <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Time *</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Time *</label>
                   <Input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Duration (min)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Duration (min)</label>
                   <Input type="number" value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} min={15} max={480} step={15} />
                 </div>
               </div>
@@ -265,7 +265,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" />
-                  <span className="text-sm font-medium text-slate-700">Recurring meeting</span>
+                  <span className="text-sm font-medium text-foreground">Recurring meeting</span>
                 </label>
 
                 {isRecurring && (
@@ -275,7 +275,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         <button key={type} onClick={() => setRecurringType(type)}
                           className={cn(
                             "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                            recurringType === type ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            recurringType === type ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}>
                           {type.charAt(0).toUpperCase() + type.slice(1)}
                         </button>
@@ -287,7 +287,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           <button key={d.key} onClick={() => toggleDay(d.key)}
                             className={cn(
                               "h-8 w-8 rounded-full text-xs font-bold transition-colors",
-                              recurringDays.includes(d.key) ? "bg-red-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                              recurringDays.includes(d.key) ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}>
                             {d.label.charAt(0)}
                           </button>
@@ -302,7 +302,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={allowGuests} onChange={e => setAllowGuests(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" />
-                <span className="text-sm font-medium text-slate-700">Allow guest/outside participants</span>
+                <span className="text-sm font-medium text-foreground">Allow guest/outside participants</span>
               </label>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -321,12 +321,12 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
       {/* Meetings List */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Loading meetings...</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">Loading meetings...</div>
       ) : meetings.length === 0 ? (
         <div className="text-center py-12">
-          <Video className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">No scheduled meetings yet</p>
-          <p className="text-xs text-slate-400 mt-1">Create one to get started</p>
+          <Video className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No scheduled meetings yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Create one to get started</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -342,29 +342,29 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                  "bg-white rounded-xl border p-4 transition-colors",
-                  m.is_active ? "border-slate-200" : "border-slate-100 opacity-60"
+                  "bg-card rounded-xl border p-4 transition-colors",
+                  m.is_active ? "border-border" : "border-border opacity-60"
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-sm text-slate-800 truncate">{m.title}</h4>
+                      <h4 className="font-bold text-sm text-foreground truncate">{m.title}</h4>
                       {m.is_recurring ? (
                         <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
                           <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
                         </span>
                       ) : null}
                       {!m.is_active && (
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">Inactive</span>
+                        <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">Inactive</span>
                       )}
                     </div>
 
                     {m.description && (
-                      <p className="text-xs text-slate-500 mb-2 truncate">{m.description}</p>
+                      <p className="text-xs text-muted-foreground mb-2 truncate">{m.description}</p>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         Host: {m.host_name}
@@ -383,7 +383,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           <Globe className="h-3 w-3" />Guests allowed
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-slate-400">
+                        <span className="flex items-center gap-1 text-muted-foreground">
                           <Lock className="h-3 w-3" />Internal only
                         </span>
                       )}
@@ -401,7 +401,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       <span className="font-mono text-lg font-bold text-red-600 tracking-wider">{m.meeting_code}</span>
                       <button
                         onClick={() => copyCode(m.meeting_code)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         title="Copy meeting code"
                       >
                         {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}

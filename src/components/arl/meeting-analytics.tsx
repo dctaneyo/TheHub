@@ -146,7 +146,7 @@ export function MeetingAnalyticsDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -166,8 +166,8 @@ export function MeetingAnalyticsDashboard() {
         {/* Meeting header */}
         <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
           <h3 className="text-lg font-bold text-white mb-1">{m.title}</h3>
-          <p className="text-sm text-slate-400">Hosted by {m.hostName}</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm text-muted-foreground">Hosted by {m.hostName}</p>
+          <p className="text-xs text-muted-foreground mt-1">
             {formatDate(m.startedAt)}
             {m.endedAt ? ` — ${formatDate(m.endedAt)}` : " (in progress)"}
           </p>
@@ -193,7 +193,7 @@ export function MeetingAnalyticsDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-400 text-xs border-b border-slate-700">
+                <tr className="text-muted-foreground text-xs border-b border-border">
                   <th className="text-left px-4 py-2 font-medium">Name</th>
                   <th className="text-left px-4 py-2 font-medium">Type</th>
                   <th className="text-left px-4 py-2 font-medium">Role</th>
@@ -222,7 +222,7 @@ export function MeetingAnalyticsDashboard() {
                     <td className="px-4 py-2">
                       <span className={cn(
                         "text-xs",
-                        p.role === "host" ? "text-yellow-400" : p.role === "cohost" ? "text-blue-400" : "text-slate-400"
+                        p.role === "host" ? "text-yellow-400" : p.role === "cohost" ? "text-blue-400" : "text-muted-foreground"
                       )}>
                         {p.role}
                       </span>
@@ -236,7 +236,7 @@ export function MeetingAnalyticsDashboard() {
                       {p.wasMutedByHost ? (
                         <span className="text-red-400 text-xs">Yes</span>
                       ) : (
-                        <span className="text-slate-500 text-xs">No</span>
+                        <span className="text-muted-foreground text-xs">No</span>
                       )}
                     </td>
                   </tr>
@@ -278,13 +278,13 @@ export function MeetingAnalyticsDashboard() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">Delete All Meeting Data?</h3>
-                <p className="text-sm text-slate-400">This action cannot be undone</p>
+                <p className="text-sm text-muted-foreground">This action cannot be undone</p>
               </div>
             </div>
-            <p className="text-sm text-slate-300 mb-6">
+            <p className="text-sm text-foreground mb-6">
               This will permanently delete all meeting analytics data including:
             </p>
-            <ul className="text-sm text-slate-400 space-y-1 mb-6 ml-4">
+            <ul className="text-sm text-muted-foreground space-y-1 mb-6 ml-4">
               <li>• All meeting records ({meetings.length} meetings)</li>
               <li>• All participant data</li>
               <li>• All statistics and summaries</li>
@@ -339,7 +339,7 @@ export function MeetingAnalyticsDashboard() {
           <h4 className="text-sm font-semibold text-white">Recent Meetings</h4>
         </div>
         {meetings.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-muted-foreground">
             <Video className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p>No meeting data yet.</p>
             <p className="text-xs mt-1">Analytics will appear after your first meeting.</p>
@@ -360,25 +360,25 @@ export function MeetingAnalyticsDashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs text-slate-500">{formatDate(m.startedAt)}</span>
-                    <span className="text-xs text-slate-500">•</span>
-                    <span className="text-xs text-slate-400">{m.hostName}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(m.startedAt)}</span>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <span className="text-xs text-muted-foreground">{m.hostName}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 ml-4">
                   <div className="text-center">
                     <p className="text-sm font-bold text-white">{m.peakParticipants}</p>
-                    <p className="text-[10px] text-slate-500">participants</p>
+                    <p className="text-[10px] text-muted-foreground">participants</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-bold text-white">{formatDuration(m.duration)}</p>
-                    <p className="text-[10px] text-slate-500">duration</p>
+                    <p className="text-[10px] text-muted-foreground">duration</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-bold text-white">{m.totalMessages}</p>
-                    <p className="text-[10px] text-slate-500">messages</p>
+                    <p className="text-[10px] text-muted-foreground">messages</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-slate-500" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </button>
             ))}
