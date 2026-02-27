@@ -4,6 +4,7 @@ import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
+import { createNotification } from "@/lib/notifications";
 
 // Ensure shoutouts table exists
 function ensureShoutoutsTable() {
@@ -119,6 +120,23 @@ export async function POST(request: Request) {
       title: `Shoutout to ${toLocationName}! 🎉`,
       body: `${session.name}: ${message.slice(0, 100)}`,
       url: `/arl`,
+    });
+
+    // Create in-app notification for the location receiving the shoutout
+    await createNotification({
+      userId: toLocationId,
+      userType: "location",
+      type: "new_shoutout",
+      title: `You received a shoutout! 🎉`,
+      message: `${session.name}: ${message}`,
+      actionUrl: "/dashboard",
+      actionLabel: "View",
+      priority: "normal",
+      metadata: {
+        shoutoutId,
+        fromUserId: session.id,
+        fromUserName: session.name,
+      },
     });
 
     return NextResponse.json({ shoutout });

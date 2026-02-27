@@ -211,3 +211,32 @@ export function emitTickerDelete(id: string) {
   if (!isAvailable()) return;
   emitToLocations("ticker:delete", { id });
 }
+
+// ── Notification events ──
+export function broadcastNotification(userId: string, notification: any, counts: { total: number; unread: number; urgent: number }) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  
+  // Emit to user's notification room
+  io.to(`notifications:${userId}`).emit("notification:new", {
+    notification,
+    count: counts,
+  });
+}
+
+export function broadcastNotificationRead(userId: string) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  
+  io.to(`notifications:${userId}`).emit("notification:read", {});
+}
+
+export function broadcastNotificationDeleted(userId: string) {
+  if (!isAvailable()) return;
+  const io = getIO();
+  if (!io) return;
+  
+  io.to(`notifications:${userId}`).emit("notification:deleted", {});
+}

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { broadcastNotification, broadcastNotificationRead, broadcastNotificationDeleted } from "./socket-emit";
 
 export type NotificationType =
   // For Locations
@@ -75,6 +76,11 @@ export async function createNotification(params: CreateNotificationParams): Prom
   };
 
   await db.insert(notifications).values(notification);
+  
+  // Broadcast via WebSocket
+  const counts = await getNotificationCounts(params.userId);
+  broadcastNotification(params.userId, notification, counts);
+  
   return notification as Notification;
 }
 

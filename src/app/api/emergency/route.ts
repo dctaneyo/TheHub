@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed, broadcastEmergencyViewedLocal } from "@/lib/socket-emit";
+import { createNotificationBulk } from "@/lib/notifications";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -105,6 +106,29 @@ export async function POST(req: NextRequest) {
       sentByName: session.name,
       targetLocationIds: targetLocationIds && targetLocationIds.length > 0 ? targetLocationIds : null,
     });
+
+    // Create urgent notifications for all targeted locations
+    const targetIds = targetLocationIds && targetLocationIds.length > 0 
+      ? targetLocationIds 
+      : db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all().map(l => l.id);
+    
+    await createNotificationBulk(
+      targetIds,
+      {
+        userType: "location",
+        type: "emergency_broadcast",
+        title: "🚨 Emergency Alert",
+        message: message.trim(),
+        actionUrl: "/dashboard",
+        actionLabel: "View",
+        priority: "urgent",
+        metadata: {
+          broadcastId: id,
+          sentBy: session.id,
+          sentByName: session.name,
+        },
+      }
+    );
 
     return NextResponse.json({ success: true, id });
   } catch (error) {

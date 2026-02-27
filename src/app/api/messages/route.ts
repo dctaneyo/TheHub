@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { sendPushToARL } from "@/lib/push";
 import { broadcastNewMessage, broadcastConversationUpdate, broadcastMessageRead } from "@/lib/socket-emit";
+import { createNotification } from "@/lib/notifications";
 
 // Helper: get unread count for a conversation for the current session user
 function getUnreadCount(conversationId: string, sessionId: string, sessionType: string): number {
@@ -254,6 +255,30 @@ export async function POST(req: NextRequest) {
             conversationId,
           });
         }
+      }
+    }
+
+    // Create in-app notifications for all members except sender
+    const members = db.select().from(schema.conversationMembers)
+      .where(eq(schema.conversationMembers.conversationId, conversationId)).all();
+    
+    for (const member of members) {
+      if (member.memberId !== session.id) {
+        await createNotification({
+          userId: member.memberId,
+          userType: member.memberType as "location" | "arl",
+          type: "new_message",
+          title: `New message from ${session.name}`,
+          message: content.slice(0, 120),
+          actionUrl: member.memberType === "arl" ? `/arl?view=messages` : `/dashboard`,
+          actionLabel: "View Message",
+          priority: "normal",
+          metadata: {
+            conversationId,
+            senderId: session.id,
+            senderName: session.name,
+          },
+        });
       }
     }
 

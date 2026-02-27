@@ -417,6 +417,21 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
       const label = (socket as any)._isGuest ? "guest" : user.userType;
       console.log(`🔌 ${label} connected: ${user.name} (${socket.id})`);
+
+      // Notification subscription
+      socket.on("notification:subscribe", () => {
+        if (!(socket as any)._isGuest && user) {
+          socket.join(`notifications:${user.id}`);
+          console.log(`🔔 ${user.name} subscribed to notifications`);
+        }
+      });
+
+      socket.on("notification:unsubscribe", () => {
+        if (!(socket as any)._isGuest && user) {
+          socket.leave(`notifications:${user.id}`);
+          console.log(`🔕 ${user.name} unsubscribed from notifications`);
+        }
+      });
     } else {
       // Unauthenticated — login page watcher
       socket.join("login-watchers");

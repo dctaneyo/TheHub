@@ -4,6 +4,7 @@ import { markNotificationRead, deleteNotification } from "@/lib/notifications";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { broadcastNotificationRead, broadcastNotificationDeleted } from "@/lib/socket-emit";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-production";
 
@@ -33,6 +34,9 @@ export async function POST(
 
     // Mark as read
     await markNotificationRead(notificationId);
+    
+    // Broadcast update via WebSocket
+    broadcastNotificationRead(decoded.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -66,6 +70,9 @@ export async function DELETE(
     }
 
     await deleteNotification(notificationId);
+    
+    // Broadcast update via WebSocket
+    broadcastNotificationDeleted(decoded.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

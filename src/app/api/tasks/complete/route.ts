@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
+import { createNotificationBulk } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,6 +59,27 @@ export async function POST(req: NextRequest) {
       body: `${task.title} · +${pointsTotal} pts${bonusPoints > 0 ? ` (incl. +${bonusPoints} early bonus)` : ""}`,
       url: `/arl`,
     });
+
+    // Create in-app notifications for all ARLs
+    const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+    await createNotificationBulk(
+      allArls.map(arl => arl.id),
+      {
+        userType: "arl",
+        type: "task_completed",
+        title: `${session.name} completed a task`,
+        message: `${task.title} · +${pointsTotal} pts${bonusPoints > 0 ? ` (incl. +${bonusPoints} early bonus)` : ""}`,
+        actionUrl: "/arl?view=tasks",
+        actionLabel: "View Tasks",
+        priority: "normal",
+        metadata: {
+          taskId,
+          locationId: session.id,
+          locationName: session.name,
+          points: pointsTotal,
+        },
+      }
+    );
 
     return NextResponse.json({
       success: true,
