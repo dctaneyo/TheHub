@@ -32,6 +32,7 @@
     "@sendgrid/mail": "^8.1.6",
     "@sentry/nextjs": "^10.40.0",
     "@shiguredo/rnnoise-wasm": "^2025.1.5",
+    "@tanstack/react-virtual": "^3.13.19",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
@@ -62,7 +63,8 @@
     "tailwind-merge": "^3.4.1",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
-    "workbox-webpack-plugin": "^7.4.0"
+    "workbox-webpack-plugin": "^7.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

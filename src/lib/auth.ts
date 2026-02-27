@@ -1,7 +1,12 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("FATAL: JWT_SECRET environment variable is not set. Cannot start in production without it.");
+  }
+  return "the-hub-dev-secret-key-local-only";
+})();
 
 export interface AuthPayload {
   id: string;

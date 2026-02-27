@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sqlite } from "@/lib/db";
 import { logBulkOperation } from "@/lib/audit-logger";
+import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 import { v4 as uuid } from "uuid";
 
 export async function POST(request: Request) {
@@ -157,6 +158,8 @@ export async function POST(request: Request) {
       payload: payload || { action },
       status: "success",
     });
+
+    refreshTaskTimers();
 
     return NextResponse.json({ success: true, deleted, created, updated, action });
   } catch (error) {

@@ -6,6 +6,7 @@ import { v4 as uuid } from "uuid";
 import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
 import { createNotificationBulk } from "@/lib/notifications";
+import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 
 export async function POST(req: NextRequest) {
   try {
@@ -80,6 +81,8 @@ export async function POST(req: NextRequest) {
         },
       }
     );
+
+    refreshTaskTimers();
 
     return NextResponse.json({
       success: true,

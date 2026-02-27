@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { broadcastTaskUpdate, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
+import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
 
     broadcastTaskUpdate(session.id);
     broadcastLeaderboardUpdate(session.id);
+    refreshTaskTimers();
 
     return NextResponse.json({ success: true, pointsRevoked: completion.pointsEarned });
   } catch (error) {

@@ -5,6 +5,7 @@ import { compareSync } from "bcryptjs";
 import { signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
 import { broadcastSessionUpdated } from "@/lib/socket-emit";
+import { checkRateLimit, resetRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -12,6 +13,16 @@ function genSessionCode(): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`login:${ip}`, { maxAttempts: 5, windowMs: 60_000, lockoutMs: 5 * 60_000 });
+    if (!rl.allowed) {
+      const retrySeconds = Math.ceil((rl.retryAfterMs || 0) / 1000);
+      return NextResponse.json(
+        { error: `Too many login attempts. Try again in ${retrySeconds}s.` },
+        { status: 429, headers: { "Retry-After": String(retrySeconds) } }
+      );
+    }
+
     const { userId, pin } = await req.json();
 
     if (!userId || !pin || userId.length !== 4 || pin.length !== 4) {
@@ -77,6 +88,8 @@ export async function POST(req: NextRequest) {
         expiresAt,
       }).run();
 
+      resetRateLimit(`login:${ip}`);
+
       const response = NextResponse.json({
         success: true,
         userType: "location",
@@ -121,6 +134,8 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         );
       }
+
+      resetRateLimit(`login:${ip}`);
 
       // Detect device type from user agent
       const ua = req.headers.get("user-agent") || "";

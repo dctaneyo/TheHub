@@ -59,6 +59,7 @@ import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
 import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
+import { OverviewDashboard } from "@/components/arl/overview-dashboard";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
 import { PageIndicator } from "@/components/arl/page-indicator";
@@ -637,7 +638,7 @@ export default function ArlPage() {
                   activeView === "messages" ? "flex flex-col h-full" : "h-full"
                 )}
               >
-                {activeView === "overview" && <OverviewContent />}
+                {activeView === "overview" && <OverviewDashboard />}
                 {activeView === "messages" && <Messaging />}
                 {activeView === "tasks" && <TaskManager />}
                 {activeView === "calendar" && <ArlCalendar />}
@@ -830,194 +831,6 @@ export default function ArlPage() {
   );
 }
 
-function OverviewContent() {
-  const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null; currentPage: string | null }>>([]);
-  const [arls, setArls] = useState<Array<{ id: string; name: string; role: string; isOnline: boolean; lastSeen: string | null; sessionCode: string | null; currentPage: string | null }>>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [userActivities, setUserActivities] = useState<Map<string, string>>(new Map());
-  const { socket } = useSocket();
-
-  const load = useCallback(() => Promise.all([
-    fetch("/api/locations").then((r) => r.ok ? r.json() : { locations: [], arls: [] }),
-    fetch("/api/messages").then((r) => r.ok ? r.json() : { conversations: [] }),
-  ]).then(([locData, msgData]) => {
-    const locs = locData.locations || [];
-    const arlsList = locData.arls || [];
-    setLocations(locs);
-    setArls(arlsList);
-    setUnreadCount((msgData.conversations || []).reduce((s: number, c: { unreadCount: number }) => s + c.unreadCount, 0));
-    
-    // Initialize userActivities from currentPage in session data
-    const activities = new Map<string, string>();
-    locs.forEach((loc: { id: string; name: string; currentPage: string | null }) => {
-      if (loc.currentPage) activities.set(loc.id, loc.currentPage);
-    });
-    arlsList.forEach((arl: { id: string; name: string; currentPage: string | null }) => {
-      if (arl.currentPage) activities.set(arl.id, arl.currentPage);
-    });
-    setUserActivities(activities);
-  }), []);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Instant updates via WebSocket
-  useEffect(() => {
-    if (!socket) return;
-    const handler = () => load();
-    socket.on("message:new", handler);
-    socket.on("conversation:updated", handler);
-    socket.on("task:updated", handler);
-    socket.on("task:completed", handler);
-    // Delta-update presence — avoid full HTTP fetch + stale sweep on every heartbeat
-    const presenceHandler = (data: { userId: string; userType: string; isOnline: boolean }) => {
-      if (data.userType === "location") {
-        setLocations((prev) => prev.map((l) => l.id === data.userId ? { ...l, isOnline: data.isOnline } : l));
-      } else {
-        setArls((prev) => prev.map((a) => a.id === data.userId ? { ...a, isOnline: data.isOnline } : a));
-      }
-    };
-    socket.on("presence:update", presenceHandler);
-    // Track user activities
-    const activityHandler = (data: { userId: string; page: string }) => {
-      setUserActivities((prev) => new Map(prev).set(data.userId, data.page));
-    };
-    socket.on("activity:update", activityHandler);
-    return () => {
-      socket.off("presence:update", presenceHandler);
-      socket.off("message:new", handler);
-      socket.off("conversation:updated", handler);
-      socket.off("task:updated", handler);
-      socket.off("task:completed", handler);
-      socket.off("activity:update", activityHandler);
-    };
-  }, [socket, load]);
-
-  const onlineLocations = locations.filter((l) => l.isOnline);
-  const onlineArls = arls.filter((a) => a.isOnline);
-
-  const stats = [
-    { label: "Locations Online", value: `${onlineLocations.length}/${locations.length}`, color: "bg-emerald-50 text-emerald-700", icon: Store },
-    { label: "ARLs Online", value: `${onlineArls.length}/${arls.length}`, color: "bg-sky-50 text-sky-700", icon: Users },
-    { label: "Unread Messages", value: String(unreadCount), color: "bg-purple-50 text-purple-700", icon: MessageCircle },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">{stat.value}</p>
-              </div>
-              <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", stat.color)}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-bold text-foreground">Active Sessions</h3>
-          <span className="text-[10px] text-muted-foreground">{onlineLocations.length + onlineArls.length} online</span>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4">Only showing currently connected sessions</p>
-
-        {onlineArls.length === 0 && onlineLocations.length === 0 && (
-          <p className="text-xs text-muted-foreground py-4 text-center">No active sessions right now</p>
-        )}
-
-        {onlineArls.length > 0 && (
-          <>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">ARLs</p>
-            <div className="space-y-2 mb-4">
-              {onlineArls.map((arl) => (
-                <div key={arl.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-sky-500/10 border border-sky-500/20 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-foreground truncate">{arl.name}</span>
-                        <span className="text-[10px] text-muted-foreground">ARL</span>
-                      </div>
-                      {userActivities.get(arl.id) && (
-                        <span className="text-[10px] font-medium text-sky-500 truncate block">· {userActivities.get(arl.id)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {arl.sessionCode && (
-                      <span className="font-mono text-xs font-bold tracking-widest text-sky-600 dark:text-sky-400 bg-sky-500/10 rounded-lg px-2 py-0.5">
-                        #{arl.sessionCode}
-                      </span>
-                    )}
-                    <span className="text-xs font-medium text-sky-600 dark:text-sky-400">Online</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {onlineLocations.length > 0 && (
-          <>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Restaurants</p>
-            <div className="space-y-2">
-              {onlineLocations.map((loc) => (
-                <div key={loc.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-foreground truncate">{loc.name}</span>
-                        <span className="text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
-                      </div>
-                      {userActivities.get(loc.id) && (
-                        <span className="text-[10px] font-medium text-emerald-500 truncate block">· {userActivities.get(loc.id)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {loc.sessionCode && (
-                      <span className="font-mono text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-2 py-0.5">
-                        #{loc.sessionCode}
-                      </span>
-                    )}
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Online</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Ticker Push */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <TickerPush />
-      </div>
-
-      {/* Shoutouts and Live Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <ShoutoutsFeed />
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <LiveActivityFeed maxItems={15} />
-        </div>
-      </div>
-
-    </div>
-  );
-}
 
 interface CalTask {
   id: string; title: string; type: string; priority: string;

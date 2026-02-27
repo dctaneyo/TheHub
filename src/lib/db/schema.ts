@@ -73,8 +73,8 @@ export const tasks = sqliteTable("tasks", {
 // Task completions - tracks when a location completes a task
 export const taskCompletions = sqliteTable("task_completions", {
   id: text("id").primaryKey(), // UUID
-  taskId: text("task_id").notNull(),
-  locationId: text("location_id").notNull(),
+  taskId: text("task_id").notNull().references(() => tasks.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
   completedAt: text("completed_at").notNull().$defaultFn(() => new Date().toISOString()),
   completedDate: text("completed_date").notNull(), // YYYY-MM-DD for easy querying
   notes: text("notes"),
@@ -85,7 +85,7 @@ export const taskCompletions = sqliteTable("task_completions", {
 // Messages - instant messaging
 export const messages = sqliteTable("messages", {
   id: text("id").primaryKey(),
-  conversationId: text("conversation_id").notNull(),
+  conversationId: text("conversation_id").notNull().references(() => conversations.id),
   senderType: text("sender_type").notNull(), // 'location' | 'arl'
   senderId: text("sender_id").notNull(),
   senderName: text("sender_name").notNull().default(""),
@@ -118,7 +118,7 @@ export const conversations = sqliteTable("conversations", {
 // Conversation members - for group chats
 export const conversationMembers = sqliteTable("conversation_members", {
   id: text("id").primaryKey(),
-  conversationId: text("conversation_id").notNull(),
+  conversationId: text("conversation_id").notNull().references(() => conversations.id),
   memberId: text("member_id").notNull(), // location.id or arl.id
   memberType: text("member_type").notNull(), // 'location' | 'arl'
   role: text("role").notNull().default("member"), // 'admin' | 'member'
@@ -129,7 +129,7 @@ export const conversationMembers = sqliteTable("conversation_members", {
 // Message read receipts
 export const messageReads = sqliteTable("message_reads", {
   id: text("id").primaryKey(),
-  messageId: text("message_id").notNull(),
+  messageId: text("message_id").notNull().references(() => messages.id),
   readerType: text("reader_type").notNull(), // 'location' | 'arl'
   readerId: text("reader_id").notNull(),
   readAt: text("read_at").notNull().$defaultFn(() => new Date().toISOString()),
@@ -138,7 +138,7 @@ export const messageReads = sqliteTable("message_reads", {
 // Message reactions
 export const messageReactions = sqliteTable("message_reactions", {
   id: text("id").primaryKey(),
-  messageId: text("message_id").notNull(),
+  messageId: text("message_id").notNull().references(() => messages.id),
   userId: text("user_id").notNull(),
   userType: text("user_type").notNull(), // 'location' | 'arl'
   userName: text("user_name").notNull(),

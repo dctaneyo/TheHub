@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskUpdate } from "@/lib/socket-emit";
+import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 
 // GET all tasks (ARL: all tasks; location: only tasks for their location)
 export async function GET() {
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
     db.insert(schema.tasks).values(task).run();
 
     broadcastTaskUpdate(resolvedLocationId);
+    refreshTaskTimers();
 
     return NextResponse.json({ success: true, task });
   } catch (error) {
@@ -137,6 +139,7 @@ export async function PUT(req: NextRequest) {
     db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();
 
     broadcastTaskUpdate(existing.locationId);
+    refreshTaskTimers();
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -169,6 +172,7 @@ export async function DELETE(req: NextRequest) {
     db.delete(schema.tasks).where(eq(schema.tasks.id, id)).run();
 
     broadcastTaskUpdate(existing.locationId);
+    refreshTaskTimers();
 
     return NextResponse.json({ success: true });
   } catch (error) {
