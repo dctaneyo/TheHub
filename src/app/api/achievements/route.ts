@@ -87,7 +87,7 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     ensureAchievementsTable();
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { achievementId } = await request.json();

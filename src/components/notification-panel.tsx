@@ -16,7 +16,7 @@ interface Notification {
   actionUrl: string | null;
   actionLabel: string | null;
   priority: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   isRead: boolean;
   readAt: string | null;
   createdAt: string;
@@ -35,7 +35,7 @@ const priorityColors = {
   low: "border-l-gray-400 bg-muted/50",
 };
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   task_due_soon: ClipboardCheck,
   task_overdue: AlertCircle,
   new_message: MessageCircle,
@@ -53,14 +53,8 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       const unreadParam = filter === "unread" ? "&unread_only=true" : "";
-      const res = await fetch(`/api/notifications?limit=20${unreadParam}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await fetch(`/api/notifications?limit=20${unreadParam}`);
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
@@ -85,13 +79,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      await fetch(`/api/notifications/${id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(`/api/notifications/${id}`, { method: "POST" });
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n))
@@ -104,13 +92,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
 
   const handleDelete = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      await fetch(`/api/notifications/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(`/api/notifications/${id}`, { method: "DELETE" });
 
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       fetchNotifications(); // Refresh to update counts
@@ -121,15 +103,9 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
 
   const handleMarkAllRead = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       await fetch("/api/notifications", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark_all_read" }),
       });
 

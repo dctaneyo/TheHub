@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { db, schema, sqlite } from "@/lib/db";
+import { db, schema } from "@/lib/db";
 
-// POST purge all messages, read receipts, and reactions
 export async function POST() {
   try {
     const session = await getSession();
@@ -10,7 +9,6 @@ export async function POST() {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
 
-    // Count before deletion
     const messageCount = db.select().from(schema.messages).all().length;
     const readCount = db.select().from(schema.messageReads).all().length;
     let reactionCount = 0;
@@ -20,18 +18,9 @@ export async function POST() {
       // Table may not exist yet
     }
 
-    // Delete all message reactions (if table exists)
-    try {
-      sqlite.prepare("DELETE FROM message_reactions").run();
-    } catch (err) {
-      console.log("message_reactions table does not exist, skipping");
-    }
-
-    // Delete all message reads
-    sqlite.prepare("DELETE FROM message_reads").run();
-
-    // Delete all messages
-    sqlite.prepare("DELETE FROM messages").run();
+    try { db.delete(schema.messageReactions).run(); } catch { /* table may not exist */ }
+    db.delete(schema.messageReads).run();
+    db.delete(schema.messages).run();
 
     return NextResponse.json({
       success: true,

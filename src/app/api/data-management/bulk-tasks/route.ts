@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized - ARL access required" }, { status: 401 });
+      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
 
     const { action, payload } = await request.json();

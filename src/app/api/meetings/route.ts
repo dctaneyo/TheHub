@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const {
@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { id, ...updates } = await req.json();
@@ -142,7 +142,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);

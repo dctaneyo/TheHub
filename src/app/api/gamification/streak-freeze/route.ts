@@ -21,7 +21,7 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     ensureTable();
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     ensureTable();

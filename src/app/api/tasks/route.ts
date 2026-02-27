@@ -9,7 +9,7 @@ import { broadcastTaskUpdate } from "@/lib/socket-emit";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const tasks = db.select().from(schema.tasks).all();
     if (session.userType === "location") {
@@ -30,7 +30,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json();
     const {
@@ -149,7 +149,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

@@ -8,7 +8,7 @@ import { getSession } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session || session.userType !== "arl") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const analyticsId = req.nextUrl.searchParams.get("id");
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session || session.userType !== "arl") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   try {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TestTube, Bell, Send, X, ChevronDown, CheckCircle2 } from "lucide-react";
+import { TestTube, Send, ChevronDown, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 

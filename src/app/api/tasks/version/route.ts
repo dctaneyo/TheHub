@@ -6,7 +6,7 @@ import { desc } from "drizzle-orm";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     // Get the latest updatedAt from tasks table
     const latest = db

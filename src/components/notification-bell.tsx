@@ -18,13 +18,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
 
   const fetchCounts = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch("/api/notifications?limit=1", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await fetch("/api/notifications?limit=1");
       if (res.ok) {
         const data = await res.json();
         setCounts({

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { content, icon, expiresInMinutes } = await req.json();
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const { id } = await req.json();

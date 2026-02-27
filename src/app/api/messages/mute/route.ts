@@ -8,7 +8,7 @@ import { v4 as uuid } from "uuid";
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { conversationId } = await req.json();
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const conversationId = searchParams.get("conversationId");

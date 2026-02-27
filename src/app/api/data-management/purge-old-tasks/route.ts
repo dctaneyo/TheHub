@@ -6,7 +6,7 @@ export async function POST() {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized - ARL access required" }, { status: 401 });
+      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
 
     // Delete task completions older than 90 days

@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verify } from "jsonwebtoken";
-import { createNotification, Notification } from "@/lib/notifications";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-production";
+import { getSession } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const decoded = verify(token, JWT_SECRET) as { userId: string; userType: string };
     const body = await req.json();
-
     const {
       userId,
       userType,
@@ -31,7 +27,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate priority
     const validPriorities = ["low", "medium", "high", "urgent"];
     if (!validPriorities.includes(priority)) {
       return NextResponse.json(
@@ -40,12 +35,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // For testing purposes, allow ARL users to create notifications for locations
-    if (decoded.userType !== "arl" && decoded.userId !== userId) {
-      return NextResponse.json(
-        { error: "Can only create notifications for yourself" },
-        { status: 403 }
-      );
+    // ARLs can create notifications for any user; others only for themselves
+    if (session.userType !== "arl" && session.id !== userId) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
     const notification = await createNotification({
@@ -61,9 +53,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, notification });
   } catch (error) {
     console.error("Failed to create notification:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

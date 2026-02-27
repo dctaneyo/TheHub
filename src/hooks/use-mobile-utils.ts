@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-/**
- * #15: Swipe gesture detection for navigating between views
- */
+/** Swipe gesture detection for navigating between views */
 export function useSwipeNavigation(
   viewIds: string[],
   activeView: string,
@@ -55,9 +53,7 @@ export function useSwipeNavigation(
   }, [viewIds, activeView, setActiveView, enabled]);
 }
 
-/**
- * #16: Pull-to-refresh detection
- */
+/** Pull-to-refresh detection */
 export function usePullToRefresh(onRefresh: () => Promise<void> | void, enabled = true) {
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
@@ -100,9 +96,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void, enabled 
   return refreshing;
 }
 
-/**
- * #18: Haptic feedback (vibration) for task completion
- */
+/** Haptic feedback (vibration) for task completion */
 export function useHapticFeedback() {
   return useCallback((pattern: number | number[] = 50) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -113,9 +107,7 @@ export function useHapticFeedback() {
   }, []);
 }
 
-/**
- * #20: Offline detection for showing banner
- */
+/** Offline detection for showing banner */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
 

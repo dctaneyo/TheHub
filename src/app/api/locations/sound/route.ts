@@ -26,7 +26,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { locationId, muted } = await req.json();
 
