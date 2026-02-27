@@ -1371,6 +1371,15 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       socket.on("test:custom_notification", (data: any) => {
         const { locationId, title, message, priority = "medium" } = data;
         io!.to(`location:${locationId}`).emit("custom:notification", { title, message, priority });
+        // Also create a DB notification so it appears in the notification bell
+        createNotification({
+          userId: locationId,
+          userType: "location",
+          type: "system_update",
+          title,
+          message,
+          priority: priority as "low" | "normal" | "high" | "urgent",
+        }).catch((err: Error) => console.error("Failed to create test notification:", err));
       });
     }
 

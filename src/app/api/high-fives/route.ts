@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
+import { createNotification } from "@/lib/notifications";
 
 // Ensure high_fives table exists
 function ensureHighFivesTable() {
@@ -120,6 +121,23 @@ export async function POST(request: Request) {
 
     // Broadcast to recipient and all users
     broadcastToAll("high-five:received", highFive);
+
+    // Create in-app notification for the recipient
+    await createNotification({
+      userId: toUserId,
+      userType: toUserType as "location" | "arl",
+      type: "high_five",
+      title: `High-five from ${session.name}! 🙌`,
+      message: message || `${session.name} sent you a high-five!`,
+      actionUrl: toUserType === "location" ? "/dashboard" : "/arl",
+      actionLabel: "View",
+      priority: "normal",
+      metadata: {
+        highFiveId,
+        fromUserId: session.id,
+        fromUserName: session.name,
+      },
+    });
 
     return NextResponse.json({ highFive });
   } catch (error) {

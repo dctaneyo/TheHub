@@ -732,7 +732,15 @@ export default function DashboardPage() {
             )}
           </button>
 
-          {/* Notification Bell */}
+          {/* Task Notifications (due-soon bell + fullscreen overdue overlay) */}
+          <NotificationSystem
+            tasks={allTasks}
+            currentTime={currentTime}
+            soundEnabled={soundEnabled}
+            onToggleSound={toggleSound}
+          />
+
+          {/* Notification Bell (DB-backed: shout-outs, high-fives, etc.) */}
           <NotificationBell />
 
           {/* Settings cog */}

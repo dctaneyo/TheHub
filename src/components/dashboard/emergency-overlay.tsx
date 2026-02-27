@@ -21,6 +21,7 @@ export function EmergencyOverlay() {
   const alarmRef = useRef<NodeJS.Timeout | null>(null);
   const lastIdRef = useRef<string | null>(null);
   const revealedRef = useRef(false);
+  const selfViewedRef = useRef(false);
 
   const stopAlarm = useCallback(() => {
     if (alarmRef.current) {
@@ -111,6 +112,11 @@ export function EmergencyOverlay() {
     };
     const handleViewedLocal = (data: { messageId: string }) => {
       // Another kiosk at this location acknowledged — dismiss here too
+      // But skip if THIS kiosk triggered the view (avoid self-dismiss)
+      if (selfViewedRef.current) {
+        selfViewedRef.current = false;
+        return;
+      }
       if (activeMessage && data.messageId === activeMessage.id) {
         stopAlarm();
         setDismissed(data.messageId);
@@ -131,6 +137,7 @@ export function EmergencyOverlay() {
 
   const handleReveal = async () => {
     revealedRef.current = true;
+    selfViewedRef.current = true;
     setRevealed(true);
     stopAlarm();
     // Mark as viewed on the server
