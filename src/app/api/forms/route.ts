@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { createNotificationBulk } from "@/lib/notifications";
 
 const FORMS_DIR = join(process.cwd(), "data", "forms");
 
@@ -66,6 +67,28 @@ export async function POST(req: NextRequest) {
       createdAt: now,
     };
     db.insert(schema.forms).values(form).run();
+
+    // Create real-time notification for all active locations
+    const allLocations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
+    await createNotificationBulk(
+      allLocations.map(loc => loc.id),
+      {
+        userType: "location",
+        type: "form_uploaded",
+        title: "New form available",
+        message: `${title} - ${description || 'Check forms repository'}`,
+        actionUrl: "/dashboard",
+        actionLabel: "View Forms",
+        priority: "normal",
+        metadata: {
+          formId: form.id,
+          formTitle: title,
+          category: category || "general",
+          uploadedBy: session.id,
+        },
+      }
+    );
+
     return NextResponse.json({ success: true, form });
   } catch (error) {
     console.error("Upload form error:", error);

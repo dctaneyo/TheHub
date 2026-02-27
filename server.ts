@@ -4,6 +4,7 @@ import next from "next";
 import cron from "node-cron";
 import { initSocketServer } from "./src/lib/socket-server";
 import { createBackup } from "./scripts/backup-database";
+import { startTaskNotificationScheduler } from "./src/lib/task-notification-scheduler";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
@@ -21,6 +22,9 @@ app.prepare().then(() => {
 
   // Attach Socket.io to the same HTTP server
   initSocketServer(httpServer);
+
+  // Start task notification scheduler (real-time WebSocket delivery)
+  startTaskNotificationScheduler();
 
   // Setup automated backups (only in production)
   if (!dev) {

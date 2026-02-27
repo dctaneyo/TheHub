@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
+import { createNotification } from "@/lib/notifications";
 
 // Achievement category definitions
 export const ACHIEVEMENT_CATEGORIES = {
@@ -137,10 +138,30 @@ export async function POST(request: Request) {
     // Unlock achievement
     sqlite.prepare(`
       INSERT INTO achievements (id, location_id, achievement_id, unlocked_at, notified)
-      VALUES (?, ?, ?, ?, 0)
+      VALUES (?, ?, ?, ?, 1)
     `).run(uuid(), session.id, achievementId, new Date().toISOString());
 
     const achievement = Object.values(ACHIEVEMENTS).find(a => a.id === achievementId);
+
+    // Create real-time notification for achievement unlock
+    if (achievement) {
+      await createNotification({
+        userId: session.id,
+        userType: "location",
+        type: "achievement_unlocked",
+        title: `Achievement Unlocked: ${achievement.name}! 🎉`,
+        message: `${achievement.desc} - +${achievement.points} points`,
+        actionUrl: "/dashboard",
+        actionLabel: "View Achievements",
+        priority: "normal",
+        metadata: {
+          achievementId,
+          achievementName: achievement.name,
+          points: achievement.points,
+          rarity: achievement.rarity,
+        },
+      });
+    }
 
     return NextResponse.json({ unlocked: true, achievement });
   } catch (error) {

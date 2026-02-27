@@ -7,6 +7,7 @@ import type { AuthPayload } from "./auth";
 import { db, schema } from "./db";
 import { and, eq } from "drizzle-orm";
 import { sendPushToAllARLs } from "./push";
+import { createNotificationBulk } from "./notifications";
 
 // Read the build ID written by `npm run build` — the only reliable way
 // to pass a build-time value into the custom Node server at runtime.
@@ -385,6 +386,28 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           storeNumber: user.userType === "location" ? user.storeNumber : undefined,
           isOnline: true,
         });
+
+        // Create notification for ARLs when location comes online
+        if (user.userType === "location") {
+          const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+          createNotificationBulk(
+            allArls.map(arl => arl.id),
+            {
+              userType: "arl",
+              type: "location_online",
+              title: `${user.name} is now online`,
+              message: `Store #${user.storeNumber || 'N/A'} connected to The Hub`,
+              actionUrl: "/arl",
+              actionLabel: "View Dashboard",
+              priority: "low",
+              metadata: {
+                locationId: user.id,
+                locationName: user.name,
+                storeNumber: user.storeNumber,
+              },
+            }
+          ).catch(err => console.error("Failed to create location_online notification:", err));
+        }
       }
 
       // Notify ARLs when a guest connects — only if meeting hasn't started or host isn't present
@@ -739,7 +762,27 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
           },
         });
 
-        // Note: guest-waiting notification + push already sent on socket connect
+        // Create notification for meeting host when someone joins
+        if (myParticipant.role !== "host") {
+          const hostId = meeting.hostId;
+          createNotificationBulk(
+            [hostId],
+            {
+              userType: "arl",
+              type: "meeting_joined",
+              title: `${myParticipant.name} joined your meeting`,
+              message: `${meeting.title}`,
+              actionUrl: "/arl?view=meetings",
+              actionLabel: "View Meeting",
+              priority: "normal",
+              metadata: {
+                meetingId: data.meetingId,
+                participantName: myParticipant.name,
+                participantType: myParticipant.userType,
+              },
+            }
+          ).catch(err => console.error("Failed to create meeting_joined notification:", err));
+        }
       }
       // Track analytics: participant join
       if (!alreadyInMeeting) {
@@ -1289,6 +1332,37 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
             .where(eq(schema.sessions.userId, user.id))
             .run();
         } catch {}
+
+        // Create notification for ARLs when location goes offline (only if disconnected for >5min)
+        if (user.userType === "location") {
+          setTimeout(() => {
+            // Check if still offline after 5 minutes
+            const session = db.select().from(schema.sessions)
+              .where(eq(schema.sessions.userId, user.id))
+              .get();
+            
+            if (session && !session.isOnline) {
+              const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+              createNotificationBulk(
+                allArls.map(arl => arl.id),
+                {
+                  userType: "arl",
+                  type: "location_offline",
+                  title: `${user.name} went offline`,
+                  message: `Store #${user.storeNumber || 'N/A'} disconnected from The Hub`,
+                  actionUrl: "/arl",
+                  actionLabel: "View Status",
+                  priority: "normal",
+                  metadata: {
+                    locationId: user.id,
+                    locationName: user.name,
+                    storeNumber: user.storeNumber,
+                  },
+                }
+              ).catch(err => console.error("Failed to create location_offline notification:", err));
+            }
+          }, 5 * 60 * 1000); // 5 minutes
+        }
         // Cancel task notification timers for this location
         if (user.userType === "location") {
           const timers = _taskTimers.get(user.id) || [];
