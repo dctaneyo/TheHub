@@ -1333,6 +1333,47 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Test Notification Handlers (ARL only) ──
+    if (user && user.userType === "arl") {
+      socket.on("test:task_due_soon", (data: any) => {
+        const { locationId, taskId, title, dueTime, points } = data;
+        io!.to(`location:${locationId}`).emit("task:due-soon", { taskId, title, dueTime, points });
+      });
+      socket.on("test:task_overdue", (data: any) => {
+        const { locationId, taskId, title, dueTime, points } = data;
+        io!.to(`location:${locationId}`).emit("task:overdue", { taskId, title, dueTime, points });
+      });
+      socket.on("test:meeting_started", (data: any) => {
+        const { meetingId, title, hostName, hostId } = data;
+        const payload = { meetingId, title, hostName, hostId, hostSocketId: socket.id };
+        io!.to("locations").emit("meeting:started", payload);
+        io!.to("arls").emit("meeting:started", payload);
+      });
+      socket.on("test:meeting_ended", (data: any) => {
+        const { meetingId, reason = "test" } = data;
+        io!.to("locations").emit("meeting:ended", { meetingId, reason });
+        io!.to("arls").emit("meeting:ended", { meetingId });
+      });
+      socket.on("test:broadcast_started", (data: any) => {
+        const { broadcastId, arlName, title } = data;
+        io!.to("locations").emit("broadcast:started", { broadcastId, arlName, title });
+        io!.to("arls").emit("broadcast:started", { broadcastId, arlName, title });
+      });
+      socket.on("test:broadcast_ended", (data: any) => {
+        const { broadcastId } = data;
+        io!.to("locations").emit("broadcast:ended", { broadcastId });
+        io!.to("arls").emit("broadcast:ended", { broadcastId });
+      });
+      socket.on("test:task_completed", (data: any) => {
+        const { locationId, taskId, title, pointsEarned } = data;
+        io!.to(`location:${locationId}`).emit("task:completed", { taskId, title, pointsEarned });
+      });
+      socket.on("test:custom_notification", (data: any) => {
+        const { locationId, title, message, priority = "medium" } = data;
+        io!.to(`location:${locationId}`).emit("custom:notification", { title, message, priority });
+      });
+    }
+
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {
@@ -1536,70 +1577,3 @@ export function consumePendingForceAction(sessionToken: string): ForceAction | n
   return null;
 }
 
-// Test notification handlers for ARL testing
-// These are added to the existing socket connection handler
-const socketUsers: Map<string, any> = _g.__hubSocketUsers || new Map();
-
-// Add test handlers to existing socket initialization
-if (!_g.__hubTestHandlersAdded) {
-  const io = getIO();
-  if (io) {
-    io.on("connection", (socket: any) => {
-      const user = socketUsers.get(socket.id);
-      if (!user || user.userType !== "arl") return;
-
-      // Test notification handlers
-      socket.on("test:task_due_soon", (data: any) => {
-        const { locationId, taskId, title, dueTime, points } = data;
-        io.to(`location:${locationId}`).emit("task:due-soon", { taskId, title, dueTime, points });
-      });
-
-      socket.on("test:task_overdue", (data: any) => {
-        const { locationId, taskId, title, dueTime, points } = data;
-        io.to(`location:${locationId}`).emit("task:overdue", { taskId, title, dueTime, points });
-      });
-
-      socket.on("test:meeting_started", (data: any) => {
-        const { locationId, meetingId, title, hostName, hostId } = data;
-        const payload = { meetingId, title, hostName, hostId, hostSocketId: socket.id };
-        io.to("locations").emit("meeting:started", payload);
-        io.to("arls").emit("meeting:started", payload);
-        io.to("all").emit("meeting:started", payload);
-        io.to(`meeting:${meetingId}`).emit("meeting:started", payload);
-      });
-
-      socket.on("test:meeting_ended", (data: any) => {
-        const { locationId, meetingId, reason = "test" } = data;
-        io.to(`meeting:${meetingId}`).emit("meeting:ended", { meetingId, reason });
-        io.to("locations").emit("meeting:ended", { meetingId });
-        io.to("arls").emit("meeting:ended", { meetingId });
-        io.to("all").emit("meeting:ended", { meetingId });
-      });
-
-      socket.on("test:broadcast_started", (data: any) => {
-        const { locationId, broadcastId, arlName, title } = data;
-        io.to("locations").emit("broadcast:started", { broadcastId, arlName, title });
-        io.to("arls").emit("broadcast:started", { broadcastId, arlName, title });
-        io.to("all").emit("broadcast:started", { broadcastId, arlName, title });
-      });
-
-      socket.on("test:broadcast_ended", (data: any) => {
-        const { locationId, broadcastId } = data;
-        io.to("locations").emit("broadcast:ended", { broadcastId });
-        io.to("arls").emit("broadcast:ended", { broadcastId });
-        io.to("all").emit("broadcast:ended", { broadcastId });
-      });
-
-      socket.on("test:task_completed", (data: any) => {
-        const { locationId, taskId, title, pointsEarned } = data;
-        io.to(`location:${locationId}`).emit("task:completed", { taskId, title, pointsEarned });
-      });
-
-      socket.on("test:custom_notification", (data: any) => {
-        const { locationId, title, message, priority = "medium" } = data;
-        io.to(`location:${locationId}`).emit("custom:notification", { title, message, priority });
-      });
-    });
-    _g.__hubTestHandlersAdded = true;
-  }
-}

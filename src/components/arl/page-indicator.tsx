@@ -26,18 +26,15 @@ export function PageIndicator({ pages, currentPageId, onPageChange, className }:
               layout
               transition={dotTransition}
               className={cn(
-                "relative h-2 rounded-full overflow-hidden",
+                "relative rounded-full flex items-center justify-center",
                 isActive
-                  ? "bg-[var(--hub-red)]"
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2"
+                  ? "bg-[var(--hub-red)] h-5 px-2.5"
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2 h-2"
               )}
-              style={isActive ? { paddingLeft: 10, paddingRight: 10 } : undefined}
               whileTap={{ scale: 0.92 }}
             >
               {isActive && (
-                <span
-                  className="text-[9px] leading-[8px] font-semibold text-white whitespace-nowrap select-none"
-                >
+                <span className="text-[10px] leading-none font-semibold text-white whitespace-nowrap select-none">
                   {page.label}
                 </span>
               )}
