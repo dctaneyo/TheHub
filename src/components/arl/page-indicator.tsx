@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface PageIndicatorProps {
@@ -10,10 +10,12 @@ interface PageIndicatorProps {
   className?: string;
 }
 
+const dotTransition = { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.8 };
+
 export function PageIndicator({ pages, currentPageId, onPageChange, className }: PageIndicatorProps) {
   return (
-    <div className={cn("w-full flex items-center justify-center gap-2 py-2.5", className)}>
-      <AnimatePresence mode="popLayout">
+    <div className={cn("w-full flex items-center justify-center gap-1.5 py-2.5", className)}>
+      <LayoutGroup>
         {pages.map((page) => {
           const isActive = page.id === currentPageId;
           
@@ -22,41 +24,27 @@ export function PageIndicator({ pages, currentPageId, onPageChange, className }:
               key={page.id}
               onClick={() => onPageChange?.(page.id)}
               layout
-              initial={false}
-              animate={{
-                width: isActive ? "auto" : 8,
-                height: 8,
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 30,
-              }}
+              transition={dotTransition}
               className={cn(
-                "rounded-full flex items-center justify-center overflow-hidden",
-                isActive 
-                  ? "bg-[var(--hub-red)] px-2.5 py-0" 
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                "relative h-2 rounded-full overflow-hidden",
+                isActive
+                  ? "bg-[var(--hub-red)]"
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2"
               )}
-              style={{ minHeight: 8 }}
-              whileTap={{ scale: 0.95 }}
+              style={isActive ? { paddingLeft: 10, paddingRight: 10 } : undefined}
+              whileTap={{ scale: 0.92 }}
             >
               {isActive && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-[10px] leading-none font-semibold text-white whitespace-nowrap"
-                  style={{ lineHeight: '8px' }}
+                <span
+                  className="text-[9px] leading-[8px] font-semibold text-white whitespace-nowrap select-none"
                 >
                   {page.label}
-                </motion.span>
+                </span>
               )}
             </motion.button>
           );
         })}
-      </AnimatePresence>
+      </LayoutGroup>
     </div>
   );
 }

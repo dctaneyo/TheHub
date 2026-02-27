@@ -574,20 +574,6 @@ export default function ArlPage() {
 
         {/* Bottom */}
         <div className="border-t border-border p-3 space-y-1">
-          {/* Theme and Connection - only on mobile/tablet */}
-          {(device === "mobile" || device === "tablet") && (
-            <div className="space-y-2 px-1 py-2">
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors">
-                <span className="text-xs font-medium text-muted-foreground">Theme</span>
-                <ThemeToggle />
-              </div>
-              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors">
-                <span className="text-xs font-medium text-muted-foreground">Connection</span>
-                <ConnectionStatus />
-              </div>
-            </div>
-          )}
-          
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
@@ -625,12 +611,8 @@ export default function ArlPage() {
               else if (type === "location") setActiveView("locations");
             }} />
             <NotificationBell />
-            <div className="hidden sm:block">
-              <ThemeToggle />
-            </div>
-            <div className="hidden sm:block">
-              <ConnectionStatus />
-            </div>
+            <ThemeToggle />
+            <ConnectionStatus />
           </div>
           </header>
         )}

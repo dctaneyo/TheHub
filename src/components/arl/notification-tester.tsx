@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TestTube, Bell, Send, X, ChevronDown } from "lucide-react";
+import { TestTube, Bell, Send, X, ChevronDown, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -10,61 +10,94 @@ interface NotificationTesterProps {
   className?: string;
 }
 
+interface LocationOption {
+  id: string;
+  name: string;
+  storeNumber: string;
+  isOnline: boolean;
+}
+
 export function NotificationTester({ className }: NotificationTesterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sentType, setSentType] = useState<string | null>(null);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const { socket } = useSocket();
 
-  // Mock location list - in real app this would come from API
-  const locations = [
-    { id: "loc-1", name: "Store #001 - Downtown" },
-    { id: "loc-2", name: "Store #002 - Uptown" },
-    { id: "loc-3", name: "Store #003 - Mall" },
-    { id: "loc-4", name: "Store #004 - Airport" },
-  ];
+  // Fetch real locations from API
+  useEffect(() => {
+    if (isOpen && locations.length === 0) {
+      setLoadingLocations(true);
+      fetch("/api/locations")
+        .then((res) => res.json())
+        .then((data) => {
+          const locs = (data.locations || []).map((loc: any) => ({
+            id: loc.id,
+            name: loc.name || loc.storeNumber || "Unknown",
+            storeNumber: loc.storeNumber || "",
+            isOnline: loc.isOnline || false,
+          }));
+          setLocations(locs);
+        })
+        .catch((err) => console.error("Failed to fetch locations:", err))
+        .finally(() => setLoadingLocations(false));
+    }
+  }, [isOpen, locations.length]);
 
   const notificationTypes = [
     {
       id: "task_due_soon",
       label: "Task Due Soon",
-      icon: "⏰",
+      icon: "\u23F0",
       description: "Task is approaching due time",
       payload: {
         taskId: "test-task-123",
-        title: "Test Task",
-        dueTime: "14:00",
+        title: "Test Task - Due Soon",
+        dueTime: new Date(Date.now() + 15 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         points: 10,
       },
     },
     {
       id: "task_overdue",
       label: "Task Overdue",
-      icon: "⚠️",
+      icon: "\u26A0\uFE0F",
       description: "Task is past due time",
       payload: {
         taskId: "test-task-456",
-        title: "Overdue Task",
-        dueTime: "13:00",
+        title: "Overdue Test Task",
+        dueTime: new Date(Date.now() - 30 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         points: 5,
+      },
+    },
+    {
+      id: "task_completed",
+      label: "Task Completed",
+      icon: "\u2705",
+      description: "Task marked as complete",
+      payload: {
+        taskId: "test-task-345",
+        title: "Completed Test Task",
+        pointsEarned: 10,
       },
     },
     {
       id: "meeting_started",
       label: "Meeting Started",
-      icon: "📹",
+      icon: "\uD83D\uDCF9",
       description: "New meeting has started",
       payload: {
         meetingId: "test-meeting-789",
         title: "Test Meeting",
-        hostName: "Test Host",
+        hostName: "Test ARL",
         hostId: "test-host",
       },
     },
     {
       id: "meeting_ended",
       label: "Meeting Ended",
-      icon: "🔚",
+      icon: "\uD83D\uDD1A",
       description: "Meeting has ended",
       payload: {
         meetingId: "test-meeting-789",
@@ -74,7 +107,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
     {
       id: "broadcast_started",
       label: "Broadcast Started",
-      icon: "📢",
+      icon: "\uD83D\uDCE2",
       description: "Emergency broadcast active",
       payload: {
         broadcastId: "test-broadcast-012",
@@ -85,59 +118,42 @@ export function NotificationTester({ className }: NotificationTesterProps) {
     {
       id: "broadcast_ended",
       label: "Broadcast Ended",
-      icon: "📻",
+      icon: "\uD83D\uDCFB",
       description: "Emergency broadcast ended",
       payload: {
         broadcastId: "test-broadcast-012",
       },
     },
     {
-      id: "task_completed",
-      label: "Task Completed",
-      icon: "✅",
-      description: "Task marked as complete",
-      payload: {
-        taskId: "test-task-345",
-        title: "Completed Task",
-        pointsEarned: 10,
-        locationId: "loc-1",
-      },
-    },
-    {
       id: "custom_notification",
       label: "Custom Notification",
-      icon: "🔔",
+      icon: "\uD83D\uDD14",
       description: "Custom test notification",
       payload: {
         title: "Custom Test",
-        message: "This is a custom test notification",
+        message: "This is a custom test notification from the ARL Hub",
         priority: "medium",
       },
     },
   ];
 
-  const sendNotification = async (type: string, payload: any) => {
+  const sendNotification = async (type: string, payload: Record<string, unknown>) => {
     if (!selectedLocation || !socket) return;
     
     setIsSending(true);
+    setSentType(null);
     try {
+      // Inject the selected locationId into task_completed payload
+      const enrichedPayload = { ...payload };
+      if (type === "task_completed") {
+        enrichedPayload.locationId = selectedLocation;
+      }
+
       // Send via socket to specific location
-      socket.emit(`test:${type}`, { locationId: selectedLocation, ...payload });
+      socket.emit(`test:${type}`, { locationId: selectedLocation, ...enrichedPayload });
       
-      // Also create a notification in the database
-      await fetch("/api/notifications/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: selectedLocation,
-          userType: "location",
-          type: type.replace("_", "_"),
-          title: payload.title || `Test: ${type}`,
-          message: payload.message || `Test notification for ${type}`,
-          priority: payload.priority || "medium",
-          metadata: payload,
-        }),
-      });
+      setSentType(type);
+      setTimeout(() => setSentType(null), 2000);
     } catch (error) {
       console.error("Failed to send test notification:", error);
     } finally {
@@ -146,63 +162,58 @@ export function NotificationTester({ className }: NotificationTesterProps) {
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted rounded-xl"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted rounded-xl w-full"
       >
         <TestTube className="h-4 w-4" />
-        <span className="hidden sm:inline">Test Notifications</span>
-        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+        <span>Test Notifications</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform ml-auto", isOpen && "rotate-180")} />
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.95 }}
-            className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-card shadow-xl z-50 overflow-hidden"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
           >
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bell className="h-4.5 w-4.5 text-[var(--hub-red)]" />
-                  <h3 className="font-semibold text-foreground">Notification Tester</h3>
-                </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 space-y-4">
+            <div className="pt-4 space-y-4">
               {/* Location selector */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Target Location
                 </label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select a location...</option>
-                  {locations.map((loc) => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.name}
-                    </option>
-                  ))}
-                </select>
+                {loadingLocations ? (
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground border-t-transparent" />
+                    Loading locations...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select a location...</option>
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.storeNumber ? `#${loc.storeNumber} - ` : ""}{loc.name}{loc.isOnline ? " (Online)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {locations.length === 0 && !loadingLocations && (
+                  <p className="text-xs text-muted-foreground mt-1">No locations found. Create locations in the Locations page first.</p>
+                )}
               </div>
 
               {/* Notification types */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">
-                  Notification Types
+                  Send Notification ({notificationTypes.length} types)
                 </label>
                 <div className="space-y-1 max-h-60 overflow-y-auto">
                   {notificationTypes.map((type) => (
@@ -217,7 +228,11 @@ export function NotificationTester({ className }: NotificationTesterProps) {
                         <p className="text-sm font-medium text-foreground">{type.label}</p>
                         <p className="text-xs text-muted-foreground truncate">{type.description}</p>
                       </div>
-                      <Send className="h-3.5 w-3.5 text-muted-foreground" />
+                      {sentType === type.id ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   ))}
                 </div>
