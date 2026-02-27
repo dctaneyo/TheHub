@@ -185,10 +185,10 @@ export function MeetingAnalyticsDashboard() {
           <StatCard icon={Users} label="ARLs + Guests" value={String(m.totalArls + m.totalGuests)} color="indigo" />
         </div>
 
-        {/* Participants table */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
+        {/* Participants table - Desktop */}
+        <div className="bg-card rounded-xl border border-border overflow-hidden hidden md:block">
           <div className="px-4 py-3 border-b border-border">
-            <h4 className="text-sm font-semibold text-white">Participants ({participants.length})</h4>
+            <h4 className="text-sm font-semibold text-foreground">Participants ({participants.length})</h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -208,7 +208,7 @@ export function MeetingAnalyticsDashboard() {
               <tbody>
                 {participants.map(p => (
                   <tr key={p.id} className="border-b border-border hover:bg-muted/50">
-                    <td className="px-4 py-2 text-white font-medium">{p.participantName}</td>
+                    <td className="px-4 py-2 text-foreground font-medium">{p.participantName}</td>
                     <td className="px-4 py-2">
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
@@ -244,6 +244,68 @@ export function MeetingAnalyticsDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Participants cards - Mobile */}
+        <div className="md:hidden space-y-2">
+          <div className="px-4 py-3 bg-card rounded-xl border border-border">
+            <h4 className="text-sm font-semibold text-foreground">Participants ({participants.length})</h4>
+          </div>
+          {participants.map(p => (
+            <div key={p.id} className="bg-card rounded-xl border border-border p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{p.participantName}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-full",
+                      p.participantType === "arl" ? "bg-blue-600/20 text-blue-400" :
+                      p.participantType === "guest" ? "bg-purple-600/20 text-purple-400" :
+                      "bg-green-600/20 text-green-400"
+                    )}>
+                      {p.participantType === "arl" ? "ARL" : p.participantType === "guest" ? "Guest" : "Restaurant"}
+                    </span>
+                    <span className={cn(
+                      "text-xs",
+                      p.role === "host" ? "text-yellow-400" : p.role === "cohost" ? "text-blue-400" : "text-muted-foreground"
+                    )}>
+                      {p.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium text-foreground">{formatDuration(p.duration)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Messages:</span>
+                  <span className="font-medium text-foreground">{p.messagesSent}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Q&A:</span>
+                  <span className="font-medium text-foreground">{p.questionsSent}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reactions:</span>
+                  <span className="font-medium text-foreground">{p.reactionsSent}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Hand Raises:</span>
+                  <span className="font-medium text-foreground">{p.handRaiseCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Muted by Host:</span>
+                  {p.wasMutedByHost ? (
+                    <span className="text-red-400 font-medium">Yes</span>
+                  ) : (
+                    <span className="text-muted-foreground font-medium">No</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
