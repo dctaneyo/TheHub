@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { NotificationTester } from "@/components/arl/notification-tester";
 
 interface AuditLogEntry {
   id: string;
@@ -370,6 +371,11 @@ export function DataManagement() {
         <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
           <RefreshCw className={cn("h-4 w-4", loadingReport && "animate-spin")} /> Refresh
         </button>
+      </div>
+
+      {/* Notification Tester */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <NotificationTester />
       </div>
 
       {/* Alerts */}

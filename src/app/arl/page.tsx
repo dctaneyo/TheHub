@@ -580,11 +580,6 @@ export default function ArlPage() {
             </>
           )}
           
-          {/* Notification Tester - desktop only */}
-          {device === "desktop" && (
-            <NotificationTester className="w-full" />
-          )}
-          
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
@@ -641,16 +636,6 @@ export default function ArlPage() {
         )}>
           {mounted ? (
             <>
-              {/* Mobile page indicator */}
-              {isMobileOrTablet && (
-                <PageIndicator
-                  pages={navItems.map(item => ({ id: item.id, label: item.label }))}
-                  currentPageId={activeView}
-                  onPageChange={(pageId: string) => setActiveView(pageId as ArlView)}
-                  className="sticky top-0 bg-card/80 backdrop-blur-sm border-b border-border z-10"
-                />
-              )}
-              
               <AnimatePresence mode="wait">
               <motion.div
                 key={activeView}
@@ -721,6 +706,16 @@ export default function ArlPage() {
             </>
           ) : null}
         </main>
+        
+        {/* Mobile page indicator - sticky at bottom like iPhone */}
+        {isMobileOrTablet && mounted && (
+          <PageIndicator
+            pages={navItems.map(item => ({ id: item.id, label: item.label }))}
+            currentPageId={activeView}
+            onPageChange={(pageId: string) => setActiveView(pageId as ArlView)}
+            className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
+          />
+        )}
       </div>
 
       {/* Broadcast Studio */}
