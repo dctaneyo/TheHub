@@ -1267,15 +1267,15 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
           <h2 className="text-sm font-bold text-foreground">Full Calendar</h2>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Calendar grid */}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex flex-1 flex-col overflow-hidden min-w-0">
             <div className="flex items-center justify-between border-b border-border px-4 py-2">
               <button onClick={() => setCurrentMonth(subMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
               <span className="text-sm font-bold text-foreground">{format(currentMonth,"MMMM yyyy")}</span>
               <button onClick={() => setCurrentMonth(addMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
             </div>
-            <div className="grid grid-cols-7 border-b border-border">
+            <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
               {CAL_DAYS_H.map((d) => <div key={d} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
             </div>
             <div className="flex flex-1 flex-col overflow-hidden">
@@ -1308,7 +1308,7 @@ function CalendarModal({ onClose, locationId }: { onClose: () => void; locationI
             </div>
           </div>
           {/* Day detail */}
-          <div className="w-[280px] shrink-0 flex flex-col overflow-hidden border-l border-border">
+          <div className="w-full md:w-[280px] shrink-0 flex flex-col overflow-hidden border-t md:border-t-0 md:border-l border-border">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <h3 className="text-sm font-bold text-foreground">{selectedDate?format(selectedDate,"EEE, MMMM d"):"Select a day"}</h3>
