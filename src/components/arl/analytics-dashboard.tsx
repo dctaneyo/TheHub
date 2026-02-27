@@ -319,7 +319,7 @@ export function AnalyticsDashboard() {
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-xl bg-muted p-1">
+        <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
               className={cn("rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",

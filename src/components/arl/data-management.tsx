@@ -362,10 +362,10 @@ export function DataManagement() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Data Management</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Data Management</h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
         </div>
         <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
           <RefreshCw className={cn("h-4 w-4", loadingReport && "animate-spin")} /> Refresh
@@ -400,7 +400,7 @@ export function DataManagement() {
             className="overflow-hidden"
           >
             <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                     <ScrollText className="h-5 w-5" />
@@ -414,8 +414,8 @@ export function DataManagement() {
                   <input
                     value={auditFilter}
                     onChange={(e) => setAuditFilter(e.target.value)}
-                    placeholder="Filter by action or user..."
-                    className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring w-56"
+                    placeholder="Filter..."
+                    className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring w-32 sm:w-56"
                   />
                   <button
                     onClick={() => { setShowAuditLog(false); setAuditLogs([]); setAuditFilter(""); }}

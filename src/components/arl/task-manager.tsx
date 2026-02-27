@@ -564,7 +564,7 @@ export function TaskManager() {
                     )}
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-1">
+                <div className="flex shrink-0 gap-1 self-start mt-1 sm:mt-0 sm:self-center">
                   <button
                     onClick={() => handleToggleHidden(task)}
                     title={task.isHidden ? "Show task" : "Hide task"}
@@ -651,7 +651,7 @@ export function TaskManager() {
                 {/* Type */}
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Type</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {TYPES.map((t) => (
                       <button
                         key={t.value}
@@ -673,7 +673,7 @@ export function TaskManager() {
                 {/* Priority */}
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Priority</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {PRIORITIES.map((p) => (
                       <button
                         key={p.value}
@@ -692,7 +692,7 @@ export function TaskManager() {
                 </div>
 
                 {/* Due Date + Time + Points */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   {!isRecurring && (
                     <div className="flex-1">
                       <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Date</label>

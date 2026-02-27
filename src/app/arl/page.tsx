@@ -59,6 +59,7 @@ import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
 import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
+import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -141,7 +142,12 @@ export default function ArlPage() {
     }
   }, [activeView, mounted]);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 768 && window.innerWidth < 1024) {
+      return true; // Auto-open on tablet landscape
+    }
+    return false;
+  });
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null);
@@ -157,6 +163,11 @@ export default function ArlPage() {
   const locationNamesRef = useRef<Map<string, string>>(new Map());
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
+  const isOnline = useOnlineStatus();
+
+  // Swipe navigation between views on mobile
+  const swipeViewIds = navItems.map((n) => n.id);
+  useSwipeNavigation(swipeViewIds, activeView, setActiveView as (v: string) => void, isMobileOrTablet && !sidebarOpen);
 
   // Play subtle 2-note beep for new messages (ARL office environment — not a loud kitchen)
   const playMessageChime = useCallback(() => {
@@ -437,6 +448,21 @@ export default function ArlPage() {
 
   return (
     <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]">
+      {/* Offline indicator banner */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-[300] flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md"
+          >
+            <Wifi className="h-4 w-4" />
+            You&apos;re offline — some features may not work
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar - always visible on desktop, drawer on mobile/tablet */}
       {/* Hide sidebar on mobile when in a meeting */}
       {isMobileOrTablet && sidebarOpen && !joiningMeeting && activeView !== "broadcast" && (
@@ -537,7 +563,15 @@ export default function ArlPage() {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-3 space-y-1">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs font-medium text-muted-foreground">Theme</span>
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs font-medium text-muted-foreground">Connection</span>
+            <ConnectionStatus />
+          </div>
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
@@ -568,14 +602,12 @@ export default function ArlPage() {
             </h2>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="hidden md:block">
-              <GlobalSearch onNavigate={(type, id) => {
-                if (type === "task") setActiveView("tasks");
-                else if (type === "message") setActiveView("messages");
-                else if (type === "form") setActiveView("forms");
-                else if (type === "location") setActiveView("locations");
-              }} />
-            </div>
+            <GlobalSearch onNavigate={(type, id) => {
+              if (type === "task") setActiveView("tasks");
+              else if (type === "message") setActiveView("messages");
+              else if (type === "form") setActiveView("forms");
+              else if (type === "location") setActiveView("locations");
+            }} />
             <NotificationBell />
             <div className="hidden sm:block">
               <ThemeToggle />

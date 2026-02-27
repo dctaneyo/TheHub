@@ -7,6 +7,15 @@
 /* Prevent iOS Safari page-level pinch-to-zoom (Safari ignores viewport user-scalable=no) */
 html {
   touch-action: manipulation;
+  /* Safe area insets for notched devices (iPhone X+) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: max(16px, 1em);
+  }
 }
 
 @theme inline {

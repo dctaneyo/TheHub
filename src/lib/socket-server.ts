@@ -7,7 +7,7 @@ import type { AuthPayload } from "./auth";
 import { db, schema } from "./db";
 import { and, eq } from "drizzle-orm";
 import { sendPushToAllARLs } from "./push";
-import { createNotificationBulk } from "./notifications";
+import { createNotification, createNotificationBulk } from "./notifications";
 
 // Read the build ID written by `npm run build` — the only reliable way
 // to pass a build-time value into the custom Node server at runtime.
@@ -274,6 +274,15 @@ function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
             .get();
           if (!c) {
             io.to(`location:${locationId}`).emit("task:due-soon", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+            createNotification({
+              userId: locationId,
+              userType: "location",
+              type: "task_due_soon",
+              title: `Due soon: ${task.title}`,
+              message: `Task "${task.title}" is due at ${task.dueTime}`,
+              priority: "high",
+              metadata: { taskId: task.id, dueTime: task.dueTime },
+            }).catch(() => {});
           }
         }, msUntilDueSoon));
       }
@@ -287,6 +296,15 @@ function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
             .get();
           if (!c) {
             io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+            createNotification({
+              userId: locationId,
+              userType: "location",
+              type: "task_overdue",
+              title: `Overdue: ${task.title}`,
+              message: `Task "${task.title}" was due at ${task.dueTime}`,
+              priority: "urgent",
+              metadata: { taskId: task.id, dueTime: task.dueTime },
+            }).catch(() => {});
           }
         }, msUntilOverdue));
       }

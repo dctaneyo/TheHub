@@ -439,8 +439,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
-          style={{ width: isFullscreen ? "100%" : 360, left: isFullscreen ? 0 : "auto" }}
-          className="fixed right-0 top-0 z-[200] flex h-dvh flex-col overflow-hidden border-l border-border bg-card shadow-xl"
+          className="fixed right-0 top-0 z-[200] flex h-dvh w-full sm:w-[360px] flex-col overflow-hidden border-l border-border bg-card shadow-xl"
+          style={isFullscreen ? { width: "100%", left: 0 } : undefined}
         >
           {/* Header */}
           <div className="flex h-14 items-center justify-between border-b border-border px-4">

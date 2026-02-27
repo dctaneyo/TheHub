@@ -161,14 +161,14 @@ export function LocationsManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-foreground">Restaurant Locations</h3>
           <p className="text-xs text-muted-foreground">
             {onlineCount} of {locations.length} online
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">{onlineCount} Online</span>

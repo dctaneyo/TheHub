@@ -30,6 +30,7 @@ import {
   Play,
   Sun,
   Moon,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -39,6 +40,7 @@ import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { NotificationSystem } from "@/components/dashboard/notification-system";
+import { useHapticFeedback, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
@@ -507,7 +509,12 @@ export default function DashboardPage() {
     }
   };
 
+  const haptic = useHapticFeedback();
+  const isOnline = useOnlineStatus();
+
   const handleCompleteTask = async (taskId: string) => {
+    // Haptic feedback on task completion
+    haptic([50, 30, 80]);
     // Record completion time — suppresses socket-triggered fetchTasks for 3s
     completingRef.current = Date.now();
 
@@ -583,6 +590,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)] relative">
+      {/* Offline indicator banner */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-[300] flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md"
+          >
+            You&apos;re offline — some features may not work
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Animated Background */}
       <AnimatedBackground variant="subtle" />
 
@@ -664,9 +685,7 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">
           {/* Unified Gamification Hub */}
-          <div className="hidden md:block">
-            <GamificationHub locationId={user?.id} />
-          </div>
+          <GamificationHub locationId={user?.id} />
 
           {/* Connection status - hide on small mobile */}
           <div className="hidden sm:block">
@@ -712,16 +731,6 @@ export default function DashboardPage() {
               </span>
             )}
           </button>
-
-          {/* Old notification system - hide on mobile, show on desktop */}
-          <div className="hidden md:block">
-            <NotificationSystem
-              tasks={allTasks}
-              currentTime={currentTime}
-              soundEnabled={soundEnabled}
-              onToggleSound={toggleSound}
-            />
-          </div>
 
           {/* Notification Bell */}
           <NotificationBell />

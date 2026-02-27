@@ -314,8 +314,8 @@ export function MeetingAnalyticsDashboard() {
   // Overview
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-black flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-blue-400" />
           Meeting Analytics
         </h2>
@@ -427,17 +427,17 @@ export function MeetingAnalyticsDashboard() {
                     <span className="text-xs text-muted-foreground">{m.hostName}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 shrink-0 ml-4">
+                <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-2 sm:ml-4">
                   <div className="text-center">
-                    <p className="text-sm font-bold text-white">{m.peakParticipants}</p>
-                    <p className="text-[10px] text-muted-foreground">participants</p>
+                    <p className="text-sm font-bold text-foreground">{m.peakParticipants}</p>
+                    <p className="text-[10px] text-muted-foreground">joined</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-bold text-white">{formatDuration(m.duration)}</p>
+                  <div className="text-center hidden sm:block">
+                    <p className="text-sm font-bold text-foreground">{formatDuration(m.duration)}</p>
                     <p className="text-[10px] text-muted-foreground">duration</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-bold text-white">{m.totalMessages}</p>
+                  <div className="text-center hidden sm:block">
+                    <p className="text-sm font-bold text-foreground">{m.totalMessages}</p>
                     <p className="text-[10px] text-muted-foreground">messages</p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

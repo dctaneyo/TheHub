@@ -343,7 +343,7 @@ export function EmergencyBroadcast() {
           rows={3}
           className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
         />
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <p className="text-[11px] text-muted-foreground">
             {targetMode === "all"
               ? "Will alert all locations with repeating alarm."

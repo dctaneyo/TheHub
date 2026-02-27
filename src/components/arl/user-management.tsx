@@ -201,7 +201,7 @@ export function UserManagement() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-foreground">User Management</h3>
           <p className="text-xs text-muted-foreground">{arls.length} ARLs · {locations.length} locations</p>
