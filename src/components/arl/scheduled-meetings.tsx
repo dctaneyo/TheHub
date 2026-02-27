@@ -214,7 +214,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               showCreate ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
           >
-            {showCreate ? <><X className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Cancel</span><span className="sm:hidden">✕</span></> : <><Plus className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
+            {showCreate ? <><X className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Cancel</span></> : <><Plus className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
           </Button>
         </div>
       </div>

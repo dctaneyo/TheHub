@@ -409,7 +409,7 @@ export function TaskManager() {
           <h3 className="text-base font-bold text-foreground">All Tasks & Reminders</h3>
           <p className="text-xs text-muted-foreground">{filteredTasks.length} of {tasks.length} tasks</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={filterLocationId}
             onChange={(e) => setFilterLocationId(e.target.value)}
@@ -428,9 +428,10 @@ export function TaskManager() {
             Templates
             {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
-          <Button onClick={openCreate} size="sm" className="gap-1.5 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]">
+          <Button onClick={openCreate} size="sm" className="gap-1.5 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f] flex-shrink-0">
             <Plus className="h-4 w-4" />
-            New Task
+            <span className="hidden sm:inline">New Task</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
       </div>

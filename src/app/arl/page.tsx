@@ -61,6 +61,7 @@ import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
+import { PageIndicator } from "@/components/arl/page-indicator";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -609,7 +610,7 @@ export default function ArlPage() {
                 <Menu className="h-4.5 w-4.5" />
               </button>
             )}
-            <h2 className="text-base font-bold text-foreground">
+            <h2 className="text-base font-bold text-foreground hidden sm:block">
               {navItems.find((n) => n.id === activeView)?.label ?? ""}
             </h2>
           </div>
@@ -636,10 +637,21 @@ export default function ArlPage() {
           "flex-1 relative",
           activeView === "messages"
             ? "flex flex-col overflow-hidden p-5"
-            : "overflow-y-auto p-5"
+            : "overflow-y-auto p-5 pb-20"
         )}>
           {mounted ? (
-            <AnimatePresence mode="wait">
+            <>
+              {/* Mobile page indicator */}
+              {isMobileOrTablet && (
+                <PageIndicator
+                  pages={navItems.map(item => ({ id: item.id, label: item.label }))}
+                  currentPageId={activeView}
+                  onPageChange={(pageId: string) => setActiveView(pageId as ArlView)}
+                  className="sticky top-0 bg-card/80 backdrop-blur-sm border-b border-border z-10"
+                />
+              )}
+              
+              <AnimatePresence mode="wait">
               <motion.div
                 key={activeView}
                 initial={{ opacity: 0, y: 12 }}
@@ -706,6 +718,7 @@ export default function ArlPage() {
                 )}
               </motion.div>
             </AnimatePresence>
+            </>
           ) : null}
         </main>
       </div>
