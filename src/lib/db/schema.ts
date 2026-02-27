@@ -31,7 +31,7 @@ export const arls = sqliteTable("arls", {
 // Sessions - track which locations are connected
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(), // UUID
-  sessionCode: text("session_code"), // 6-digit human-readable session ID
+  sessionCode: text("session_code"), // 4-digit human-readable session ID
   userType: text("user_type").notNull(), // 'location' | 'arl'
   userId: text("user_id").notNull(), // references locations.id or arls.id
   token: text("token").notNull(),
@@ -216,7 +216,7 @@ export const notifications = sqliteTable("notifications", {
 // Pending sessions - pre-login session IDs shown on login screen
 export const pendingSessions = sqliteTable("pending_sessions", {
   id: text("id").primaryKey(), // UUID
-  code: text("code").notNull().unique(), // 6-digit code shown on login screen
+  code: text("code").notNull().unique(), // 4-digit code shown on login screen
   status: text("status").notNull().default("pending"), // 'pending' | 'activated'
   // Filled in by ARL when activating:
   assignedUserType: text("assigned_user_type"), // 'location' | 'arl'

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Trash2, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,111 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   new_shoutout: Sparkles,
   default: Bell,
 };
+
+function NotifVirtualList({ notifications, onMarkAsRead, onDelete, onClose, getTimeAgo }: {
+  notifications: Notification[];
+  onMarkAsRead: (id: string) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+  getTimeAgo: (ts: string) => string;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: notifications.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80,
+    gap: 0,
+    overscan: 5,
+  });
+
+  if (notifications.length === 0) return null;
+
+  return (
+    <div ref={parentRef} className="max-h-[400px] overflow-y-auto">
+      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+        {virtualizer.getVirtualItems().map((vRow) => {
+          const notification = notifications[vRow.index];
+          const Icon = typeIcons[notification.type] || typeIcons.default;
+          return (
+            <div
+              key={notification.id}
+              data-index={vRow.index}
+              ref={virtualizer.measureElement}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
+            >
+              <div
+                className={cn(
+                  "group relative border-l-4 border-b border-border px-4 py-3 transition-colors hover:bg-muted/50",
+                  priorityColors[notification.priority as keyof typeof priorityColors] || priorityColors.normal,
+                  !notification.isRead && "bg-muted/30"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                    notification.priority === "urgent" ? "bg-red-500/10 text-red-600 dark:text-red-400" :
+                    notification.priority === "high" ? "bg-orange-500/10 text-orange-600 dark:text-orange-400" :
+                    "bg-muted text-muted-foreground"
+                  )}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-sm leading-tight",
+                      notification.isRead ? "text-muted-foreground" : "font-semibold text-foreground"
+                    )}>
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-muted-foreground">
+                        {getTimeAgo(notification.createdAt)}
+                      </span>
+                      {notification.actionUrl && (
+                        <a
+                          href={notification.actionUrl}
+                          onClick={() => {
+                            onMarkAsRead(notification.id);
+                            onClose();
+                          }}
+                          className="text-[10px] font-medium text-[var(--hub-red)] hover:underline"
+                        >
+                          {notification.actionLabel || "View"}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {!notification.isRead && (
+                      <button
+                        onClick={() => onMarkAsRead(notification.id)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        title="Mark as read"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(notification.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotifications = [], onDismissTask, onDismissAllTasks }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -283,84 +389,13 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
             </div>
           )}
 
-          <AnimatePresence mode="popLayout">
-            {notifications.map((notification) => {
-              const Icon = typeIcons[notification.type] || typeIcons.default;
-              return (
-                <motion.div
-                  key={notification.id}
-                  layout
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className={cn(
-                    "group relative border-l-4 border-b border-border px-4 py-3 transition-colors hover:bg-muted/50",
-                    priorityColors[notification.priority as keyof typeof priorityColors] || priorityColors.normal,
-                    !notification.isRead && "bg-muted/30"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                      notification.priority === "urgent" ? "bg-red-500/10 text-red-600 dark:text-red-400" :
-                      notification.priority === "high" ? "bg-orange-500/10 text-orange-600 dark:text-orange-400" :
-                      "bg-muted text-muted-foreground"
-                    )}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "text-sm leading-tight",
-                        notification.isRead ? "text-muted-foreground" : "font-semibold text-foreground"
-                      )}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[10px] text-muted-foreground">
-                          {getTimeAgo(notification.createdAt)}
-                        </span>
-                        {notification.actionUrl && (
-                          <a
-                            href={notification.actionUrl}
-                            onClick={() => {
-                              handleMarkAsRead(notification.id);
-                              onClose();
-                            }}
-                            className="text-[10px] font-medium text-[var(--hub-red)] hover:underline"
-                          >
-                            {notification.actionLabel || "View"}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!notification.isRead && (
-                        <button
-                          onClick={() => handleMarkAsRead(notification.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                          title="Mark as read"
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(notification.id)}
-                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+          <NotifVirtualList
+            notifications={notifications}
+            onMarkAsRead={handleMarkAsRead}
+            onDelete={handleDelete}
+            onClose={onClose}
+            getTimeAgo={getTimeAgo}
+          />
         </div>
       </motion.div>
     </>

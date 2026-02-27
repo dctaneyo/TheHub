@@ -60,8 +60,8 @@ export function LocationsManager() {
   }, []);
 
   const handlePinReset = async (locId: string) => {
-    if (newPin.length !== 6) { setPinError("PIN must be 6 digits"); return; }
-    if (!/^\d{6}$/.test(newPin)) { setPinError("PIN must be digits only"); return; }
+    if (newPin.length !== 4) { setPinError("PIN must be 4 digits"); return; }
+    if (!/^\d{4}$/.test(newPin)) { setPinError("PIN must be digits only"); return; }
     setPinSaving(true);
     setPinError("");
     try {
@@ -305,21 +305,21 @@ export function LocationsManager() {
                 <div className="mt-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 space-y-2">
                   <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                     <KeyRound className="h-3 w-3" />
-                    Reset 6-digit PIN
+                    Reset 4-digit PIN
                   </p>
                   <div className="flex items-center gap-2">
                     <input
                       type="password"
                       inputMode="numeric"
-                      maxLength={6}
+                      maxLength={4}
                       value={newPin}
-                      onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6)); setPinError(""); }}
-                      placeholder="New PIN (6 digits)"
+                      onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
+                      placeholder="New PIN (4 digits)"
                       className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                     <button
                       onClick={() => handlePinReset(loc.id)}
-                      disabled={pinSaving || newPin.length !== 6}
+                      disabled={pinSaving || newPin.length !== 4}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
                     >
                       <Check className="h-3.5 w-3.5" />

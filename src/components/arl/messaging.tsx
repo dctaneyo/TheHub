@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import {
@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
@@ -274,6 +275,7 @@ export function Messaging() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const reactions = ["❤️", "👍", "😂", "😊"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const msgScrollRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevUnreadRef = useRef<number>(0);
   const initializedRef = useRef(false);
@@ -508,8 +510,35 @@ export function Messaging() {
     }
   }, [activeConvo, fetchMessages, joinConversation, leaveConversation]);
 
+  // Compute visible messages for the virtualizer
+  const { visibleMessages, hasPast } = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterdayStart = todayStart - 86400000;
+    const searchFiltered = searchQuery
+      ? messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      : null;
+    const visible = searchFiltered ?? (showAllMessages
+      ? messages
+      : messages.filter((m) => new Date(m.createdAt).getTime() >= yesterdayStart));
+    const past = !searchFiltered && messages.some((m) => new Date(m.createdAt).getTime() < yesterdayStart);
+    return { visibleMessages: visible, hasPast: past };
+  }, [messages, searchQuery, showAllMessages]);
+
+  const msgVirtualizer = useVirtualizer({
+    count: visibleMessages.length,
+    getScrollElement: () => msgScrollRef.current,
+    estimateSize: () => 72,
+    gap: 12,
+    overscan: 8,
+  });
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      if (msgScrollRef.current) {
+        msgScrollRef.current.scrollTop = msgScrollRef.current.scrollHeight;
+      }
+    });
   }, [messages]);
 
   const handleSend = async (directContent?: string) => {
@@ -878,191 +907,172 @@ export function Messaging() {
         </div>
       )}
 
-      <ScrollArea className="flex-1 min-h-0 p-4">
-        {(() => {
-          // Date filtering with timezone-safe comparison
-          const now = new Date();
-          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-          const yesterdayStart = todayStart - 86400000;
-          
-          const searchFiltered = searchQuery
-            ? messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-            : null;
-          const visibleMessages = searchFiltered ?? (showAllMessages
-            ? messages
-            : messages.filter((m) => {
-                const msgTime = new Date(m.createdAt).getTime();
-                return msgTime >= yesterdayStart;
-              }));
-          const hasPast = !searchFiltered && messages.some((m) => {
-            const msgTime = new Date(m.createdAt).getTime();
-            return msgTime < yesterdayStart;
-          });
-          return (
-        <div className="space-y-3">
-          {!showAllMessages && hasPast && (
-            <div className="flex justify-center pb-1">
-              <button
-                onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80"
-              >
-                View Past Messages
-              </button>
-            </div>
-          )}
-          {visibleMessages.length === 0 && (
-            <div className="flex h-40 items-center justify-center">
-              <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
-            </div>
-          )}
-          {visibleMessages.map((msg) => {
-            const isMe = msg.senderId === user?.id;
-            const hasBeenRead = msg.reads.length > 0;
-            const receiptDetail = isGroup && isMe ? getReceiptDetail(msg, activeConvo) : null;
-            const showPopover = receiptPopover === msg.id;
-            return (
-              <motion.div key={msg.id}
-                initial={knownMessageIdsRef.current.has(msg.id) ? false : { opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
-              >
-                {isGroup && !isMe && (
-                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
-                )}
-                <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
-                )}>
-                  {msg.messageType === "voice" ? (() => {
-                    try {
-                      const meta = JSON.parse((msg as any).metadata || "{}");
-                      return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
-                    } catch { return <MessageContent content={msg.content} />; }
-                  })() : <MessageContent content={msg.content} />}
-                  
-                  {/* Reactions display - inline */}
-                  {msg.reactions && msg.reactions.length > 0 && (() => {
-                    const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
-                      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>);
-                    return (
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {Object.entries(grouped).map(([emoji, count]) => (
-                          <div key={emoji} className={cn(
-                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
-                            isMe ? "bg-white/20" : "bg-card border border-border"
-                          )}>
-                            <Emoji emoji={emoji} size={14} />
-                            {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-muted-foreground")}>{count}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                
-                  <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-muted-foreground")}>
-                      {format(new Date(msg.createdAt), "h:mm a")}
-                    </span>
-                    {isMe && (
-                      <div className="relative">
-                        {/* For groups: clickable to show read receipt popover. For direct: non-interactive. */}
-                        {isGroup ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setReceiptPopover(showPopover ? null : msg.id); }}
-                            className="flex items-center"
-                            title="See who read this"
-                          >
-                            {hasBeenRead
-                              ? <CheckCheck className="h-3 w-3 text-white cursor-pointer hover:text-white/70" />
-                              : <Check className="h-3 w-3 text-white/50" />
-                            }
-                          </button>
-                        ) : (
-                          hasBeenRead
-                            ? <CheckCheck className="h-3 w-3 text-white/80" />
-                            : <Check className="h-3 w-3 text-white/50" />
-                        )}
-                        {/* Read receipt popover for group/global */}
-                        {isGroup && showPopover && receiptDetail && (
-                          <div
-                            className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-border bg-card p-3 shadow-xl text-left"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {receiptDetail.readMembers.length > 0 && (
-                              <div className="mb-2">
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1">Read by</p>
-                                {receiptDetail.readMembers.map((m) => {
-                                  const info = memberInfoMap.get(m.memberId);
-                                  return (
-                                    <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                      <span className="text-xs text-foreground">{info?.name ?? m.memberId}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {receiptDetail.unreadMembers.length > 0 && (
-                              <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
-                                {receiptDetail.unreadMembers.map((m) => {
-                                  const info = memberInfoMap.get(m.memberId);
-                                  return (
-                                    <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground">{info?.name ?? m.memberId}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {receiptDetail.readMembers.length === 0 && receiptDetail.unreadMembers.length === 0 && (
-                              <p className="text-xs text-muted-foreground">No other members</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+      <div ref={msgScrollRef} className="flex-1 min-h-0 overflow-y-auto p-4" onClick={() => setReceiptPopover(null)}>
+        {!showAllMessages && hasPast && (
+          <div className="flex justify-center pb-3">
+            <button
+              onClick={() => setShowAllMessages(true)}
+              className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80"
+            >
+              View Past Messages
+            </button>
+          </div>
+        )}
+        {visibleMessages.length === 0 ? (
+          <div className="flex h-40 items-center justify-center">
+            <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          <div style={{ height: msgVirtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+            {msgVirtualizer.getVirtualItems().map((vRow) => {
+              const msg = visibleMessages[vRow.index];
+              const isMe = msg.senderId === user?.id;
+              const hasBeenRead = msg.reads.length > 0;
+              const receiptDetail = isGroup && isMe ? getReceiptDetail(msg, activeConvo) : null;
+              const showPopover = receiptPopover === msg.id;
+              return (
+                <div
+                  key={msg.id}
+                  data-index={vRow.index}
+                  ref={msgVirtualizer.measureElement}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
+                >
+                  <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
+                    {isGroup && !isMe && (
+                      <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
                     )}
-                    {/* Reaction button */}
-                    <button
-                      onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                      className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
-                      title="Add reaction"
-                    >
-                      <Smile className="h-3 w-3" />
-                    </button>
+                    <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
+                      isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
+                    )}>
+                      {msg.messageType === "voice" ? (() => {
+                        try {
+                          const meta = JSON.parse((msg as any).metadata || "{}");
+                          return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
+                        } catch { return <MessageContent content={msg.content} />; }
+                      })() : <MessageContent content={msg.content} />}
+
+                      {/* Reactions display - inline */}
+                      {msg.reactions && msg.reactions.length > 0 && (() => {
+                        const grouped = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
+                          acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>);
+                        return (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {Object.entries(grouped).map(([emoji, count]) => (
+                              <div key={emoji} className={cn(
+                                "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
+                                isMe ? "bg-white/20" : "bg-card border border-border"
+                              )}>
+                                <Emoji emoji={emoji} size={14} />
+                                {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-muted-foreground")}>{count}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
+                        <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-muted-foreground")}>
+                          {format(new Date(msg.createdAt), "h:mm a")}
+                        </span>
+                        {isMe && (
+                          <div className="relative">
+                            {isGroup ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setReceiptPopover(showPopover ? null : msg.id); }}
+                                className="flex items-center"
+                                title="See who read this"
+                              >
+                                {hasBeenRead
+                                  ? <CheckCheck className="h-3 w-3 text-white cursor-pointer hover:text-white/70" />
+                                  : <Check className="h-3 w-3 text-white/50" />
+                                }
+                              </button>
+                            ) : (
+                              hasBeenRead
+                                ? <CheckCheck className="h-3 w-3 text-white/80" />
+                                : <Check className="h-3 w-3 text-white/50" />
+                            )}
+                            {isGroup && showPopover && receiptDetail && (
+                              <div
+                                className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-border bg-card p-3 shadow-xl text-left"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {receiptDetail.readMembers.length > 0 && (
+                                  <div className="mb-2">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1">Read by</p>
+                                    {receiptDetail.readMembers.map((m) => {
+                                      const info = memberInfoMap.get(m.memberId);
+                                      return (
+                                        <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
+                                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                          <span className="text-xs text-foreground">{info?.name ?? m.memberId}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                {receiptDetail.unreadMembers.length > 0 && (
+                                  <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
+                                    {receiptDetail.unreadMembers.map((m) => {
+                                      const info = memberInfoMap.get(m.memberId);
+                                      return (
+                                        <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
+                                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                                          <span className="text-xs text-muted-foreground">{info?.name ?? m.memberId}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                {receiptDetail.readMembers.length === 0 && receiptDetail.unreadMembers.length === 0 && (
+                                  <p className="text-xs text-muted-foreground">No other members</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Reaction button */}
+                        <button
+                          onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
+                          className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
+                          title="Add reaction"
+                        >
+                          <Smile className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Reaction picker */}
+                    <AnimatePresence>
+                      {showReactions === msg.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                          className="mt-1 flex gap-1.5 rounded-full bg-card shadow-lg border border-border px-2.5 py-1.5"
+                        >
+                          {reactions.map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => addReaction(msg.id, emoji)}
+                              className="hover:scale-125 transition-transform"
+                            >
+                              <Emoji emoji={emoji} size={24} />
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
-                  
-              {/* Reaction picker */}
-              <AnimatePresence>
-                {showReactions === msg.id && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                    className="mt-1 flex gap-1.5 rounded-full bg-card shadow-lg border border-border px-2.5 py-1.5"
-                  >
-                    {reactions.map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => addReaction(msg.id, emoji)}
-                        className="hover:scale-125 transition-transform"
-                      >
-                        <Emoji emoji={emoji} size={24} />
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              </motion.div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-          );
-        })()}
+              );
+            })}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
         {(() => {
           const typingNames = Array.from(typingUsers.values());
           if (typingNames.length === 0) return null;
@@ -1081,7 +1091,7 @@ export function Messaging() {
             </div>
           );
         })()}
-      </ScrollArea>
+      </div>
 
       <div className="border-t border-border">
         {/* Emoji Quick Replies */}

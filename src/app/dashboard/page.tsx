@@ -3,38 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import {
-  LogOut,
-  MessageCircle,
   CalendarDays,
-  ChevronLeft,
   Video,
-  ChevronRight,
   X,
-  Clock,
-  ClipboardList,
-  SprayCan,
-  Repeat,
-  FileText,
-  Plus,
-  Trash2,
-  AlertCircle,
   CheckCircle2,
-  Circle,
-  Settings,
-  Volume2,
-  VolumeX,
-  MonitorOff,
-  Monitor,
-  Play,
-  Sun,
-  Moon,
-  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { ConnectionStatus } from "@/components/connection-status";
 import { Timeline, type TaskItem } from "@/components/dashboard/timeline";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
@@ -44,7 +20,6 @@ import { useHapticFeedback, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
-import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
@@ -54,9 +29,8 @@ import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
-import { NotificationBell } from "@/components/notification-bell";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 
 interface TasksResponse {
@@ -77,14 +51,8 @@ export default function DashboardPage() {
   });
   const [forceIdle, setForceIdle] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsPos, setSettingsPos] = useState<{ top: number; right: number } | null>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState<"left" | "right" | null>(null);
   const [mobileView, setMobileView] = useState<string>("tasks");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileMenuPos, setMobileMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Persist screensaver toggle to localStorage
   useEffect(() => {
@@ -239,51 +207,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [soundEnabled, playChime]);
 
-  // Close settings popover on outside click
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [settingsOpen]);
-
-  // Close mobile menu on outside click
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
-        setMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [mobileMenuOpen]);
-
-  // Compute fixed position when settings dropdown opens
-  useEffect(() => {
-    if (settingsOpen && settingsRef.current) {
-      const rect = settingsRef.current.getBoundingClientRect();
-      setSettingsPos({
-        top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
-      });
-    }
-  }, [settingsOpen]);
-
-  // Compute fixed position when mobile menu opens
-  useEffect(() => {
-    if (mobileMenuOpen && mobileMenuRef.current) {
-      const rect = mobileMenuRef.current.getBoundingClientRect();
-      setMobileMenuPos({
-        top: rect.bottom + 8,
-        left: rect.left,
-      });
-    }
-  }, [mobileMenuOpen]);
+  // Settings and mobile menu state/effects are now inside DashboardHeader + DashboardSettings
 
   const { user, logout } = useAuth();
   const [data, setData] = useState<TasksResponse | null>(null);
@@ -608,259 +532,24 @@ export default function DashboardPage() {
       {/* Animated Background */}
       <AnimatedBackground variant="subtle" />
 
-      {/* Top Bar */}
-      <header className="sticky top-0 flex h-16 shrink-0 items-center border-b border-border bg-card px-4 md:px-6 z-[100]">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative" ref={mobileMenuRef}>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm transition-transform active:scale-95"
-            >
-              <span className="text-base font-black text-white">H</span>
-            </button>
-            <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
-              <span className="text-base font-black text-white">H</span>
-            </div>
-
-            {/* Mobile Navigation Menu */}
-            <AnimatePresence>
-              {mobileMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="fixed z-[200] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
-                  style={mobileMenuPos ? { top: mobileMenuPos.top, left: mobileMenuPos.left } : {}}
-                >
-                  <div className="px-4 py-3 border-b border-border">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Quick Menu</p>
-                  </div>
-
-                  <div className="p-2 space-y-1">
-                    {/* Forms */}
-                    <button
-                      onClick={() => { setFormsOpen(true); setMobileMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-                        <FileText className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">Forms</p>
-                        <p className="text-xs text-muted-foreground">View documents</p>
-                      </div>
-                    </button>
-
-                    {/* Calendar */}
-                    <button
-                      onClick={() => { setCalOpen(true); setMobileMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
-                        <CalendarDays className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">Calendar</p>
-                        <p className="text-xs text-muted-foreground">View schedule</p>
-                      </div>
-                    </button>
-
-                    {/* Connection Status */}
-                    <div className="px-3 py-2">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">Connection</p>
-                      <ConnectionStatus />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          <div className="hidden md:block">
-            <h1 className="text-base font-bold text-foreground">The Hub</h1>
-            <p className="text-[11px] text-muted-foreground">
-              {user?.name} &middot; Store #{user?.storeNumber}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">
-          {/* Unified Gamification Hub */}
-          <GamificationHub locationId={user?.id} />
-
-          {/* Connection status - hide on small mobile */}
-          <div className="hidden sm:block">
-            <ConnectionStatus />
-          </div>
-
-          {/* Clock - hide on mobile */}
-          <div className="hidden md:block mx-1 text-right">
-            <p className="text-2xl font-black tabular-nums tracking-tight text-foreground">
-              {displayTime}
-            </p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {format(new Date(), "EEE, MMM d yyyy")}
-            </p>
-          </div>
-
-          {/* Action buttons - hide some on mobile */}
-          <button
-            onClick={() => setFormsOpen(true)}
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
-            title="Forms"
-          >
-            <FileText className="h-[18px] w-[18px]" />
-          </button>
-
-          <button
-            onClick={() => setCalOpen(true)}
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
-            title="Calendar"
-          >
-            <CalendarDays className="h-[18px] w-[18px]" />
-          </button>
-
-          <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
-            title="Chat"
-          >
-            <MessageCircle className="h-[18px] w-[18px]" />
-            {chatUnread > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--hub-red)] text-[10px] font-bold text-white">
-                {chatUnread}
-              </span>
-            )}
-          </button>
-
-          {/* Unified Notification Bell (task alerts + DB notifications) */}
-          <NotificationBell
-            tasks={allTasks}
-            currentTime={currentTime}
-            soundEnabled={soundEnabled}
-          />
-
-          {/* Settings cog */}
-          <div className="relative" ref={settingsRef}>
-            <button
-              onClick={() => setSettingsOpen((v) => !v)}
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
-                settingsOpen ? "bg-muted text-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-              title="Settings"
-            >
-              <Settings className="h-[18px] w-[18px]" />
-            </button>
-
-            <AnimatePresence>
-              {settingsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="fixed z-[200] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
-                  style={settingsPos ? { top: settingsPos.top, right: settingsPos.right } : {}}
-                >
-                  <div className="px-4 py-3 border-b border-border">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dashboard Settings</p>
-                  </div>
-
-                  <div className="p-2 space-y-1">
-                    {/* Sound toggle */}
-                    <button
-                      onClick={toggleSound}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
-                    >
-                      <div className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        soundEnabled ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-400 dark:bg-red-950 dark:text-red-400"
-                      )}>
-                        {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">Notification Sound</p>
-                        <p className="text-[11px] text-muted-foreground">{soundEnabled ? "Sounds on" : "Muted"}</p>
-                      </div>
-                      <div className={cn(
-                        "h-5 w-9 rounded-full transition-colors relative",
-                        soundEnabled ? "bg-emerald-500" : "bg-slate-200"
-                      )}>
-                        <div className={cn(
-                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
-                          soundEnabled ? "translate-x-4" : "translate-x-0.5"
-                        )} />
-                      </div>
-                    </button>
-
-                    {/* Screensaver toggle */}
-                    <button
-                      onClick={() => setScreensaverEnabled((v) => !v)}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
-                    >
-                      <div className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        screensaverEnabled ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "bg-muted text-muted-foreground"
-                      )}>
-                        {screensaverEnabled ? <Monitor className="h-4 w-4" /> : <MonitorOff className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">Screensaver</p>
-                        <p className="text-[11px] text-muted-foreground">{screensaverEnabled ? "Auto after 2 min" : "Disabled"}</p>
-                      </div>
-                      <div className={cn(
-                        "h-5 w-9 rounded-full transition-colors relative",
-                        screensaverEnabled ? "bg-blue-500" : "bg-slate-200"
-                      )}>
-                        <div className={cn(
-                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
-                          screensaverEnabled ? "translate-x-4" : "translate-x-0.5"
-                        )} />
-                      </div>
-                    </button>
-
-                    {/* Theme toggle */}
-                    <div className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                        <Sun className="h-4 w-4 dark:hidden" />
-                        <Moon className="h-4 w-4 hidden dark:block" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Theme</p>
-                        <p className="text-[11px] text-slate-400">Light / Dark / System</p>
-                      </div>
-                      <ThemeToggle />
-                    </div>
-
-                    {/* Manual invoke */}
-                    <button
-                      onClick={() => { setForceIdle(true); setSettingsOpen(false); }}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
-                        <Play className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Show Screensaver</p>
-                        <p className="text-[11px] text-slate-400">Preview now</p>
-                      </div>
-                    </button>
-
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <button
-            onClick={logout}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
-          >
-            <LogOut className="h-[18px] w-[18px]" />
-          </button>
-        </div>
-      </header>
+      {/* Top Bar — extracted to DashboardHeader + DashboardSettings */}
+      <DashboardHeader
+        user={user}
+        displayTime={displayTime}
+        allTasks={allTasks}
+        currentTime={currentTime}
+        soundEnabled={soundEnabled}
+        onToggleSound={toggleSound}
+        screensaverEnabled={screensaverEnabled}
+        onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
+        onShowScreensaver={() => setForceIdle(true)}
+        chatOpen={chatOpen}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        chatUnread={chatUnread}
+        onOpenForms={() => setFormsOpen(true)}
+        onOpenCalendar={() => setCalOpen(true)}
+        onLogout={logout}
+      />
 
       {/* Mobile Panel Toggle Buttons */}
       <div className="md:hidden flex gap-2 px-4 py-2 border-b border-border bg-card">

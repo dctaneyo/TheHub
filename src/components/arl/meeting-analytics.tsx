@@ -158,14 +158,14 @@ export function MeetingAnalyticsDashboard() {
       <div className="space-y-4">
         <button
           onClick={() => { setSelectedMeeting(null); setMeetingDetail(null); }}
-          className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 mb-2"
+          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 mb-2"
         >
           <ArrowLeft className="h-4 w-4" /> Back to all meetings
         </button>
 
         {/* Meeting header */}
         <div className="bg-card rounded-xl p-4 border border-border">
-          <h3 className="text-lg font-bold text-white mb-1">{m.title}</h3>
+          <h3 className="text-lg font-bold text-foreground mb-1">{m.title}</h3>
           <p className="text-sm text-muted-foreground">Hosted by {m.hostName}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {formatDate(m.startedAt)}
@@ -212,9 +212,9 @@ export function MeetingAnalyticsDashboard() {
                     <td className="px-4 py-2">
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
-                        p.participantType === "arl" ? "bg-blue-600/20 text-blue-400" :
-                        p.participantType === "guest" ? "bg-purple-600/20 text-purple-400" :
-                        "bg-green-600/20 text-green-400"
+                        p.participantType === "arl" ? "bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400" :
+                        p.participantType === "guest" ? "bg-purple-100 text-purple-700 dark:bg-purple-600/20 dark:text-purple-400" :
+                        "bg-green-100 text-green-700 dark:bg-green-600/20 dark:text-green-400"
                       )}>
                         {p.participantType === "arl" ? "ARL" : p.participantType === "guest" ? "Guest" : "Restaurant"}
                       </span>
@@ -222,7 +222,7 @@ export function MeetingAnalyticsDashboard() {
                     <td className="px-4 py-2">
                       <span className={cn(
                         "text-xs",
-                        p.role === "host" ? "text-yellow-400" : p.role === "cohost" ? "text-blue-400" : "text-muted-foreground"
+                        p.role === "host" ? "text-yellow-600 dark:text-yellow-400" : p.role === "cohost" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
                       )}>
                         {p.role}
                       </span>
@@ -234,7 +234,7 @@ export function MeetingAnalyticsDashboard() {
                     <td className="px-4 py-2 text-center text-foreground">{p.handRaiseCount}</td>
                     <td className="px-4 py-2 text-center">
                       {p.wasMutedByHost ? (
-                        <span className="text-red-400 text-xs">Yes</span>
+                        <span className="text-red-600 dark:text-red-400 text-xs">Yes</span>
                       ) : (
                         <span className="text-muted-foreground text-xs">No</span>
                       )}
@@ -316,7 +316,7 @@ export function MeetingAnalyticsDashboard() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-400" />
+          <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Meeting Analytics
         </h2>
         {meetings.length > 0 && (
@@ -339,7 +339,7 @@ export function MeetingAnalyticsDashboard() {
                 <Trash2 className="h-6 w-6 text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Delete All Meeting Data?</h3>
+                <h3 className="text-lg font-bold text-foreground">Delete All Meeting Data?</h3>
                 <p className="text-sm text-muted-foreground">This action cannot be undone</p>
               </div>
             </div>
@@ -398,7 +398,7 @@ export function MeetingAnalyticsDashboard() {
       {/* Meeting list */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
-          <h4 className="text-sm font-semibold text-white">Recent Meetings</h4>
+          <h4 className="text-sm font-semibold text-foreground">Recent Meetings</h4>
         </div>
         {meetings.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
@@ -416,9 +416,9 @@ export function MeetingAnalyticsDashboard() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white truncate">{m.title}</span>
+                    <span className="text-sm font-medium text-foreground truncate">{m.title}</span>
                     {!m.endedAt && (
-                      <span className="text-[10px] bg-red-600/20 text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
+                      <span className="text-[10px] bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
@@ -456,14 +456,14 @@ function StatCard({ icon: Icon, label, value, color }: {
   icon: any; label: string; value: string; color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-600/20 text-blue-400",
-    green: "bg-green-600/20 text-green-400",
-    purple: "bg-purple-600/20 text-purple-400",
-    yellow: "bg-yellow-600/20 text-yellow-400",
-    orange: "bg-orange-600/20 text-orange-400",
-    red: "bg-red-600/20 text-red-400",
-    teal: "bg-teal-600/20 text-teal-400",
-    indigo: "bg-indigo-600/20 text-indigo-400",
+    blue: "bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400",
+    green: "bg-green-100 text-green-700 dark:bg-green-600/20 dark:text-green-400",
+    purple: "bg-purple-100 text-purple-700 dark:bg-purple-600/20 dark:text-purple-400",
+    yellow: "bg-yellow-100 text-yellow-700 dark:bg-yellow-600/20 dark:text-yellow-400",
+    orange: "bg-orange-100 text-orange-700 dark:bg-orange-600/20 dark:text-orange-400",
+    red: "bg-red-100 text-red-700 dark:bg-red-600/20 dark:text-red-400",
+    teal: "bg-teal-100 text-teal-700 dark:bg-teal-600/20 dark:text-teal-400",
+    indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-600/20 dark:text-indigo-400",
   };
 
   return (
@@ -473,7 +473,7 @@ function StatCard({ icon: Icon, label, value, color }: {
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className="text-lg font-bold text-white">{value}</p>
+      <p className="text-lg font-bold text-foreground">{value}</p>
       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
     </div>
   );
