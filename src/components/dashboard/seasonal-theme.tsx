@@ -119,7 +119,7 @@ function getActiveSeason(month: number, day: number): Season | null {
     return {
       id: "fathers-day",
       name: "Father's Day",
-      emoji: ["👔", "�", "❤️", "👨‍👧", "⭐"],
+      emoji: ["👔", "🏆", "❤️", "👨‍👧", "⭐"],
       accent: "#1d4ed8",
       banner: "bg-gradient-to-r from-blue-500 via-sky-500 to-blue-600",
       greeting: "Happy Father's Day! 👔",
@@ -130,7 +130,7 @@ function getActiveSeason(month: number, day: number): Season | null {
     return {
       id: "independence-day",
       name: "Independence Day",
-      emoji: ["🇺🇸", "�", "🦅", "🗽", "⭐"],
+      emoji: ["🇺🇸", "🎆", "🦅", "🗽", "⭐"],
       accent: "#dc2626",
       banner: "bg-gradient-to-r from-red-600 via-blue-700 to-red-600",
       greeting: "Happy 4th of July! 🇺🇸🎆",
@@ -174,7 +174,7 @@ function getActiveSeason(month: number, day: number): Season | null {
     return {
       id: "thanksgiving",
       name: "Thanksgiving",
-      emoji: ["🦃", "🍂", "🥧", "🌽", "�"],
+      emoji: ["🦃", "🍂", "🥧", "🌽", "🥕"],
       accent: "#b45309",
       banner: "bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700",
       greeting: "Happy Thanksgiving! 🦃",
@@ -188,7 +188,7 @@ function getActiveSeason(month: number, day: number): Season | null {
       emoji: ["🎄", "❄️", "🎅", "⛄", "🎁"],
       accent: "#dc2626",
       banner: "bg-gradient-to-r from-red-600 via-green-700 to-red-600",
-      greeting: "Merry Christmas! �",
+      greeting: "Merry Christmas! 🎄",
     };
   }
 
@@ -215,7 +215,7 @@ function getActiveSeason(month: number, day: number): Season | null {
     return {
       id: "early-spring",
       name: "Spring is Coming",
-      emoji: ["🌱", "�️", "�", "🐝", "🦋"],
+      emoji: ["🌱", "🌤️", "🌼", "🐝", "🦋"],
       accent: "#22c55e",
       banner: "bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400",
       greeting: "Spring is on the way! 🌱",
@@ -237,10 +237,10 @@ function getActiveSeason(month: number, day: number): Season | null {
     return {
       id: "late-spring",
       name: "Spring",
-      emoji: ["�", "�", "☀️", "🐝", "🌿"],
+      emoji: ["🌻", "🌼", "☀️", "🐝", "🌿"],
       accent: "#eab308",
       banner: "bg-gradient-to-r from-yellow-400 via-green-400 to-yellow-400",
-      greeting: "Beautiful spring day! �",
+      greeting: "Beautiful spring day! 🌻",
     };
   }
   // Early Summer: May 15–24, Jun 1–14

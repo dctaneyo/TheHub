@@ -26,10 +26,20 @@ export const metadata: Metadata = {
   title: "The Hub",
   description: "All-in-one franchise management dashboard",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192" },
+      { url: "/icon-512.png", sizes: "512x512" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ARL Hub",
+    title: "The Hub",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -44,9 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
-        <meta name="apple-mobile-web-app-title" content="ARL Hub" />
+        <meta name="apple-mobile-web-app-title" content="The Hub" />
       </head>
       <body
         className={`${inter.variable} antialiased`}

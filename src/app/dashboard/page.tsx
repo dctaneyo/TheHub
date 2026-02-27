@@ -918,18 +918,22 @@ export default function DashboardPage() {
 
         {/* Center Column - Main Timeline */}
         <div className={cn(
-          "flex-1 overflow-y-auto p-5 space-y-4",
-          mobilePanelOpen ? "hidden md:block" : "block"
+          "flex-1 flex flex-col overflow-hidden",
+          mobilePanelOpen ? "hidden md:flex" : "flex"
         )}>
-          <SeasonalTheme showFloating={false} />
-          {currentTime && (
-            <Timeline
-              tasks={allTasks}
-              onComplete={handleCompleteTask}
-              onUncomplete={handleUncompleteTask}
-              currentTime={currentTime}
-            />
-          )}
+          <div className="shrink-0 px-5 pt-5">
+            <SeasonalTheme showFloating={false} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+            {currentTime && (
+              <Timeline
+                tasks={allTasks}
+                onComplete={handleCompleteTask}
+                onUncomplete={handleUncompleteTask}
+                currentTime={currentTime}
+              />
+            )}
+          </div>
         </div>
 
         {/* Right Column - Mini Calendar + Leaderboard tabs */}
