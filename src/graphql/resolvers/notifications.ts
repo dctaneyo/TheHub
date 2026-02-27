@@ -13,11 +13,11 @@ export const notificationResolvers = {
       let results = ctx.db
         .select()
         .from(ctx.schema.notifications)
-        .where(eq(ctx.schema.notifications.locationId, locationId))
+        .where(eq(ctx.schema.notifications.userId, locationId))
         .all()
 
       if (unreadOnly) {
-        results = results.filter((n: any) => !n.isRead && !n.isDismissed)
+        results = results.filter((n: any) => !n.isRead)
       }
 
       // Sort by createdAt descending
@@ -37,7 +37,7 @@ export const notificationResolvers = {
 
       ctx.db
         .update(ctx.schema.notifications)
-        .set({ isRead: true })
+        .set({ isRead: true, readAt: new Date().toISOString() })
         .where(eq(ctx.schema.notifications.id, id))
         .run()
 
@@ -55,17 +55,13 @@ export const notificationResolvers = {
     ) => {
       if (!ctx.session) throw new Error('Unauthorized')
 
+      // Delete notification instead of dismiss (new schema has no isDismissed)
       ctx.db
-        .update(ctx.schema.notifications)
-        .set({ isDismissed: true })
+        .delete(ctx.schema.notifications)
         .where(eq(ctx.schema.notifications.id, id))
         .run()
 
-      return ctx.db
-        .select()
-        .from(ctx.schema.notifications)
-        .where(eq(ctx.schema.notifications.id, id))
-        .get()
+      return { id }
     },
 
     clearAllNotifications: async (
@@ -76,9 +72,8 @@ export const notificationResolvers = {
       if (!ctx.session) throw new Error('Unauthorized')
 
       ctx.db
-        .update(ctx.schema.notifications)
-        .set({ isDismissed: true })
-        .where(eq(ctx.schema.notifications.locationId, locationId))
+        .delete(ctx.schema.notifications)
+        .where(eq(ctx.schema.notifications.userId, locationId))
         .run()
 
       return true

@@ -101,7 +101,7 @@ export const locationResolvers = {
       let results = ctx.db
         .select()
         .from(ctx.schema.notifications)
-        .where(eq(ctx.schema.notifications.locationId, parent.id))
+        .where(eq(ctx.schema.notifications.userId, parent.id))
         .all()
 
       if (unreadOnly) {
