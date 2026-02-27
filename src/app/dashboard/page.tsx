@@ -42,7 +42,7 @@ import { NotificationSystem } from "@/components/dashboard/notification-system";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
-import { GamificationBar } from "@/components/dashboard/gamification-bar";
+import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
@@ -576,9 +576,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 ml-auto shrink-0">
-          {/* Gamification - hidden on mobile */}
+          {/* Unified Gamification Hub */}
           <div className="hidden md:block">
-            <GamificationBar />
+            <GamificationHub locationId={user?.id} />
           </div>
 
           {/* Connection status */}
