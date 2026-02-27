@@ -203,8 +203,8 @@ export function UserManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-slate-800">User Management</h3>
-          <p className="text-xs text-slate-400">{arls.length} ARLs · {locations.length} locations</p>
+          <h3 className="text-base font-bold text-foreground">User Management</h3>
+          <p className="text-xs text-muted-foreground">{arls.length} ARLs · {locations.length} locations</p>
         </div>
         <Button onClick={openCreate} size="sm" className="flex items-center gap-1.5 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]">
           <Plus className="h-3.5 w-3.5" />
@@ -213,14 +213,14 @@ export function UserManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+      <div className="flex gap-1 rounded-xl bg-muted p-1">
         {(["arls", "locations"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium capitalize transition-colors",
-              tab === t ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t === "arls" ? <Shield className="h-3.5 w-3.5" /> : <Store className="h-3.5 w-3.5" />}
@@ -232,8 +232,8 @@ export function UserManagement() {
       {/* List */}
       <div className="space-y-2">
         {items.length === 0 && (
-          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-slate-200">
-            <p className="text-sm text-slate-400">No {tab} yet</p>
+          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border">
+            <p className="text-sm text-muted-foreground">No {tab} yet</p>
           </div>
         )}
         {items.map((item, i) => {
@@ -247,42 +247,42 @@ export function UserManagement() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border bg-white p-4 shadow-sm",
+                "flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm",
                 !item.isActive && "opacity-50"
               )}
             >
               <div className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
-                isArl ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                isArl ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
               )}>
                 {isArl ? <Shield className="h-4 w-4" /> : <Store className="h-4 w-4" />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-800">{item.name}</p>
+                  <p className="text-sm font-semibold text-foreground">{item.name}</p>
                   {isArl && (
-                    <span className="rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-600">
+                    <span className="rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
                       ARL
                     </span>
                   )}
                   {!item.isActive && (
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">Inactive</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Inactive</span>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-muted-foreground">
                   ID: {item.userId}
                   {!isArl && ` · Store #${l.storeNumber}`}
                   {item.email && ` · ${item.email}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => handleToggleActive(item)}
                   className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                    item.isActive ? "text-slate-400 hover:bg-red-50 hover:text-red-500" : "text-slate-400 hover:bg-green-50 hover:text-green-500"
+                    item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
                   )}
                   title={item.isActive ? "Disable" : "Enable"}
                 >
@@ -290,7 +290,7 @@ export function UserManagement() {
                 </button>
                 <button
                   onClick={() => handlePermanentDelete(item)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                   title="Permanently delete"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -314,26 +314,26 @@ export function UserManagement() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
             >
               <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-800">
+                <h3 className="text-base font-bold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
-                <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+                <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Name *</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Name *</label>
                   <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name" className="rounded-xl" />
                 </div>
 
                 {!editTarget && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">User ID * (4 digits)</label>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">User ID * (4 digits)</label>
                     <Input
                       value={form.userId}
                       onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
@@ -345,7 +345,7 @@ export function UserManagement() {
                 )}
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
                     PIN {editTarget ? "(leave blank to keep current)" : "* (4 digits)"}
                   </label>
                   <div className="relative">
@@ -360,7 +360,7 @@ export function UserManagement() {
                     <button
                       type="button"
                       onClick={() => setShowPin(!showPin)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                     >
                       {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -368,21 +368,21 @@ export function UserManagement() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label>
                   <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" className="rounded-xl" type="email" />
                 </div>
 
 
                 {tab === "locations" && !editTarget && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Store Number *</label>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Store Number *</label>
                     <Input value={form.storeNumber} onChange={(e) => setForm((p) => ({ ...p, storeNumber: e.target.value }))} placeholder="e.g. 1004" className="rounded-xl" />
                   </div>
                 )}
 
                 {tab === "locations" && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Address</label>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Address</label>
                     <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} placeholder="Street address" className="rounded-xl" />
                   </div>
                 )}

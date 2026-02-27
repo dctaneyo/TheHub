@@ -93,8 +93,8 @@ function convIcon(type: ConvType) {
 }
 
 function convIconBg(type: ConvType) {
-  if (type === "global") return "bg-blue-100 text-blue-600";
-  if (type === "group") return "bg-purple-100 text-purple-600";
+  if (type === "global") return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+  if (type === "group") return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
   return "bg-slate-100 text-slate-500";
 }
 
@@ -212,7 +212,7 @@ function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) 
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-slate-800">{convo.name}</span>
+            <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
             {convo.lastMessage && (
               <span className="shrink-0 text-[10px] text-slate-400">
                 {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
@@ -621,9 +621,9 @@ export function Messaging() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
         </div>
       </div>
     );
@@ -632,16 +632,16 @@ export function Messaging() {
   // New group modal
   if (showNewGroup) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+          <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-bold text-slate-800">New Group Chat</h3>
+          <h3 className="text-base font-bold text-foreground">New Group Chat</h3>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Group Name</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Group Name</label>
           <Input
             value={newGroup.name}
             onChange={(e) => setNewGroup((p) => ({ ...p, name: e.target.value }))}
@@ -651,10 +651,10 @@ export function Messaging() {
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-medium text-slate-600">Add Members ({newGroup.memberIds.length} selected)</label>
+          <label className="mb-2 block text-xs font-medium text-muted-foreground">Add Members ({newGroup.memberIds.length} selected)</label>
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {participants.length === 0 && (
-              <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-slate-200 py-3 text-xs text-slate-400 hover:border-slate-300">
+              <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
                 Load participants
               </button>
             )}
@@ -666,17 +666,17 @@ export function Messaging() {
                   onClick={() => toggleMember(p)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
-                    selected ? "border-[var(--hub-red)]/30 bg-red-50" : "border-slate-200 bg-white hover:bg-slate-50"
+                    selected ? "border-[var(--hub-red)]/30 bg-red-50" : "border-border bg-card hover:bg-muted"
                   )}
                 >
                   <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
-                    p.type === "location" ? "bg-slate-100 text-slate-600" : "bg-purple-100 text-purple-600"
+                    p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
                   )}>
                     {p.type === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{p.name}</p>
-                    <p className="text-[10px] text-slate-400">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
+                    <p className="text-sm font-medium text-foreground">{p.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
                   </div>
                   {selected && <div className="h-4 w-4 rounded-full bg-[var(--hub-red)]" />}
                 </button>
@@ -703,26 +703,26 @@ export function Messaging() {
       (p.storeNumber && p.storeNumber.includes(directSearch))
     );
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+          <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-bold text-slate-800">New Direct Message</h3>
+          <h3 className="text-base font-bold text-foreground">New Direct Message</h3>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
-          <Hash className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+        <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
+          <Hash className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             autoFocus
             value={directSearch}
             onChange={(e) => setDirectSearch(e.target.value)}
             placeholder="Search locations & ARLs..."
-            className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
         </div>
         <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
           {participants.length === 0 && (
-            <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-slate-200 py-3 text-xs text-slate-400 hover:border-slate-300">
+            <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
               Load participants
             </button>
           )}
@@ -731,22 +731,22 @@ export function Messaging() {
               key={p.id}
               onClick={() => startDirectChat(p)}
               disabled={startingDirect}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
             >
               <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                p.type === "location" ? "bg-slate-100 text-slate-600" : "bg-purple-100 text-purple-600"
+                p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
               )}>
                 {p.type === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800">{p.name}</p>
-                <p className="text-[10px] text-slate-400">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
+                <p className="text-sm font-medium text-foreground">{p.name}</p>
+                <p className="text-[10px] text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
               </div>
-              {startingDirect && <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />}
+              {startingDirect && <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />}
             </button>
           ))}
           {filtered.length === 0 && participants.length > 0 && (
-            <p className="py-6 text-center text-xs text-slate-400">No results</p>
+            <p className="py-6 text-center text-xs text-muted-foreground">No results</p>
           )}
         </div>
       </div>
@@ -903,7 +903,7 @@ export function Messaging() {
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80"
               >
                 View Past Messages
               </button>

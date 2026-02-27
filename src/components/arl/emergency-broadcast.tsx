@@ -152,8 +152,8 @@ export function EmergencyBroadcast() {
           <Radio className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="text-base font-bold text-slate-800">Emergency Broadcast</h3>
-          <p className="text-xs text-slate-400">Send an urgent message to restaurant locations</p>
+          <h3 className="text-base font-bold text-foreground">Emergency Broadcast</h3>
+          <p className="text-xs text-muted-foreground">Send urgent alerts to all restaurants with repeating alarm</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ export function EmergencyBroadcast() {
       <AnimatePresence mode="wait">
         {loading ? (
           <div className="flex h-20 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
           </div>
         ) : activeMessage ? (
           <motion.div
@@ -185,8 +185,8 @@ export function EmergencyBroadcast() {
                     <span className="text-xs font-bold uppercase tracking-wide text-[var(--hub-red)]">Active Broadcast</span>
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--hub-red)] animate-pulse" />
                   </div>
-                  <p className="text-sm font-semibold text-slate-800 whitespace-pre-wrap">{activeMessage.message}</p>
-                  <p className="mt-1.5 text-[10px] text-slate-500">
+                  <p className="text-sm font-semibold text-foreground">{activeMessage.message}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
                     Sent by {activeMessage.sentByName} · {format(new Date(activeMessage.createdAt), "MMM d, h:mm a")}
                     {activeMessage.targetLocationIds
                       ? ` · ${activeMessage.targetLocationIds.length} location${activeMessage.targetLocationIds.length !== 1 ? "s" : ""} targeted`
@@ -260,23 +260,23 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4"
+            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
           >
             <div className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-            <p className="text-sm text-slate-400">No active emergency broadcast</p>
+            <p className="text-xs text-muted-foreground italic">No active emergency message</p>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Compose new message */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <label className="block text-xs font-semibold text-slate-600">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+        <label className="block text-xs font-semibold text-muted-foreground">
           {activeMessage ? "Send New Broadcast (replaces current)" : "Compose Emergency Message"}
         </label>
 
         {/* Target selector */}
         <div>
-          <p className="mb-2 text-xs font-medium text-slate-500">Send to</p>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Send to</p>
           <div className="flex gap-2 mb-3">
             <button
               onClick={() => setTargetMode("all")}
@@ -284,7 +284,7 @@ export function EmergencyBroadcast() {
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "all"
                   ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                  : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                  : "border-border text-muted-foreground hover:bg-muted"
               )}
             >
               All Locations
@@ -295,7 +295,7 @@ export function EmergencyBroadcast() {
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "select"
                   ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                  : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                  : "border-border text-muted-foreground hover:bg-muted"
               )}
             >
               Select Locations
@@ -303,9 +303,9 @@ export function EmergencyBroadcast() {
           </div>
 
           {targetMode === "select" && (
-            <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-48 overflow-y-auto">
+            <div className="rounded-xl border border-border divide-y divide-border max-h-48 overflow-y-auto">
               {locations.length === 0 && (
-                <p className="px-3 py-2 text-xs text-slate-400">No locations found</p>
+                <p className="px-3 py-2 text-xs text-muted-foreground">No locations found</p>
               )}
               {locations.map((loc) => {
                 const selected = selectedIds.includes(loc.id);
@@ -315,18 +315,18 @@ export function EmergencyBroadcast() {
                     onClick={() => toggleLocation(loc.id)}
                     className={cn(
                       "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
-                      selected ? "bg-red-50" : "hover:bg-slate-50"
+                      selected ? "bg-red-50" : "hover:bg-muted"
                     )}
                   >
                     <div className={cn(
                       "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-                      selected ? "bg-[var(--hub-red)] text-white" : "bg-slate-100 text-slate-500"
+                      selected ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
                     )}>
                       <Store className="h-3.5 w-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{loc.name}</p>
-                      <p className="text-[10px] text-slate-400">Store #{loc.storeNumber}</p>
+                      <p className="text-xs font-semibold text-foreground truncate">{loc.name}</p>
+                      <p className="text-[10px] text-muted-foreground">Store #{loc.storeNumber}</p>
                     </div>
                     {selected && <Check className="h-4 w-4 shrink-0 text-[var(--hub-red)]" />}
                   </button>
@@ -344,7 +344,7 @@ export function EmergencyBroadcast() {
           className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
         />
         <div className="flex items-center justify-between">
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-muted-foreground">
             {targetMode === "all"
               ? "Will alert all locations with repeating alarm."
               : selectedIds.length === 0
@@ -358,7 +358,7 @@ export function EmergencyBroadcast() {
               "gap-1.5 rounded-xl",
               draftMessage.trim() && (targetMode === "all" || selectedIds.length > 0)
                 ? "bg-[var(--hub-red)] hover:bg-[#c4001f]"
-                : "bg-slate-200 text-slate-400"
+                : "bg-muted text-muted-foreground"
             )}
             size="sm"
           >
@@ -369,26 +369,26 @@ export function EmergencyBroadcast() {
       </div>
 
       {/* Warning */}
-      <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
-        <p className="text-xs text-amber-700">
+      <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+        <p className="text-xs text-amber-700 dark:text-amber-300">
           Emergency broadcasts immediately interrupt restaurant dashboards with a full-screen overlay and repeating audible alarm until the message is viewed. Use only for genuine emergencies.
         </p>
       </div>
 
       {/* Broadcast History */}
       {history.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
           <button
             onClick={() => setShowHistory((v) => !v)}
-            className="flex w-full items-center justify-between px-5 py-4"
+            className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/50"
           >
             <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-slate-400" />
-              <span className="text-sm font-semibold text-slate-700">Broadcast History</span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{history.length}</span>
+              <Eye className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Broadcast History</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{history.length}</span>
             </div>
-            {showHistory ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+            {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </button>
           <AnimatePresence>
             {showHistory && (
@@ -399,17 +399,17 @@ export function EmergencyBroadcast() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="divide-y divide-slate-100 border-t border-slate-100">
+                <div className="divide-y divide-border border-t border-border">
                   {history.map((msg) => {
                     const targets = msg.targetLocationIds ?? locations.map((l) => l.id);
                     const viewedCount = targets.filter((id) => msg.viewedBy.includes(id)).length;
                     return (
                       <div key={msg.id} className="px-5 py-3 space-y-1">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm text-slate-700 whitespace-pre-wrap flex-1">{msg.message}</p>
-                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Archived</span>
+                          <p className="text-sm text-foreground whitespace-pre-wrap flex-1">{msg.message}</p>
+                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Archived</span>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                           <span>By {msg.sentByName}</span>
                           <span>·</span>
                           <span>{format(new Date(msg.createdAt), "MMM d, h:mm a")}</span>
