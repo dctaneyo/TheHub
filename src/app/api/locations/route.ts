@@ -227,7 +227,7 @@ export async function DELETE(req: NextRequest) {
     db.delete(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, id)).run();
 
     // 3. Delete notifications
-    db.delete(schema.notifications).where(eq(schema.notifications.locationId, id)).run();
+    db.delete(schema.notifications).where(eq(schema.notifications.userId, id)).run();
 
     // 5. Delete sessions
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
