@@ -164,7 +164,7 @@ export function MeetingAnalyticsDashboard() {
         </button>
 
         {/* Meeting header */}
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-card rounded-xl p-4 border border-border">
           <h3 className="text-lg font-bold text-white mb-1">{m.title}</h3>
           <p className="text-sm text-muted-foreground">Hosted by {m.hostName}</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -186,8 +186,8 @@ export function MeetingAnalyticsDashboard() {
         </div>
 
         {/* Participants table */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
             <h4 className="text-sm font-semibold text-white">Participants ({participants.length})</h4>
           </div>
           <div className="overflow-x-auto">
@@ -207,7 +207,7 @@ export function MeetingAnalyticsDashboard() {
               </thead>
               <tbody>
                 {participants.map(p => (
-                  <tr key={p.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                  <tr key={p.id} className="border-b border-border hover:bg-muted/50">
                     <td className="px-4 py-2 text-white font-medium">{p.participantName}</td>
                     <td className="px-4 py-2">
                       <span className={cn(
@@ -227,11 +227,11 @@ export function MeetingAnalyticsDashboard() {
                         {p.role}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-center text-slate-300">{formatDuration(p.duration)}</td>
-                    <td className="px-4 py-2 text-center text-slate-300">{p.messagesSent}</td>
-                    <td className="px-4 py-2 text-center text-slate-300">{p.questionsSent}</td>
-                    <td className="px-4 py-2 text-center text-slate-300">{p.reactionsSent}</td>
-                    <td className="px-4 py-2 text-center text-slate-300">{p.handRaiseCount}</td>
+                    <td className="px-4 py-2 text-center text-foreground">{formatDuration(p.duration)}</td>
+                    <td className="px-4 py-2 text-center text-foreground">{p.messagesSent}</td>
+                    <td className="px-4 py-2 text-center text-foreground">{p.questionsSent}</td>
+                    <td className="px-4 py-2 text-center text-foreground">{p.reactionsSent}</td>
+                    <td className="px-4 py-2 text-center text-foreground">{p.handRaiseCount}</td>
                     <td className="px-4 py-2 text-center">
                       {p.wasMutedByHost ? (
                         <span className="text-red-400 text-xs">Yes</span>
@@ -271,7 +271,7 @@ export function MeetingAnalyticsDashboard() {
       {/* Delete confirmation dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 border border-slate-700">
+          <div className="bg-card rounded-xl shadow-2xl p-6 max-w-md mx-4 border border-border">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-12 w-12 rounded-full bg-red-600/20 flex items-center justify-center">
                 <Trash2 className="h-6 w-6 text-red-400" />
@@ -293,7 +293,7 @@ export function MeetingAnalyticsDashboard() {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-sm font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -334,8 +334,8 @@ export function MeetingAnalyticsDashboard() {
       )}
 
       {/* Meeting list */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
           <h4 className="text-sm font-semibold text-white">Recent Meetings</h4>
         </div>
         {meetings.length === 0 ? (
@@ -345,12 +345,12 @@ export function MeetingAnalyticsDashboard() {
             <p className="text-xs mt-1">Analytics will appear after your first meeting.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-700/50">
+          <div className="divide-y divide-border">
             {meetings.map(m => (
               <button
                 key={m.id}
                 onClick={() => fetchDetail(m.id)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors text-left"
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -405,14 +405,14 @@ function StatCard({ icon: Icon, label, value, color }: {
   };
 
   return (
-    <div className="bg-slate-800 rounded-xl p-3 border border-slate-700">
+    <div className="bg-card rounded-xl p-3 border border-border">
       <div className="flex items-center gap-2 mb-1">
         <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", colorClasses[color] || colorClasses.blue)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
       <p className="text-lg font-bold text-white">{value}</p>
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</p>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
     </div>
   );
 }

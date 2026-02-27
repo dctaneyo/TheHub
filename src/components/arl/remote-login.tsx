@@ -269,7 +269,7 @@ export function RemoteLogin() {
 
       {/* Pending sessions */}
       <div>
-        <h3 className="mb-3 text-sm font-bold text-slate-700">
+        <h3 className="mb-3 text-sm font-bold text-foreground">
           Waiting Sessions
           {pendingSessions.length > 0 && (
             <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
@@ -347,7 +347,7 @@ export function RemoteLogin() {
                         "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all",
                         pingingId === ps.id
                           ? "bg-amber-400 text-white scale-95"
-                          : "bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-700"
+                          : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
                       )}
                       title="Send a visual ping to this device to confirm it's the right one"
                     >

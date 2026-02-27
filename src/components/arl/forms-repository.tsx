@@ -205,7 +205,7 @@ export function FormsRepository() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
       </div>
     );
   }
@@ -321,7 +321,7 @@ export function FormsRepository() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>

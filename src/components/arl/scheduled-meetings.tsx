@@ -241,7 +241,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Description (optional)</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Description (optional)</label>
                 <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description..." />
               </div>
 
@@ -264,7 +264,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" />
+                    className="h-4 w-4 rounded border-input text-red-600 focus:ring-red-500" />
                   <span className="text-sm font-medium text-foreground">Recurring meeting</span>
                 </label>
 
@@ -301,7 +301,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               {/* Guest access */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={allowGuests} onChange={e => setAllowGuests(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" />
+                  className="h-4 w-4 rounded border-input text-red-600 focus:ring-red-500" />
                 <span className="text-sm font-medium text-foreground">Allow guest/outside participants</span>
               </label>
 
@@ -420,14 +420,14 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         onClick={() => handleToggleActive(m.id, m.is_active)}
                         className={cn(
                           "px-2 py-1 rounded-md text-[10px] font-bold transition-colors",
-                          m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                          m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
                         )}
                       >
                         {m.is_active ? "Active" : "Activate"}
                       </button>
                       <button
                         onClick={() => handleDelete(m.id)}
-                        className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="p-1 rounded-md text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         title="Delete meeting"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

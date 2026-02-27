@@ -200,7 +200,7 @@ export function TickerPush() {
               {/* Preview */}
               {content.trim() && (
                 <div className="rounded-xl overflow-hidden border border-border">
-                  <div className="flex items-center h-8 bg-slate-800">
+                  <div className="flex items-center h-8 bg-card border-b border-border">
                     <div className="flex items-center gap-1.5 px-3 bg-red-600 h-full shrink-0">
                       <Zap className="h-3 w-3 text-white" />
                       <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live</span>

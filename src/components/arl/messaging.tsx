@@ -1009,7 +1009,7 @@ export function Messaging() {
                                   const info = memberInfoMap.get(m.memberId);
                                   return (
                                     <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
                                       <span className="text-xs text-muted-foreground">{info?.name ?? m.memberId}</span>
                                     </div>
                                   );
@@ -1069,7 +1069,7 @@ export function Messaging() {
             <div className="px-2 pb-1">
               <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
                 <div className="flex gap-0.5">
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
                 </div>

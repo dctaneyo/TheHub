@@ -129,8 +129,8 @@ export function LocationsManager() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1.5">
-            <div className="h-4 w-40 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} /></div>
-            <div className="h-3 w-24 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} /></div>
+            <div className="h-4 w-40 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} /></div>
+            <div className="h-3 w-24 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} /></div>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -141,14 +141,14 @@ export function LocationsManager() {
                   <motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 w-28 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} /></div>
-                  <div className="h-3 w-16 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.1 }} /></div>
+                  <div className="h-3.5 w-28 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} /></div>
+                  <div className="h-3 w-16 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.1 }} /></div>
                 </div>
-                <div className="h-6 w-16 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.15 }} /></div>
+                <div className="h-6 w-16 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.15 }} /></div>
               </div>
               <div className="space-y-2 pt-1">
-                <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.2 }} /></div>
-                <div className="h-3 w-3/4 rounded-full bg-slate-200 overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.25 }} /></div>
+                <div className="h-3 w-full rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.2 }} /></div>
+                <div className="h-3 w-3/4 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.25 }} /></div>
               </div>
             </div>
           ))}

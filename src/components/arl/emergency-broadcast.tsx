@@ -160,7 +160,7 @@ export function EmergencyBroadcast() {
       {/* Active message status */}
       <AnimatePresence mode="wait">
         {loading ? (
-          <div className="flex h-20 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+          <div className="flex h-20 items-center justify-center rounded-2xl border border-border bg-card">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
           </div>
         ) : activeMessage ? (
@@ -211,21 +211,21 @@ export function EmergencyBroadcast() {
               const { viewed, notViewed } = getViewerInfo();
               const total = viewed.length + notViewed.length;
               return (
-                <div className="rounded-xl bg-white/70 border border-red-200 p-3">
+                <div className="rounded-xl bg-card/70 border border-red-500/20 p-3">
                   <button
                     onClick={() => setShowViewers((v) => !v)}
                     className="flex w-full items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
-                      <Eye className="h-3.5 w-3.5 text-slate-500" />
-                      <span className="text-xs font-semibold text-slate-700">
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-foreground">
                         {viewed.length} / {total} viewed
                       </span>
                       {viewed.length === total && total > 0 && (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">All seen</span>
                       )}
                     </div>
-                    {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                    {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                   </button>
                   <AnimatePresence>
                     {showViewers && (
@@ -239,8 +239,8 @@ export function EmergencyBroadcast() {
                         <div className="mt-2 grid grid-cols-2 gap-1">
                           {[...viewed.map((l) => ({ ...l, seen: true })), ...notViewed.map((l) => ({ ...l, seen: false }))].map((l) => (
                             <div key={l.id} className="flex items-center gap-1.5 py-0.5">
-                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", l.seen ? "bg-emerald-400" : "bg-slate-300")} />
-                              <span className={cn("text-[11px] truncate", l.seen ? "text-slate-700" : "text-slate-400")}>
+                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", l.seen ? "bg-emerald-400" : "bg-muted-foreground")} />
+                              <span className={cn("text-[11px] truncate", l.seen ? "text-foreground" : "text-muted-foreground")}>
                                 {l.name}
                               </span>
                               {l.seen && <Check className="h-2.5 w-2.5 shrink-0 text-emerald-500" />}
@@ -260,9 +260,9 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
           >
-            <div className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+            <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
             <p className="text-xs text-muted-foreground italic">No active emergency message</p>
           </motion.div>
         )}
