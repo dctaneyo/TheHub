@@ -25,12 +25,12 @@ function categoryLabel(cat: string): string {
 
 function categoryColor(cat: string): string {
   const map: Record<string, string> = {
-    hr: "bg-purple-100 text-purple-700",
-    operations: "bg-blue-100 text-blue-700",
-    safety: "bg-red-100 text-red-700",
-    training: "bg-green-100 text-green-700",
-    finance: "bg-amber-100 text-amber-700",
-    general: "bg-slate-100 text-slate-600",
+    hr: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
+    operations: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    safety: "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400",
+    training: "bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400",
+    finance: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
+    general: "bg-muted text-muted-foreground",
   };
   return map[cat] || map.general;
 }
@@ -96,30 +96,30 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="flex h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)]">
               <FileText className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-800">Forms Repository</h2>
-              <p className="text-[10px] text-slate-400">{forms.length} forms available</p>
+              <h2 className="text-sm font-bold text-foreground">Forms Repository</h2>
+              <p className="text-[10px] text-muted-foreground">{forms.length} forms available</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Category filter */}
-        <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-slate-100 px-5 py-3">
+        <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-border px-5 py-3">
           {["all", ...CATEGORIES].map((cat) => (
             <button
               key={cat}
@@ -127,8 +127,8 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
               className={cn(
                 "rounded-lg px-3 py-1 text-[11px] font-medium transition-colors",
                 filterCat === cat
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
               {cat === "all" ? "All" : categoryLabel(cat)}
@@ -138,15 +138,15 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
 
         {/* Email feedback banner */}
         {sentId && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-2.5">
-            <Mail className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-xs font-medium text-green-700">Email sent successfully! Check your inbox.</p>
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-2.5">
+            <Mail className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+            <p className="text-xs font-medium text-green-700 dark:text-green-300">Email sent successfully! Check your inbox.</p>
           </div>
         )}
         {emailError && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5">
-            <FileText className="h-4 w-4 text-red-600 shrink-0" />
-            <p className="text-xs font-medium text-red-700">{emailError}</p>
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5">
+            <FileText className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+            <p className="text-xs font-medium text-red-700 dark:text-red-300">{emailError}</p>
           </div>
         )}
 
@@ -154,14 +154,14 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
         <div className="flex-1 overflow-y-auto p-4">
           {loading && (
             <div className="flex h-40 items-center justify-center">
-              <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" />
+              <div className="h-7 w-7 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
             </div>
           )}
           {!loading && filtered.length === 0 && (
-            <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-200">
+            <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-border">
               <div className="text-center">
-                <FolderOpen className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="mt-2 text-sm text-slate-400">No forms in this category</p>
+                <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">No forms in this category</p>
               </div>
             </div>
           )}
@@ -172,22 +172,22 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[var(--hub-red)]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-[var(--hub-red)]">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-slate-800">{form.title}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
                     <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium", categoryColor(form.category))}>
                       {categoryLabel(form.category)}
                     </span>
                   </div>
                   {form.description && (
-                    <p className="mt-0.5 truncate text-xs text-slate-500">{form.description}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{form.description}</p>
                   )}
-                  <p className="mt-0.5 text-[10px] text-slate-400">
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
                     {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
                   </p>
                 </div>
@@ -199,8 +199,8 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
                       sentId === form.id
-                        ? "bg-green-100 text-green-600"
-                        : "bg-blue-50 text-blue-500 hover:bg-blue-100"
+                        ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20"
                     )}
                   >
                     {sendingId === form.id ? (

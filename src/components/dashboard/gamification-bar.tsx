@@ -339,40 +339,40 @@ export function GamificationBar() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-[480px] max-w-[90vw] max-h-[80vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+              className="w-[480px] max-w-[90vw] max-h-[80vh] overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-black text-slate-800">Badges & Achievements</h2>
-                  <p className="text-xs text-slate-400">{earnedBadges.length} of {badges.length} earned</p>
+                  <h2 className="text-lg font-black text-foreground">Badges & Achievements</h2>
+                  <p className="text-xs text-muted-foreground">{earnedBadges.length} of {badges.length} earned</p>
                 </div>
-                <button onClick={() => setShowBadges(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+                <button onClick={() => setShowBadges(false)} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
               </div>
 
               {/* Stats strip */}
               <div className="mb-4 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-orange-50 p-3 text-center">
-                  <p className="text-2xl font-black text-orange-600">{streak.current}</p>
-                  <p className="text-[10px] font-semibold text-orange-400 uppercase">Day Streak</p>
+                <div className="rounded-xl bg-orange-500/10 p-3 text-center">
+                  <p className="text-2xl font-black text-orange-600 dark:text-orange-400">{streak.current}</p>
+                  <p className="text-[10px] font-semibold text-orange-500 dark:text-orange-400 uppercase">Day Streak</p>
                 </div>
-                <div className="rounded-xl bg-purple-50 p-3 text-center">
-                  <p className="text-2xl font-black text-purple-600">Lv.{level.level}</p>
-                  <p className="text-[10px] font-semibold text-purple-400 uppercase">{level.title}</p>
+                <div className="rounded-xl bg-purple-500/10 p-3 text-center">
+                  <p className="text-2xl font-black text-purple-600 dark:text-purple-400">Lv.{level.level}</p>
+                  <p className="text-[10px] font-semibold text-purple-500 dark:text-purple-400 uppercase">{level.title}</p>
                 </div>
-                <div className="rounded-xl bg-amber-50 p-3 text-center">
-                  <p className="text-2xl font-black text-amber-600">{data.stats.totalXP}</p>
-                  <p className="text-[10px] font-semibold text-amber-400 uppercase">Total XP</p>
+                <div className="rounded-xl bg-amber-500/10 p-3 text-center">
+                  <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{data.stats.totalXP}</p>
+                  <p className="text-[10px] font-semibold text-amber-500 dark:text-amber-400 uppercase">Total XP</p>
                 </div>
               </div>
 
               {/* Level progress */}
-              <div className="mb-5 rounded-xl bg-slate-50 p-3">
+              <div className="mb-5 rounded-xl bg-muted p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-600">Level {level.level} → {level.nextLevel ? level.nextLevel.level : "MAX"}</span>
-                  <span className="text-[10px] text-slate-400">{level.totalXP} / {level.nextLevel ? level.nextLevel.xpRequired : level.totalXP} XP</span>
+                  <span className="text-xs font-bold text-foreground">Level {level.level} → {level.nextLevel ? level.nextLevel.level : "MAX"}</span>
+                  <span className="text-[10px] text-muted-foreground">{level.totalXP} / {level.nextLevel ? level.nextLevel.xpRequired : level.totalXP} XP</span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="h-2 rounded-full bg-muted-foreground/20 overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
                     initial={{ width: 0 }}
@@ -385,15 +385,15 @@ export function GamificationBar() {
               {/* Earned badges */}
               {earnedBadges.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="mb-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">Earned</h3>
+                  <h3 className="mb-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Earned</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {earnedBadges.map((badge) => {
                       const tier = (badge as any).tier || 'bronze';
                       const tierColors: Record<string, { border: string; bg: string }> = {
-                        bronze: { border: 'border-orange-200', bg: 'bg-orange-50/50' },
-                        silver: { border: 'border-slate-300', bg: 'bg-slate-50/50' },
-                        gold: { border: 'border-yellow-300', bg: 'bg-yellow-50/50' },
-                        platinum: { border: 'border-purple-300', bg: 'bg-purple-50/50' },
+                        bronze: { border: 'border-orange-500/20', bg: 'bg-orange-500/10' },
+                        silver: { border: 'border-slate-500/20', bg: 'bg-slate-500/10' },
+                        gold: { border: 'border-yellow-500/20', bg: 'bg-yellow-500/10' },
+                        platinum: { border: 'border-purple-500/20', bg: 'bg-purple-500/10' },
                       };
                       const colors = tierColors[tier] || tierColors.bronze;
                       
@@ -407,18 +407,18 @@ export function GamificationBar() {
                           <span className="text-2xl">{badge.icon}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1">
-                              <p className="text-xs font-bold text-slate-800 truncate">{badge.name}</p>
+                              <p className="text-xs font-bold text-foreground truncate">{badge.name}</p>
                               <span className={cn(
                                 "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase shrink-0",
-                                tier === 'platinum' && "bg-purple-100 text-purple-600",
-                                tier === 'gold' && "bg-yellow-100 text-yellow-600",
-                                tier === 'silver' && "bg-slate-200 text-slate-600",
-                                tier === 'bronze' && "bg-orange-100 text-orange-600"
+                                tier === 'platinum' && "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+                                tier === 'gold' && "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+                                tier === 'silver' && "bg-slate-500/20 text-slate-600 dark:text-slate-400",
+                                tier === 'bronze' && "bg-orange-500/20 text-orange-600 dark:text-orange-400"
                               )}>
                                 {tier}
                               </span>
                             </div>
-                            <p className="text-[10px] text-slate-400 truncate">{badge.description}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{badge.description}</p>
                           </div>
                         </motion.div>
                       );
@@ -430,17 +430,17 @@ export function GamificationBar() {
               {/* Unearned badges */}
               {unearnedBadges.length > 0 && (
                 <div>
-                  <h3 className="mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Locked</h3>
+                  <h3 className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Locked</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {unearnedBadges.map((badge) => (
                       <div
                         key={badge.id}
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 opacity-50"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted p-3 opacity-50"
                       >
                         <span className="text-2xl grayscale">{badge.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-500 truncate">{badge.name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{badge.description}</p>
+                          <p className="text-xs font-bold text-muted-foreground truncate">{badge.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{badge.description}</p>
                         </div>
                       </div>
                     ))}
