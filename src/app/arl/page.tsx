@@ -918,18 +918,20 @@ function OverviewContent() {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">ARLs</p>
             <div className="space-y-2 mb-4">
               {onlineArls.map((arl) => (
-                <div key={arl.id} className="flex items-center justify-between rounded-xl bg-sky-500/10 border border-sky-500/20 px-4 py-3">
+                <div key={arl.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-sky-500/10 border border-sky-500/20 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
-                    <div>
-                      <span className="text-sm font-medium text-foreground">{arl.name}</span>
-                      <span className="ml-2 text-[10px] text-muted-foreground">ARL</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground truncate">{arl.name}</span>
+                        <span className="text-[10px] text-muted-foreground">ARL</span>
+                      </div>
                       {userActivities.get(arl.id) && (
-                        <span className="ml-2 text-[10px] font-medium text-sky-500">· {userActivities.get(arl.id)}</span>
+                        <span className="text-[10px] font-medium text-sky-500 truncate block">· {userActivities.get(arl.id)}</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {arl.sessionCode && (
                       <span className="font-mono text-xs font-bold tracking-widest text-sky-600 dark:text-sky-400 bg-sky-500/10 rounded-lg px-2 py-0.5">
                         #{arl.sessionCode}
@@ -948,18 +950,20 @@ function OverviewContent() {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Restaurants</p>
             <div className="space-y-2">
               {onlineLocations.map((loc) => (
-                <div key={loc.id} className="flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
+                <div key={loc.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    <div>
-                      <span className="text-sm font-medium text-foreground">{loc.name}</span>
-                      <span className="ml-2 text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground truncate">{loc.name}</span>
+                        <span className="text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
+                      </div>
                       {userActivities.get(loc.id) && (
-                        <span className="ml-2 text-[10px] font-medium text-emerald-500">· {userActivities.get(loc.id)}</span>
+                        <span className="text-[10px] font-medium text-emerald-500 truncate block">· {userActivities.get(loc.id)}</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {loc.sessionCode && (
                       <span className="font-mono text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-2 py-0.5">
                         #{loc.sessionCode}
@@ -1076,15 +1080,15 @@ function ArlCalendar() {
         </select>
       </div>
 
-      <div className="flex flex-1 gap-4 overflow-hidden">
+      <div className="flex flex-1 gap-4 overflow-hidden flex-col md:flex-row">
         {/* Calendar grid */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
             <h2 className="text-sm font-bold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
             <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
           </div>
-          <div className="grid grid-cols-7 border-b border-border">
+          <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
             {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
           </div>
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -1129,7 +1133,7 @@ function ArlCalendar() {
         </div>
 
         {/* Day detail */}
-        <div className="w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="w-full md:w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-3">
             <h3 className="text-sm font-bold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
             <p className="text-[10px] text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>

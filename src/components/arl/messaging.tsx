@@ -762,13 +762,14 @@ export function Messaging() {
             <h3 className="text-base font-bold text-foreground">Messages</h3>
             <p className="text-xs text-muted-foreground">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
               className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
-              Direct
+              <span className="hidden sm:inline">Direct</span>
+              <span className="sm:hidden">DM</span>
             </button>
             <button
               onClick={() => { setShowNewGroup(true); fetchParticipants(); }}
