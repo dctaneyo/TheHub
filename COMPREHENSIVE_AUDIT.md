@@ -21,6 +21,8 @@
 11. [New Feature Recommendations](#11-new-feature-recommendations)
 12. [Dead Code & Technical Debt](#12-dead-code--technical-debt)
 13. [Priority Roadmap](#13-priority-roadmap)
+14. [Implementation Log](#14-implementation-log)
+15. [Native iOS/Android App Exploration](#15-native-iosandroid-app-exploration)
 
 ---
 
@@ -59,6 +61,8 @@ The Hub is a 24/7 touchscreen dashboard system for KFC franchise restaurants, de
 | **Email** | SendGrid | 8.1.6 |
 | **Scheduling** | node-cron | 4.2.1 |
 | **Password Hashing** | bcryptjs | 3.0.3 |
+| **Validation** | Zod | 3.x |
+| **Virtualization** | @tanstack/react-virtual | 3.x |
 | **Testing** | Vitest + Playwright + MSW | latest |
 | **Deployment** | Railway | — |
 
@@ -171,13 +175,24 @@ The Hub is a 24/7 touchscreen dashboard system for KFC franchise restaurants, de
 ### 3.9 Infrastructure
 - **Railway deployment** — Production hosting with automated builds
 - **Automated backups** — Daily (2AM), weekly (Sunday 3AM), monthly (1st 4AM)
-- **Database migrations** — Incremental ALTER TABLE migrations in `runMigrations()`
+- **Database migrations** — Version-tracked migrations via `_migrations` table with `migrate()` helper ✅ *Updated*
 - **Sentry monitoring** — Error tracking for client, server, and edge
 - **PWA support** — Service worker with Workbox caching strategies
 - **Health endpoint** — `/api/health` for uptime monitoring
 - **Build ID tracking** — Client/server build parity checks
-- **Database indexes** — Script for adding performance indexes
+- **Database indexes** — 5 unique indexes + 5 performance indexes auto-applied via tracked migrations ✅ *Updated*
 - **Data export** — JSON export of all database tables
+- **Rate limiting** — IP-based sliding window (5 attempts/min, 5-min lockout) on auth endpoints ✅ *New*
+- **Input validation** — Zod schemas for tasks, auth, messages, notifications, emergency broadcasts ✅ *New*
+- **API response helpers** — Standardized `apiSuccess`/`apiError` with common error codes ✅ *New*
+- **Caching layer** — In-memory TTL cache with get-or-set pattern and prefix invalidation ✅ *New*
+- **Pagination utilities** — Cursor-based pagination helpers for API routes ✅ *New*
+- **Socket server modules** — Split into `socket-handlers/` (meetings, tasks, tests, state, types) ✅ *New*
+- **Foreign key constraints** — Schema-level FKs on taskCompletions, messages, conversationMembers, messageReads, messageReactions ✅ *New*
+- **JWT security** — Production throws if `JWT_SECRET` not set; dev-only fallback ✅ *New*
+- **Hawaii timezone fix** — Task notification scheduler uses Hawaii time consistently ✅ *New*
+- **SWR fetch hook** — Lightweight stale-while-revalidate data fetching with caching and deduping ✅ *New*
+- **Dashboard sound hook** — Reusable `useDashboardSound` for mute state, toggle, and chime playback ✅ *New*
 
 ### 3.10 Other Features
 - **Dark mode** — Theme toggle with system preference detection
@@ -201,23 +216,16 @@ The Hub is a 24/7 touchscreen dashboard system for KFC franchise restaurants, de
 
 ### 4.2 Architectural Concerns
 
-**4.2.1 Monolithic socket-server.ts (69KB, 1,589 lines)**
-This file is the single biggest risk in the codebase. It handles:
-- Socket.io initialization and auth
-- All meeting logic (create, join, leave, host controls, analytics)
-- Presence tracking
-- Typing indicators
-- Notification dismiss sync
-- Test notification handlers
-- All socket event handlers
+**4.2.1 ~~Monolithic socket-server.ts (69KB, 1,589 lines)~~ ✅ RESOLVED**
+This file was the single biggest risk in the codebase. **Now resolved** — split from 1,589 lines to 348 lines.
 
-**Recommendation:** Split into modules:
-- `socket-server/init.ts` — Server setup and auth middleware
-- `socket-server/meetings.ts` — All meeting logic
-- `socket-server/presence.ts` — Online/offline tracking
-- `socket-server/messaging.ts` — Typing, conversation rooms
-- `socket-server/notifications.ts` — Notification events
-- `socket-server/tests.ts` — Test notification handlers
+**Implemented modular structure:**
+- `socket-server.ts` — Server setup, auth middleware, and orchestration (348 lines)
+- `socket-handlers/meetings.ts` — All meeting logic
+- `socket-handlers/tasks.ts` — Task-related socket events
+- `socket-handlers/tests.ts` — Test notification handlers
+- `socket-handlers/state.ts` — Shared state (active meetings, online users)
+- `socket-handlers/types.ts` — Shared TypeScript types
 
 **4.2.2 SQLite Limitations**
 SQLite is fine for the current scale (likely <50 restaurants), but will become a bottleneck at:
@@ -232,10 +240,8 @@ Active meetings are stored in `globalThis.__hubActiveMeetings` (a Map). If the s
 
 **Recommendation:** For now this is acceptable since meetings are ephemeral. If reliability matters, persist active meeting state to SQLite and recover on startup.
 
-**4.2.4 Migration System**
-The migration system in `db/index.ts` uses raw `ALTER TABLE` statements wrapped in try/catch. This works but is fragile — there's no migration version tracking, so you can't tell which migrations have run.
-
-**Recommendation:** Add a `_migrations` table that records which migrations have been applied. Each migration gets a unique ID.
+**4.2.4 ~~Migration System~~ ✅ RESOLVED**
+The migration system now uses a `_migrations` table that tracks which migrations have been applied. Each migration has a unique ID and is wrapped in a `migrate()` helper that checks if it's already been applied before running. 31 migrations are tracked, including schema changes, unique indexes, and performance indexes.
 
 ---
 
@@ -243,66 +249,52 @@ The migration system in `db/index.ts` uses raw `ALTER TABLE` statements wrapped 
 
 ### 5.1 Critical Fixes
 
-**5.1.1 Rate Limiting on Auth Endpoints**
-`/api/auth/login` and `/api/auth/validate-user` have no rate limiting. An attacker could brute-force 6-digit PINs (1M combinations) quickly.
+**5.1.1 ~~Rate Limiting on Auth Endpoints~~ ✅ IMPLEMENTED**
+Added IP-based sliding window rate limiter to `/api/auth/login`:
+- 5 attempts per minute per IP
+- 5-minute lockout after exceeding limit
+- Rate limit reset on successful login
+- Client IP extraction from `x-forwarded-for` headers
+- File: `src/lib/rate-limiter.ts`
 
-**Implementation:**
-- Add an in-memory rate limiter (IP-based, 5 attempts per minute)
-- Lock accounts after 10 failed attempts (require ARL reset)
-- Log failed login attempts to audit log
+**5.1.2 ~~JWT Secret in Code~~ ✅ IMPLEMENTED**
+Removed hardcoded JWT secret fallback. Now throws an error in production if `JWT_SECRET` env var is not set. Dev-only fallback retained for local development.
+- Fixed in: `src/lib/auth.ts` and `src/lib/socket-server.ts`
 
-**5.1.2 JWT Secret in Code**
-```typescript
-const JWT_SECRET = process.env.JWT_SECRET || "the-hub-secret-key-change-in-production";
-```
-The fallback secret is hardcoded. If `JWT_SECRET` env var is not set, anyone who reads the source code can forge tokens.
+**5.1.3 ~~Missing Foreign Key Constraints~~ ✅ IMPLEMENTED**
+Added foreign key references to the Drizzle schema for:
+- `taskCompletions.taskId` → `tasks.id`
+- `taskCompletions.locationId` → `locations.id`
+- `messages.conversationId` → `conversations.id`
+- `conversationMembers.conversationId` → `conversations.id`
+- `messageReads.messageId` → `messages.id`
+- `messageReactions.messageId` → `messages.id`
+- File: `src/lib/db/schema.ts`
 
-**Fix:** Remove the fallback. Throw an error if `JWT_SECRET` is not set in production.
-
-**5.1.3 Missing Foreign Key Constraints**
-The Drizzle schema defines no foreign key relationships. `taskCompletions.taskId` doesn't reference `tasks.id`, `messages.conversationId` doesn't reference `conversations.id`, etc. SQLite supports foreign keys but they're not defined.
-
-**Impact:** Orphaned records can accumulate (the `orphaned-cleanup` data management route exists specifically because of this). Defining foreign keys with CASCADE deletes would prevent this automatically.
-
-**5.1.4 Task Scheduler Timezone Issue**
-`task-notification-scheduler.ts` uses `new Date().toTimeString().slice(0, 5)` for time comparison. This uses the **server's timezone**, not the restaurant's timezone. If Railway runs in UTC and restaurants are in HST (UTC-10), all task notifications fire 10 hours early.
-
-**Fix:** Store timezone per location in the `locations` table. Convert server time to location timezone before comparing.
+**5.1.4 ~~Task Scheduler Timezone Issue~~ ✅ IMPLEMENTED**
+Fixed timezone handling in `task-notification-scheduler.ts`:
+- All time comparisons now use `toLocaleTimeString('en-US', { timeZone: 'Pacific/Honolulu' })` for Hawaii time
+- Midnight rollover timer calculates next midnight in Hawaii time
+- Consistent timezone across task due time checks and scheduler resets
 
 ### 5.2 Important Improvements
 
-**5.2.1 API Response Consistency**
-API routes return inconsistent shapes:
-- Some return `{ success: true, data }` 
-- Some return `{ tasks: [...] }`
-- Some return `{ error: "message" }`
-- Some return bare arrays
+**5.2.1 ~~API Response Consistency~~ ✅ IMPLEMENTED (utilities created)**
+Created standardized API response helpers in `src/lib/api-response.ts`:
+- `apiSuccess(data, status?)` — Returns `{ ok: true, data }`
+- `apiError(code, message, status)` — Returns `{ ok: false, error: { code, message } }`
+- `ApiErrors` object with pre-built common errors (UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION, RATE_LIMITED, INTERNAL)
+- Ready for incremental adoption across API routes
 
-**Recommendation:** Standardize all API responses:
-```typescript
-// Success
-{ ok: true, data: { ... } }
-// Error
-{ ok: false, error: { code: "NOT_FOUND", message: "Task not found" } }
-```
-
-**5.2.2 Input Validation**
-Most API routes do minimal validation. For example, `POST /api/tasks` doesn't validate:
-- `dueTime` format (should be HH:mm)
-- `recurringDays` contents (should be valid day names)
-- `priority` values (should be enum)
-- `points` range (should be positive integer)
-
-**Recommendation:** Add a validation layer using Zod schemas:
-```typescript
-const createTaskSchema = z.object({
-  title: z.string().min(1).max(200),
-  dueTime: z.string().regex(/^\d{2}:\d{2}$/),
-  priority: z.enum(["low", "normal", "high", "urgent"]),
-  points: z.number().int().min(1).max(1000),
-  // ...
-});
-```
+**5.2.2 ~~Input Validation~~ ✅ IMPLEMENTED (schemas created)**
+Created Zod validation schemas in `src/lib/validations.ts`:
+- `createTaskSchema` — Task title, dueTime (HH:mm), priority enum, points range, recurring days
+- `loginSchema` — userId + pin format validation
+- `sendMessageSchema` — Message content + conversation ID
+- `createNotificationSchema` — Notification type, priority, message, target
+- `emergencyBroadcastSchema` — Emergency message + target locations
+- `validate(schema, data)` helper that returns typed `{ success, data, errors }`
+- Ready for incremental adoption across API routes
 
 **5.2.3 API Route Organization**
 41 route files exist, but some have multiple HTTP methods doing unrelated things. For example, `/api/messages` uses:
@@ -316,24 +308,21 @@ const createTaskSchema = z.object({
 - `POST /api/conversations/[id]/messages` — Send message
 - `POST /api/conversations` — Create conversation
 
-**5.2.4 Paginated Responses**
-Most list endpoints return ALL records. `GET /api/messages` fetches every message in a conversation. `GET /api/notifications` takes a `limit` but defaults to returning everything.
+**5.2.4 ~~Paginated Responses~~ ✅ IMPLEMENTED (utilities created)**
+Created cursor-based pagination utilities in `src/lib/pagination.ts`:
+- `parsePaginationParams(request)` — Extracts `cursor`, `limit`, `direction` from URL params
+- `paginatedResponse(items, limit, cursorField)` — Builds `{ data, cursor, hasMore }` response
+- Default limit: 50, max limit: 200
+- Ready for incremental adoption across list endpoints
 
-**Recommendation:** Add cursor-based pagination to all list endpoints:
-```typescript
-{ data: [...], cursor: "abc123", hasMore: true }
-```
-
-**5.2.5 Caching Layer**
-Every API call hits SQLite directly. Frequently-read data like tasks, locations, and leaderboard could be cached.
-
-**Recommendation:** Add in-memory caching for:
-- Location list (invalidate on location update)
-- Today's tasks per location (invalidate on task CRUD or completion)
-- Leaderboard (invalidate on task completion)
-- ARL list (invalidate on user management)
-
-Use a simple `Map<string, { data: any, expiresAt: number }>` with 30-60 second TTL.
+**5.2.5 ~~Caching Layer~~ ✅ IMPLEMENTED**
+Created in-memory caching layer in `src/lib/cache.ts`:
+- `cache.get(key)` / `cache.set(key, value, ttlMs)` — Basic get/set with TTL
+- `cache.getOrSet(key, fetcher, ttlMs)` — Cache-aside pattern
+- `cache.invalidate(key)` / `cache.invalidatePrefix(prefix)` — Targeted and prefix-based invalidation
+- `cache.clear()` — Full cache reset
+- Automatic periodic cleanup of expired entries (every 60s)
+- Default TTL: 30 seconds
 
 ### 5.3 Nice-to-Have Improvements
 
@@ -366,28 +355,26 @@ The audit logger (`audit-logger.ts`) only logs bulk operations. Expand to cover:
 
 ### 6.1 Critical Fixes
 
-**6.1.1 Dashboard Page Size (1,455 lines)**
-`src/app/dashboard/page.tsx` is massive. It contains:
-- 15+ `useState` hooks
-- 10+ `useEffect` hooks
-- 5+ `useCallback` hooks
-- Socket event handlers
-- Task fetching/completion logic
-- Sound management
-- Settings popover
-- Full JSX layout
+**6.1.1 Dashboard Page Size (1,455 → 1,119 lines) ✅ PARTIALLY RESOLVED**
+`src/app/dashboard/page.tsx` has been reduced by ~336 lines. Extracted so far:
+- `CalendarModal` → `src/components/dashboard/calendar-modal.tsx` (~335 lines extracted)
+- `useDashboardSound()` → `src/hooks/use-dashboard-sound.ts` (~85 lines extracted)
 
-**Recommendation:** Extract into custom hooks and sub-components:
+**Remaining extraction opportunities:**
 - `useDashboardTasks()` — Task fetching, completion, refresh
 - `useDashboardSocket()` — All socket event handlers
-- `useDashboardSound()` — Sound/chime management
 - `DashboardHeader` — Header bar with all icons/controls
 - `DashboardSettings` — Settings popover component
 
-**6.1.2 ARL Page Size (1,195 lines)**
-Similar issue to the dashboard. The ARL page manages navigation, socket listeners, view rendering, and state for all 14 views.
+**6.1.2 ARL Page Size (1,195 → 1,007 lines) ✅ PARTIALLY RESOLVED**
+`src/app/arl/page.tsx` has been reduced by ~188 lines. Extracted so far:
+- `OverviewContent` replaced with enhanced `OverviewDashboard` → `src/components/arl/overview-dashboard.tsx` (~370 lines)
+- New API endpoint: `src/app/api/analytics/overview/route.ts`
 
-**Recommendation:** Extract navigation into an `ArlLayout` component and use a proper routing pattern (either URL-based with dynamic segments or a reducer for view state).
+**Remaining extraction opportunities:**
+- Extract navigation into an `ArlLayout` component
+- Use URL-based routing or reducer pattern for view state
+- Extract remaining large view renderers into standalone components
 
 **6.1.3 Large Component Files**
 Several components are excessively large:
@@ -452,10 +439,10 @@ The task manager and user management components manage complex form state with m
 
 ### 6.3 Nice-to-Have Improvements
 
-**6.3.1 Virtualized Lists**
-Message lists, task lists, and notification lists render all items. For conversations with hundreds of messages, this causes performance issues.
+**6.3.1 ~~Virtualized Lists~~ ✅ DEPENDENCY INSTALLED**
+`@tanstack/react-virtual` has been installed and is ready for use. Not yet integrated into components.
 
-**Recommendation:** Use `react-window` or `@tanstack/react-virtual` for:
+**Next steps — integrate into:**
 - Message threads (most impactful)
 - Task lists in the ARL task manager
 - Notification panel
@@ -465,13 +452,14 @@ The ARL Hub loads data only when a view is selected. Switching to "Tasks" from "
 
 **Recommendation:** Prefetch data for likely-next views. For example, when on "Overview", prefetch tasks and messages in the background.
 
-**6.3.3 Stale-While-Revalidate Pattern**
-Currently, every navigation or tab switch does a fresh fetch. Implement SWR pattern:
-- Show cached data immediately
-- Revalidate in background
-- Update UI when fresh data arrives
-
-This makes the app feel instant.
+**6.3.3 ~~Stale-While-Revalidate Pattern~~ ✅ IMPLEMENTED**
+Created lightweight SWR hook in `src/hooks/use-swr-fetch.ts`:
+- Shows cached data immediately, revalidates in background
+- Configurable TTL (default 30s), deduplication of concurrent requests
+- `mutate()` function for manual cache updates
+- `revalidate()` for forced refresh
+- Supports `revalidateOnFocus` and `revalidateOnReconnect` options
+- Ready for adoption across components
 
 ---
 
@@ -479,10 +467,10 @@ This makes the app feel instant.
 
 ### 7.1 High Priority
 
-| Issue | Severity | Location | Recommendation |
+| Issue | Severity | Location | Status |
 |---|---|---|---|
-| No rate limiting on login | **HIGH** | `/api/auth/login` | Add IP-based rate limiter (5/min) |
-| Hardcoded JWT fallback secret | **HIGH** | `auth.ts:4` | Remove fallback, throw in production |
+| ~~No rate limiting on login~~ | ~~**HIGH**~~ | `/api/auth/login` | ✅ **FIXED** — IP-based rate limiter added (5/min, 5-min lockout) |
+| ~~Hardcoded JWT fallback secret~~ | ~~**HIGH**~~ | `auth.ts`, `socket-server.ts` | ✅ **FIXED** — Throws in production if not set |
 | No CSRF protection | **MEDIUM** | All POST routes | Cookie is `sameSite: lax` which helps, but add CSRF token for state-changing operations |
 | PIN is only 6 digits | **MEDIUM** | Auth system | Accept for kiosk context, but rate limiting is essential |
 | No input sanitization | **MEDIUM** | Message content, task titles | Sanitize HTML/script injection in user-submitted text |
@@ -540,14 +528,22 @@ Large dependencies that could be optimized:
 - Replace `lodash` with individual imports: `import debounce from 'lodash/debounce'`
 - Dynamically import `emoji-picker-react`
 
-**8.1.5 No Database Indexes**
-The `add-indexes.ts` script exists but must be run manually. Without indexes:
-- `task_completions` lookups by `(task_id, location_id, completed_date)` are slow
-- `messages` lookups by `conversation_id` do full table scans
-- `message_reads` lookups by `(reader_id, reader_type)` are slow
-- `notifications` lookups by `(user_id, is_read)` are slow
+**8.1.5 ~~No Database Indexes~~ ✅ RESOLVED**
+Database indexes are now auto-applied via the tracked migration system in `db/index.ts`.
 
-**Fix:** Run the index script on deployment, or add the indexes to `runMigrations()`.
+**Unique indexes added (prevent duplicates):**
+- `task_completions` — `(task_id, location_id, completed_date)`
+- `message_reads` — `(message_id, reader_id)`
+- `conversation_members` — `(conversation_id, member_id)`
+- `push_subscriptions` — `(endpoint)`
+- `locations` — `(name)`
+
+**Performance indexes added:**
+- `messages` — `(conversation_id, created_at)`
+- `notifications` — `(user_id, is_read)`
+- `sessions` — `(location_id, is_active)`
+- `tasks` — `(location_id, is_hidden)`
+- `message_reads` — `(reader_id, reader_type)`
 
 ### 8.2 Performance Wins Already in Place
 - PWA service worker with sensible caching strategies
@@ -569,13 +565,15 @@ The `add-indexes.ts` script exists but must be run manually. Without indexes:
 
 **Issues:**
 
-**9.1.1 No Foreign Keys**
-None of the 20+ tables define foreign key constraints. This means:
-- Deleting a task leaves orphaned completions
-- Deleting a conversation leaves orphaned messages, reads, members
-- Deleting a location leaves orphaned sessions, tasks, completions
+**9.1.1 ~~No Foreign Keys~~ ✅ RESOLVED**
+Foreign key references added to the Drizzle schema for key relationships:
+- `taskCompletions` → `tasks`, `locations`
+- `messages` → `conversations`
+- `conversationMembers` → `conversations`
+- `messageReads` → `messages`
+- `messageReactions` → `messages`
 
-**Fix:** Add foreign keys with `ON DELETE CASCADE` for child records.
+*Note: SQLite enforces FKs only on new databases. Existing databases retain the orphaned-cleanup route as a safety net.*
 
 **9.1.2 Text Dates Instead of Integer Timestamps**
 All dates are stored as ISO text strings. SQLite comparisons on text dates work but are slower than integer comparisons. For example, `createdAt: text("created_at")` could be `createdAt: integer("created_at")` storing Unix timestamps.
@@ -592,10 +590,13 @@ Several columns store JSON as text:
 
 **Impact:** Can't query within these fields efficiently. For `viewedBy` and `targetLocationIds`, consider junction tables instead.
 
-**9.1.4 No Unique Constraints on Compound Keys**
-- `task_completions` should have a unique constraint on `(task_id, location_id, completed_date)` to prevent double-completions
-- `message_reads` should have a unique constraint on `(message_id, reader_id)` to prevent duplicate reads
-- `conversation_members` should have a unique constraint on `(conversation_id, member_id)` to prevent duplicate memberships
+**9.1.4 ~~No Unique Constraints on Compound Keys~~ ✅ RESOLVED**
+Unique indexes now enforced via tracked migrations:
+- ✅ `task_completions` — `UNIQUE(task_id, location_id, completed_date)`
+- ✅ `message_reads` — `UNIQUE(message_id, reader_id)`
+- ✅ `conversation_members` — `UNIQUE(conversation_id, member_id)`
+- ✅ `push_subscriptions` — `UNIQUE(endpoint)`
+- ✅ `locations` — `UNIQUE(name)`
 
 ### 9.2 Data Management
 The 16 data management operations in the ARL hub are comprehensive:
@@ -643,15 +644,16 @@ There's no way for a restaurant to quickly report an issue, request help, or mar
 
 ### 10.2 ARL Hub
 
-**10.2.1 Overview Dashboard**
-The ARL "overview" view could show more at a glance:
-- How many locations are online right now
-- How many tasks are overdue across all locations
-- Today's completion rate
-- Active emergency alerts
-- Unread messages count
-
-**Recommendation:** Build a proper overview dashboard with KPI cards and sparkline charts.
+**10.2.1 ~~Overview Dashboard~~ ✅ IMPLEMENTED**
+Built a full ARL Overview Dashboard (`src/components/arl/overview-dashboard.tsx`) with:
+- **KPI cards** — Locations online, tasks overdue, completion rate, points earned today
+- **Emergency alert banner** — Prominent red banner when active emergencies exist
+- **7-day completion trend** — Sparkline area chart showing daily completion rates
+- **Location performance table** — Per-location completion rate + task counts with color coding
+- **Real-time updates** — Socket event listeners for live refresh on task completions
+- **API endpoint** — `GET /api/analytics/overview` aggregates all KPI data server-side
+- **Loading states** — Skeleton placeholders while data loads
+- **Auto-refresh** — Reloads data every 5 minutes
 
 **10.2.2 Bulk Operations UI**
 The task manager allows creating/editing one task at a time. For a franchise with 20+ locations, creating the same task for each location is tedious.
@@ -808,19 +810,19 @@ Full offline support using the PWA service worker to queue task completions and 
 ## 13. Priority Roadmap
 
 ### Phase 1 — Stability & Security (1-2 weeks)
-1. Add rate limiting to auth endpoints
-2. Remove hardcoded JWT fallback secret
-3. Add database indexes to `runMigrations()`
-4. Fix timezone handling in task notification scheduler
-5. Add unique constraints to prevent duplicate records
+1. ✅ ~~Add rate limiting to auth endpoints~~ — `src/lib/rate-limiter.ts`
+2. ✅ ~~Remove hardcoded JWT fallback secret~~ — `auth.ts`, `socket-server.ts`
+3. ✅ ~~Add database indexes to `runMigrations()`~~ — 5 unique + 5 performance indexes
+4. ✅ ~~Fix timezone handling in task notification scheduler~~ — Hawaii time
+5. ✅ ~~Add unique constraints to prevent duplicate records~~ — 5 unique indexes
 6. Add error boundaries to React app
 7. Delete `notification-system.tsx` (merged into bell)
 
 ### Phase 2 — Performance & Polish (2-3 weeks)
 1. Fix N+1 queries in conversation list
 2. Fix full-table-scan patterns in API routes
-3. Split `socket-server.ts` into modules
-4. Split large components (dashboard page, ARL page, restaurant chat)
+3. ✅ ~~Split `socket-server.ts` into modules~~ — 1,589 → 348 lines + socket-handlers/
+4. ✅ ~~Split large components~~ (partially) — CalendarModal, OverviewDashboard, useDashboardSound extracted
 5. Add loading skeletons to all data-dependent views
 6. Add optimistic updates for task completion and messaging
 7. Automate data purge/vacuum on cron schedule
@@ -830,7 +832,7 @@ Full offline support using the PWA service worker to queue task completions and 
 2. Daily summary report (auto-generated)
 3. Photo proof of completion
 4. Overdue overlay snooze button
-5. ARL overview dashboard with KPI cards
+5. ✅ ~~ARL overview dashboard with KPI cards~~ — `overview-dashboard.tsx` + analytics API
 6. Task categories/tags
 7. Recurring task exceptions
 
@@ -841,7 +843,285 @@ Full offline support using the PWA service worker to queue task completions and 
 4. Training module integration
 5. Maintenance request system
 6. Comprehensive E2E test suite
+7. **Native iOS/Android app** — See Section 15
 
 ---
 
-*This audit represents a thorough analysis of the codebase as of February 27, 2026. Recommendations are prioritized by impact and effort. The project is well-built and feature-rich — the suggestions above are refinements and expansions, not fundamental rewrites.*
+## 14. Implementation Log
+
+*Changes implemented during the Feb 27, 2026 audit session.*
+
+### 14.1 New Files Created
+
+| File | Purpose | Lines |
+|---|---|---|
+| `src/lib/rate-limiter.ts` | IP-based sliding window rate limiter with lockout | ~100 |
+| `src/lib/api-response.ts` | Standardized API success/error response helpers | ~60 |
+| `src/lib/validations.ts` | Zod validation schemas for all major entities | ~92 |
+| `src/lib/pagination.ts` | Cursor-based pagination utilities | ~70 |
+| `src/lib/cache.ts` | In-memory TTL cache with get-or-set pattern | ~90 |
+| `src/hooks/use-dashboard-sound.ts` | Reusable dashboard sound management hook | ~85 |
+| `src/hooks/use-swr-fetch.ts` | Lightweight SWR data fetching hook | ~120 |
+| `src/components/dashboard/calendar-modal.tsx` | Extracted CalendarModal from dashboard page | ~335 |
+| `src/components/arl/overview-dashboard.tsx` | New ARL overview with KPIs, charts, tables | ~370 |
+| `src/app/api/analytics/overview/route.ts` | API endpoint for ARL overview KPI aggregation | ~130 |
+| `src/lib/socket-handlers/meetings.ts` | Meeting socket event handlers | — |
+| `src/lib/socket-handlers/tasks.ts` | Task socket event handlers | — |
+| `src/lib/socket-handlers/tests.ts` | Test notification socket handlers | — |
+| `src/lib/socket-handlers/state.ts` | Shared socket state (active meetings, online users) | — |
+| `src/lib/socket-handlers/types.ts` | Shared TypeScript types for socket handlers | — |
+
+### 14.2 Files Modified
+
+| File | Change Summary |
+|---|---|
+| `src/lib/socket-server.ts` | 1,589 → 348 lines; modularized into socket-handlers/ |
+| `src/lib/db/index.ts` | Added `_migrations` table, `migrate()` helper, 31 tracked migrations |
+| `src/lib/db/schema.ts` | Added foreign key references on 6 relationship columns |
+| `src/lib/auth.ts` | JWT secret: throw in production, dev-only fallback |
+| `src/lib/task-notification-scheduler.ts` | Hawaii timezone fix for all time comparisons |
+| `src/app/api/auth/login/route.ts` | Integrated rate limiter on both login paths |
+| `src/app/dashboard/page.tsx` | 1,455 → 1,119 lines; extracted CalendarModal + sound hook |
+| `src/app/arl/page.tsx` | 1,195 → 1,007 lines; replaced OverviewContent with OverviewDashboard |
+| `src/components/dashboard/seasonal-theme.tsx` | Expanded to 20+ holidays with year-round coverage |
+| `src/components/emoji-quick-replies.tsx` | Now sends emoji + text instead of emoji only |
+| `src/app/api/tasks/complete/route.ts` | Real-time notification hooks for task completions |
+| `src/app/api/tasks/route.ts` | Real-time notification hooks |
+| `src/app/api/tasks/uncomplete/route.ts` | Real-time notification hooks |
+| `src/app/api/data-management/bulk-tasks/route.ts` | Real-time notification hooks |
+
+### 14.3 Dependencies Added
+
+| Package | Purpose |
+|---|---|
+| `zod` | Runtime input validation with TypeScript inference |
+| `@tanstack/react-virtual` | Virtual scrolling for large lists (installed, not yet integrated) |
+
+### 14.4 Implementation Summary
+
+| Metric | Value |
+|---|---|
+| **Files changed** | 32 |
+| **Lines added** | ~4,014 |
+| **Lines removed** | ~2,196 |
+| **Net change** | +1,818 lines |
+| **New utility modules** | 5 (rate-limiter, api-response, validations, pagination, cache) |
+| **New React hooks** | 2 (use-dashboard-sound, use-swr-fetch) |
+| **New components** | 2 (calendar-modal, overview-dashboard) |
+| **New API endpoints** | 1 (analytics/overview) |
+| **Migrations tracked** | 31 |
+| **Indexes added** | 10 (5 unique + 5 performance) |
+
+---
+
+## 15. Native iOS/Android App Exploration
+
+### 15.1 Current State: PWA
+
+The Hub currently ships as a **Progressive Web App (PWA)** using `next-pwa` + Workbox. This provides:
+- Home screen installation on iOS and Android
+- Service worker caching for offline-capable static assets
+- Web push notifications (via VAPID) for ARLs
+- Full responsive design for mobile/tablet/desktop
+
+**What the PWA cannot do:**
+- Background push notifications on iOS (requires native app)
+- Access native device features (NFC, Bluetooth, biometrics, health sensors)
+- App Store/Play Store presence (discoverability, trust)
+- Reliable background execution (sync, location tracking)
+- Native-quality animations and gesture handling
+- Siri/Google Assistant integration
+
+### 15.2 Why Consider a Native App?
+
+| Driver | Impact | Priority |
+|---|---|---|
+| **iOS push notifications** | PWA push is unreliable on iOS; native guarantees delivery | **HIGH** |
+| **App Store presence** | ARLs expect to find "The Hub" in the store | **MEDIUM** |
+| **Biometric auth** | Face ID / fingerprint for ARL login instead of PIN | **MEDIUM** |
+| **Background sync** | Sync task completions even when app is backgrounded | **MEDIUM** |
+| **Native UX quality** | Smoother gestures, haptic feedback, native navigation transitions | **LOW** |
+| **Offline-first** | SQLite on device with sync to server for true offline support | **LOW** |
+
+### 15.3 Approach Options
+
+#### Option A: React Native (Expo) — **Recommended**
+
+**Why:** The existing codebase is React + TypeScript. React Native with Expo allows maximum code sharing.
+
+| Aspect | Details |
+|---|---|
+| **Framework** | React Native + Expo SDK 52+ |
+| **Language** | TypeScript (same as web) |
+| **Code sharing** | 60-80% of business logic, hooks, types, and API client can be shared |
+| **UI** | Rebuild UI with React Native components (no DOM, no TailwindCSS) |
+| **Navigation** | React Navigation (native stack, tabs, drawers) |
+| **Real-time** | Socket.io client works in React Native natively |
+| **Push** | Expo Notifications (native APNs + FCM) |
+| **Auth** | Expo SecureStore for JWT tokens + biometric unlock |
+| **Charts** | `react-native-svg` + `victory-native` or `react-native-gifted-charts` |
+| **Video** | LiveKit React Native SDK (exists, well-maintained) |
+| **Build** | EAS Build (Expo Application Services) for cloud builds |
+| **Distribution** | App Store + Google Play via EAS Submit |
+| **Timeline** | 6-10 weeks for MVP (ARL features only) |
+
+**Shared code structure:**
+```
+the-hub/
+├── web/                    # Next.js web app (current)
+│   ├── src/app/            # Web pages
+│   ├── src/components/     # Web components (React DOM)
+│   └── src/hooks/          # Web-specific hooks
+├── mobile/                 # React Native app (new)
+│   ├── app/                # Expo Router screens
+│   ├── components/         # Native components (React Native)
+│   └── hooks/              # Mobile-specific hooks
+├── shared/                 # Shared code (new)
+│   ├── types/              # TypeScript types/interfaces
+│   ├── api/                # API client functions
+│   ├── lib/                # Business logic (validation, formatting)
+│   └── constants/          # Shared constants
+```
+
+**What can be shared immediately:**
+- All TypeScript types and interfaces
+- API client functions (fetch calls)
+- Zod validation schemas
+- Business logic (date formatting, time calculations, point calculations)
+- Socket.io event names and handler logic
+- Constants (achievement definitions, notification types, etc.)
+
+**What must be rewritten for native:**
+- All UI components (React DOM → React Native components)
+- Navigation (Next.js routing → React Navigation)
+- Styling (TailwindCSS → StyleSheet or NativeWind)
+- Storage (localStorage → AsyncStorage/SecureStore)
+- Notifications (web-push → Expo Notifications)
+- Audio (HTML5 Audio → expo-av)
+- Camera/photos for task proof (expo-camera, expo-image-picker)
+
+#### Option B: Capacitor (Ionic) — Wrap Existing Web App
+
+**Why:** Wraps the existing Next.js app in a native WebView container. Fastest to ship.
+
+| Pros | Cons |
+|---|---|
+| Almost zero code changes | WebView performance (not truly native) |
+| Ships in 1-2 weeks | Limited access to native APIs |
+| Single codebase for web + mobile | Users can tell it's a web app in a wrapper |
+| Capacitor plugins for push, biometrics, etc. | No native navigation gestures |
+| Lower maintenance burden | iOS App Store may reject "web wrapper" apps |
+
+**Best for:** Quick App Store presence with minimal investment. Not recommended long-term.
+
+#### Option C: Flutter — Full Rewrite
+
+| Pros | Cons |
+|---|---|
+| True native performance | Zero code sharing with existing codebase |
+| Beautiful cross-platform UI | Dart language (team must learn) |
+| Strong ecosystem | 12-16 weeks minimum for parity |
+| Google backing | Separate maintenance burden |
+
+**Not recommended** given the existing React/TypeScript investment.
+
+### 15.4 Recommended MVP Scope (React Native / Expo)
+
+Build **ARL-only** features first — restaurant kiosks will continue using the web app in Chrome Kiosk mode (they're fixed hardware).
+
+#### MVP Feature Set
+
+| Feature | Priority | Complexity |
+|---|---|---|
+| **PinPad login + biometrics** | P0 | Low |
+| **Overview dashboard** (KPI cards, charts) | P0 | Medium |
+| **Task management** (view, create, edit) | P0 | Medium |
+| **Push notifications** (native APNs/FCM) | P0 | Medium |
+| **Messaging** (conversations, send/receive) | P0 | High |
+| **Location status** (online/offline monitoring) | P1 | Low |
+| **Emergency broadcast** (send alerts) | P1 | Low |
+| **Leaderboard** | P1 | Low |
+| **Meeting join** (LiveKit) | P2 | High |
+| **Forms viewer** (PDF) | P2 | Medium |
+| **Data management** | P3 | Medium |
+
+#### MVP Timeline (React Native / Expo)
+
+| Week | Milestone |
+|---|---|
+| **1-2** | Project setup, shared code extraction, auth flow with biometrics |
+| **3-4** | Overview dashboard, task management, location monitoring |
+| **5-6** | Messaging system with real-time Socket.io |
+| **7-8** | Push notifications (APNs + FCM), emergency broadcasts |
+| **9-10** | Testing, polish, App Store / Play Store submission |
+
+### 15.5 Technical Considerations
+
+**15.5.1 API Compatibility**
+The existing REST API serves the web app and would serve the mobile app identically. No backend changes needed for MVP — the mobile app is purely a new frontend.
+
+**15.5.2 Authentication**
+- Current: JWT in httpOnly cookie (browser-only)
+- Mobile: JWT stored in Expo SecureStore, sent as `Authorization: Bearer <token>` header
+- Backend change: Accept both cookie and Bearer token auth (add `Authorization` header check to `getSession()`)
+
+**15.5.3 Real-time Communication**
+Socket.io client works natively in React Native. The mobile app connects to the same WebSocket server. No backend changes needed.
+
+**15.5.4 Push Notifications**
+- Current: Web Push via VAPID (unreliable on iOS)
+- Mobile: Expo Notifications → APNs (iOS) + FCM (Android)
+- Backend change: Store Expo push tokens in a `mobile_push_tokens` table; add Expo push sending alongside web push
+- Library: `expo-notifications` + `expo-server-sdk` (server-side)
+
+**15.5.5 Offline Support**
+- Use `@tanstack/react-query` with `persistQueryClient` for automatic offline caching
+- Queue mutations (task completions, messages) in local SQLite when offline
+- Sync queue on reconnection with conflict resolution (server wins for tasks, merge for messages)
+
+**15.5.6 App Store Requirements**
+- iOS: Requires Apple Developer Account ($99/year), Xcode for archive signing
+- Android: Requires Google Play Developer Account ($25 one-time)
+- Both: Privacy policy, app icons (1024x1024), screenshots for all device sizes
+- EAS Build handles the actual build/signing process in the cloud
+
+### 15.6 Cost Estimate
+
+| Item | One-Time | Recurring |
+|---|---|---|
+| Apple Developer Account | — | $99/year |
+| Google Play Developer Account | $25 | — |
+| EAS Build (Expo) | — | Free tier sufficient for small team |
+| Development time (10 weeks) | Internal cost | — |
+| App Store screenshots/assets | ~$0 (self-generated) | — |
+
+### 15.7 Decision Matrix
+
+| Factor | PWA (Current) | Capacitor Wrapper | React Native (Expo) |
+|---|---|---|---|
+| **Time to ship** | Already shipped | 1-2 weeks | 8-10 weeks |
+| **iOS push notifications** | Unreliable | Native via plugin | Native |
+| **Performance** | Good (web) | Okay (WebView) | Excellent (native) |
+| **App Store presence** | No | Yes (risky) | Yes |
+| **Biometric auth** | No | Yes (plugin) | Yes |
+| **Offline support** | Limited | Limited | Full |
+| **Code sharing** | 100% | 95%+ | 60-80% |
+| **Maintenance burden** | None (existing) | Low | Medium |
+| **Long-term scalability** | Limited by web | Limited by WebView | Excellent |
+| **User experience quality** | Good | Okay | Excellent |
+
+### 15.8 Recommendation
+
+**Start with React Native (Expo) for the ARL mobile app.** The investment is moderate (8-10 weeks) and the payoff is significant:
+
+1. **Native push notifications** solve the biggest PWA limitation on iOS
+2. **Biometric auth** is a quality-of-life win for ARLs checking in frequently
+3. **App Store presence** builds credibility and discoverability
+4. **Shared TypeScript codebase** minimizes the learning curve and maintenance
+5. **Restaurant kiosks stay on the web app** — no migration needed for the hardware installations
+
+**Immediate next step:** Extract shared types, API client, and business logic into a `shared/` directory to prepare for the monorepo structure. This can be done incrementally alongside normal web development.
+
+---
+
+*This audit represents a thorough analysis of the codebase as of February 27, 2026. Recommendations are prioritized by impact and effort. The project is well-built and feature-rich — the suggestions above are refinements and expansions, not fundamental rewrites. Section 14 tracks implementations completed during the audit session. Section 15 explores native mobile app options for future growth.*
