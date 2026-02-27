@@ -59,6 +59,7 @@ import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { TickerPush } from "@/components/arl/ticker-push";
+import { NotificationBell } from "@/components/notification-bell";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -564,33 +565,13 @@ export default function ArlPage() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {/* Notification Status */}
-            {pushSubscription ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1">
-                <Bell className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-xs font-medium text-emerald-700">On</span>
-              </div>
-            ) : notificationPermission === "denied" ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1">
-                <BellOff className="h-3.5 w-3.5 text-red-600" />
-                <span className="text-xs font-medium text-red-700">Off</span>
-              </div>
-            ) : (
-              <button
-                onClick={requestNotificationPermission}
-                className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 hover:bg-muted/80 transition-colors"
-                title="Enable push notifications"
-              >
-                <Bell className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-foreground">Enable</span>
-              </button>
-            )}
             <GlobalSearch onNavigate={(type, id) => {
               if (type === "task") setActiveView("tasks");
               else if (type === "message") setActiveView("messages");
               else if (type === "form") setActiveView("forms");
               else if (type === "location") setActiveView("locations");
             }} />
+            <NotificationBell />
             <ThemeToggle />
             <ConnectionStatus />
           </div>

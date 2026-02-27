@@ -195,16 +195,20 @@ export const emergencyMessages = sqliteTable("emergency_messages", {
   expiresAt: text("expires_at"), // optional expiry
 });
 
-// Notifications
+// Notifications - unified notification center
 export const notifications = sqliteTable("notifications", {
   id: text("id").primaryKey(), // UUID
-  locationId: text("location_id").notNull(),
-  type: text("type").notNull(), // 'task_due_soon' | 'task_overdue' | 'message' | 'system'
+  userId: text("user_id").notNull(), // references locations.id or arls.id
+  userType: text("user_type").notNull(), // 'location' | 'arl' | 'admin'
+  type: text("type").notNull(), // notification category (task_due_soon, new_message, etc.)
   title: text("title").notNull(),
-  body: text("body"),
-  referenceId: text("reference_id"), // task_id or message_id
+  message: text("message").notNull(),
+  actionUrl: text("action_url"), // optional link to relevant page
+  actionLabel: text("action_label"), // optional CTA text
+  priority: text("priority").notNull().default("normal"), // 'low' | 'normal' | 'high' | 'urgent'
+  metadata: text("metadata"), // JSON string for additional data
   isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
-  isDismissed: integer("is_dismissed", { mode: "boolean" }).notNull().default(false),
+  readAt: text("read_at"), // when marked as read
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
