@@ -203,9 +203,10 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       </div>
 
       {/* Current time marker — lives outside scroll container so it's never clipped by header */}
+      {/* Hide on mobile to prevent positioning issues with different scroll containers */}
       {indicatorTop !== null && (
         <motion.div
-          className="absolute left-0 right-0 z-[5] flex items-center pointer-events-none"
+          className="hidden md:flex absolute left-0 right-0 z-[5] items-center pointer-events-none"
           style={{ top: indicatorTop }}
           animate={{ top: indicatorTop }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
