@@ -188,6 +188,9 @@ function runMigrations() {
     console.log("⚠️  Role assignment migration skipped (may already be complete)");
   }
 
+  // Voice message metadata
+  try { s.exec(`ALTER TABLE messages ADD COLUMN metadata TEXT`); } catch {}
+
   // Ticker messages pushed by ARLs to location dashboards
   try {
     s.exec(`CREATE TABLE IF NOT EXISTS ticker_messages (

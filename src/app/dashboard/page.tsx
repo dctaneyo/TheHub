@@ -39,7 +39,7 @@ import { Timeline, type TaskItem } from "@/components/dashboard/timeline";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
-import { NotificationSystem } from "@/components/dashboard/notification-system";
+// NotificationSystem merged into NotificationBell (unified single bell)
 import { useHapticFeedback, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
@@ -732,16 +732,12 @@ export default function DashboardPage() {
             )}
           </button>
 
-          {/* Task Notifications (due-soon bell + fullscreen overdue overlay) */}
-          <NotificationSystem
+          {/* Unified Notification Bell (task alerts + DB notifications) */}
+          <NotificationBell
             tasks={allTasks}
             currentTime={currentTime}
             soundEnabled={soundEnabled}
-            onToggleSound={toggleSound}
           />
-
-          {/* Notification Bell (DB-backed: shout-outs, high-fives, etc.) */}
-          <NotificationBell />
 
           {/* Settings cog */}
           <div className="relative" ref={settingsRef}>

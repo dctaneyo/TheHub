@@ -90,7 +90,8 @@ export const messages = sqliteTable("messages", {
   senderId: text("sender_id").notNull(),
   senderName: text("sender_name").notNull().default(""),
   content: text("content").notNull(),
-  messageType: text("message_type").notNull().default("text"), // 'text' | 'image' | 'file'
+  messageType: text("message_type").notNull().default("text"), // 'text' | 'image' | 'file' | 'voice'
+  metadata: text("metadata"), // JSON string for voice messages etc.
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 

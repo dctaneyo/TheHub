@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Trash2, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle } from "lucide-react";
+import { X, Check, Trash2, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -22,10 +22,29 @@ interface Notification {
   createdAt: string;
 }
 
+interface TaskNotification {
+  id: string;
+  taskId: string;
+  title: string;
+  type: "due_soon" | "overdue";
+  dueTime: string;
+  dismissed: boolean;
+}
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
 interface NotificationPanelProps {
   open: boolean;
   onClose: () => void;
   onCountsUpdate: (counts: { total: number; unread: number; urgent: number }) => void;
+  taskNotifications?: TaskNotification[];
+  onDismissTask?: (id: string) => void;
+  onDismissAllTasks?: () => void;
 }
 
 const priorityColors = {
@@ -45,10 +64,11 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   default: Bell,
 };
 
-export function NotificationPanel({ open, onClose, onCountsUpdate }: NotificationPanelProps) {
+export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotifications = [], onDismissTask, onDismissAllTasks }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(false);
+  const prevOpenRef = useRef(false);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -71,11 +91,19 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
     }
   }, [filter, onCountsUpdate]);
 
+  // Only fetch when panel opens or filter changes — not on every render
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       fetchNotifications();
     }
+    prevOpenRef.current = open;
   }, [open, fetchNotifications]);
+
+  // Re-fetch when filter changes while open
+  useEffect(() => {
+    if (open) fetchNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -199,17 +227,59 @@ export function NotificationPanel({ open, onClose, onCountsUpdate }: Notificatio
 
         {/* Notifications list */}
         <div className="max-h-[500px] overflow-y-auto">
-          {loading && (
+          {/* Task notifications section */}
+          {taskNotifications.length > 0 && (
+            <div className="border-b border-border">
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Task Alerts</span>
+                {onDismissAllTasks && (
+                  <button onClick={onDismissAllTasks} className="text-[10px] font-medium text-muted-foreground hover:text-foreground">
+                    Dismiss all
+                  </button>
+                )}
+              </div>
+              {taskNotifications.map((tn) => (
+                <div key={tn.id} className={cn(
+                  "group relative border-l-4 border-b border-border px-4 py-3",
+                  tn.type === "overdue" ? "border-l-red-500 bg-red-500/5" : "border-l-amber-500 bg-amber-500/5"
+                )}>
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                      tn.type === "overdue" ? "bg-red-500/10 text-red-600" : "bg-amber-500/10 text-amber-600"
+                    )}>
+                      {tn.type === "overdue" ? <AlertCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">
+                        {tn.type === "overdue" ? "Overdue Task" : "Due Soon"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{tn.title}</p>
+                      <p className="text-[10px] text-muted-foreground">Due at {formatTime12(tn.dueTime)}</p>
+                    </div>
+                    {onDismissTask && (
+                      <button onClick={() => onDismissTask(tn.id)}
+                        className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-muted-foreground transition-opacity">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {loading && notifications.length === 0 && (
             <div className="flex h-32 items-center justify-center">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
             </div>
           )}
 
-          {!loading && notifications.length === 0 && (
+          {!loading && notifications.length === 0 && taskNotifications.length === 0 && (
             <div className="flex h-32 flex-col items-center justify-center text-center px-4">
               <Bell className="h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-sm font-medium text-muted-foreground">No notifications</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">You're all caught up!</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">You&apos;re all caught up!</p>
             </div>
           )}
 
