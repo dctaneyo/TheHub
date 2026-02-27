@@ -175,6 +175,30 @@ function runMigrations() {
     )`);
   });
 
+  // Ensure notifications table has all required columns
+  // (table may have been created by an older schema missing user_id and other columns)
+  migrate("026b_notifications_table", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', user_type TEXT NOT NULL DEFAULT 'location',
+      type TEXT NOT NULL DEFAULT 'system', title TEXT NOT NULL DEFAULT '', message TEXT NOT NULL DEFAULT '',
+      action_url TEXT, action_label TEXT, priority TEXT NOT NULL DEFAULT 'normal',
+      metadata TEXT, is_read INTEGER NOT NULL DEFAULT 0, read_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN user_id TEXT NOT NULL DEFAULT ''`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN user_type TEXT NOT NULL DEFAULT 'location'`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN type TEXT NOT NULL DEFAULT 'system'`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN title TEXT NOT NULL DEFAULT ''`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN message TEXT NOT NULL DEFAULT ''`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN action_url TEXT`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN action_label TEXT`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN metadata TEXT`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN is_read INTEGER NOT NULL DEFAULT 0`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN read_at TEXT`); } catch {}
+    try { s.exec(`ALTER TABLE notifications ADD COLUMN created_at TEXT`); } catch {}
+  });
+
   // Unique constraints to prevent duplicate records
   migrate("027_unique_task_completion", () => {
     s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_task_completion_unique ON task_completions(task_id, location_id, completed_date)`);
@@ -196,6 +220,11 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`);
     s.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`);
     s.exec(`CREATE INDEX IF NOT EXISTS idx_message_reads_message ON message_reads(message_id)`);
+  });
+
+  // Retry notifications index in case 031 silently failed due to missing user_id column
+  migrate("032_notifications_index_retry", () => {
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`);
   });
 
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
