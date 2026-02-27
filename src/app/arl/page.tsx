@@ -166,10 +166,18 @@ export default function ArlPage() {
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
   const isOnline = useOnlineStatus();
+  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
 
-  // Swipe navigation between views on mobile
+  // Swipe navigation between views on mobile with direction tracking
   const swipeViewIds = navItems.map((n) => n.id);
-  useSwipeNavigation(swipeViewIds, activeView, setActiveView as (v: string) => void, isMobileOrTablet && !sidebarOpen);
+  const handleViewChange = useCallback((newView: string) => {
+    const oldIndex = swipeViewIds.indexOf(activeView as string);
+    const newIndex = swipeViewIds.indexOf(newView);
+    setSwipeDirection(newIndex > oldIndex ? 1 : -1);
+    setActiveView(newView as ArlView);
+  }, [activeView, swipeViewIds]);
+  
+  useSwipeNavigation(swipeViewIds, activeView as string, handleViewChange, isMobileOrTablet && !sidebarOpen);
 
   // Play subtle 2-note beep for new messages (ARL office environment — not a loud kitchen)
   const playMessageChime = useCallback(() => {
@@ -568,16 +576,16 @@ export default function ArlPage() {
         <div className="border-t border-border p-3 space-y-1">
           {/* Theme and Connection - only on mobile/tablet */}
           {(device === "mobile" || device === "tablet") && (
-            <>
-              <div className="flex items-center justify-between px-3 py-2">
+            <div className="space-y-2 px-1 py-2">
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors">
                 <span className="text-xs font-medium text-muted-foreground">Theme</span>
                 <ThemeToggle />
               </div>
-              <div className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors">
                 <span className="text-xs font-medium text-muted-foreground">Connection</span>
                 <ConnectionStatus />
               </div>
-            </>
+            </div>
           )}
           
           <button
@@ -632,17 +640,17 @@ export default function ArlPage() {
           "flex-1 relative",
           activeView === "messages"
             ? "flex flex-col overflow-hidden p-5"
-            : "overflow-y-auto p-5 pb-20"
+            : "overflow-y-auto p-5 pb-24"
         )}>
           {mounted ? (
             <>
               <AnimatePresence mode="wait">
               <motion.div
                 key={activeView}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
+                initial={{ x: swipeDirection * 100, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: swipeDirection * -100, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={cn(
                   activeView === "messages" ? "flex flex-col h-full" : "h-full"
                 )}
@@ -712,8 +720,8 @@ export default function ArlPage() {
           <PageIndicator
             pages={navItems.map(item => ({ id: item.id, label: item.label }))}
             currentPageId={activeView}
-            onPageChange={(pageId: string) => setActiveView(pageId as ArlView)}
-            className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
+            onPageChange={handleViewChange}
+            className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
           />
         )}
       </div>
