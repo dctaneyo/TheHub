@@ -169,10 +169,10 @@ export default function ArlPage() {
   const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
 
   // Swipe navigation between views on mobile with direction tracking
-  const swipeViewIds = navItems.map((n) => n.id);
+  const swipeViewIds = navItems.map((n) => n.id as string);
   const handleViewChange = useCallback((newView: string) => {
     const oldIndex = swipeViewIds.indexOf(activeView as string);
-    const newIndex = swipeViewIds.indexOf(newView);
+    const newIndex = swipeViewIds.indexOf(newView as string);
     setSwipeDirection(newIndex > oldIndex ? 1 : -1);
     setActiveView(newView as ArlView);
   }, [activeView, swipeViewIds]);
