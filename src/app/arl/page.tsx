@@ -438,7 +438,8 @@ export default function ArlPage() {
   return (
     <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]">
       {/* Sidebar - always visible on desktop, drawer on mobile/tablet */}
-      {isMobileOrTablet && sidebarOpen && (
+      {/* Hide sidebar on mobile when in a meeting */}
+      {isMobileOrTablet && sidebarOpen && !joiningMeeting && activeView !== "broadcast" && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -448,21 +449,22 @@ export default function ArlPage() {
         />
       )}
 
-      <motion.aside
-        className={cn(
-          "z-[150] flex flex-col border-r border-border bg-card",
-          isMobileOrTablet
-            ? "fixed inset-y-0 left-0 w-[280px] shadow-xl"
-            : "relative w-[260px] shrink-0"
-        )}
-        initial={isMobileOrTablet ? { x: -280 } : false}
-        animate={
-          isMobileOrTablet
-            ? { x: sidebarOpen ? 0 : -280 }
-            : { x: 0 }
-        }
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
+      {!joiningMeeting && activeView !== "broadcast" && (
+        <motion.aside
+          className={cn(
+            "z-[150] flex flex-col border-r border-border bg-card",
+            isMobileOrTablet
+              ? "fixed inset-y-0 left-0 w-[280px] shadow-xl"
+              : "relative w-[260px] shrink-0"
+          )}
+          initial={isMobileOrTablet ? { x: -280 } : false}
+          animate={
+            isMobileOrTablet
+              ? { x: sidebarOpen ? 0 : -280 }
+              : { x: 0 }
+          }
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
         {/* Sidebar header */}
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2.5">
@@ -544,12 +546,14 @@ export default function ArlPage() {
             Sign Out
           </button>
         </div>
-      </motion.aside>
+        </motion.aside>
+      )}
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="sticky top-0 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 z-[100]">
+        {/* Top bar - hide on mobile when in meeting */}
+        {!joiningMeeting && activeView !== "broadcast" && (
+          <header className="sticky top-0 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 z-[100]">
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
               <button
@@ -563,18 +567,25 @@ export default function ArlPage() {
               {navItems.find((n) => n.id === activeView)?.label ?? ""}
             </h2>
           </div>
-          <div className="flex items-center gap-3">
-            <GlobalSearch onNavigate={(type, id) => {
-              if (type === "task") setActiveView("tasks");
-              else if (type === "message") setActiveView("messages");
-              else if (type === "form") setActiveView("forms");
-              else if (type === "location") setActiveView("locations");
-            }} />
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="hidden md:block">
+              <GlobalSearch onNavigate={(type, id) => {
+                if (type === "task") setActiveView("tasks");
+                else if (type === "message") setActiveView("messages");
+                else if (type === "form") setActiveView("forms");
+                else if (type === "location") setActiveView("locations");
+              }} />
+            </div>
             <NotificationBell />
-            <ThemeToggle />
-            <ConnectionStatus />
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
+            <div className="hidden sm:block">
+              <ConnectionStatus />
+            </div>
           </div>
-        </header>
+          </header>
+        )}
 
         {/* Content area */}
         <main className={cn(
