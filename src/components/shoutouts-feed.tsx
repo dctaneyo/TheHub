@@ -83,10 +83,10 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
 
   if (shoutouts.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-        <Megaphone className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-        <p className="text-sm font-semibold text-slate-400">No shoutouts yet!</p>
-        <p className="text-xs text-slate-300 mt-1">Be the first to give some praise! 🎉</p>
+      <div className="rounded-2xl border-2 border-dashed border-border bg-muted p-8 text-center">
+        <Megaphone className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+        <p className="text-sm font-semibold text-muted-foreground">No shoutouts yet!</p>
+        <p className="text-xs text-muted-foreground/70 mt-1">Be the first to give some praise! 🎉</p>
       </div>
     );
   }
@@ -96,7 +96,7 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Megaphone className="h-5 w-5 text-purple-500" />
-          <h3 className="text-sm font-bold text-slate-700">Recent Shoutouts</h3>
+          <h3 className="text-sm font-bold text-foreground">Recent Shoutouts</h3>
         </div>
         <div className="flex items-center gap-2">
           {isArl && shoutouts.length > 0 && (
@@ -105,7 +105,7 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
                 if (!confirm("Clear all shoutouts? This cannot be undone.")) return;
                 try { await fetch("/api/shoutouts", { method: "DELETE" }); } catch {}
               }}
-              className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
               title="Clear all shoutouts"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -140,31 +140,31 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
                 <p className="text-xs font-bold text-purple-600 mb-1">
                   {shoutout.from_user_name} → {shoutout.to_location_name}
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed">
+                <p className="text-sm text-foreground leading-relaxed">
                   {shoutout.message}
                 </p>
                 <div className="flex items-center gap-2 mt-3">
                   <button
                     onClick={() => addReaction(shoutout.id, "❤️")}
-                    className="rounded-full bg-white px-2 py-1 text-xs hover:bg-red-50 transition-colors"
+                    className="rounded-full bg-card border border-border px-2 py-1 text-xs hover:bg-red-500/10 transition-colors"
                   >
                     ❤️
                   </button>
                   <button
                     onClick={() => addReaction(shoutout.id, "👏")}
-                    className="rounded-full bg-white px-2 py-1 text-xs hover:bg-yellow-50 transition-colors"
+                    className="rounded-full bg-card border border-border px-2 py-1 text-xs hover:bg-yellow-500/10 transition-colors"
                   >
                     👏
                   </button>
                   <button
                     onClick={() => addReaction(shoutout.id, "🔥")}
-                    className="rounded-full bg-white px-2 py-1 text-xs hover:bg-orange-50 transition-colors"
+                    className="rounded-full bg-card border border-border px-2 py-1 text-xs hover:bg-orange-500/10 transition-colors"
                   >
                     🔥
                   </button>
                   <button
                     onClick={() => addReaction(shoutout.id, "⭐")}
-                    className="rounded-full bg-white px-2 py-1 text-xs hover:bg-yellow-50 transition-colors"
+                    className="rounded-full bg-card border border-border px-2 py-1 text-xs hover:bg-yellow-500/10 transition-colors"
                   >
                     ⭐
                   </button>
@@ -174,12 +174,12 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
                         <span key={i} className="text-sm">{r.emoji}</span>
                       ))}
                       {shoutout.reactions.length > 3 && (
-                        <span className="text-xs text-slate-400">+{shoutout.reactions.length - 3}</span>
+                        <span className="text-xs text-muted-foreground">+{shoutout.reactions.length - 3}</span>
                       )}
                     </div>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2">
+                <p className="text-[10px] text-muted-foreground mt-2">
                   {new Date(shoutout.created_at).toLocaleString()}
                 </p>
               </div>

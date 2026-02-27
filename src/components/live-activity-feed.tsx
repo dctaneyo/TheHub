@@ -124,7 +124,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
       case "achievement":
         return <Trophy className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Activity className="h-4 w-4 text-slate-400" />;
+        return <Activity className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -138,10 +138,10 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
 
   if (activities.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-        <Activity className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-        <p className="text-xs font-semibold text-slate-400">No recent activity</p>
-        <p className="text-[10px] text-slate-300 mt-1">Activity will appear here in real-time</p>
+      <div className="rounded-xl border-2 border-dashed border-border bg-muted p-6 text-center">
+        <Activity className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+        <p className="text-xs font-semibold text-muted-foreground">No recent activity</p>
+        <p className="text-[10px] text-muted-foreground/70 mt-1">Activity will appear here in real-time</p>
       </div>
     );
   }
@@ -150,17 +150,17 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
         <Zap className="h-4 w-4 text-yellow-500" />
-        <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Live Activity</h3>
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Live Activity</h3>
         <div className="flex items-center gap-1 ml-auto">
           <button
             onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
-            className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
             title="Clear all activity"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
           <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-[10px] text-slate-400">Live</span>
+          <span className="text-[10px] text-muted-foreground">Live</span>
         </div>
       </div>
 
@@ -173,18 +173,18 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.02 }}
-              className="flex items-start gap-2 rounded-lg bg-white border border-slate-100 p-2 hover:bg-slate-50 transition-colors"
+              className="flex items-start gap-2 rounded-lg bg-card border border-border p-2 hover:bg-muted/50 transition-colors"
             >
               <div className="shrink-0 mt-0.5">
                 {getIcon(activity)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-700">
+                <p className="text-xs text-foreground">
                   <span className="font-semibold">{activity.userName}</span>
                   {" "}
-                  <span className="text-slate-500">{activity.description}</span>
+                  <span className="text-muted-foreground">{activity.description}</span>
                 </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-[10px] text-muted-foreground mt-0.5">
                   {getTimeAgo(activity.timestamp)}
                 </p>
               </div>

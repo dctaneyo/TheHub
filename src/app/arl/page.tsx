@@ -918,7 +918,7 @@ function OverviewContent() {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">ARLs</p>
             <div className="space-y-2 mb-4">
               {onlineArls.map((arl) => (
-                <div key={arl.id} className="flex items-center justify-between rounded-xl bg-sky-50 px-4 py-3">
+                <div key={arl.id} className="flex items-center justify-between rounded-xl bg-sky-500/10 border border-sky-500/20 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
                     <div>
@@ -931,11 +931,11 @@ function OverviewContent() {
                   </div>
                   <div className="flex items-center gap-2">
                     {arl.sessionCode && (
-                      <span className="font-mono text-xs font-bold tracking-widest text-sky-700 bg-sky-100 rounded-lg px-2 py-0.5">
+                      <span className="font-mono text-xs font-bold tracking-widest text-sky-600 dark:text-sky-400 bg-sky-500/10 rounded-lg px-2 py-0.5">
                         #{arl.sessionCode}
                       </span>
                     )}
-                    <span className="text-xs font-medium text-sky-600">Online</span>
+                    <span className="text-xs font-medium text-sky-600 dark:text-sky-400">Online</span>
                   </div>
                 </div>
               ))}
@@ -948,7 +948,7 @@ function OverviewContent() {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Restaurants</p>
             <div className="space-y-2">
               {onlineLocations.map((loc) => (
-                <div key={loc.id} className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3">
+                <div key={loc.id} className="flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                     <div>
@@ -961,11 +961,11 @@ function OverviewContent() {
                   </div>
                   <div className="flex items-center gap-2">
                     {loc.sessionCode && (
-                      <span className="font-mono text-xs font-bold tracking-widest text-emerald-700 bg-emerald-100 rounded-lg px-2 py-0.5">
+                      <span className="font-mono text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-2 py-0.5">
                         #{loc.sessionCode}
                       </span>
                     )}
-                    <span className="text-xs font-medium text-emerald-600">Online</span>
+                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Online</span>
                   </div>
                 </div>
               ))}
