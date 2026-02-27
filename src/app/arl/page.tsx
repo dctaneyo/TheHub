@@ -60,6 +60,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
+import { NotificationTester } from "@/components/arl/notification-tester";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -564,14 +565,25 @@ export default function ArlPage() {
 
         {/* Bottom */}
         <div className="border-t border-border p-3 space-y-1">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">Theme</span>
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">Connection</span>
-            <ConnectionStatus />
-          </div>
+          {/* Theme and Connection - only on mobile/tablet */}
+          {(device === "mobile" || device === "tablet") && (
+            <>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground">Connection</span>
+                <ConnectionStatus />
+              </div>
+            </>
+          )}
+          
+          {/* Notification Tester - desktop only */}
+          {device === "desktop" && (
+            <NotificationTester className="w-full" />
+          )}
+          
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
