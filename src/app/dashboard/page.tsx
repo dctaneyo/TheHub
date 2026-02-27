@@ -53,7 +53,6 @@ import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 import { NotificationBell } from "@/components/notification-bell";
 
@@ -953,14 +952,6 @@ export default function DashboardPage() {
           onClose={() => setActiveStream(null)}
         />
       )}
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav
-        activeView={mobileView}
-        onViewChange={handleMobileViewChange}
-        unreadCount={chatUnread}
-        userType="location"
-      />
 
       {/* Restaurant Chat Drawer */}
       <RestaurantChat

@@ -57,7 +57,6 @@ import { useSocket } from "@/lib/socket-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
 
@@ -774,17 +773,6 @@ export default function ArlPage() {
 
       {/* Social Actions Menu */}
       <SocialActionsMenu userType="arl" userId={user?.id} userName={user?.name} />
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav
-        activeView={activeView}
-        onViewChange={(view) => {
-          setActiveView(view as ArlView);
-          if (view === "messages") setUnreadCount(0);
-        }}
-        unreadCount={unreadCount}
-        userType="arl"
-      />
     </div>
   );
 }
