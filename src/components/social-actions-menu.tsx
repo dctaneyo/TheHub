@@ -106,7 +106,8 @@ export function SocialActionsMenu({ userType, userId, userName }: SocialActionsM
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowMenu(!showMenu)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+        className="fixed bottom-6 md:bottom-6 right-6 z-[135] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}
         title="Social Actions"
       >
         {showMenu ? <X className="h-6 w-6" /> : <span className="text-2xl">✨</span>}
@@ -119,7 +120,8 @@ export function SocialActionsMenu({ userType, userId, userName }: SocialActionsM
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-24 right-6 z-40 flex flex-col gap-2"
+            className="fixed right-6 z-[135] flex flex-col gap-2"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom) + 148px)' }}
           >
             <button
               onClick={openShoutoutForm}

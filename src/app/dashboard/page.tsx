@@ -794,7 +794,7 @@ export default function DashboardPage() {
               </button>
             </div>
           )}
-          <div className="p-4">
+          <div className="p-4 pb-20 md:pb-4">
             <CompletedMissed
               completedToday={completedTasks}
               missedYesterday={data?.missedYesterday || []}
@@ -806,7 +806,7 @@ export default function DashboardPage() {
 
         {/* Center Column - Main Timeline */}
         <div className={cn(
-          "flex-1 overflow-y-auto p-5 space-y-4",
+          "flex-1 overflow-y-auto p-5 pb-20 md:pb-5 space-y-4",
           mobilePanelOpen ? "hidden md:block" : "block"
         )}>
           <SeasonalTheme showFloating={false} />
@@ -996,14 +996,14 @@ function RightPanel({
           🏆 Leaderboard
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 min-h-0">
         {tab === "calendar" ? (
           <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
         ) : (
           <Leaderboard currentLocationId={currentLocationId} compact />
         )}
       </div>
-      <div className="shrink-0 p-4 pt-0">
+      <div className="shrink-0 p-4 pt-0 pb-20 md:pb-0">
         <MotivationalQuote />
       </div>
     </div>
