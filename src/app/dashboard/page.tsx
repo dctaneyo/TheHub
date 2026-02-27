@@ -561,7 +561,7 @@ export default function DashboardPage() {
       <AnimatedBackground variant="subtle" />
 
       {/* Top Bar */}
-      <header className="flex h-16 shrink-0 items-center border-b border-border bg-card px-4 md:px-6 relative z-[100] overflow-x-auto">
+      <header className="sticky top-0 flex h-16 shrink-0 items-center border-b border-border bg-card px-4 md:px-6 z-[100]">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
             <span className="text-base font-black text-white">H</span>
@@ -574,17 +574,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 ml-auto shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">
           {/* Unified Gamification Hub */}
           <div className="hidden md:block">
             <GamificationHub locationId={user?.id} />
           </div>
 
-          {/* Connection status */}
-          <ConnectionStatus />
+          {/* Connection status - hide on small mobile */}
+          <div className="hidden sm:block">
+            <ConnectionStatus />
+          </div>
 
-          {/* Clock */}
-          <div className="mx-1 text-right">
+          {/* Clock - hide on mobile */}
+          <div className="hidden md:block mx-1 text-right">
             <p className="text-2xl font-black tabular-nums tracking-tight text-foreground">
               {displayTime}
             </p>
@@ -593,10 +595,10 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons - hide some on mobile */}
           <button
             onClick={() => setFormsOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
             title="Forms"
           >
             <FileText className="h-[18px] w-[18px]" />
@@ -604,7 +606,8 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setCalOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+            title="Calendar"
           >
             <CalendarDays className="h-[18px] w-[18px]" />
           </button>
@@ -612,6 +615,7 @@ export default function DashboardPage() {
           <button
             onClick={() => setChatOpen(!chatOpen)}
             className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+            title="Chat"
           >
             <MessageCircle className="h-[18px] w-[18px]" />
             {chatUnread > 0 && (
@@ -651,7 +655,7 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="fixed z-[2010] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+                  className="fixed z-[200] w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
                   style={settingsPos ? { top: settingsPos.top, right: settingsPos.right } : {}}
                 >
                   <div className="px-4 py-3 border-b border-border">

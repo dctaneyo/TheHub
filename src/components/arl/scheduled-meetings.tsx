@@ -196,23 +196,25 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             <p className="text-xs text-muted-foreground">{meetings.length} meeting{meetings.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {onStartOnDemand && (
             <Button
               onClick={onStartOnDemand}
-              className="rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 text-white"
+              className="rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
             >
-              <Play className="h-4 w-4 mr-1.5" />Start Meeting
+              <Play className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Start Meeting</span>
+              <span className="sm:hidden">Start</span>
             </Button>
           )}
           <Button
             onClick={() => { setShowCreate(!showCreate); if (showCreate) resetForm(); }}
             className={cn(
-              "rounded-xl font-semibold text-sm",
+              "rounded-xl font-semibold text-sm whitespace-nowrap",
               showCreate ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
           >
-            {showCreate ? <><X className="h-4 w-4 mr-1.5" />Cancel</> : <><Plus className="h-4 w-4 mr-1.5" />Schedule Meeting</>}
+            {showCreate ? <><X className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Cancel</span><span className="sm:hidden">✕</span></> : <><Plus className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
           </Button>
         </div>
       </div>

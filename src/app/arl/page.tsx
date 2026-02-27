@@ -443,14 +443,14 @@ export default function ArlPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40 bg-black/30"
+          className="fixed inset-0 z-[140] bg-black/30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <motion.aside
         className={cn(
-          "z-50 flex flex-col border-r border-border bg-card",
+          "z-[150] flex flex-col border-r border-border bg-card",
           isMobileOrTablet
             ? "fixed inset-y-0 left-0 w-[280px] shadow-xl"
             : "relative w-[260px] shrink-0"
@@ -549,7 +549,7 @@ export default function ArlPage() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 relative z-[100]">
+        <header className="sticky top-0 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 z-[100]">
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
               <button
