@@ -43,7 +43,7 @@ function pctColor(pct: number) {
 function pctTextColor(pct: number) {
   if (pct >= 80) return "text-emerald-600";
   if (pct >= 50) return "text-amber-600";
-  return "text-slate-500";
+  return "text-muted-foreground";
 }
 
 // Podium card for top 3 (full mode only)
@@ -64,10 +64,10 @@ function PodiumCard({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean })
       medal: "🥈",
       label: "2nd Place",
       gradient: "from-slate-400 to-slate-300",
-      border: "border-slate-300",
-      bg: "bg-gradient-to-br from-slate-50 to-slate-100",
-      text: "text-slate-700",
-      sub: "text-slate-500",
+      border: "border-slate-400/30",
+      bg: "bg-gradient-to-br from-slate-500/10 to-slate-500/20",
+      text: "text-foreground",
+      sub: "text-muted-foreground",
       bar: "bg-slate-400",
       height: "pt-3",
     },
@@ -120,20 +120,20 @@ function PodiumCard({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean })
 function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: boolean; compact: boolean }) {
   const cardBg = isMe
     ? "bg-[var(--hub-red)]/5 border-[var(--hub-red)]/20 ring-1 ring-inset ring-[var(--hub-red)]/10"
-    : "bg-white border-slate-200";
+    : "bg-card border-border";
 
   return (
     <div className={cn("flex items-center gap-2 rounded-xl border transition-all", compact ? "p-1.5" : "p-2.5", cardBg)}>
-      <div className={cn("flex shrink-0 items-center justify-center font-bold text-slate-400", compact ? "h-6 w-6 text-[10px]" : "h-8 w-8 text-xs")}>
+      <div className={cn("flex shrink-0 items-center justify-center font-bold text-muted-foreground", compact ? "h-6 w-6 text-[10px]" : "h-8 w-8 text-xs")}>
         #{entry.rank}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className={cn("font-semibold text-slate-800 truncate", compact ? "text-[11px]" : "text-xs")}>{entry.name}</span>
+          <span className={cn("font-semibold text-foreground truncate", compact ? "text-[11px]" : "text-xs")}>{entry.name}</span>
           {isMe && <span className="shrink-0 rounded bg-[var(--hub-red)]/10 px-1 text-[8px] font-bold text-[var(--hub-red)]">YOU</span>}
         </div>
         <div className="mt-1 flex items-center gap-2">
-          <div className={cn("flex-1 rounded-full bg-slate-200/60", compact ? "h-1" : "h-1.5")}>
+          <div className={cn("flex-1 rounded-full bg-muted", compact ? "h-1" : "h-1.5")}>
             <div className={cn("rounded-full transition-all duration-500", compact ? "h-1" : "h-1.5", pctColor(entry.completionPct))} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
           </div>
           <span className={cn("shrink-0 font-bold tabular-nums", compact ? "text-[9px]" : "text-[10px]", pctTextColor(entry.completionPct))}>{entry.completionPct}%</span>
@@ -142,10 +142,10 @@ function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: bool
       <div className="shrink-0 text-right">
         <div className="flex items-center gap-0.5 justify-end">
           <Zap className={cn("text-amber-500", compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
-          <span className={cn("font-bold tabular-nums text-slate-800", compact ? "text-[10px]" : "text-xs")}>{entry.totalPoints}</span>
+          <span className={cn("font-bold tabular-nums text-foreground", compact ? "text-[10px]" : "text-xs")}>{entry.totalPoints}</span>
         </div>
         {entry.bonusPoints > 0 && <span className={cn("text-amber-600 font-medium", compact ? "text-[8px]" : "text-[9px]")}>+{entry.bonusPoints}</span>}
-        {!compact && <p className="text-[9px] text-slate-400">{entry.completedTasks}/{entry.totalTasks}</p>}
+        {!compact && <p className="text-[9px] text-muted-foreground">{entry.completedTasks}/{entry.totalTasks}</p>}
       </div>
     </div>
   );
@@ -187,13 +187,13 @@ export function Leaderboard({ currentLocationId, compact = false }: LeaderboardP
   if (loading) {
     return (
       <div className="flex h-20 items-center justify-center">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-amber-500" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-amber-500" />
       </div>
     );
   }
 
   if (!data || data.leaderboard.length === 0) {
-    return <div className="py-4 text-center text-xs text-slate-400">No locations yet</div>;
+    return <div className="py-4 text-center text-xs text-muted-foreground">No locations yet</div>;
   }
 
   const top3 = data.leaderboard.filter((e) => e.rank <= 3);
@@ -206,9 +206,9 @@ export function Leaderboard({ currentLocationId, compact = false }: LeaderboardP
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Trophy className={cn("text-amber-500", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
-          <h2 className={cn("font-bold text-slate-800", compact ? "text-xs" : "text-sm")}>Weekly Leaderboard</h2>
+          <h2 className={cn("font-bold text-foreground", compact ? "text-xs" : "text-sm")}>Weekly Leaderboard</h2>
         </div>
-        <span className="text-[10px] font-medium text-slate-400">{formatWeekRange(data.weekStart, data.weekEnd)}</span>
+        <span className="text-[10px] font-medium text-muted-foreground">{formatWeekRange(data.weekStart, data.weekEnd)}</span>
       </div>
 
       {compact ? (
@@ -218,7 +218,7 @@ export function Leaderboard({ currentLocationId, compact = false }: LeaderboardP
             <RankRow key={entry.locationId} entry={entry} isMe={entry.locationId === currentLocationId} compact />
           ))}
           {data.leaderboard.length > 5 && (
-            <p className="text-center text-[10px] text-slate-400">+{data.leaderboard.length - 5} more</p>
+            <p className="text-center text-[10px] text-muted-foreground">+{data.leaderboard.length - 5} more</p>
           )}
         </div>
       ) : (

@@ -634,8 +634,8 @@ export default function ArlPage() {
                 {activeView === "meetings" && (
                   <div className="space-y-6">
                     {activeMeetings.length > 0 && (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                           <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
                           Active Meetings
                         </h2>
@@ -643,11 +643,11 @@ export default function ArlPage() {
                           {activeMeetings.map((meeting) => (
                             <div
                               key={meeting.meetingId}
-                              className="bg-white border border-emerald-100 rounded-xl p-4 flex items-center justify-between hover:border-emerald-300 transition-colors shadow-sm"
+                              className="bg-card border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-colors shadow-sm"
                             >
                               <div>
-                                <h3 className="text-slate-800 font-semibold">{meeting.title}</h3>
-                                <p className="text-slate-500 text-sm">Host: {meeting.hostName}</p>
+                                <h3 className="text-foreground font-semibold">{meeting.title}</h3>
+                                <p className="text-muted-foreground text-sm">Host: {meeting.hostName}</p>
                               </div>
                               <button
                                 onClick={() => {
@@ -664,7 +664,7 @@ export default function ArlPage() {
                       </div>
                     )}
                     <ScheduledMeetings onStartOnDemand={() => setActiveView("broadcast")} />
-                    <div className="border-t border-slate-200 pt-6">
+                    <div className="border-t border-border pt-6">
                       <MeetingAnalyticsDashboard />
                     </div>
                   </div>
@@ -1063,11 +1063,11 @@ function ArlCalendar() {
     <div className="flex h-full flex-col gap-4">
       {/* Location filter */}
       <div className="flex items-center gap-3">
-        <label className="text-xs font-semibold text-slate-600 shrink-0">Filter by location:</label>
+        <label className="text-xs font-semibold text-muted-foreground shrink-0">Filter by location:</label>
         <select
           value={filterLocationId}
           onChange={(e) => setFilterLocationId(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm"
+          className="rounded-xl border border-border bg-card px-3 py-1.5 text-sm text-foreground shadow-sm"
         >
           <option value="all">All Locations</option>
           {locations.map((l) => (
@@ -1078,18 +1078,18 @@ function ArlCalendar() {
 
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Calendar grid */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-4 w-4" /></button>
-            <h2 className="text-sm font-bold text-slate-800">{format(currentMonth, "MMMM yyyy")}</h2>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><ChevronRight className="h-4 w-4" /></button>
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
+            <h2 className="text-sm font-bold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
+            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
           </div>
-          <div className="grid grid-cols-7 border-b border-slate-100">
-            {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">{d}</div>)}
+          <div className="grid grid-cols-7 border-b border-border">
+            {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
           </div>
           <div className="flex flex-1 flex-col overflow-hidden">
             {weeks.map((week, wi) => (
-              <div key={wi} className="grid flex-1 grid-cols-7 border-b border-slate-100 last:border-0" style={{ minHeight: 0 }}>
+              <div key={wi} className="grid flex-1 grid-cols-7 border-b border-border last:border-0" style={{ minHeight: 0 }}>
                 {week.map((date) => {
                   const dayTasks = getTasksForDate(date);
                   const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -1098,13 +1098,13 @@ function ArlCalendar() {
                     <div key={date.toISOString()} role="button" tabIndex={0}
                       onClick={() => setSelectedDate(date)}
                       onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
-                      className={cn("flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
-                        !inMonth && "bg-slate-50/50",
+                      className={cn("flex flex-col items-start justify-start border-r border-border p-1.5 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
+                        !inMonth && "bg-muted/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
-                        inMonth && !isSelected && "hover:bg-slate-50"
+                        inMonth && !isSelected && "hover:bg-muted/50"
                       )}>
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                        isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-slate-700" : "text-slate-300"
+                        isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-foreground" : "text-muted-foreground/50"
                       )}>{format(date, "d")}</span>
                       <div className="mt-0.5 w-full space-y-0.5 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
@@ -1118,7 +1118,7 @@ function ArlCalendar() {
                             </div>
                           );
                         })}
-                        {dayTasks.length > 2 && <p className="pl-0.5 text-[9px] text-slate-400">+{dayTasks.length - 2}</p>}
+                        {dayTasks.length > 2 && <p className="pl-0.5 text-[9px] text-muted-foreground">+{dayTasks.length - 2}</p>}
                       </div>
                     </div>
                   );
@@ -1129,31 +1129,31 @@ function ArlCalendar() {
         </div>
 
         {/* Day detail */}
-        <div className="w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <h3 className="text-sm font-bold text-slate-800">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
-            <p className="text-[10px] text-slate-400">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>
+        <div className="w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-4 py-3">
+            <h3 className="text-sm font-bold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
+            <p className="text-[10px] text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {loading && <div className="flex h-20 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--hub-red)]" /></div>}
-            {!loading && selectedTasks.length === 0 && <p className="py-8 text-center text-xs text-slate-400">No tasks this day</p>}
+            {loading && <div className="flex h-20 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" /></div>}
+            {!loading && selectedTasks.length === 0 && <p className="py-8 text-center text-xs text-muted-foreground">No tasks this day</p>}
             {selectedTasks.map((task) => {
               const Icon = calTypeIcons[task.type] || ClipboardList;
               const loc = locations.find((l) => l.id === task.locationId);
               return (
                 <div key={task.id} className={cn("rounded-xl border p-3",
-                  task.priority === "urgent" ? "border-red-200 bg-red-50" : task.priority === "high" ? "border-orange-200 bg-orange-50" : "border-slate-200 bg-slate-50"
+                  task.priority === "urgent" ? "border-red-500/20 bg-red-500/10" : task.priority === "high" ? "border-orange-500/20 bg-orange-500/10" : "border-border bg-muted/50"
                 )}>
                   <div className="flex items-start gap-2">
                     <div className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
                       task.type === "cleaning" ? "bg-purple-100 text-purple-600" : task.type === "reminder" ? "bg-sky-100 text-sky-600" : "bg-blue-100 text-blue-600"
                     )}><Icon className="h-3 w-3" /></div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{task.title}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
+                      <p className="text-xs font-semibold text-foreground truncate">{task.title}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                         <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{calTime12(task.dueTime)}</span>
                         {task.isRecurring && <span className="flex items-center gap-0.5"><Repeat className="h-2.5 w-2.5" />Recurring</span>}
-                        <span className="text-slate-400">{loc ? loc.name : "All locations"}</span>
+                        <span className="text-muted-foreground">{loc ? loc.name : "All locations"}</span>
                       </div>
                     </div>
                   </div>
