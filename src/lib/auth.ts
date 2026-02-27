@@ -1,12 +1,14 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) return secret;
   if (process.env.NODE_ENV === "production") {
     throw new Error("FATAL: JWT_SECRET environment variable is not set. Cannot start in production without it.");
   }
   return "the-hub-dev-secret-key-local-only";
-})();
+}
 
 export interface AuthPayload {
   id: string;
@@ -20,12 +22,12 @@ export interface AuthPayload {
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "24h" });
 }
 
 export function verifyToken(token: string): AuthPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthPayload;
+    return jwt.verify(token, getJwtSecret()) as AuthPayload;
   } catch {
     return null;
   }

@@ -24,12 +24,14 @@ function readBuildId(): string {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) return secret;
   if (process.env.NODE_ENV === "production") {
     throw new Error("FATAL: JWT_SECRET environment variable is not set. Cannot start in production without it.");
   }
   return "the-hub-dev-secret-key-local-only";
-})();
+}
 
 // Global singleton via globalThis so the io instance is shared between
 // the custom server (Node.js module) AND webpack-bundled API routes.
@@ -66,7 +68,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     if (token) {
       try {
-        user = jwt.verify(token, JWT_SECRET) as AuthPayload;
+        user = jwt.verify(token, getJwtSecret()) as AuthPayload;
       } catch {
         // Invalid token — allow connection but no rooms
       }
