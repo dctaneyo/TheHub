@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-producti
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -19,7 +19,7 @@ export async function POST(
     }
 
     const decoded = verify(token, JWT_SECRET) as { userId: string; userType: string };
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // Verify the notification belongs to the user
     const [notification] = await db
@@ -47,7 +47,7 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -56,7 +56,7 @@ export async function DELETE(
     }
 
     const decoded = verify(token, JWT_SECRET) as { userId: string; userType: string };
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // Verify the notification belongs to the user
     const [notification] = await db
