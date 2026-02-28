@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Download, FolderOpen, X, Mail, Loader2 } from "lucide-react";
+import { FileText, FolderOpen, X, Mail, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -209,15 +209,6 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                       <Mail className="h-4 w-4" />
                     )}
                   </button>
-                  <a
-                    href={`/api/forms/download?id=${form.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--hub-red)]/10 text-[var(--hub-red)] hover:bg-[var(--hub-red)]/20 transition-colors"
-                    title="Download PDF"
-                  >
-                    <Download className="h-4 w-4" />
-                  </a>
                 </div>
               </motion.div>
             ))}

@@ -47,12 +47,21 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   const { socket } = useSocket();
 
   // Load dismissed notifications from localStorage on mount
+  // Clear stale dismissals from a previous day so overdue notifications re-fire on login
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('dismissed-notifications');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        notifiedRef.current = new Set(parsed);
+      const todayStr = new Date().toISOString().split("T")[0];
+      const storedRaw = localStorage.getItem('dismissed-notifications');
+      if (storedRaw) {
+        const parsed = JSON.parse(storedRaw);
+        // Support new format { date, ids } or legacy array
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.date === todayStr) {
+          notifiedRef.current = new Set(parsed.ids || []);
+        } else {
+          // Stale date or legacy format — clear so notifications re-fire today
+          notifiedRef.current = new Set();
+          localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: [] }));
+        }
       }
     } catch (err) {
       console.error('Failed to load dismissed notifications:', err);
@@ -84,7 +93,8 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     
     if (needsUpdate) {
       notifiedRef.current = new Set(filtered);
-      localStorage.setItem('dismissed-notifications', JSON.stringify(filtered));
+      const todayStr = new Date().toISOString().split("T")[0];
+      localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: filtered }));
     }
   }, [tasks]);
 
@@ -104,9 +114,10 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   // Save dismissed notifications to localStorage and sync across kiosks
   const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
     try {
-      // Save to localStorage
+      // Save to localStorage with date tag so stale dismissals are cleared on new day
+      const todayStr = new Date().toISOString().split("T")[0];
       const allDismissed = Array.from(notifiedRef.current);
-      localStorage.setItem('dismissed-notifications', JSON.stringify(allDismissed));
+      localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: allDismissed }));
       
       // Broadcast to other kiosks at this location via socket
       if (socket) {

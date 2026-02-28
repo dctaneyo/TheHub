@@ -39,6 +39,12 @@ export function broadcastTaskCompleted(locationId: string, taskId: string, taskT
   emitToLocation(locationId, "task:updated", { locationId });
 }
 
+export function broadcastTaskUncompleted(locationId: string, taskId: string) {
+  if (!isAvailable()) return;
+  emitToArls("task:uncompleted", { locationId, taskId });
+  emitToLocations("task:uncompleted", { locationId, taskId });
+}
+
 // ── Message events ──
 
 // Helper: emit to all members of a conversation via their user rooms

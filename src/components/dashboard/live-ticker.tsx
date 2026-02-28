@@ -98,11 +98,17 @@ export function LiveTicker({ currentLocationId }: { currentLocationId?: string }
       });
     };
 
+    const handleTaskUncompleted = (data: { taskId?: string }) => {
+      if (!data.taskId) return;
+      setItems((prev) => prev.filter((item) => !item.id.startsWith(`task-${data.taskId}-`)));
+    };
+
     const handleTickerDelete = (data: { id: string }) => {
       setItems((prev) => prev.filter((item) => item.id !== `arl-${data.id}`));
     };
 
     socket.on("task:completed", handleTaskCompleted);
+    socket.on("task:uncompleted", handleTaskUncompleted);
     socket.on("high-five:received", handleHighFive);
     socket.on("shoutout:new", handleShoutout);
     socket.on("ticker:new", handleTickerNew);
@@ -110,6 +116,7 @@ export function LiveTicker({ currentLocationId }: { currentLocationId?: string }
 
     return () => {
       socket.off("task:completed", handleTaskCompleted);
+      socket.off("task:uncompleted", handleTaskUncompleted);
       socket.off("high-five:received", handleHighFive);
       socket.off("shoutout:new", handleShoutout);
       socket.off("ticker:new", handleTickerNew);

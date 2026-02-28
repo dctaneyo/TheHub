@@ -260,7 +260,7 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden px-5 py-4"
           >
             <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
             <p className="text-xs text-muted-foreground italic">No active emergency message</p>

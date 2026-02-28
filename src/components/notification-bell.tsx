@@ -80,11 +80,20 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Load dismissed from localStorage
+  // Load dismissed from localStorage — clear stale dismissals from a previous day
   useEffect(() => {
     try {
+      const todayStr = new Date().toISOString().split("T")[0];
       const stored = localStorage.getItem("dismissed-notifications");
-      if (stored) notifiedRef.current = new Set(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.date === todayStr) {
+          notifiedRef.current = new Set(parsed.ids || []);
+        } else {
+          notifiedRef.current = new Set();
+          localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: [] }));
+        }
+      }
     } catch {}
   }, []);
 
@@ -103,7 +112,8 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     });
     if (changed) {
       notifiedRef.current = new Set(filtered);
-      localStorage.setItem("dismissed-notifications", JSON.stringify(filtered));
+      const todayStr = new Date().toISOString().split("T")[0];
+      localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: filtered }));
     }
   }, [tasks]);
 
@@ -127,7 +137,8 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
 
   const saveDismissed = useCallback((ids: string[]) => {
     try {
-      localStorage.setItem("dismissed-notifications", JSON.stringify(Array.from(notifiedRef.current)));
+      const todayStr = new Date().toISOString().split("T")[0];
+      localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: Array.from(notifiedRef.current) }));
       if (socket) socket.emit("notification:dismiss", { notificationIds: ids });
     } catch {}
   }, [socket]);
