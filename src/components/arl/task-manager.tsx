@@ -155,7 +155,7 @@ function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }:
   }
 
   return (
-    <div ref={parentRef} className="overflow-y-auto rounded-xl" style={{ maxHeight: "calc(100vh - 220px)" }}>
+    <div ref={parentRef} className="overflow-y-auto rounded-xl flex-1 min-h-0">
       <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
         {virtualizer.getVirtualItems().map((vRow) => {
           const task = sorted[vRow.index];
@@ -528,7 +528,7 @@ export function TaskManager() {
     : tasks.filter((t) => t.locationId === filterLocationId || t.locationId === null);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

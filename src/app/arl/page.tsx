@@ -531,7 +531,7 @@ export default function ArlPage() {
               >
                 {activeView === "overview" && <div className="flex-1 overflow-y-auto p-4"><OverviewDashboard /></div>}
                 {activeView === "messages" && <Messaging />}
-                {activeView === "tasks" && <div className="flex-1 overflow-y-auto p-4"><TaskManager /></div>}
+                {activeView === "tasks" && <div className="flex flex-col flex-1 min-h-0 p-4"><TaskManager /></div>}
                 {activeView === "calendar" && <div className="flex flex-col flex-1 min-h-0 p-4"><ArlCalendar /></div>}
                 {activeView === "locations" && <div className="flex-1 overflow-y-auto p-4"><LocationsManager /></div>}
                 {activeView === "forms" && <div className="flex-1 overflow-y-auto p-4"><FormsRepository /></div>}
