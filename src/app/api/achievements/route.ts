@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { createNotification } from "@/lib/notifications";
@@ -85,7 +86,7 @@ function ensureAchievementsTable() {
 
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -117,7 +118,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

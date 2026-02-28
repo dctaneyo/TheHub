@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import {
   getNotifications,
   getNotificationCounts,
@@ -8,10 +9,8 @@ import {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -44,10 +43,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { action } = await req.json();
 

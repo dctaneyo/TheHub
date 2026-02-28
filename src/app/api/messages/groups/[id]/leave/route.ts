@@ -3,16 +3,15 @@ import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 
 // POST /api/messages/groups/:id/leave - Leave group
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const session = await getAuthSession();
+  if (!session) return unauthorized();
 
   try {
     const { id: conversationId } = await params;

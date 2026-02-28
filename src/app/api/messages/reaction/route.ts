@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -7,10 +8,8 @@ import { broadcastConversationUpdate } from "@/lib/socket-emit";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { messageId, emoji } = await request.json();
 

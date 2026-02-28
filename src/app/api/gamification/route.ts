@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { format, subDays } from "date-fns";
@@ -93,13 +94,13 @@ interface BadgeResult {
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
     const locationId = session.id;
-    const allTasks = db.select().from(schema.tasks).all();
+    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     const allCompletions = db
       .select()
       .from(schema.taskCompletions)

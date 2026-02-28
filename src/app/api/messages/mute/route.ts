@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -7,8 +8,8 @@ import { v4 as uuid } from "uuid";
 // POST - toggle mute for a conversation
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { conversationId } = await req.json();
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest) {
 // GET - check mute status for a conversation
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const conversationId = searchParams.get("conversationId");

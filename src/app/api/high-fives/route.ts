@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
@@ -11,6 +12,7 @@ function ensureHighFivesTable() {
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS high_fives (
         id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL DEFAULT 'kazi',
         from_user_id TEXT NOT NULL,
         from_user_type TEXT NOT NULL,
         from_user_name TEXT NOT NULL,
@@ -21,16 +23,15 @@ function ensureHighFivesTable() {
         created_at TEXT NOT NULL
       )
     `);
+    try { sqlite.exec(`ALTER TABLE high_fives ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
   } catch {}
 }
 
 // GET - Fetch high-fives for a user
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     ensureHighFivesTable();
 
@@ -41,24 +42,24 @@ export async function GET(request: Request) {
     // Get high-fives received
     const received = sqlite.prepare(`
       SELECT * FROM high_fives 
-      WHERE to_user_id = ? AND to_user_type = ?
+      WHERE tenant_id = ? AND to_user_id = ? AND to_user_type = ?
       ORDER BY created_at DESC
       LIMIT 50
-    `).all(userId, userType) as any[];
+    `).all(session.tenantId, userId, userType) as any[];
 
     // Get high-fives sent
     const sent = sqlite.prepare(`
       SELECT * FROM high_fives 
-      WHERE from_user_id = ? AND from_user_type = ?
+      WHERE tenant_id = ? AND from_user_id = ? AND from_user_type = ?
       ORDER BY created_at DESC
       LIMIT 50
-    `).all(userId, userType) as any[];
+    `).all(session.tenantId, userId, userType) as any[];
 
     // Get total count
     const totalReceived = sqlite.prepare(`
       SELECT COUNT(*) as count FROM high_fives 
-      WHERE to_user_id = ? AND to_user_type = ?
-    `).get(userId, userType) as any;
+      WHERE tenant_id = ? AND to_user_id = ? AND to_user_type = ?
+    `).get(session.tenantId, userId, userType) as any;
 
     return NextResponse.json({ 
       received, 
@@ -74,10 +75,8 @@ export async function GET(request: Request) {
 // POST - Send a high-five
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { toUserId, toUserType, toUserName, message } = await request.json();
 
@@ -92,11 +91,12 @@ export async function POST(request: Request) {
 
     sqlite.prepare(`
       INSERT INTO high_fives (
-        id, from_user_id, from_user_type, from_user_name,
+        id, tenant_id, from_user_id, from_user_type, from_user_name,
         to_user_id, to_user_type, to_user_name, message, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       highFiveId,
+      session.tenantId,
       session.id,
       session.userType,
       session.name,

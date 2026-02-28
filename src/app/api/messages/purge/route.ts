@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { lt, eq } from "drizzle-orm";
 
 export async function POST() {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 

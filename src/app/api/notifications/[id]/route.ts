@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { markNotificationRead, deleteNotification } from "@/lib/notifications";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
@@ -11,10 +12,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { id: notificationId } = await params;
 
@@ -43,10 +42,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { id: notificationId } = await params;
 

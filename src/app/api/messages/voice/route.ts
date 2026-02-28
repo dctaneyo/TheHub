@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
@@ -21,10 +22,8 @@ async function ensureVoiceDir() {
 // POST - Upload a voice message
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File;
@@ -103,7 +102,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } else if (conv.type === "global") {
-          const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+          const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
           for (const arl of allArls) {
             if (arl.id !== session.id) {
               await sendPushToARL(arl.id, {

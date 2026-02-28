@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastConversationUpdate } from "@/lib/socket-emit";
@@ -9,8 +10,8 @@ import { broadcastConversationUpdate } from "@/lib/socket-emit";
 // with the same person will create a fresh thread (old history stays hidden).
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { conversationId } = await req.json();
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });

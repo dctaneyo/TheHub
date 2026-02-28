@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -8,10 +9,8 @@ import { broadcastMessageRead } from "@/lib/socket-emit";
 // POST mark messages as read
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { messageIds } = await req.json();
 

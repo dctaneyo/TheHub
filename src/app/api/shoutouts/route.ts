@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
@@ -12,6 +13,7 @@ function ensureShoutoutsTable() {
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS shoutouts (
         id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL DEFAULT 'kazi',
         from_user_id TEXT NOT NULL,
         from_user_type TEXT NOT NULL,
         from_user_name TEXT NOT NULL,
@@ -22,16 +24,16 @@ function ensureShoutoutsTable() {
         reactions TEXT DEFAULT '[]'
       )
     `);
+    // Add tenant_id column if missing (existing tables)
+    try { sqlite.exec(`ALTER TABLE shoutouts ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
   } catch {}
 }
 
 // GET - Fetch recent shoutouts
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     ensureShoutoutsTable();
 
@@ -39,11 +41,11 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "50");
     const locationId = searchParams.get("locationId");
 
-    let query = "SELECT * FROM shoutouts";
-    let params: any[] = [];
+    let query = "SELECT * FROM shoutouts WHERE tenant_id = ?";
+    let params: any[] = [session.tenantId];
 
     if (locationId) {
-      query += " WHERE to_location_id = ?";
+      query += " AND to_location_id = ?";
       params.push(locationId);
     }
 
@@ -68,10 +70,8 @@ export async function GET(request: Request) {
 // POST - Create a new shoutout
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { toLocationId, toLocationName, message } = await request.json();
 
@@ -86,11 +86,12 @@ export async function POST(request: Request) {
 
     sqlite.prepare(`
       INSERT INTO shoutouts (
-        id, from_user_id, from_user_type, from_user_name,
+        id, tenant_id, from_user_id, from_user_type, from_user_name,
         to_location_id, to_location_name, message, created_at, reactions
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]')
     `).run(
       shoutoutId,
+      session.tenantId,
       session.id,
       session.userType,
       session.name,
@@ -149,10 +150,8 @@ export async function POST(request: Request) {
 // PATCH - Add reaction to shoutout
 export async function PATCH(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { shoutoutId, emoji } = await request.json();
 
@@ -194,13 +193,13 @@ export async function PATCH(request: Request) {
 // DELETE - Purge all shoutouts (ARL only)
 export async function DELETE() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     ensureShoutoutsTable();
-    sqlite.exec("DELETE FROM shoutouts");
+    sqlite.prepare("DELETE FROM shoutouts WHERE tenant_id = ?").run(session.tenantId);
 
     // Broadcast to all clients so they refresh
     broadcastToAll("shoutout:purged", {});

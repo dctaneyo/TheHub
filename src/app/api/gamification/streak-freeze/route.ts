@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 
@@ -19,7 +20,7 @@ function ensureTable() {
 // GET: fetch how many freezes are available and which dates are frozen
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -52,7 +53,7 @@ export async function GET() {
 // POST: apply a streak freeze for a specific date (defaults to yesterday)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

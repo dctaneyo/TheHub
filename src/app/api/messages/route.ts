@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -44,8 +45,8 @@ function getConvDisplayName(
 // GET conversations list or messages for a specific conversation
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const conversationId = searchParams.get("conversationId");
@@ -64,8 +65,8 @@ export async function GET(req: NextRequest) {
           return !deletedBy.includes(session.id);
         });
 
-      const locations = db.select().from(schema.locations).all();
-      const arls = db.select().from(schema.arls).all();
+      const locations = db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
+      const arls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
       const locationMap = new Map(locations.map((l) => [l.id, { name: l.name, storeNumber: l.storeNumber }]));
       const arlMap = new Map(arls.map((a) => [a.id, { name: a.name }]));
 
@@ -165,8 +166,8 @@ export async function GET(req: NextRequest) {
 // POST send a message
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { conversationId, content } = await req.json();
     if (!conversationId || !content) return NextResponse.json({ error: "conversationId and content required" }, { status: 400 });
@@ -233,7 +234,7 @@ export async function POST(req: NextRequest) {
         }
       } else if (conv.type === "global") {
         // Global: notify all active ARLs except sender
-        const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+        const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
         for (const arl of allArls) {
           if (arl.id !== session.id) {
             await sendPushToARL(arl.id, {
@@ -271,8 +272,8 @@ export async function POST(req: NextRequest) {
 // POST /api/messages/conversations - create a group or direct conversation
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { type, name, memberIds, memberTypes } = await req.json();
     // type: 'group' | 'direct'
@@ -310,7 +311,7 @@ export async function PUT(req: NextRequest) {
       }
 
       db.insert(schema.conversations).values({
-        id: convId, type: "direct",
+        id: convId, tenantId: session.tenantId, type: "direct",
         participantAId: session.id, participantAType: session.userType,
         participantBId: otherId, participantBType: otherType,
         createdAt: now,
@@ -322,7 +323,7 @@ export async function PUT(req: NextRequest) {
     } else if (type === "group") {
       if (!name) return NextResponse.json({ error: "Group name required" }, { status: 400 });
       db.insert(schema.conversations).values({
-        id: convId, type: "group", name, createdBy: session.id, createdByType: session.userType, createdAt: now,
+        id: convId, tenantId: session.tenantId, type: "group", name, createdBy: session.id, createdByType: session.userType, createdAt: now,
       }).run();
       // Add creator + all specified members
       // Creator is always admin (location or ARL)

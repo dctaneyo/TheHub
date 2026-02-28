@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const query = req.nextUrl.searchParams.get("q")?.trim();
     const type = req.nextUrl.searchParams.get("type") || "all"; // all, tasks, messages, forms, locations
@@ -26,10 +25,10 @@ export async function GET(req: NextRequest) {
         const tasks = sqlite.prepare(`
           SELECT id, title, type, priority, due_time as dueTime
           FROM tasks
-          WHERE title LIKE ? OR type LIKE ?
+          WHERE tenant_id = ? AND (title LIKE ? OR type LIKE ?)
           ORDER BY created_at DESC
           LIMIT ?
-        `).all(searchTerm, searchTerm, limit) as any[];
+        `).all(session.tenantId, searchTerm, searchTerm, limit) as any[];
 
         tasks.forEach(t => results.push({
           type: "task",
@@ -49,10 +48,10 @@ export async function GET(req: NextRequest) {
                  c.name as conversationName
           FROM messages m
           LEFT JOIN conversations c ON c.id = m.conversation_id
-          WHERE m.content LIKE ?
+          WHERE c.tenant_id = ? AND m.content LIKE ?
           ORDER BY m.created_at DESC
           LIMIT ?
-        `).all(searchTerm, limit) as any[];
+        `).all(session.tenantId, searchTerm, limit) as any[];
 
         messages.forEach(m => results.push({
           type: "message",
@@ -68,12 +67,12 @@ export async function GET(req: NextRequest) {
     if (type === "all" || type === "forms") {
       try {
         const forms = sqlite.prepare(`
-          SELECT id, name, category, description
+          SELECT id, title as name, category, description
           FROM forms
-          WHERE name LIKE ? OR category LIKE ? OR description LIKE ?
-          ORDER BY name ASC
+          WHERE tenant_id = ? AND (title LIKE ? OR category LIKE ? OR description LIKE ?)
+          ORDER BY title ASC
           LIMIT ?
-        `).all(searchTerm, searchTerm, searchTerm, limit) as any[];
+        `).all(session.tenantId, searchTerm, searchTerm, searchTerm, limit) as any[];
 
         forms.forEach(f => results.push({
           type: "form",
@@ -91,10 +90,10 @@ export async function GET(req: NextRequest) {
         const locations = sqlite.prepare(`
           SELECT id, name, store_number as storeNumber
           FROM locations
-          WHERE name LIKE ? OR store_number LIKE ?
+          WHERE tenant_id = ? AND (name LIKE ? OR store_number LIKE ?)
           ORDER BY name ASC
           LIMIT ?
-        `).all(searchTerm, searchTerm, limit) as any[];
+        `).all(session.tenantId, searchTerm, searchTerm, limit) as any[];
 
         locations.forEach(l => results.push({
           type: "location",

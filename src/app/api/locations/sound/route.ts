@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastSoundToggle } from "@/lib/socket-emit";
@@ -7,7 +8,7 @@ import { broadcastSoundToggle } from "@/lib/socket-emit";
 // GET — dashboard fetches its own mute state on mount
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
@@ -25,7 +26,7 @@ export async function GET() {
 // PATCH — ARL or the location itself toggles mute
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { locationId, muted } = await req.json();
