@@ -515,10 +515,8 @@ export default function ArlPage() {
 
         {/* Content area */}
         <main className={cn(
-          "flex-1 relative",
-          activeView === "messages"
-            ? "flex flex-col overflow-hidden p-5"
-            : "overflow-y-auto p-5 pb-24"
+          "flex-1 flex flex-col overflow-hidden relative",
+          isMobileOrTablet ? "pb-16" : ""
         )}>
           {mounted ? (
             <>
@@ -529,24 +527,22 @@ export default function ArlPage() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: swipeDirection * -100, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className={cn(
-                  activeView === "messages" ? "flex flex-col h-full" : "h-full"
-                )}
+                className="flex flex-col flex-1 h-full min-h-0"
               >
-                {activeView === "overview" && <OverviewDashboard />}
+                {activeView === "overview" && <div className="flex-1 overflow-y-auto p-4"><OverviewDashboard /></div>}
                 {activeView === "messages" && <Messaging />}
-                {activeView === "tasks" && <TaskManager />}
-                {activeView === "calendar" && <ArlCalendar />}
-                {activeView === "locations" && <LocationsManager />}
-                {activeView === "forms" && <FormsRepository />}
-                {activeView === "emergency" && <EmergencyBroadcast />}
-                {activeView === "users" && <UserManagement />}
-                {activeView === "leaderboard" && <Leaderboard />}
-                {activeView === "remote-login" && <RemoteLogin />}
-                {activeView === "data-management" && <DataManagement />}
-                {activeView === "analytics" && <AnalyticsDashboard />}
+                {activeView === "tasks" && <div className="flex-1 overflow-y-auto p-4"><TaskManager /></div>}
+                {activeView === "calendar" && <div className="flex flex-col flex-1 min-h-0 p-4"><ArlCalendar /></div>}
+                {activeView === "locations" && <div className="flex-1 overflow-y-auto p-4"><LocationsManager /></div>}
+                {activeView === "forms" && <div className="flex-1 overflow-y-auto p-4"><FormsRepository /></div>}
+                {activeView === "emergency" && <div className="flex-1 overflow-y-auto p-4"><EmergencyBroadcast /></div>}
+                {activeView === "users" && <div className="flex-1 overflow-y-auto p-4"><UserManagement /></div>}
+                {activeView === "leaderboard" && <div className="flex-1 overflow-y-auto p-4"><Leaderboard /></div>}
+                {activeView === "remote-login" && <div className="flex-1 overflow-y-auto p-4"><RemoteLogin /></div>}
+                {activeView === "data-management" && <div className="flex-1 overflow-y-auto p-4"><DataManagement /></div>}
+                {activeView === "analytics" && <div className="flex-1 overflow-y-auto p-4"><AnalyticsDashboard /></div>}
                 {activeView === "meetings" && (
-                  <div className="space-y-6">
+                  <div className="flex-1 overflow-y-auto p-4"><div className="space-y-6">
                     {activeMeetings.length > 0 && (
                       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
                         <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
@@ -581,7 +577,7 @@ export default function ArlPage() {
                     <div className="border-t border-border pt-6">
                       <MeetingAnalyticsDashboard />
                     </div>
-                  </div>
+                  </div></div>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -790,7 +786,7 @@ function ArlCalendar() {
   const selectedTasks = selectedDate ? getTasksForDate(selectedDate) : [];
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4 min-h-0">
       {/* Location filter */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-semibold text-muted-foreground shrink-0">Filter by location:</label>

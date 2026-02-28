@@ -155,7 +155,7 @@ function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }:
   }
 
   return (
-    <div ref={parentRef} className="max-h-[calc(100vh-320px)] overflow-y-auto rounded-xl">
+    <div ref={parentRef} className="overflow-y-auto rounded-xl" style={{ maxHeight: "calc(100vh - 220px)" }}>
       <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
         {virtualizer.getVirtualItems().map((vRow) => {
           const task = sorted[vRow.index];
