@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
@@ -10,14 +11,14 @@ import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
     const { taskId, notes, completedDate: requestedDate, localDate } = await req.json();
 
-    const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).get();
+    const task = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create in-app notifications for all ARLs
-    const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+    const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
     await createNotificationBulk(
       allArls.map(arl => arl.id),
       {

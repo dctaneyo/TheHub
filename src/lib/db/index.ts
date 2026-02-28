@@ -227,6 +227,70 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`);
   });
 
+  // ── Multi-tenant migrations ──
+
+  migrate("033_tenants_table", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS tenants (
+      id TEXT PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      logo_url TEXT,
+      primary_color TEXT NOT NULL DEFAULT '#dc2626',
+      accent_color TEXT,
+      favicon_url TEXT,
+      app_title TEXT,
+      plan TEXT NOT NULL DEFAULT 'starter',
+      features TEXT NOT NULL DEFAULT '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]',
+      max_locations INTEGER NOT NULL DEFAULT 50,
+      max_users INTEGER NOT NULL DEFAULT 20,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      custom_domain TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+  });
+
+  migrate("034_seed_kazi_tenant", () => {
+    const now = new Date().toISOString();
+    s.prepare(`INSERT OR IGNORE INTO tenants (id, slug, name, app_title, plan, features, max_locations, max_users, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run("kazi", "kazi", "Kazi Franchise", "The Hub", "enterprise",
+        '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]',
+        100, 50, 1, now, now);
+  });
+
+  // Add tenant_id columns to all existing tables and backfill with 'kazi'
+  const tenantTables = [
+    "locations", "arls", "tasks", "conversations", "forms",
+    "daily_leaderboard", "emergency_messages", "notifications",
+    "broadcasts", "meeting_analytics", "ticker_messages",
+  ];
+  migrate("035_add_tenant_id_columns", () => {
+    for (const table of tenantTables) {
+      try { s.exec(`ALTER TABLE ${table} ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
+    }
+  });
+
+  migrate("036_backfill_tenant_id", () => {
+    for (const table of tenantTables) {
+      try { s.exec(`UPDATE ${table} SET tenant_id = 'kazi' WHERE tenant_id IS NULL OR tenant_id = ''`); } catch {}
+    }
+  });
+
+  migrate("037_tenant_id_indexes", () => {
+    for (const table of tenantTables) {
+      try { s.exec(`CREATE INDEX IF NOT EXISTS idx_${table}_tenant ON ${table}(tenant_id)`); } catch {}
+    }
+  });
+
+  // Remove unique constraint on locations.store_number (now unique per tenant, not globally)
+  // SQLite doesn't support DROP INDEX on unique constraints easily, so we use a composite index instead
+  migrate("038_tenant_composite_indexes", () => {
+    s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_tenant_store ON locations(tenant_id, store_number)`);
+    s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_tenant_userid ON locations(tenant_id, user_id)`);
+    s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_arls_tenant_userid ON arls(tenant_id, user_id)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

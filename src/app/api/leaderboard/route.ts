@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { addDays, format } from "date-fns";
 
 // Returns the Monday of the week containing `d`
@@ -55,13 +56,11 @@ function taskAppliesToDate(
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
-    const locations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
-    const allTasks = db.select().from(schema.tasks).all();
+    const locations = db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all();
+    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     const allCompletions = db.select().from(schema.taskCompletions).all();
 
     const { searchParams } = new URL(req.url);

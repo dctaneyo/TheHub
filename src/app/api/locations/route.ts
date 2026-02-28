@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -9,16 +10,14 @@ import { broadcastUserUpdate } from "@/lib/socket-emit";
 // GET all locations (+ ARLs) with session status
 export async function GET() {
   try {
-    const session = await getSession();
-    // Locations can also call this for their own data (tasks, forms)
-    // but full list with ARL data is ARL-only
+    const session = await getAuthSession();
     const isArl = session?.userType === "arl";
     const isLocation = session?.userType === "location";
     if (!session || (!isArl && !isLocation)) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const allLocations = db.select().from(schema.locations).all();
+    const allLocations = db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
 
     // 3 minutes: heartbeat fires every 2 min, so 1 missed beat = stale
     const STALE_THRESHOLD_MS = 3 * 60 * 1000;
@@ -71,7 +70,7 @@ export async function GET() {
     }> = [];
 
     if (isArl) {
-      const allArls = db.select().from(schema.arls).all();
+      const allArls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
       arlsWithStatus = allArls.map((arl) => {
         const latestArlSession = db
           .select()
@@ -113,7 +112,7 @@ export async function GET() {
 // POST create new location (ARL admin only)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
@@ -137,6 +136,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const location = {
       id: uuid(),
+      tenantId: session.tenantId,
       name,
       storeNumber,
       address: address || null,
@@ -151,11 +151,12 @@ export async function POST(req: NextRequest) {
     db.insert(schema.locations).values(location).run();
 
     // Create a direct conversation between this location and each ARL
-    const arls = db.select().from(schema.arls).all();
+    const arls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
     for (const arl of arls) {
       const convId = uuid();
       db.insert(schema.conversations).values({
         id: convId,
+        tenantId: session.tenantId,
         type: "direct",
         participantAId: arl.id,
         participantAType: "arl",
@@ -169,7 +170,7 @@ export async function POST(req: NextRequest) {
       ]).run();
     }
     // Add to global chat if it exists
-    const globalConv = db.select().from(schema.conversations).where(eq(schema.conversations.type, "global")).get();
+    const globalConv = db.select().from(schema.conversations).where(and(eq(schema.conversations.type, "global"), eq(schema.conversations.tenantId, session.tenantId))).get();
     if (globalConv) {
       db.insert(schema.conversationMembers).values({
         id: uuid(), conversationId: globalConv.id, memberId: location.id, memberType: "location", joinedAt: now,
@@ -187,7 +188,7 @@ export async function POST(req: NextRequest) {
 // PUT update location
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
@@ -201,7 +202,7 @@ export async function PUT(req: NextRequest) {
     if (isActive !== undefined) updates.isActive = isActive;
     if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
 
-    db.update(schema.locations).set(updates).where(eq(schema.locations.id, id)).run();
+    db.update(schema.locations).set(updates).where(and(eq(schema.locations.id, id), eq(schema.locations.tenantId, session.tenantId))).run();
     broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -213,7 +214,7 @@ export async function PUT(req: NextRequest) {
 // DELETE permanently remove a location and all associated data
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }

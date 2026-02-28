@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     // Use client-supplied local date/time to avoid UTC vs local timezone mismatch.
     // The kiosk sends its local values; server UTC would give wrong overdue results.
@@ -26,7 +25,7 @@ export async function GET(req: Request) {
     // Get all tasks for this location (or all locations if locationId is null)
     const locationId = session.userType === "location" ? session.id : null;
 
-    const allTasks = db.select().from(schema.tasks).all();
+    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
 
     // Filter tasks that apply today (exclude hidden and showInToday=false)
     const todayTasks = allTasks.filter((task) => {

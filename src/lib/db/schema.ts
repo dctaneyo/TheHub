@@ -1,10 +1,31 @@
 import { sqliteTable, text, integer, real, blob } from "drizzle-orm/sqlite-core";
 
+// Tenants (franchise brands)
+export const tenants = sqliteTable("tenants", {
+  id: text("id").primaryKey(), // UUID
+  slug: text("slug").notNull().unique(), // subdomain: "kazi", "mcdo", etc.
+  name: text("name").notNull(), // display name
+  logoUrl: text("logo_url"), // branding
+  primaryColor: text("primary_color").notNull().default("#dc2626"), // CSS var(--hub-red)
+  accentColor: text("accent_color"),
+  faviconUrl: text("favicon_url"),
+  appTitle: text("app_title"), // e.g. "KFC Team Hub"
+  plan: text("plan").notNull().default("starter"), // 'starter' | 'pro' | 'enterprise'
+  features: text("features").notNull().default('["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]'), // JSON array
+  maxLocations: integer("max_locations").notNull().default(50),
+  maxUsers: integer("max_users").notNull().default(20),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  customDomain: text("custom_domain"), // e.g. "hub.kfc.com"
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Locations (restaurants)
 export const locations = sqliteTable("locations", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   name: text("name").notNull(),
-  storeNumber: text("store_number").notNull().unique(),
+  storeNumber: text("store_number").notNull(),
   address: text("address"),
   email: text("email"), // for sending forms
   userId: text("user_id").notNull().unique(), // 4-digit login ID
@@ -18,6 +39,7 @@ export const locations = sqliteTable("locations", {
 // ARLs (Above Restaurant Leaders)
 export const arls = sqliteTable("arls", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   name: text("name").notNull(),
   email: text("email"),
   userId: text("user_id").notNull().unique(), // 4-digit login ID
@@ -47,6 +69,7 @@ export const sessions = sqliteTable("sessions", {
 // Tasks & Reminders
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description"), // details/notes/instructions
   type: text("type").notNull().default("task"), // 'task' | 'reminder' | 'cleaning'
@@ -98,6 +121,7 @@ export const messages = sqliteTable("messages", {
 // Conversations - supports direct, global, and group chats
 export const conversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   type: text("type").notNull().default("direct"), // 'direct' | 'global' | 'group'
   name: text("name"), // for group chats; null for direct
   description: text("description"), // group purpose/description
@@ -161,6 +185,7 @@ export const conversationSettings = sqliteTable("conversation_settings", {
 // Forms repository
 export const forms = sqliteTable("forms", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description"),
   category: text("category").notNull().default("general"),
@@ -175,6 +200,7 @@ export const forms = sqliteTable("forms", {
 // Daily leaderboard (points, streaks, etc.)
 export const dailyLeaderboard = sqliteTable("daily_leaderboard", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   locationId: text("location_id").notNull(),
   date: text("date").notNull(), // YYYY-MM-DD
   pointsEarned: integer("points_earned").notNull().default(0),
@@ -186,6 +212,7 @@ export const dailyLeaderboard = sqliteTable("daily_leaderboard", {
 // Emergency broadcasts
 export const emergencyMessages = sqliteTable("emergency_messages", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   message: text("message").notNull(),
   sentBy: text("sent_by").notNull(), // ARL id
   sentByName: text("sent_by_name").notNull(),
@@ -199,6 +226,7 @@ export const emergencyMessages = sqliteTable("emergency_messages", {
 // Notifications - unified notification center
 export const notifications = sqliteTable("notifications", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   userId: text("user_id").notNull(), // references locations.id or arls.id
   userType: text("user_type").notNull(), // 'location' | 'arl' | 'admin'
   type: text("type").notNull(), // notification category (task_due_soon, new_message, etc.)
@@ -244,6 +272,7 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
 // Live broadcasts - ARL streaming to locations
 export const broadcasts = sqliteTable("broadcasts", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   arlId: text("arl_id").notNull(), // ARL who is broadcasting
   arlName: text("arl_name").notNull(),
   title: text("title").notNull(), // Broadcast title/subject
@@ -321,6 +350,7 @@ export const broadcastQuestions = sqliteTable("broadcast_questions", {
 // Meeting analytics - track LiveKit meeting sessions
 export const meetingAnalytics = sqliteTable("meeting_analytics", {
   id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   meetingId: text("meeting_id").notNull(), // LiveKit room name
   title: text("title").notNull(),
   hostId: text("host_id").notNull(), // ARL who created the meeting
@@ -344,6 +374,7 @@ export const meetingAnalytics = sqliteTable("meeting_analytics", {
 // ARL-pushed ticker messages shown on location dashboards
 export const tickerMessages = sqliteTable("ticker_messages", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   content: text("content").notNull(),
   icon: text("icon").notNull().default("📢"),
   arlId: text("arl_id").notNull(),

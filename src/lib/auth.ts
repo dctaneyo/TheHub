@@ -12,10 +12,11 @@ function getJwtSecret(): string {
 
 export interface AuthPayload {
   id: string;
+  tenantId: string; // tenant the user belongs to
   userType: "location" | "arl" | "guest";
   userId: string; // 4-digit user ID
   name: string;
-  role?: string; // 'arl' | 'admin' for ARLs
+  role?: string; // 'arl' | 'admin' | 'superadmin' for ARLs
   locationId?: string; // for locations
   storeNumber?: string; // for locations
   sessionCode?: string; // unique per login session

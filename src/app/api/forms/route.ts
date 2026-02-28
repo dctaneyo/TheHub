@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -11,10 +12,10 @@ const FORMS_DIR = join(process.cwd(), "data", "forms");
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
-    const forms = db.select().from(schema.forms).orderBy(schema.forms.createdAt).all();
+    const forms = db.select().from(schema.forms).where(eq(schema.forms.tenantId, session.tenantId)).orderBy(schema.forms.createdAt).all();
     return NextResponse.json({ forms });
   } catch (error) {
     console.error("Get forms error:", error);
@@ -24,7 +25,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const form = {
       id: uuid(),
+      tenantId: session.tenantId,
       title,
       description: description || null,
       category: category || "general",
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
     db.insert(schema.forms).values(form).run();
 
     // Create real-time notification for all active locations
-    const allLocations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
+    const allLocations = db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all();
     await createNotificationBulk(
       allLocations.map(loc => loc.id),
       {
@@ -98,13 +100,13 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-    db.delete(schema.forms).where(eq(schema.forms.id, id)).run();
+    db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete form error:", error);

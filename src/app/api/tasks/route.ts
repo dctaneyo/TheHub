@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskUpdate } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
@@ -9,10 +10,10 @@ import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 // GET all tasks (ARL: all tasks; location: only tasks for their location)
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
-    const tasks = db.select().from(schema.tasks).all();
+    const tasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     if (session.userType === "location") {
       // Return only tasks that apply to this location
       const locationTasks = tasks.filter(
@@ -30,8 +31,8 @@ export async function GET() {
 // POST create new task (ARL or location)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await req.json();
     const {
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     const task = {
       id: uuid(),
+      tenantId: session.tenantId,
       title,
       description: description || null,
       type,
@@ -101,7 +103,7 @@ export async function POST(req: NextRequest) {
 // PUT update task (ARL only)
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
@@ -113,7 +115,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
     }
 
-    const existing = db.select().from(schema.tasks).where(eq(schema.tasks.id, id)).get();
+    const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -151,15 +153,15 @@ export async function PUT(req: NextRequest) {
 // DELETE task (ARL: any task; location: only their own tasks)
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
 
-    const existing = db.select().from(schema.tasks).where(eq(schema.tasks.id, id)).get();
+    const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
     // Locations can only delete tasks they created themselves

@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
 
         const payload: AuthPayload = {
           id: location.id,
+          tenantId: location.tenantId || "kazi",
           userType: "location",
           userId: location.userId,
           name: location.name,
@@ -147,6 +148,7 @@ export async function POST(req: NextRequest) {
 
         const payload: AuthPayload = {
           id: arl.id,
+          tenantId: arl.tenantId || "kazi",
           userType: "arl",
           userId: arl.userId,
           name: arl.name,

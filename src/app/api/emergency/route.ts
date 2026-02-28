@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed, broadcastEmergencyViewedLocal } from "@/lib/socket-emit";
 import { createNotificationBulk } from "@/lib/notifications";
@@ -11,10 +12,11 @@ import { createNotificationBulk } from "@/lib/notifications";
 // For ARLs: also returns history of past messages
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const all = db.select().from(schema.emergencyMessages)
+      .where(eq(schema.emergencyMessages.tenantId, session.tenantId))
       .orderBy(schema.emergencyMessages.createdAt).all();
 
     const active = all.filter((m) => m.isActive)
@@ -71,7 +73,7 @@ export async function GET() {
 // Body: { message, targetLocationIds?: string[] | null }  (null = all)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
@@ -79,15 +81,16 @@ export async function POST(req: NextRequest) {
     const { message, targetLocationIds } = await req.json();
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
 
-    // Deactivate all previous messages
+    // Deactivate all previous messages for this tenant
     db.update(schema.emergencyMessages)
       .set({ isActive: false })
-      .where(eq(schema.emergencyMessages.isActive, true)).run();
+      .where(and(eq(schema.emergencyMessages.isActive, true), eq(schema.emergencyMessages.tenantId, session.tenantId))).run();
 
     const now = new Date().toISOString();
     const id = uuid();
     db.insert(schema.emergencyMessages).values({
       id,
+      tenantId: session.tenantId,
       message: message.trim(),
       sentBy: session.id,
       sentByName: session.name,
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
     // Create urgent notifications for all targeted locations
     const targetIds = targetLocationIds && targetLocationIds.length > 0 
       ? targetLocationIds 
-      : db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all().map(l => l.id);
+      : db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all().map(l => l.id);
     
     await createNotificationBulk(
       targetIds,

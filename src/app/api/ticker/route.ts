@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, getTenantIdFromHeaders, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq, desc, or, isNull, gte } from "drizzle-orm";
+import { eq, and, desc, or, isNull, gte } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { emitTickerMessage, emitTickerDelete } from "@/lib/socket-emit";
 
 // GET - fetch active ticker messages
 export async function GET() {
   try {
+    const tenantId = await getTenantIdFromHeaders();
     const now = new Date().toISOString();
     const messages = db
       .select()
       .from(schema.tickerMessages)
+      .where(eq(schema.tickerMessages.tenantId, tenantId))
       .orderBy(desc(schema.tickerMessages.createdAt))
       .all()
       .filter((m) => !m.expiresAt || m.expiresAt > now);
@@ -26,7 +29,7 @@ export async function GET() {
 // POST - create a new ticker message (ARL only)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -44,6 +47,7 @@ export async function POST(req: NextRequest) {
 
     db.insert(schema.tickerMessages).values({
       id,
+      tenantId: session.tenantId,
       content: content.trim(),
       icon: icon || "📢",
       arlId: session.userId,
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
 // DELETE - remove a ticker message (ARL only)
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -75,7 +79,7 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-    db.delete(schema.tickerMessages).where(eq(schema.tickerMessages.id, id)).run();
+    db.delete(schema.tickerMessages).where(and(eq(schema.tickerMessages.id, id), eq(schema.tickerMessages.tenantId, session.tenantId))).run();
 
     emitTickerDelete(id);
 

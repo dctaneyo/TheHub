@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    // Both ARLs and locations can fetch ARLs (for messaging)
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
     if (session.userType !== "arl" && session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
@@ -24,7 +22,7 @@ export async function GET() {
       role: schema.arls.role,
       isActive: schema.arls.isActive,
       createdAt: schema.arls.createdAt,
-    }).from(schema.arls).all();
+    }).from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
     return NextResponse.json({ arls });
   } catch (error) {
     console.error("Get ARLs error:", error);
@@ -34,7 +32,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
@@ -42,11 +40,11 @@ export async function POST(req: NextRequest) {
     if (!name || !userId || !pin || userId.length !== 4 || pin.length !== 4) {
       return NextResponse.json({ error: "name, 4-digit userId, and 4-digit pin required" }, { status: 400 });
     }
-    const existing = db.select().from(schema.arls).where(eq(schema.arls.userId, userId)).get();
+    const existing = db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
     if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
 
     const now = new Date().toISOString();
-    const arl = { id: uuid(), name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
+    const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
     db.insert(schema.arls).values(arl).run();
     broadcastUserUpdate();
     return NextResponse.json({ success: true, arl: { ...arl, pinHash: undefined } });
@@ -58,7 +56,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
@@ -72,7 +70,7 @@ export async function PUT(req: NextRequest) {
     if (role !== undefined) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
 
-    db.update(schema.arls).set(updates).where(eq(schema.arls.id, id)).run();
+    db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate();
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -83,7 +81,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }

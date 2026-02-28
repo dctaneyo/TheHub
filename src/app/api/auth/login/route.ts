@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { compareSync } from "bcryptjs";
 import { signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
@@ -32,11 +32,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Try to find as location first
+    // Resolve tenant from middleware header
+    const tenantId = req.headers.get("x-tenant-id") || "kazi";
+
+    // Try to find as location first (scoped to tenant)
     const location = db
       .select()
       .from(schema.locations)
-      .where(eq(schema.locations.userId, userId))
+      .where(and(eq(schema.locations.userId, userId), eq(schema.locations.tenantId, tenantId)))
       .get();
 
     if (location) {
@@ -57,6 +60,7 @@ export async function POST(req: NextRequest) {
       const sessionCode = genSessionCode();
       const payload: AuthPayload = {
         id: location.id,
+        tenantId,
         userType: "location",
         userId: location.userId,
         name: location.name,
@@ -113,11 +117,11 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // Try as ARL
+    // Try as ARL (scoped to tenant)
     const arl = db
       .select()
       .from(schema.arls)
-      .where(eq(schema.arls.userId, userId))
+      .where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, tenantId)))
       .get();
 
     if (arl) {
@@ -146,6 +150,7 @@ export async function POST(req: NextRequest) {
       const sessionCode = genSessionCode();
       const payload: AuthPayload = {
         id: arl.id,
+        tenantId,
         userType: "arl",
         userId: arl.userId,
         name: arl.name,

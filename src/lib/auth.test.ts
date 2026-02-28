@@ -11,6 +11,7 @@ vi.mock('next/headers', () => ({
 
 const testPayload: AuthPayload = {
   id: 'loc-123',
+  tenantId: 'kazi',
   userType: 'location',
   userId: '1001',
   name: 'Test Store',
@@ -87,6 +88,7 @@ describe('Auth Utilities', () => {
     it('preserves ARL payload', () => {
       const arlPayload: AuthPayload = {
         id: 'arl-456',
+        tenantId: 'kazi',
         userType: 'arl',
         userId: '2001',
         name: 'Test ARL',
@@ -101,6 +103,7 @@ describe('Auth Utilities', () => {
     it('preserves optional fields', () => {
       const payload: AuthPayload = {
         id: 'loc-789',
+        tenantId: 'kazi',
         userType: 'location',
         userId: '3001',
         name: 'Store With Session',

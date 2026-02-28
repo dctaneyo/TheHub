@@ -81,6 +81,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       if (guestName && guestMeetingId) {
         user = {
           id: `guest-${socket.id}`,
+          tenantId: "guest",
           userType: "guest",
           userId: "000000",
           name: guestName,
@@ -91,18 +92,31 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     }
 
     if (user) {
+      // ── Tenant-scoped room prefix ──
+      const tenantId = user.tenantId || "kazi";
+      const tp = `tenant:${tenantId}`; // tenant prefix for rooms
+      (socket as any)._tenantPrefix = tp;
+      (socket as any)._tenantId = tenantId;
+
       // ── Room joining ──
       if ((socket as any)._isGuest) {
-        socket.join("all");
+        socket.join("all"); // guests are cross-tenant (meetings)
       } else if (user.userType === "location") {
-        socket.join(`location:${user.id}`);
-        socket.join("locations");
+        socket.join(`${tp}:location:${user.id}`);
+        socket.join(`${tp}:locations`);
+        socket.join(`location:${user.id}`); // keep legacy room for backwards compat
+        socket.join("locations"); // legacy
         scheduleTaskNotifications(io, user.id);
       } else {
-        socket.join(`arl:${user.id}`);
-        socket.join("arls");
+        socket.join(`${tp}:arl:${user.id}`);
+        socket.join(`${tp}:arls`);
+        socket.join(`arl:${user.id}`); // legacy
+        socket.join("arls"); // legacy
       }
-      if (!(socket as any)._isGuest) socket.join("all");
+      if (!(socket as any)._isGuest) {
+        socket.join(`${tp}:all`);
+        socket.join("all"); // legacy
+      }
 
       (socket as any).user = user;
 

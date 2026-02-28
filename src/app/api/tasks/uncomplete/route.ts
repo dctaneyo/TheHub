@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { broadcastTaskUpdate, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
@@ -7,7 +8,7 @@ import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
