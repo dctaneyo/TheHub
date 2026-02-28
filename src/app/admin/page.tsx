@@ -38,6 +38,11 @@ const ALL_FEATURES = [
 const PLANS = ["starter", "pro", "enterprise"];
 
 export default function AdminPortal() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null); // null = checking
+  const [loginSecret, setLoginSecret] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -58,9 +63,15 @@ export default function AdminPortal() {
   const fetchTenants = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/tenants");
+      if (res.status === 401) {
+        setAuthenticated(false);
+        setLoading(false);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setTenants(data.tenants);
+        setAuthenticated(true);
       }
     } catch (err) {
       console.error("Failed to fetch tenants:", err);
@@ -72,6 +83,38 @@ export default function AdminPortal() {
   useEffect(() => {
     fetchTenants();
   }, [fetchTenants]);
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: loginSecret }),
+      });
+      if (res.ok) {
+        setAuthenticated(true);
+        setLoginSecret("");
+        setLoading(true);
+        fetchTenants();
+      } else {
+        const data = await res.json();
+        setLoginError(data.error || "Invalid secret");
+      }
+    } catch {
+      setLoginError("Connection failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/auth", { method: "DELETE" });
+    setAuthenticated(false);
+    setTenants([]);
+  };
 
   const openCreate = () => {
     setEditingTenant(null);
@@ -154,10 +197,58 @@ export default function AdminPortal() {
     );
   };
 
-  if (loading) {
+  // Loading state
+  if (authenticated === null || (loading && authenticated !== false)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+      </div>
+    );
+  }
+
+  // Login gate
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm"
+        >
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-8 shadow-2xl backdrop-blur-sm">
+            <div className="flex flex-col items-center mb-8">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 shadow-lg mb-4">
+                <Shield className="h-7 w-7 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white">Super Admin</h1>
+              <p className="text-sm text-slate-400 mt-1">Enter your admin secret to continue</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Input
+                  type="password"
+                  value={loginSecret}
+                  onChange={(e) => { setLoginSecret(e.target.value); setLoginError(""); }}
+                  placeholder="Admin secret"
+                  className="bg-white/5 border-white/10 text-white h-12 text-center text-lg tracking-wider"
+                  autoFocus
+                />
+              </div>
+              {loginError && (
+                <p className="text-sm text-red-400 text-center">{loginError}</p>
+              )}
+              <Button
+                type="submit"
+                disabled={loginLoading || !loginSecret}
+                className="w-full bg-red-600 hover:bg-red-700 h-12 text-base gap-2"
+              >
+                {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+                Authenticate
+              </Button>
+            </form>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -176,10 +267,20 @@ export default function AdminPortal() {
               <p className="text-xs text-slate-400">Tenant Management Portal</p>
             </div>
           </div>
-          <Button onClick={openCreate} className="bg-red-600 hover:bg-red-700 gap-2">
-            <Plus className="h-4 w-4" />
-            New Tenant
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openCreate} className="bg-red-600 hover:bg-red-700 gap-2">
+              <Plus className="h-4 w-4" />
+              New Tenant
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-white/10 text-slate-400 hover:bg-white/5 hover:text-white gap-2"
+            >
+              <LogIn className="h-4 w-4 rotate-180" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 

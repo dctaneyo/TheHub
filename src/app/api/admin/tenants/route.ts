@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
+async function requireAdmin(): Promise<NextResponse | null> {
+  if (!ADMIN_SECRET) {
+    return NextResponse.json({ error: "Admin not configured" }, { status: 503 });
+  }
+  const cookieStore = await cookies();
+  const token = cookieStore.get("hub-admin-token")?.value;
+  if (!token || token !== ADMIN_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null; // authorized
+}
+
 // GET all tenants with stats
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
     const allTenants = db.select().from(schema.tenants).all();
 
@@ -37,6 +54,8 @@ export async function GET() {
 
 // POST create new tenant
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { slug, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain } = body;
@@ -79,6 +98,8 @@ export async function POST(req: NextRequest) {
 
 // PUT update tenant
 export async function PUT(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { id, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain, isActive } = body;
@@ -107,6 +128,8 @@ export async function PUT(req: NextRequest) {
 
 // DELETE tenant
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
