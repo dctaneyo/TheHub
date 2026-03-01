@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -29,6 +30,8 @@ export async function POST(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.FORMS_UPLOAD);
+    if (denied) return denied;
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -104,6 +107,8 @@ export async function DELETE(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.FORMS_DELETE);
+    if (denied) return denied;
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
     db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -109,13 +110,15 @@ export async function GET() {
   }
 }
 
-// POST create new location (ARL admin only)
+// POST create new location (ARL with permission)
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_CREATE);
+    if (denied) return denied;
 
     const { name, storeNumber, address, email, userId, pin } = await req.json();
 
@@ -192,6 +195,9 @@ export async function PUT(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_EDIT);
+    if (denied) return denied;
+
     const { id, name, email, pin, address, isActive } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
@@ -218,6 +224,8 @@ export async function DELETE(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_DELETE);
+    if (denied) return denied;
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 

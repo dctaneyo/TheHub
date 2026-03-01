@@ -18,8 +18,17 @@ import {
   BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
+
+// Map additional sidebar views to the permissions that govern whether the ARL
+// should see them at all. Views not listed here are always visible.
+const SIDEBAR_PERM_MAP: Partial<Record<string, PermissionKey[]>> = {
+  emergency: [PERMISSIONS.EMERGENCY_ACCESS],
+  "data-management": [PERMISSIONS.DATA_MANAGEMENT_ACCESS],
+  analytics: [PERMISSIONS.ANALYTICS_ACCESS],
+};
 
 export const navItems = [
   { id: "overview" as const, label: "Overview", icon: BarChart3 },
@@ -37,7 +46,7 @@ export const navItems = [
 ];
 
 interface ArlSidebarProps {
-  user: { name?: string; role?: string } | null;
+  user: { name?: string; role?: string; permissions?: string[] } | null;
   activeView: ArlView;
   onViewChange: (view: ArlView) => void;
   isMobileOrTablet: boolean;
@@ -104,7 +113,15 @@ export function ArlSidebar({
 
       {/* Nav items */}
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => {
+        {navItems.filter((item) => {
+          // Admins see everything
+          if (user?.role === "admin") return true;
+          const requiredPerms = SIDEBAR_PERM_MAP[item.id];
+          if (!requiredPerms) return true; // no restriction
+          const userPerms = user?.permissions;
+          if (!userPerms) return true; // null/undefined = all
+          return requiredPerms.some((p) => userPerms.includes(p));
+        }).map((item) => {
           const isActive = activeView === item.id;
           const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
           const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;

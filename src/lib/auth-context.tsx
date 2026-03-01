@@ -9,6 +9,7 @@ export interface User {
   userId: string;
   name: string;
   role?: string;
+  permissions?: string[]; // ARL permission keys (null/undefined = all)
   locationId?: string;
   storeNumber?: string;
 }

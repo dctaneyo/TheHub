@@ -291,6 +291,13 @@ function runMigrations() {
     s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_arls_tenant_userid ON arls(tenant_id, user_id)`);
   });
 
+  // ── ARL Permissions system ──
+  migrate("039_arl_permissions", () => {
+    try { s.exec(`ALTER TABLE arls ADD COLUMN permissions TEXT`); } catch {}
+    // Promote userId "2092" under Kazi tenant to admin
+    s.prepare(`UPDATE arls SET role = 'admin' WHERE user_id = '2092' AND tenant_id = 'kazi'`).run();
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

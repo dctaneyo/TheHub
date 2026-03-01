@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession } from "@/lib/api-helpers";
+import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastSoundToggle } from "@/lib/socket-emit";
@@ -30,6 +31,12 @@ export async function PATCH(req: NextRequest) {
     if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { locationId, muted } = await req.json();
+
+    // ARL permission check for muting locations
+    if (session.userType === "arl") {
+      const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_MUTE);
+      if (denied) return denied;
+    }
 
     // ARL can target any location; a location can only toggle itself
     const targetId = session.userType === "arl" ? locationId : session.userId;

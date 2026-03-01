@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 function generateMeetingCode(): string {
@@ -37,10 +39,12 @@ export async function GET(req: NextRequest) {
 // POST - Create a scheduled meeting
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.MEETINGS_SCHEDULE);
+    if (denied) return denied;
 
     const {
       title, description, password, scheduledAt,
@@ -90,10 +94,12 @@ export async function POST(req: NextRequest) {
 // PATCH - Update a scheduled meeting
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.MEETINGS_EDIT);
+    if (denied) return denied;
 
     const { id, ...updates } = await req.json();
     if (!id) {
@@ -140,10 +146,12 @@ export async function PATCH(req: NextRequest) {
 // DELETE - Delete a scheduled meeting
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.MEETINGS_DELETE);
+    if (denied) return denied;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

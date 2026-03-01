@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
+import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Edit2, Trash2, UserCheck, UserX,
-  Store, Users, Shield, Loader2, Eye, EyeOff,
+  Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 
 interface ArlUser {
   id: string;
@@ -17,6 +19,7 @@ interface ArlUser {
   email: string | null;
   userId: string;
   role: string;
+  permissions: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -48,6 +51,8 @@ const EMPTY_FORM: FormState = { name: "", email: "", userId: "", pin: "", role: 
 
 
 export function UserManagement() {
+  const { user: currentUser } = useAuth();
+  const isCallerAdmin = currentUser?.role === "admin";
   const [tab, setTab] = useState<Tab>("arls");
   const [arls, setArls] = useState<ArlUser[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -58,6 +63,9 @@ export function UserManagement() {
   const [saving, setSaving] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState("");
+  const [permissionsTarget, setPermissionsTarget] = useState<ArlUser | null>(null);
+  const [editPerms, setEditPerms] = useState<PermissionKey[]>([...ALL_PERMISSIONS]);
+  const [savingPerms, setSavingPerms] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -88,6 +96,42 @@ export function UserManagement() {
     setForm(EMPTY_FORM);
     setError("");
     setShowForm(true);
+  };
+
+  const openPermissions = (arl: ArlUser) => {
+    const parsed: PermissionKey[] = arl.permissions ? JSON.parse(arl.permissions) : [...ALL_PERMISSIONS];
+    setEditPerms(parsed);
+    setPermissionsTarget(arl);
+  };
+
+  const togglePerm = (key: PermissionKey) => {
+    setEditPerms((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  };
+
+  const toggleGroupAll = (groupPerms: PermissionKey[]) => {
+    const allEnabled = groupPerms.every((k) => editPerms.includes(k));
+    if (allEnabled) {
+      setEditPerms((prev) => prev.filter((k) => !groupPerms.includes(k)));
+    } else {
+      setEditPerms((prev) => [...new Set([...prev, ...groupPerms])]);
+    }
+  };
+
+  const savePermissions = async () => {
+    if (!permissionsTarget) return;
+    setSavingPerms(true);
+    try {
+      const res = await fetch("/api/arls", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: permissionsTarget.id, permissions: editPerms }),
+      });
+      if (res.ok) {
+        setPermissionsTarget(null);
+        await fetchData();
+      }
+    } catch {}
+    setSavingPerms(false);
   };
 
   const openEdit = (item: ArlUser | Location) => {
@@ -260,7 +304,12 @@ export function UserManagement() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                  {isArl && (
+                  {isArl && a.role === "admin" && (
+                    <span className="flex items-center gap-0.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                      <ShieldCheck className="h-3 w-3" /> Admin
+                    </span>
+                  )}
+                  {isArl && a.role !== "admin" && (
                     <span className="rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
                       ARL
                     </span>
@@ -276,6 +325,15 @@ export function UserManagement() {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                {isArl && isCallerAdmin && a.role !== "admin" && (
+                  <button
+                    onClick={() => openPermissions(a)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    title="Manage permissions"
+                  >
+                    <Settings2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
@@ -372,6 +430,31 @@ export function UserManagement() {
                   <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" className="rounded-xl" type="email" />
                 </div>
 
+                {tab === "arls" && isCallerAdmin && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
+                    <div className="flex gap-2">
+                      {(["arl", "admin"] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setForm((p) => ({ ...p, role: r }))}
+                          className={cn(
+                            "flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-medium transition-colors",
+                            form.role === r
+                              ? r === "admin"
+                                ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {r === "admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                          {r === "admin" ? "Admin" : "ARL"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {tab === "locations" && !editTarget && (
                   <div>
@@ -397,6 +480,113 @@ export function UserManagement() {
                   className="w-full rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
                 >
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (editTarget ? "Save Changes" : "Create")}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Permissions editor modal */}
+      <AnimatePresence>
+        {permissionsTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-card shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Permissions</h3>
+                  <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
+                </div>
+                <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {PERMISSION_GROUPS.map((group) => {
+                  const groupKeys = group.permissions.map((p) => p.key);
+                  const allOn = groupKeys.every((k) => editPerms.includes(k));
+                  const someOn = groupKeys.some((k) => editPerms.includes(k));
+                  return (
+                    <div key={group.label} className="rounded-2xl border border-border p-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleGroupAll(groupKeys)}
+                        className="flex w-full items-center justify-between mb-2"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-foreground">{group.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{group.description}</p>
+                        </div>
+                        <div className={cn(
+                          "flex h-5 w-9 items-center rounded-full px-0.5 transition-colors",
+                          allOn ? "bg-[var(--hub-red)]" : someOn ? "bg-[var(--hub-red)]/50" : "bg-muted"
+                        )}>
+                          <div className={cn(
+                            "h-4 w-4 rounded-full bg-white shadow transition-transform",
+                            allOn ? "translate-x-4" : "translate-x-0"
+                          )} />
+                        </div>
+                      </button>
+                      <div className="space-y-1">
+                        {group.permissions.map((perm) => {
+                          const on = editPerms.includes(perm.key);
+                          return (
+                            <button
+                              key={perm.key}
+                              type="button"
+                              onClick={() => togglePerm(perm.key)}
+                              className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 hover:bg-muted/50 transition-colors"
+                            >
+                              <span className="text-xs text-foreground">{perm.label}</span>
+                              <div className={cn(
+                                "flex h-4 w-7 items-center rounded-full px-0.5 transition-colors",
+                                on ? "bg-[var(--hub-red)]" : "bg-muted"
+                              )}>
+                                <div className={cn(
+                                  "h-3 w-3 rounded-full bg-white shadow transition-transform",
+                                  on ? "translate-x-3" : "translate-x-0"
+                                )} />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="border-t border-border px-6 py-4 flex items-center gap-3">
+                <div className="flex-1 text-[10px] text-muted-foreground">
+                  {editPerms.length}/{ALL_PERMISSIONS.length} permissions enabled
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl text-xs"
+                  onClick={() => setEditPerms([...ALL_PERMISSIONS])}
+                >
+                  Enable All
+                </Button>
+                <Button
+                  size="sm"
+                  className="rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
+                  onClick={savePermissions}
+                  disabled={savingPerms}
+                >
+                  {savingPerms ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  Save
                 </Button>
               </div>
             </motion.div>

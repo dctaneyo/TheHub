@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
@@ -20,6 +21,7 @@ export async function GET() {
       email: schema.arls.email,
       userId: schema.arls.userId,
       role: schema.arls.role,
+      permissions: schema.arls.permissions,
       isActive: schema.arls.isActive,
       createdAt: schema.arls.createdAt,
     }).from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
@@ -36,6 +38,9 @@ export async function POST(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.ARLS_CREATE);
+    if (denied) return denied;
+
     const { name, email, userId, pin, role } = await req.json();
     if (!name || !userId || !pin || userId.length !== 4 || pin.length !== 4) {
       return NextResponse.json({ error: "name, 4-digit userId, and 4-digit pin required" }, { status: 400 });
@@ -60,15 +65,36 @@ export async function PUT(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
-    const { id, name, email, pin, role, isActive } = await req.json();
+    const denied = await requirePermission(session, PERMISSIONS.ARLS_EDIT);
+    if (denied) return denied;
+
+    const { id, name, email, pin, role, isActive, permissions: perms } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    // Only admins can change roles or permissions
+    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+      .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
+    const isCallerAdmin = callerArl?.role === "admin";
+
+    // Prevent non-admins from promoting/demoting or changing permissions
+    if (!isCallerAdmin && (role !== undefined || perms !== undefined)) {
+      return NextResponse.json({ error: "Only admins can change roles or permissions" }, { status: 403 });
+    }
+
+    // Prevent demoting/editing another admin unless caller is also admin
+    const targetArl = db.select({ role: schema.arls.role }).from(schema.arls)
+      .where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get();
+    if (targetArl?.role === "admin" && !isCallerAdmin) {
+      return NextResponse.json({ error: "Only admins can edit other admins" }, { status: 403 });
+    }
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name;
     if (email !== undefined) updates.email = email;
     if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
-    if (role !== undefined) updates.role = role;
+    if (role !== undefined && isCallerAdmin) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
+    if (perms !== undefined && isCallerAdmin) updates.permissions = perms === null ? null : JSON.stringify(perms);
 
     db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate();
@@ -85,12 +111,24 @@ export async function DELETE(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.ARLS_DELETE);
+    if (denied) return denied;
+
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
     // Prevent self-deletion
     if (id === session.id) {
       return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
+    }
+
+    // Only admins can delete other admins
+    const targetArl = db.select({ role: schema.arls.role }).from(schema.arls)
+      .where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get();
+    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+      .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
+    if (targetArl?.role === "admin" && callerArl?.role !== "admin") {
+      return NextResponse.json({ error: "Only admins can delete other admins" }, { status: 403 });
     }
 
     // 1. Delete sessions

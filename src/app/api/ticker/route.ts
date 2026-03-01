@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, getTenantIdFromHeaders, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, getTenantIdFromHeaders, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc, or, isNull, gte } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -33,6 +34,8 @@ export async function POST(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.TICKER_CREATE);
+    if (denied) return denied;
 
     const { content, icon, expiresInMinutes } = await req.json();
     if (!content?.trim()) {
@@ -75,6 +78,8 @@ export async function DELETE(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.TICKER_DELETE);
+    if (denied) return denied;
 
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });

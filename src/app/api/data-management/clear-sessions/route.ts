@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function POST(request: Request) {
@@ -8,6 +10,8 @@ export async function POST(request: Request) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
+    if (denied) return denied;
 
     const { mode } = await request.json();
 

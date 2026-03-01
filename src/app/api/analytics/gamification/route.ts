@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
@@ -8,6 +10,8 @@ export async function GET(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
+    if (denied) return denied;
 
     const startDate = req.nextUrl.searchParams.get("startDate");
     const endDate = req.nextUrl.searchParams.get("endDate");

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 
@@ -9,6 +11,8 @@ export async function GET() {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL access required" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
+    if (denied) return denied;
 
     const now = new Date();
     const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;

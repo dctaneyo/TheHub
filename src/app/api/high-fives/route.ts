@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { broadcastToAll } from "@/lib/socket-emit";
@@ -77,6 +78,11 @@ export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
     if (!session) return unauthorized();
+
+    if (session.userType === "arl") {
+      const denied = await requirePermission(session, PERMISSIONS.GAMIFICATION_SEND);
+      if (denied) return denied;
+    }
 
     const { toUserId, toUserType, toUserName, message } = await request.json();
 

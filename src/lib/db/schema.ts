@@ -45,6 +45,7 @@ export const arls = sqliteTable("arls", {
   userId: text("user_id").notNull().unique(), // 4-digit login ID
   pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
   role: text("role").notNull().default("arl"), // 'arl' | 'admin'
+  permissions: text("permissions"), // JSON array of enabled permission keys — null = all (default)
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -77,6 +78,8 @@ export async function POST(req: NextRequest) {
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
+    if (denied) return denied;
 
     const { message, targetLocationIds } = await req.json();
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
@@ -195,10 +198,12 @@ export async function PATCH(req: NextRequest) {
 // DELETE clear emergency message (ARL only)
 export async function DELETE() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return NextResponse.json({ error: "ARL only" }, { status: 403 });
     }
+    const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
+    if (denied) return denied;
 
     db.update(schema.emergencyMessages)
       .set({ isActive: false })

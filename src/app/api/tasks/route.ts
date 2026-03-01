@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskUpdate } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
@@ -33,6 +34,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) return unauthorized();
+
+    // ARL permission check
+    if (session.userType === "arl") {
+      const denied = await requirePermission(session, PERMISSIONS.TASKS_CREATE);
+      if (denied) return denied;
+    }
 
     const body = await req.json();
     const {
@@ -108,6 +115,9 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
+    const denied = await requirePermission(session, PERMISSIONS.TASKS_EDIT);
+    if (denied) return denied;
+
     const body = await req.json();
     const { id, ...updates } = body;
 
@@ -163,6 +173,12 @@ export async function DELETE(req: NextRequest) {
 
     const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+
+    // ARL permission check
+    if (session.userType === "arl") {
+      const denied = await requirePermission(session, PERMISSIONS.TASKS_DELETE);
+      if (denied) return denied;
+    }
 
     // Locations can only delete tasks they created themselves
     if (session.userType === "location") {
