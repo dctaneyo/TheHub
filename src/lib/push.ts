@@ -95,21 +95,20 @@ export async function sendPushToARL(userId: string, payload: {
       })
     );
 
-    // Remove failed subscriptions
-    const failed = results.filter((r) => r.status === "rejected");
-    if (failed.length > 0) {
-      console.log(`Removing ${failed.length} failed push subscriptions`);
-      const failedIndexes = failed.map((_, i) => i);
-      const failedSubs = failedIndexes.map(i => subscriptions[i]);
-      
+    // Remove failed/expired subscriptions (410 Gone or other permanent failures)
+    const failedSubs = results
+      .map((r, i) => r.status === "rejected" ? subscriptions[i] : null)
+      .filter(Boolean);
+    if (failedSubs.length > 0) {
+      console.log(`Removing ${failedSubs.length} failed push subscriptions`);
       for (const failedSub of failedSubs) {
         db.delete(schema.pushSubscriptions)
-          .where(eq(schema.pushSubscriptions.id, failedSub.id))
+          .where(eq(schema.pushSubscriptions.id, failedSub!.id))
           .run();
       }
     }
 
-    console.log(`Push notification sent to ${subscriptions.length - failed.length} devices for ARL ${userId}`);
+    console.log(`Push notification sent to ${subscriptions.length - failedSubs.length} devices for ARL ${userId}`);
   } catch (error) {
     console.error("Error sending push notification:", error);
   }

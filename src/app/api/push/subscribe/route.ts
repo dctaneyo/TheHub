@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,15 +15,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
     }
 
-    // Store or update subscription for this ARL
+    // Store or update subscription for this ARL — keyed by endpoint (unique per device)
+    // This allows multiple devices per ARL to receive push notifications
     const existing = db.select().from(schema.pushSubscriptions)
-      .where(eq(schema.pushSubscriptions.userId, session.id))
+      .where(and(
+        eq(schema.pushSubscriptions.userId, session.id),
+        eq(schema.pushSubscriptions.endpoint, subscription.endpoint)
+      ))
       .get();
 
     if (existing) {
       db.update(schema.pushSubscriptions)
         .set({ 
-          endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,
           updatedAt: new Date().toISOString()
