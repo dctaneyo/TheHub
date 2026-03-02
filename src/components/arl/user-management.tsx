@@ -90,7 +90,10 @@ export function UserManagement() {
         fetch("/api/roles"),
       ]);
       if (arlRes.ok) setArls((await arlRes.json()).data?.arls || []);
-      if (locRes.ok) setLocations((await locRes.json()).data?.locations || []);
+      if (locRes.ok) {
+        const locData = await locRes.json();
+        setLocations(locData.locations || locData.data?.locations || []);
+      }
       if (rolesRes.ok) setRoles((await rolesRes.json()).data?.roles || []);
     } catch {}
     setLoading(false);

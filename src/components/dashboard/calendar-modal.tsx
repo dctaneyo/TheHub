@@ -179,15 +179,15 @@ export function CalendarModal({ onClose, locationId }: { onClose: () => void; lo
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[95vh] sm:h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
           <h2 className="text-sm font-bold text-foreground">Full Calendar</h2>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
-        <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+        <div className="flex flex-1 min-h-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row">
           {/* Calendar grid */}
-          <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+          <div className="flex flex-col md:flex-1 overflow-hidden min-w-0">
             <div className="flex items-center justify-between border-b border-border px-4 py-2">
               <button onClick={() => setCurrentMonth(subMonths(currentMonth,1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
               <span className="text-sm font-bold text-foreground">{format(currentMonth,"MMMM yyyy")}</span>
@@ -196,9 +196,9 @@ export function CalendarModal({ onClose, locationId }: { onClose: () => void; lo
             <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
               {CAL_DAYS_H.map((d) => <div key={d} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
             </div>
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-col md:flex-1 overflow-hidden">
               {weeks.map((week, wi) => (
-                <div key={wi} className="grid flex-1 grid-cols-7 border-b border-slate-100 last:border-0" style={{minHeight:0}}>
+                <div key={wi} className="grid grid-cols-7 border-b border-slate-100 last:border-0" style={{minHeight: 48}}>
                   {week.map((date) => {
                     const dayTasks = getTasksForDate(date);
                     const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -226,7 +226,7 @@ export function CalendarModal({ onClose, locationId }: { onClose: () => void; lo
             </div>
           </div>
           {/* Day detail */}
-          <div className="w-full md:w-[280px] shrink-0 flex flex-col overflow-hidden border-t md:border-t-0 md:border-l border-border">
+          <div className="w-full md:w-[280px] shrink-0 flex flex-col md:overflow-hidden border-t md:border-t-0 md:border-l border-border">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <h3 className="text-sm font-bold text-foreground">{selectedDate?format(selectedDate,"EEE, MMMM d"):"Select a day"}</h3>

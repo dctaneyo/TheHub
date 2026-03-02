@@ -73,7 +73,7 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
   const [freezeInfo, setFreezeInfo] = useState<FreezeInfo | null>(null);
   const [freezing, setFreezing] = useState(false);
   const [freezeSuccess, setFreezeSuccess] = useState(false);
-  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number; left?: number } | null>(null);
   const knownEarnedIdsRef = useRef<Set<string> | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -167,9 +167,11 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
   useEffect(() => {
     if (isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const isMobile = window.innerWidth < 640;
       setPanelPos({
         top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
+        right: isMobile ? 8 : Math.max(8, window.innerWidth - rect.right),
+        left: isMobile ? 8 : undefined,
       });
     } else {
       setPanelPos(null);
@@ -343,8 +345,13 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
               ref={panelRef}
-              className="fixed z-[200] w-[380px] rounded-2xl border border-border bg-card shadow-2xl shadow-black/10 dark:shadow-black/30 overflow-hidden"
-              style={panelPos ? { top: panelPos.top, right: panelPos.right } : {}}
+              className="fixed z-[200] w-[calc(100vw-16px)] sm:w-[380px] max-h-[calc(100vh-80px)] rounded-2xl border border-border bg-card shadow-2xl shadow-black/10 dark:shadow-black/30 overflow-hidden flex flex-col"
+              style={panelPos ? {
+                top: Math.min(panelPos.top, window.innerHeight - 500),
+                ...(panelPos.left != null
+                  ? { left: panelPos.left, right: panelPos.right }
+                  : { right: Math.max(8, panelPos.right) }),
+              } : {}}
             >
               {/* Header gradient */}
               <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-4">
@@ -456,7 +463,7 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
               </div>
 
               {/* Tab content */}
-              <div className="max-h-[320px] overflow-y-auto p-4">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4">
                 {activeTab === "overview" && (
                   <div className="space-y-4">
                     {/* Streak details */}

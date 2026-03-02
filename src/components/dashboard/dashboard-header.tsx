@@ -8,6 +8,8 @@ import {
   MessageCircle,
   CalendarDays,
   FileText,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -135,6 +137,34 @@ export function DashboardHeader({
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Connection</p>
                     <ConnectionStatus />
                   </div>
+
+                  <div className="border-t border-border mx-2 my-1" />
+
+                  <button
+                    onClick={() => { onToggleSound(); }}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${soundEnabled ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-400 dark:bg-red-950 dark:text-red-400"}`}>
+                      {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">Sound</p>
+                      <p className="text-xs text-muted-foreground">{soundEnabled ? "On" : "Muted"}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-red-50 dark:hover:bg-red-950 transition-colors text-left"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500 dark:bg-red-950 dark:text-red-400">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-red-600 dark:text-red-400">Logout</p>
+                      <p className="text-xs text-muted-foreground">Sign out of dashboard</p>
+                    </div>
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -199,17 +229,19 @@ export function DashboardHeader({
           soundEnabled={soundEnabled}
         />
 
-        <DashboardSettings
-          soundEnabled={soundEnabled}
-          onToggleSound={onToggleSound}
-          screensaverEnabled={screensaverEnabled}
-          onToggleScreensaver={onToggleScreensaver}
-          onShowScreensaver={onShowScreensaver}
-        />
+        <div className="hidden sm:block">
+          <DashboardSettings
+            soundEnabled={soundEnabled}
+            onToggleSound={onToggleSound}
+            screensaverEnabled={screensaverEnabled}
+            onToggleScreensaver={onToggleScreensaver}
+            onShowScreensaver={onShowScreensaver}
+          />
+        </div>
 
         <button
           onClick={onLogout}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
+          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
         >
           <LogOut className="h-[18px] w-[18px]" />
         </button>
