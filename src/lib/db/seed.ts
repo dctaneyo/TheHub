@@ -167,14 +167,19 @@ async function seed() {
 
     CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
-      location_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      title TEXT NOT NULL,
-      body TEXT,
-      reference_id TEXT,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      user_id TEXT NOT NULL DEFAULT '',
+      user_type TEXT NOT NULL DEFAULT 'location',
+      type TEXT NOT NULL DEFAULT 'system',
+      title TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      action_url TEXT,
+      action_label TEXT,
+      priority TEXT NOT NULL DEFAULT 'normal',
+      metadata TEXT,
       is_read INTEGER NOT NULL DEFAULT 0,
-      is_dismissed INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL
+      read_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS emergency_messages (

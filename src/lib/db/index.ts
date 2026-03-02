@@ -442,6 +442,49 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_report_history_report ON report_history(report_id)`);
   });
 
+  // ── Fix notifications table: old schema had location_id NOT NULL which breaks createNotification ──
+  migrate("046_rebuild_notifications_table", () => {
+    // Check if the old location_id column exists
+    const cols = s.prepare(`PRAGMA table_info(notifications)`).all() as Array<{ name: string }>;
+    const hasLocationId = cols.some((c) => c.name === "location_id");
+    if (!hasLocationId) return; // Already on new schema
+
+    // Rebuild: copy data, drop old table, create new, copy back
+    s.exec(`ALTER TABLE notifications RENAME TO _notifications_old`);
+    s.exec(`CREATE TABLE notifications (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      user_id TEXT NOT NULL DEFAULT '',
+      user_type TEXT NOT NULL DEFAULT 'location',
+      type TEXT NOT NULL DEFAULT 'system',
+      title TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      action_url TEXT,
+      action_label TEXT,
+      priority TEXT NOT NULL DEFAULT 'normal',
+      metadata TEXT,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      read_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    // Migrate existing data — map old columns to new where possible
+    s.exec(`INSERT INTO notifications (id, tenant_id, user_id, user_type, type, title, message, is_read, created_at)
+      SELECT id,
+        COALESCE(tenant_id, 'kazi'),
+        COALESCE(user_id, location_id, ''),
+        COALESCE(user_type, 'location'),
+        COALESCE(type, 'system'),
+        COALESCE(title, ''),
+        COALESCE(message, body, ''),
+        COALESCE(is_read, 0),
+        COALESCE(created_at, datetime('now'))
+      FROM _notifications_old`);
+    s.exec(`DROP TABLE _notifications_old`);
+    // Re-create indexes
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON notifications(tenant_id)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }
