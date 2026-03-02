@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 const vapidKeys = {
   publicKey: process.env.VAPID_PUBLIC_KEY || "",
   privateKey: process.env.VAPID_PRIVATE_KEY || "",
-  subject: "mailto:admin@thehub.app",
+  subject: process.env.VAPID_SUBJECT || "https://meetthehub.com",
 };
 
 if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
@@ -29,6 +29,7 @@ export async function sendPushToAllARLs(payload: {
   title: string;
   body: string;
   url?: string;
+  tag?: string;
 }) {
   if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
     console.warn("VAPID keys not configured, skipping push notification");
@@ -54,6 +55,7 @@ export async function sendPushToARL(userId: string, payload: {
   body: string;
   url?: string;
   conversationId?: string;
+  tag?: string;
 }) {
   if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
     console.warn("VAPID keys not configured, skipping push notification");
@@ -77,6 +79,7 @@ export async function sendPushToARL(userId: string, payload: {
       body: payload.body,
       url: payload.url || "/arl?tab=messaging",
       conversationId: payload.conversationId,
+      tag: payload.tag || `hub-${payload.conversationId || Date.now()}`,
     });
 
     // Send to all subscriptions

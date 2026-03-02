@@ -1,6 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+
+// Convert VAPID public key from base64url to Uint8Array (required by iOS Safari)
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray.buffer as ArrayBuffer;
+}
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ClipboardList,
@@ -377,9 +389,15 @@ export default function ArlPage() {
         const registration = await navigator.serviceWorker.register("/sw.js");
 
         try {
+          const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (!vapidKey) {
+            console.error("VAPID public key not configured");
+            alert("Push notifications not configured. Contact your admin.");
+            return;
+          }
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
           });
 
           setPushSubscription(subscription);
@@ -416,10 +434,12 @@ export default function ArlPage() {
             setPushSubscription(subscription);
           } else if (Notification.permission === "granted") {
             // Try to subscribe if permission granted but no subscription
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!vapidKey) return;
             registration.pushManager
               .subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey),
               })
               .then((sub) => {
                 setPushSubscription(sub);
