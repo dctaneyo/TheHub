@@ -31,7 +31,12 @@ import {
   Zap,
   CheckCircle2,
   Wifi,
+  WifiOff,
   Video,
+  Moon,
+  Sun,
+  Monitor,
+  MoreVertical,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -58,6 +63,7 @@ import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-ro
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "next-themes";
 import { ArlSidebar, navItems } from "@/components/arl/arl-sidebar";
 import { AnalyticsDashboard } from "@/components/arl/analytics-dashboard";
 import { GlobalSearch } from "@/components/global-search";
@@ -155,9 +161,13 @@ export default function ArlPage() {
   const [joiningMeeting, setJoiningMeeting] = useState<{ meetingId: string; title: string } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const locationNamesRef = useRef<Map<string, string>>(new Map());
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const quickSettingsRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
   const isOnline = useOnlineStatus();
+  const { isConnected: socketConnected } = useSocket();
   const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
 
   // Swipe navigation between views on mobile with direction tracking
@@ -170,6 +180,24 @@ export default function ArlPage() {
   }, [activeView, swipeViewIds]);
   
   useSwipeNavigation(swipeViewIds, activeView as string, handleViewChange, isMobileOrTablet && !sidebarOpen);
+
+  // Close quick settings on click outside
+  useEffect(() => {
+    if (!showQuickSettings) return;
+    const handleClick = (e: MouseEvent) => {
+      if (quickSettingsRef.current && !quickSettingsRef.current.contains(e.target as Node)) {
+        setShowQuickSettings(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showQuickSettings]);
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
 
   // Play subtle 2-note beep for new messages (ARL office environment — not a loud kitchen)
   const playMessageChime = useCallback(() => {
@@ -515,30 +543,119 @@ export default function ArlPage() {
               else if (type === "form") setActiveView("forms");
               else if (type === "location") setActiveView("locations");
             }} />
-            {/* Push Notification Status / Enable Button */}
-            {pushSubscription ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1">
-                <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">On</span>
-              </div>
-            ) : notificationPermission === "denied" ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-950/40 px-2.5 py-1">
-                <BellOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-                <span className="text-xs font-medium text-red-700 dark:text-red-300">Off</span>
-              </div>
-            ) : (
-              <button
-                onClick={requestNotificationPermission}
-                className="flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                title="Enable push notifications"
-              >
-                <Bell className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Enable</span>
-              </button>
-            )}
             <NotificationBell />
-            <ThemeToggle />
-            <ConnectionStatus />
+            {/* Quick Settings — combines connection, theme, and push notification controls */}
+            <div className="relative" ref={quickSettingsRef}>
+              <button
+                onClick={() => setShowQuickSettings((v) => !v)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors"
+                title="Settings"
+              >
+                <MoreVertical className="h-4.5 w-4.5" />
+                {/* Connection status dot */}
+                <div className={cn(
+                  "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
+                  isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
+                )} />
+              </button>
+              <AnimatePresence>
+                {showQuickSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 z-[200] w-56 rounded-xl border border-border bg-card shadow-lg overflow-hidden"
+                  >
+                    {/* Connection Status */}
+                    <div className="px-3 py-2.5 border-b border-border">
+                      <div className="flex items-center gap-2.5">
+                        <div className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-lg",
+                          isOnline && socketConnected ? "bg-emerald-100 dark:bg-emerald-950/50" : "bg-red-100 dark:bg-red-950/50"
+                        )}>
+                          {isOnline && socketConnected ? (
+                            <Wifi className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <WifiOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">
+                            {isOnline && socketConnected ? "Connected" : "Offline"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {isOnline && socketConnected ? "Server reachable" : "Check your connection"}
+                          </p>
+                        </div>
+                        <div className={cn(
+                          "h-2 w-2 rounded-full",
+                          isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
+                        )} />
+                      </div>
+                    </div>
+
+                    {/* Theme Toggle */}
+                    <button
+                      onClick={cycleTheme}
+                      className="w-full px-3 py-2.5 border-b border-border flex items-center gap-2.5 hover:bg-accent transition-colors"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                        {theme === "dark" ? (
+                          <Moon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                        ) : theme === "light" ? (
+                          <Sun className="h-3.5 w-3.5 text-amber-500" />
+                        ) : (
+                          <Monitor className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-xs font-semibold text-foreground">Theme</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">{theme || "system"}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">Tap to cycle</span>
+                    </button>
+
+                    {/* Push Notifications */}
+                    {pushSubscription ? (
+                      <div className="px-3 py-2.5 flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
+                          <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Notifications</p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Enabled</p>
+                        </div>
+                        <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                      </div>
+                    ) : notificationPermission === "denied" ? (
+                      <div className="px-3 py-2.5 flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-950/50">
+                          <BellOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Notifications</p>
+                          <p className="text-[10px] text-red-600 dark:text-red-400">Blocked by browser</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { requestNotificationPermission(); setShowQuickSettings(false); }}
+                        className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-accent transition-colors"
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                          <Bell className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-xs font-semibold text-foreground">Notifications</p>
+                          <p className="text-[10px] text-muted-foreground">Tap to enable</p>
+                        </div>
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           </header>
         )}
