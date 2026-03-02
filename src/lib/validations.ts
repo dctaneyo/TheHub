@@ -117,12 +117,14 @@ export const createLocationSchema = z.object({
   storeNumber: z.string().min(1, "Store number is required").max(50),
   userId: z.string().length(4, "User ID must be 4 digits").regex(/^\d{4}$/, "User ID must be numeric"),
   pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
+  email: z.string().email("Invalid email").nullable().optional(),
   address: z.string().max(500).nullable().optional(),
 });
 
 export const updateLocationSchema = z.object({
   id: z.string().min(1, "Location ID is required"),
   name: z.string().min(1).max(200).optional(),
+  email: z.string().email().nullable().optional(),
   storeNumber: z.string().min(1).max(50).optional(),
   pin: z.string().length(4).regex(/^\d{4}$/).optional(),
   address: z.string().max(500).nullable().optional(),

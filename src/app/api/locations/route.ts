@@ -7,6 +7,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { hashSync } from "bcryptjs";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
+import { validate, createLocationSchema, updateLocationSchema } from "@/lib/validations";
 
 // GET all locations (+ ARLs) with session status
 export async function GET() {
@@ -120,21 +121,12 @@ export async function POST(req: NextRequest) {
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_CREATE);
     if (denied) return denied;
 
-    const { name, storeNumber, address, email, userId, pin } = await req.json();
-
-    if (!name || !storeNumber || !userId || !pin) {
-      return NextResponse.json(
-        { error: "Name, store number, user ID, and PIN are required" },
-        { status: 400 }
-      );
+    const body = await req.json();
+    const parsed = validate(createLocationSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    if (userId.length !== 4 || pin.length !== 4) {
-      return NextResponse.json(
-        { error: "User ID and PIN must be 4 digits" },
-        { status: 400 }
-      );
-    }
+    const { name, storeNumber, address, email, userId, pin } = parsed.data;
 
     const now = new Date().toISOString();
     const location = {
@@ -198,8 +190,12 @@ export async function PUT(req: NextRequest) {
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_EDIT);
     if (denied) return denied;
 
-    const { id, name, email, pin, address, isActive } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(updateLocationSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { id, name, email, pin, address, isActive } = parsed.data;
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name;

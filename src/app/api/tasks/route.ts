@@ -7,6 +7,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskUpdate } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
+import { validate, createTaskSchema, updateTaskSchema } from "@/lib/validations";
 
 // GET all tasks (ARL: all tasks; location: only tasks for their location)
 export async function GET() {
@@ -42,28 +43,28 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const parsed = validate(createTaskSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const {
       title,
       description,
-      type = "task",
-      priority = "normal",
+      type,
+      priority,
       dueTime,
       dueDate,
-      isRecurring = false,
+      isRecurring,
       recurringType,
       recurringDays,
       biweeklyStart,
       locationId,
-      points = 10,
-      allowEarlyComplete = false,
-      showInToday = true,
-      showIn7Day = true,
-      showInCalendar = true,
-    } = body;
-
-    if (!title || !dueTime) {
-      return NextResponse.json({ error: "Title and due time are required" }, { status: 400 });
-    }
+      points,
+      allowEarlyComplete,
+      showInToday,
+      showIn7Day,
+      showInCalendar,
+    } = parsed.data;
 
     const now = new Date().toISOString();
     // Locations can only create tasks for themselves
@@ -119,11 +120,11 @@ export async function PUT(req: NextRequest) {
     if (denied) return denied;
 
     const body = await req.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    const parsed = validate(updateTaskSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { id, ...updates } = parsed.data;
 
     const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) {

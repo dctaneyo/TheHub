@@ -243,6 +243,9 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
         body: JSON.stringify({ action: "mark_all_read" }),
       });
 
+      // Also dismiss task notifications when "Read All" is clicked
+      onDismissAllTasks?.();
+
       fetchNotifications();
     } catch (error) {
       console.error("Failed to mark all as read:", error);
