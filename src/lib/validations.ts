@@ -95,8 +95,10 @@ export const updateArlSchema = z.object({
   email: z.string().email().nullable().optional(),
   pin: z.string().length(4).regex(/^\d{4}$/).optional(),
   role: z.enum(["arl", "admin"]).optional(),
+  roleId: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
-  permissions: z.string().nullable().optional(),
+  permissions: z.union([z.array(z.string()), z.string()]).nullable().optional(),
+  assignedLocationIds: z.array(z.string()).nullable().optional(),
 });
 
 // ── Broadcast schemas ──
@@ -140,6 +142,51 @@ export const createConversationSchema = z.object({
     memberId: z.string().min(1),
     memberType: z.enum(["location", "arl"]),
   })).min(1, "At least one member required"),
+});
+
+// ── Location Group schemas ──
+
+export const createLocationGroupSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  description: z.string().max(1000).nullable().optional(),
+  color: z.string().max(20).nullable().optional(),
+  parentId: z.string().nullable().optional(),
+  locationIds: z.array(z.string()).optional(),
+});
+
+export const updateLocationGroupSchema = z.object({
+  id: z.string().min(1, "Group ID is required"),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  color: z.string().max(20).nullable().optional(),
+  parentId: z.string().nullable().optional(),
+  locationIds: z.array(z.string()).optional(),
+});
+
+// ── Scheduled Report schemas ──
+
+export const createScheduledReportSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  type: z.enum(["task_completion", "leaderboard", "attendance", "messaging"]),
+  frequency: z.enum(["daily", "weekly", "monthly"]),
+  recipients: z.array(z.string().email()).min(1, "At least one recipient required"),
+  filters: z.object({
+    locationIds: z.array(z.string()).optional(),
+    groupIds: z.array(z.string()).optional(),
+  }).nullable().optional(),
+});
+
+export const updateScheduledReportSchema = z.object({
+  id: z.string().min(1, "Report ID is required"),
+  name: z.string().min(1).max(200).optional(),
+  type: z.enum(["task_completion", "leaderboard", "attendance", "messaging"]).optional(),
+  frequency: z.enum(["daily", "weekly", "monthly"]).optional(),
+  recipients: z.array(z.string().email()).optional(),
+  filters: z.object({
+    locationIds: z.array(z.string()).optional(),
+    groupIds: z.array(z.string()).optional(),
+  }).nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 // ── Helper: validate and return parsed data or error response ──

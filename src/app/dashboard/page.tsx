@@ -28,6 +28,7 @@ import { AnimatedBackground } from "@/components/animated-background";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
+import { OfflineIndicator } from "@/components/offline-indicator";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -515,19 +516,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)] relative">
-      {/* Offline indicator banner */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            initial={{ y: -40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -40, opacity: 0 }}
-            className="fixed top-0 left-0 right-0 z-[300] flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md"
-          >
-            You&apos;re offline — some features may not work
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Offline indicator with sync status */}
+      <OfflineIndicator />
 
       {/* Animated Background */}
       <AnimatedBackground variant="subtle" />

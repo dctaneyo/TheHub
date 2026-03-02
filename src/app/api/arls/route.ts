@@ -23,7 +23,9 @@ export async function GET() {
       email: schema.arls.email,
       userId: schema.arls.userId,
       role: schema.arls.role,
+      roleId: schema.arls.roleId,
       permissions: schema.arls.permissions,
+      assignedLocationIds: schema.arls.assignedLocationIds,
       isActive: schema.arls.isActive,
       createdAt: schema.arls.createdAt,
     }).from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
@@ -83,15 +85,15 @@ export async function PUT(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { id, name, email, pin, role, isActive, permissions: perms } = parsed.data;
+    const { id, name, email, pin, role, isActive, permissions: perms, roleId, assignedLocationIds } = parsed.data;
 
     // Only admins can change roles or permissions
     const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     const isCallerAdmin = callerArl?.role === "admin";
 
-    // Prevent non-admins from promoting/demoting or changing permissions
-    if (!isCallerAdmin && (role !== undefined || perms !== undefined)) {
+    // Prevent non-admins from promoting/demoting or changing permissions/roles/location assignments
+    if (!isCallerAdmin && (role !== undefined || perms !== undefined || roleId !== undefined || assignedLocationIds !== undefined)) {
       return NextResponse.json({ error: "Only admins can change roles or permissions" }, { status: 403 });
     }
 
@@ -109,6 +111,10 @@ export async function PUT(req: NextRequest) {
     if (role !== undefined && isCallerAdmin) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
     if (perms !== undefined && isCallerAdmin) updates.permissions = perms === null ? null : JSON.stringify(perms);
+    if (roleId !== undefined && isCallerAdmin) updates.roleId = roleId;
+    if (assignedLocationIds !== undefined && isCallerAdmin) {
+      updates.assignedLocationIds = assignedLocationIds === null ? null : JSON.stringify(assignedLocationIds);
+    }
 
     db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate();

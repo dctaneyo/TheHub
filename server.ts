@@ -6,6 +6,7 @@ import { initSocketServer } from "./src/lib/socket-server";
 import { createBackup } from "./scripts/backup-database";
 import { startTaskNotificationScheduler } from "./src/lib/task-notification-scheduler";
 import { cleanupStaleData } from "./src/lib/cleanup";
+import { processScheduledReports } from "./src/lib/report-generator";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
@@ -72,11 +73,25 @@ app.prepare().then(() => {
       }
     });
 
+    // Process scheduled reports every hour
+    cron.schedule('0 * * * *', async () => {
+      console.log('📊 Checking for due scheduled reports...');
+      try {
+        const result = await processScheduledReports();
+        if (result.processed > 0 || result.errors > 0) {
+          console.log(`📊 Reports: ${result.processed} processed, ${result.errors} errors`);
+        }
+      } catch (error) {
+        console.error('❌ Report processing failed:', error);
+      }
+    });
+
     console.log('✅ Automated backups configured:');
     console.log('   - Daily cleanup: 1:30 AM (sessions, notifications, orphans)');
     console.log('   - Daily backup: 2:00 AM (keep 30 days)');
     console.log('   - Weekly: Sunday 3:00 AM (keep 12 weeks)');
     console.log('   - Monthly: 1st of month 4:00 AM (keep 12 months)');
+    console.log('   - Reports: checked every hour');
   }
 
   httpServer.listen(port, hostname, () => {

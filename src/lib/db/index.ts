@@ -322,6 +322,126 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_ticker_expires ON ticker_messages(expires_at)`);
   });
 
+  // ── RBAC: Roles table + ARL location-scoping ──
+  migrate("041_roles_table", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS roles (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      name TEXT NOT NULL,
+      description TEXT,
+      permissions TEXT NOT NULL,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_roles_tenant ON roles(tenant_id)`);
+  });
+
+  migrate("042_arl_role_id_and_locations", () => {
+    try { s.exec(`ALTER TABLE arls ADD COLUMN role_id TEXT`); } catch {}
+    try { s.exec(`ALTER TABLE arls ADD COLUMN assigned_location_ids TEXT`); } catch {}
+  });
+
+  migrate("043_seed_default_roles", () => {
+    const now = new Date().toISOString();
+    const defaults = [
+      {
+        id: "role-full-access",
+        name: "Full Access",
+        description: "All permissions enabled — same as admin but without admin privileges",
+        permissions: JSON.stringify([
+          "locations.create","locations.delete","locations.edit","arls.create","arls.delete","arls.edit",
+          "tasks.create","tasks.delete","tasks.edit","locations.mute","locations.reset_pin",
+          "meetings.start","meetings.schedule","meetings.delete","meetings.edit",
+          "emergency.access","data_management.access","forms.upload","forms.delete",
+          "ticker.create","ticker.delete","analytics.access","gamification.send"
+        ]),
+      },
+      {
+        id: "role-area-coach",
+        name: "Area Coach",
+        description: "Manage tasks and locations, no user management",
+        permissions: JSON.stringify([
+          "tasks.create","tasks.delete","tasks.edit","locations.mute","locations.reset_pin",
+          "meetings.start","meetings.schedule","forms.upload","forms.delete",
+          "ticker.create","ticker.delete","analytics.access","gamification.send"
+        ]),
+      },
+      {
+        id: "role-read-only",
+        name: "Read Only",
+        description: "View-only access — no create, edit, or delete permissions",
+        permissions: JSON.stringify(["analytics.access"]),
+      },
+      {
+        id: "role-task-manager",
+        name: "Task Manager",
+        description: "Create and manage tasks only",
+        permissions: JSON.stringify(["tasks.create","tasks.delete","tasks.edit","analytics.access"]),
+      },
+    ];
+    for (const role of defaults) {
+      s.prepare(`INSERT OR IGNORE INTO roles (id, tenant_id, name, description, permissions, is_default, created_at, updated_at)
+        VALUES (?, 'kazi', ?, ?, ?, 1, ?, ?)`).run(role.id, role.name, role.description, role.permissions, now, now);
+    }
+  });
+
+  // ── Location Groups / Regions ──
+  migrate("044_location_groups", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS location_groups (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      name TEXT NOT NULL,
+      description TEXT,
+      color TEXT,
+      parent_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE TABLE IF NOT EXISTS location_group_members (
+      id TEXT PRIMARY KEY,
+      group_id TEXT NOT NULL,
+      location_id TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_location_groups_tenant ON location_groups(tenant_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_lgm_group ON location_group_members(group_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_lgm_location ON location_group_members(location_id)`);
+    s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_lgm_unique ON location_group_members(group_id, location_id)`);
+  });
+
+  // ── Scheduled Reports ──
+  migrate("045_scheduled_reports", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS scheduled_reports (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      frequency TEXT NOT NULL,
+      recipients TEXT NOT NULL,
+      filters TEXT,
+      last_run_at TEXT,
+      next_run_at TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE TABLE IF NOT EXISTS report_history (
+      id TEXT PRIMARY KEY,
+      report_id TEXT NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      status TEXT NOT NULL DEFAULT 'pending',
+      file_path TEXT,
+      file_content BLOB,
+      error TEXT,
+      created_at TEXT NOT NULL,
+      completed_at TEXT
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_scheduled_reports_tenant ON scheduled_reports(tenant_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_report_history_report ON report_history(report_id)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

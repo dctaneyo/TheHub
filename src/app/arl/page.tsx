@@ -24,6 +24,7 @@ import {
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
 import { ConnectionStatus } from "@/components/connection-status";
+import { OfflineIndicator } from "@/components/offline-indicator";
 import { TaskManager } from "@/components/arl/task-manager";
 import { LocationsManager } from "@/components/arl/locations-manager";
 import { Messaging } from "@/components/arl/messaging";
@@ -437,20 +438,8 @@ export default function ArlPage() {
 
   return (
     <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]">
-      {/* Offline indicator banner */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            initial={{ y: -40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -40, opacity: 0 }}
-            className="fixed top-0 left-0 right-0 z-[300] flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md"
-          >
-            <Wifi className="h-4 w-4" />
-            You&apos;re offline — some features may not work
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Offline indicator with sync status */}
+      <OfflineIndicator />
 
       {/* Sidebar - always visible on desktop, drawer on mobile/tablet */}
       {/* Hide sidebar on mobile when in a meeting */}

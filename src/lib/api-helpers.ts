@@ -3,7 +3,7 @@ import { getSession, type AuthPayload } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { type PermissionKey, parsePermissions, hasPermission } from "@/lib/permissions";
+import { type PermissionKey, parsePermissions, parseAssignedLocations, hasPermission, hasLocationAccess } from "@/lib/permissions";
 
 /**
  * Get authenticated session with tenant context.
@@ -78,14 +78,39 @@ export async function requirePermission(
 }
 
 /**
- * Get the current ARL's role and parsed permissions from DB.
+ * Check if the current ARL has access to a specific location.
+ * Returns a 403 response if denied, or null if allowed.
+ */
+export async function requireLocationAccess(
+  session: AuthPayload & { tenantId: string },
+  locationId: string
+): Promise<NextResponse | null> {
+  if (session.userType !== "arl") return null; // locations always access themselves
+
+  const arl = db.select({ role: schema.arls.role, assignedLocationIds: schema.arls.assignedLocationIds })
+    .from(schema.arls)
+    .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId)))
+    .get();
+
+  if (!arl) return forbidden("ARL not found");
+  if (arl.role === "admin") return null;
+
+  const assigned = parseAssignedLocations(arl.assignedLocationIds);
+  if (!hasLocationAccess(arl.role, assigned, locationId)) {
+    return forbidden("You don't have access to this location");
+  }
+  return null;
+}
+
+/**
+ * Get the current ARL's role, parsed permissions, and assigned locations from DB.
  * Useful for returning permissions to the client.
  */
-export function getArlPermissions(arlId: string, tenantId: string): { role: string; permissions: PermissionKey[] | null } | null {
-  const arl = db.select({ role: schema.arls.role, permissions: schema.arls.permissions })
+export function getArlPermissions(arlId: string, tenantId: string): { role: string; roleId: string | null; permissions: PermissionKey[] | null; assignedLocationIds: string[] | null } | null {
+  const arl = db.select({ role: schema.arls.role, roleId: schema.arls.roleId, permissions: schema.arls.permissions, assignedLocationIds: schema.arls.assignedLocationIds })
     .from(schema.arls)
     .where(and(eq(schema.arls.id, arlId), eq(schema.arls.tenantId, tenantId)))
     .get();
   if (!arl) return null;
-  return { role: arl.role, permissions: parsePermissions(arl.permissions) };
+  return { role: arl.role, roleId: arl.roleId ?? null, permissions: parsePermissions(arl.permissions), assignedLocationIds: parseAssignedLocations(arl.assignedLocationIds) };
 }

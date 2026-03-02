@@ -200,3 +200,34 @@ export const VIEW_PERMISSIONS: Record<string, PermissionKey> = {
   "data-management": PERMISSIONS.DATA_MANAGEMENT_ACCESS,
   analytics: PERMISSIONS.ANALYTICS_ACCESS,
 };
+
+/**
+ * Parse the assignedLocationIds JSON column from the DB.
+ * Returns null (= all locations) or a string array of location IDs.
+ */
+export function parseAssignedLocations(raw: string | null | undefined): string[] | null {
+  if (!raw) return null; // null means "all locations" (default)
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0) return arr as string[];
+    return null; // empty array = all
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if an ARL has access to a specific location.
+ * - Admins always have access to all locations.
+ * - If assignedLocations is null, all locations are accessible.
+ * - Otherwise, check if the locationId is in the assigned list.
+ */
+export function hasLocationAccess(
+  role: string | undefined,
+  assignedLocations: string[] | null,
+  locationId: string
+): boolean {
+  if (role === "admin") return true;
+  if (assignedLocations === null) return true; // default = all
+  return assignedLocations.includes(locationId);
+}

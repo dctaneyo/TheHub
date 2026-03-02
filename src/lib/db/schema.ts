@@ -45,7 +45,9 @@ export const arls = sqliteTable("arls", {
   userId: text("user_id").notNull().unique(), // 4-digit login ID
   pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
   role: text("role").notNull().default("arl"), // 'arl' | 'admin'
+  roleId: text("role_id"), // references roles.id — null = custom/manual permissions
   permissions: text("permissions"), // JSON array of enabled permission keys — null = all (default)
+  assignedLocationIds: text("assigned_location_ids"), // JSON array of location IDs — null = all locations
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
@@ -382,6 +384,68 @@ export const tickerMessages = sqliteTable("ticker_messages", {
   arlName: text("arl_name").notNull(),
   expiresAt: text("expires_at"), // null = never expires
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Custom roles (RBAC templates)
+export const roles = sqliteTable("roles", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  name: text("name").notNull(), // e.g. "Regional Manager", "Area Coach"
+  description: text("description"),
+  permissions: text("permissions").notNull(), // JSON array of PermissionKey[]
+  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false), // system-provided template
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Location groups / regions
+export const locationGroups = sqliteTable("location_groups", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color"), // hex color for UI badge
+  parentId: text("parent_id"), // self-referencing for hierarchy
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Location group members - many-to-many
+export const locationGroupMembers = sqliteTable("location_group_members", {
+  id: text("id").primaryKey(), // UUID
+  groupId: text("group_id").notNull().references(() => locationGroups.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Scheduled reports
+export const scheduledReports = sqliteTable("scheduled_reports", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'task_completion' | 'leaderboard' | 'attendance' | 'messaging'
+  frequency: text("frequency").notNull(), // 'daily' | 'weekly' | 'monthly'
+  recipients: text("recipients").notNull(), // JSON array of email addresses
+  filters: text("filters"), // JSON object with optional filters (locationIds, groupIds, dateRange)
+  lastRunAt: text("last_run_at"),
+  nextRunAt: text("next_run_at"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdBy: text("created_by").notNull(), // ARL id
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Report history
+export const reportHistory = sqliteTable("report_history", {
+  id: text("id").primaryKey(), // UUID
+  reportId: text("report_id").notNull().references(() => scheduledReports.id),
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  status: text("status").notNull().default("pending"), // 'pending' | 'generating' | 'completed' | 'failed'
+  filePath: text("file_path"),
+  fileContent: blob("file_content"), // PDF bytes
+  error: text("error"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  completedAt: text("completed_at"),
 });
 
 // Meeting participants - detailed per-participant analytics

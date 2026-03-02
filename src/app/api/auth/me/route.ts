@@ -7,13 +7,15 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    // For ARLs, include fresh role + permissions from DB
+    // For ARLs, include fresh role + permissions + location assignments from DB
     if (session.userType === "arl") {
       const arlPerms = getArlPermissions(session.id, session.tenantId);
       const role = arlPerms?.role ?? session.role ?? "arl";
       const permissions = role === "admin" ? ALL_PERMISSIONS : (arlPerms?.permissions ?? ALL_PERMISSIONS);
+      const roleId = arlPerms?.roleId ?? null;
+      const assignedLocationIds = role === "admin" ? null : (arlPerms?.assignedLocationIds ?? null);
       return NextResponse.json({
-        user: { ...session, role, permissions },
+        user: { ...session, role, roleId, permissions, assignedLocationIds },
       });
     }
 

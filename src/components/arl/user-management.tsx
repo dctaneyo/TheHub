@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Edit2, Trash2, UserCheck, UserX,
-  Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2,
+  Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,19 @@ interface ArlUser {
   email: string | null;
   userId: string;
   role: string;
+  roleId: string | null;
   permissions: string | null;
+  assignedLocationIds: string | null;
   isActive: boolean;
   createdAt: string;
+}
+
+interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: string[];
+  isDefault: boolean;
 }
 
 interface Location {
@@ -66,17 +76,22 @@ export function UserManagement() {
   const [error, setError] = useState("");
   const [permissionsTarget, setPermissionsTarget] = useState<ArlUser | null>(null);
   const [editPerms, setEditPerms] = useState<PermissionKey[]>([...ALL_PERMISSIONS]);
+  const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
+  const [editRoleId, setEditRoleId] = useState<string | null>(null);
   const [savingPerms, setSavingPerms] = useState(false);
+  const [roles, setRoles] = useState<RoleTemplate[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [arlRes, locRes] = await Promise.all([
+      const [arlRes, locRes, rolesRes] = await Promise.all([
         fetch("/api/arls"),
         fetch("/api/locations"),
+        fetch("/api/roles"),
       ]);
       if (arlRes.ok) setArls((await arlRes.json()).data?.arls || []);
       if (locRes.ok) setLocations((await locRes.json()).data?.locations || []);
+      if (rolesRes.ok) setRoles((await rolesRes.json()).data?.roles || []);
     } catch {}
     setLoading(false);
   }, []);
@@ -101,7 +116,10 @@ export function UserManagement() {
 
   const openPermissions = (arl: ArlUser) => {
     const parsed: PermissionKey[] = arl.permissions ? JSON.parse(arl.permissions) : [...ALL_PERMISSIONS];
+    const assignedLocs: string[] = arl.assignedLocationIds ? JSON.parse(arl.assignedLocationIds) : [];
     setEditPerms(parsed);
+    setEditLocationIds(assignedLocs);
+    setEditRoleId(arl.roleId || null);
     setPermissionsTarget(arl);
   };
 
@@ -118,6 +136,20 @@ export function UserManagement() {
     }
   };
 
+  const applyRoleTemplate = (roleId: string) => {
+    const role = roles.find((r) => r.id === roleId);
+    if (role) {
+      setEditPerms(role.permissions as PermissionKey[]);
+      setEditRoleId(roleId);
+    }
+  };
+
+  const toggleLocationAssignment = (locationId: string) => {
+    setEditLocationIds((prev) =>
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
+    );
+  };
+
   const savePermissions = async () => {
     if (!permissionsTarget) return;
     setSavingPerms(true);
@@ -125,7 +157,12 @@ export function UserManagement() {
       const res = await fetch("/api/arls", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: permissionsTarget.id, permissions: editPerms }),
+        body: JSON.stringify({
+          id: permissionsTarget.id,
+          permissions: editPerms,
+          roleId: editRoleId,
+          assignedLocationIds: editLocationIds.length > 0 ? editLocationIds : null,
+        }),
       });
       if (res.ok) {
         setPermissionsTarget(null);
@@ -510,6 +547,90 @@ export function UserManagement() {
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {/* Role Template Selector */}
+                {roles.length > 0 && (
+                  <div className="rounded-2xl border border-border p-3">
+                    <p className="text-xs font-bold text-foreground mb-2">Apply Role Template</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {roles.map((role) => (
+                        <button
+                          key={role.id}
+                          type="button"
+                          onClick={() => applyRoleTemplate(role.id)}
+                          className={cn(
+                            "rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                            editRoleId === role.id
+                              ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          )}
+                          title={role.description || role.name}
+                        >
+                          {role.name}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setEditRoleId(null)}
+                        className={cn(
+                          "rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                          editRoleId === null
+                            ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                            : "border-border text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location Assignment */}
+                <div className="rounded-2xl border border-border p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-bold text-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Location Access
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {editLocationIds.length === 0 ? "All locations" : `${editLocationIds.length} location${editLocationIds.length !== 1 ? "s" : ""}`}
+                      </p>
+                    </div>
+                    {editLocationIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setEditLocationIds([])}
+                        className="text-[10px] text-muted-foreground hover:text-foreground"
+                      >
+                        Clear (all access)
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {locations.filter((l) => l.isActive).map((loc) => {
+                      const assigned = editLocationIds.includes(loc.id);
+                      return (
+                        <button
+                          key={loc.id}
+                          type="button"
+                          onClick={() => toggleLocationAssignment(loc.id)}
+                          className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 hover:bg-muted/50 transition-colors"
+                        >
+                          <span className="text-xs text-foreground">{loc.name} <span className="text-muted-foreground">#{loc.storeNumber}</span></span>
+                          <div className={cn(
+                            "flex h-4 w-7 items-center rounded-full px-0.5 transition-colors",
+                            assigned ? "bg-blue-500" : "bg-muted"
+                          )}>
+                            <div className={cn(
+                              "h-3 w-3 rounded-full bg-white shadow transition-transform",
+                              assigned ? "translate-x-3" : "translate-x-0"
+                            )} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {PERMISSION_GROUPS.map((group) => {
                   const groupKeys = group.permissions.map((p) => p.key);
                   const allOn = groupKeys.every((k) => editPerms.includes(k));
