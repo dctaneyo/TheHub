@@ -70,7 +70,7 @@ export function RemoteLogin() {
       ]);
       if (sessRes.ok) setPendingSessions((await sessRes.json()).pendingSessions || []);
       if (locRes.ok) { const d = await locRes.json(); setLocations(d.locations || []); }
-      if (arlRes.ok) setArls((await arlRes.json()).arls || []);
+      if (arlRes.ok) setArls((await arlRes.json()).data?.arls || []);
       if (activeRes.ok) setActiveSessions((await activeRes.json()).activeSessions || []);
     } catch {}
     setLoading(false);

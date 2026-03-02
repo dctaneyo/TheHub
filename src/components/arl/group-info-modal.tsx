@@ -128,10 +128,10 @@ export function GroupInfoModal({
       ]);
 
       const locationsData = locationsRes.ok ? await locationsRes.json() : { locations: [] };
-      const arlsData = arlsRes.ok ? await arlsRes.json() : { arls: [] };
+      const arlsData = arlsRes.ok ? await arlsRes.json() : { data: { arls: [] } };
       
       const locations = locationsData.locations || [];
-      const arls = arlsData.arls || [];
+      const arls = arlsData.data?.arls || [];
 
       const currentMemberIds = new Set(
         groupInfo?.members.map((m) => `${m.memberType}-${m.memberId}`) || []

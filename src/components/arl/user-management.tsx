@@ -75,8 +75,8 @@ export function UserManagement() {
         fetch("/api/arls"),
         fetch("/api/locations"),
       ]);
-      if (arlRes.ok) setArls((await arlRes.json()).arls || []);
-      if (locRes.ok) setLocations((await locRes.json()).locations || []);
+      if (arlRes.ok) setArls((await arlRes.json()).data?.arls || []);
+      if (locRes.ok) setLocations((await locRes.json()).data?.locations || []);
     } catch {}
     setLoading(false);
   }, []);
