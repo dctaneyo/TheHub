@@ -35,9 +35,10 @@ interface NotificationBellProps {
   tasks?: TaskItem[];
   currentTime?: string;
   soundEnabled?: boolean;
+  locationId?: string;
 }
 
-export function NotificationBell({ className, tasks = [], currentTime = "", soundEnabled = true }: NotificationBellProps) {
+export function NotificationBell({ className, tasks = [], currentTime = "", soundEnabled = true, locationId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [dbCounts, setDbCounts] = useState({ total: 0, unread: 0, urgent: 0 });
   const { socket } = useSocket();
@@ -80,22 +81,25 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const notifiedRef = useRef<Set<string>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  // Location-scoped localStorage key to prevent cross-location dismiss collisions
+  const storageKey = locationId ? `dismissed-notifications-${locationId}` : "dismissed-notifications";
+
   // Load dismissed from localStorage — clear stale dismissals from a previous day
   useEffect(() => {
     try {
       const todayStr = new Date().toISOString().split("T")[0];
-      const stored = localStorage.getItem("dismissed-notifications");
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.date === todayStr) {
           notifiedRef.current = new Set(parsed.ids || []);
         } else {
           notifiedRef.current = new Set();
-          localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: [] }));
+          localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, ids: [] }));
         }
       }
     } catch {}
-  }, []);
+  }, [storageKey]);
 
   // Clean up dismissed for completed/removed tasks
   useEffect(() => {
@@ -104,7 +108,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     const arr = Array.from(notifiedRef.current);
     let changed = false;
     const filtered = arr.filter((id) => {
-      const taskId = id.replace(/^(due|overdue)-/, "");
+      const taskId = id.replace(/^(due|overdue)-/, "").replace(/-[^-]+$/, "");
       const task = tasks.find((t) => t.id === taskId);
       if (task && !task.isCompleted && currentTaskIds.has(taskId)) return true;
       changed = true;
@@ -113,9 +117,9 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     if (changed) {
       notifiedRef.current = new Set(filtered);
       const todayStr = new Date().toISOString().split("T")[0];
-      localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: filtered }));
+      localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, ids: filtered }));
     }
-  }, [tasks]);
+  }, [tasks, storageKey]);
 
   // Auto-dismiss for completed tasks
   useEffect(() => {
@@ -138,10 +142,10 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const saveDismissed = useCallback((ids: string[]) => {
     try {
       const todayStr = new Date().toISOString().split("T")[0];
-      localStorage.setItem("dismissed-notifications", JSON.stringify({ date: todayStr, ids: Array.from(notifiedRef.current) }));
-      if (socket) socket.emit("notification:dismiss", { notificationIds: ids });
+      localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, ids: Array.from(notifiedRef.current) }));
+      if (socket) socket.emit("notification:dismiss", { notificationIds: ids, locationId });
     } catch {}
-  }, [socket]);
+  }, [socket, storageKey, locationId]);
 
   const playTaskSound = useCallback(() => {
     if (!soundEnabled) return;
@@ -169,12 +173,13 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
 
   // Server-pushed task notifications
   const fireTaskNotif = useCallback((type: "due_soon" | "overdue", data: { taskId: string; title: string; dueTime: string }) => {
-    const id = `${type === "due_soon" ? "due" : "overdue"}-${data.taskId}`;
+    const suffix = locationId ? `-${locationId}` : "";
+    const id = `${type === "due_soon" ? "due" : "overdue"}-${data.taskId}${suffix}`;
     if (notifiedRef.current.has(id)) return;
     notifiedRef.current.add(id);
     setTaskNotifs((prev) => [{ id, taskId: data.taskId, title: data.title, type, dueTime: data.dueTime, dismissed: false }, ...prev]);
     playTaskSound();
-  }, [playTaskSound]);
+  }, [playTaskSound, locationId]);
 
   useEffect(() => {
     if (!socket) return;
@@ -190,11 +195,12 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     if (!currentTime || tasks.length === 0) return;
     const nowMin = timeToMinutes(currentTime);
     const newNotifs: TaskNotification[] = [];
+    const suffix = locationId ? `-${locationId}` : "";
     for (const task of tasks) {
       if (task.isCompleted) continue;
       const taskMin = timeToMinutes(task.dueTime);
-      const overdueId = `overdue-${task.id}`;
-      const dueId = `due-${task.id}`;
+      const overdueId = `overdue-${task.id}${suffix}`;
+      const dueId = `due-${task.id}${suffix}`;
       if (taskMin < nowMin && !notifiedRef.current.has(overdueId)) {
         notifiedRef.current.add(overdueId);
         newNotifs.push({ id: overdueId, taskId: task.id, title: task.title, type: "overdue", dueTime: task.dueTime, dismissed: false });

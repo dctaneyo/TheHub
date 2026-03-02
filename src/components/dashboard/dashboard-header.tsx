@@ -227,6 +227,7 @@ export function DashboardHeader({
           tasks={allTasks}
           currentTime={currentTime}
           soundEnabled={soundEnabled}
+          locationId={user?.id}
         />
 
         <div className="hidden sm:block">

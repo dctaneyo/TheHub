@@ -263,6 +263,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // ── Notification dismiss sync (same-location cross-kiosk only) ──
+    socket.on("notification:dismiss", (data: { notificationIds: string[]; locationId?: string }) => {
+      if (!user || user.userType !== "location") return;
+      const locId = data.locationId || user.id;
+      // Broadcast only to OTHER sockets in the same location room (exclude sender)
+      socket.to(`location:${locId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
+    });
+
     // ── Task notification rescheduling ──
     socket.on("task:updated", () => {
       if (user?.userType === "location") scheduleTaskNotifications(io, user.id);
