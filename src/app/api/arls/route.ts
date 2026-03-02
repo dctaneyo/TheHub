@@ -8,6 +8,7 @@ import { v4 as uuid } from "uuid";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
 import { validate, createArlSchema, updateArlSchema } from "@/lib/validations";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { getTenant, canAddUser } from "@/lib/tenant";
 
 export async function GET() {
   try {
@@ -48,6 +49,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { name, email, userId, pin, role } = parsed.data;
+    // Enforce tenant user limit
+    const tenant = await getTenant();
+    if (tenant && !canAddUser(session.tenantId, tenant.maxUsers)) {
+      return NextResponse.json({ error: `ARL user limit reached (${tenant.maxUsers} max for your plan)` }, { status: 403 });
+    }
+
     const existing = db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
     if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
 

@@ -97,3 +97,27 @@ export function resolveTenantByHost(host: string): { id: string; slug: string } 
 export function hasFeature(tenant: Tenant, feature: string): boolean {
   return tenant.features.includes(feature);
 }
+
+/**
+ * Check if tenant can add more locations (within maxLocations limit).
+ */
+export function canAddLocation(tenantId: string, maxLocations: number): boolean {
+  const count = db
+    .select({ id: schema.locations.id })
+    .from(schema.locations)
+    .where(eq(schema.locations.tenantId, tenantId))
+    .all().length;
+  return count < maxLocations;
+}
+
+/**
+ * Check if tenant can add more users/ARLs (within maxUsers limit).
+ */
+export function canAddUser(tenantId: string, maxUsers: number): boolean {
+  const count = db
+    .select({ id: schema.arls.id })
+    .from(schema.arls)
+    .where(eq(schema.arls.tenantId, tenantId))
+    .all().length;
+  return count < maxUsers;
+}

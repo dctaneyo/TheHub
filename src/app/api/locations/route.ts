@@ -8,6 +8,7 @@ import { v4 as uuid } from "uuid";
 import { hashSync } from "bcryptjs";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
 import { validate, createLocationSchema, updateLocationSchema } from "@/lib/validations";
+import { getTenant, canAddLocation } from "@/lib/tenant";
 
 // GET all locations (+ ARLs) with session status
 export async function GET() {
@@ -127,6 +128,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { name, storeNumber, address, email, userId, pin } = parsed.data;
+
+    // Enforce tenant location limit
+    const tenant = await getTenant();
+    if (tenant && !canAddLocation(session.tenantId, tenant.maxLocations)) {
+      return NextResponse.json({ error: `Location limit reached (${tenant.maxLocations} max for your plan)` }, { status: 403 });
+    }
 
     const now = new Date().toISOString();
     const location = {
