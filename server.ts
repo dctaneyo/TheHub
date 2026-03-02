@@ -5,6 +5,7 @@ import cron from "node-cron";
 import { initSocketServer } from "./src/lib/socket-server";
 import { createBackup } from "./scripts/backup-database";
 import { startTaskNotificationScheduler } from "./src/lib/task-notification-scheduler";
+import { cleanupStaleData } from "./src/lib/cleanup";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
@@ -60,8 +61,20 @@ app.prepare().then(() => {
       }
     });
 
+    // Daily stale data cleanup at 1:30 AM (before backup)
+    cron.schedule('30 1 * * *', async () => {
+      console.log('🧹 Running scheduled data cleanup...');
+      try {
+        const result = await cleanupStaleData();
+        console.log('✅ Cleanup complete:', result);
+      } catch (error) {
+        console.error('❌ Scheduled cleanup failed:', error);
+      }
+    });
+
     console.log('✅ Automated backups configured:');
-    console.log('   - Daily: 2:00 AM (keep 30 days)');
+    console.log('   - Daily cleanup: 1:30 AM (sessions, notifications, orphans)');
+    console.log('   - Daily backup: 2:00 AM (keep 30 days)');
     console.log('   - Weekly: Sunday 3:00 AM (keep 12 weeks)');
     console.log('   - Monthly: 1st of month 4:00 AM (keep 12 months)');
   }

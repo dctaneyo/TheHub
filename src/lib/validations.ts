@@ -79,6 +79,67 @@ export const emergencyBroadcastSchema = z.object({
   expiresAt: z.string().nullable().optional(),
 });
 
+// ── ARL schemas ──
+
+export const createArlSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  email: z.string().email("Invalid email").nullable().optional(),
+  userId: z.string().length(4, "User ID must be 4 digits").regex(/^\d{4}$/, "User ID must be numeric"),
+  pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
+  role: z.enum(["arl", "admin"]).default("arl"),
+});
+
+export const updateArlSchema = z.object({
+  id: z.string().min(1, "ARL ID is required"),
+  name: z.string().min(1).max(200).optional(),
+  email: z.string().email().nullable().optional(),
+  pin: z.string().length(4).regex(/^\d{4}$/).optional(),
+  role: z.enum(["arl", "admin"]).optional(),
+  isActive: z.boolean().optional(),
+  permissions: z.string().nullable().optional(),
+});
+
+// ── Broadcast schemas ──
+
+export const createBroadcastSchema = z.object({
+  title: z.string().min(1, "Title is required").max(500),
+  description: z.string().max(2000).nullable().optional(),
+  streamMode: z.string().optional(),
+  targetAudience: z.string().optional(),
+  targetLocationIds: z.array(z.string()).nullable().optional(),
+  scheduledFor: z.string().nullable().optional(),
+});
+
+// ── Location schemas ──
+
+export const createLocationSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  storeNumber: z.string().min(1, "Store number is required").max(50),
+  userId: z.string().length(4, "User ID must be 4 digits").regex(/^\d{4}$/, "User ID must be numeric"),
+  pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
+  address: z.string().max(500).nullable().optional(),
+});
+
+export const updateLocationSchema = z.object({
+  id: z.string().min(1, "Location ID is required"),
+  name: z.string().min(1).max(200).optional(),
+  storeNumber: z.string().min(1).max(50).optional(),
+  pin: z.string().length(4).regex(/^\d{4}$/).optional(),
+  address: z.string().max(500).nullable().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// ── Conversation schemas ──
+
+export const createConversationSchema = z.object({
+  type: z.enum(["direct", "group"]),
+  name: z.string().max(200).nullable().optional(),
+  memberIds: z.array(z.object({
+    memberId: z.string().min(1),
+    memberType: z.enum(["location", "arl"]),
+  })).min(1, "At least one member required"),
+});
+
 // ── Helper: validate and return parsed data or error response ──
 
 export function validate<T extends z.ZodTypeAny>(schema: T, data: unknown): { success: true; data: z.infer<T> } | { success: false; error: string } {

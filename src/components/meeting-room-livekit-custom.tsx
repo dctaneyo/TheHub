@@ -1713,7 +1713,7 @@ function MeetingUI({
                       placeholder="Type a message..."
                       className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
                     />
-                    <Button onClick={sendChat} disabled={!newMessage.trim()} size="icon" className="bg-red-600 hover:bg-red-700 h-9 w-9 shrink-0">
+                    <Button onClick={sendChat} disabled={!newMessage.trim()} size="icon" className="bg-red-600 hover:bg-red-700 h-9 w-9 shrink-0" aria-label="Send chat message">
                       <Send className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -1776,7 +1776,7 @@ function MeetingUI({
                       placeholder="Ask a question..."
                       className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
                     />
-                    <Button onClick={sendQuestion} disabled={!newQuestion.trim()} size="icon" className="bg-yellow-600 hover:bg-yellow-700 h-9 w-9 shrink-0">
+                    <Button onClick={sendQuestion} disabled={!newQuestion.trim()} size="icon" className="bg-yellow-600 hover:bg-yellow-700 h-9 w-9 shrink-0" aria-label="Submit question">
                       <Send className="h-3.5 w-3.5" />
                     </Button>
                   </div>

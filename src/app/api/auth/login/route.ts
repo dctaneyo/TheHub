@@ -45,14 +45,14 @@ export async function POST(req: NextRequest) {
     if (location) {
       if (!location.isActive) {
         return NextResponse.json(
-          { error: "This location has been deactivated" },
-          { status: 403 }
+          { error: "Invalid credentials" },
+          { status: 401 }
         );
       }
 
       if (!compareSync(pin, location.pinHash)) {
         return NextResponse.json(
-          { error: "Invalid PIN" },
+          { error: "Invalid credentials" },
           { status: 401 }
         );
       }
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       response.cookies.set("hub-token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         maxAge: 60 * 60 * 24, // 24 hours
         path: "/",
       });
@@ -127,14 +127,14 @@ export async function POST(req: NextRequest) {
     if (arl) {
       if (!arl.isActive) {
         return NextResponse.json(
-          { error: "This account has been deactivated" },
-          { status: 403 }
+          { error: "Invalid credentials" },
+          { status: 401 }
         );
       }
 
       if (!compareSync(pin, arl.pinHash)) {
         return NextResponse.json(
-          { error: "Invalid PIN" },
+          { error: "Invalid credentials" },
           { status: 401 }
         );
       }
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
       response.cookies.set("hub-token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         maxAge: 60 * 60 * 24,
         path: "/",
       });
@@ -204,9 +204,10 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
+    // Generic error — don't reveal whether user exists
     return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
+      { error: "Invalid credentials" },
+      { status: 401 }
     );
   } catch (error) {
     console.error("Login error:", error);

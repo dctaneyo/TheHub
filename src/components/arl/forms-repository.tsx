@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { CardSkeleton } from "@/components/ui/skeleton";
 
 interface Form {
   id: string;
@@ -203,11 +204,7 @@ export function FormsRepository() {
   const filtered = filterCat === "all" ? forms : forms.filter((f) => f.category === filterCat);
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   return (

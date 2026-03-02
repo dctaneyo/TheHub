@@ -298,6 +298,30 @@ function runMigrations() {
     s.prepare(`UPDATE arls SET role = 'admin' WHERE user_id = '2092' AND tenant_id = 'kazi'`).run();
   });
 
+  // ── Foreign key & query performance indexes ──
+  migrate("040_fk_indexes", () => {
+    // task_completions lookups by location
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_task_completions_location ON task_completions(location_id)`);
+    // message_reads by reader (for unread count queries)
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_message_reads_reader ON message_reads(reader_id, reader_type)`);
+    // conversation_members by member (for "my conversations" queries)
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_conv_members_member ON conversation_members(member_id, member_type)`);
+    // messages by sender (for search / activity queries)
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)`);
+    // push_subscriptions by user
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id)`);
+    // sessions expiry (for cleanup queries)
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
+    // pending_sessions expiry
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_pending_sessions_expires ON pending_sessions(expires_at)`);
+    // emergency_messages tenant + active
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_emergency_tenant_active ON emergency_messages(tenant_id, is_active)`);
+    // broadcasts by tenant + arl
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_broadcasts_tenant ON broadcasts(tenant_id)`);
+    // ticker messages expiry
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_ticker_expires ON ticker_messages(expires_at)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

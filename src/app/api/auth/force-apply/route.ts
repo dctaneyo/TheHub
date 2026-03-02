@@ -5,17 +5,26 @@ function setTokenCookie(response: NextResponse, token: string) {
   response.cookies.set("hub-token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 60 * 60 * 24,
     path: "/",
   });
+}
+
+// Sanitize redirect path — only allow relative paths starting with /
+function safeRedirect(raw: string | null): string {
+  if (!raw) return "/login";
+  // Strip anything that isn't a simple relative path
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return "/login";
+  // Remove any characters that could break out of a JS string literal
+  return raw.replace(/["'<>\\]/g, "");
 }
 
 // GET - Apply token from query params, set cookie, client-side redirect via HTML
 // (avoids NextResponse.redirect which uses req.url → internal 0.0.0.0 address)
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
-  const redirectTo = req.nextUrl.searchParams.get("redirect") || "/login";
+  const redirectTo = safeRedirect(req.nextUrl.searchParams.get("redirect"));
 
   if (!token || !verifyToken(token)) {
     return new NextResponse(

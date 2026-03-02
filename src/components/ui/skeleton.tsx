@@ -19,7 +19,7 @@ export function Skeleton({ className, variant = "default", lines = 1 }: Skeleton
   };
 
   const baseClass = cn(
-    "bg-slate-200 overflow-hidden",
+    "bg-muted overflow-hidden",
     variants[variant],
     className
   );
@@ -35,7 +35,7 @@ export function Skeleton({ className, variant = "default", lines = 1 }: Skeleton
           transition={{ delay: i * 0.1 }}
         >
           <motion.div
-            className="h-full bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200"
+            className="h-full bg-gradient-to-r from-muted via-muted-foreground/10 to-muted"
             animate={{ x: ["-100%", "100%"] }}
             transition={{ 
               duration: 1.5, 
@@ -86,6 +86,73 @@ export function CardSkeleton() {
         <Skeleton variant="text" className="w-20" />
         <Skeleton variant="text" className="w-16" />
       </div>
+    </div>
+  );
+}
+
+export function ConversationListSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <Skeleton variant="text" className="h-5 w-24" />
+          <Skeleton variant="text" className="h-3 w-16" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-16 rounded-xl" />
+          <Skeleton className="h-8 w-16 rounded-xl" />
+        </div>
+      </div>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-xl p-2">
+          <Skeleton variant="avatar" className="h-10 w-10 rounded-xl" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton variant="text" className="h-3.5 w-2/5" />
+            <Skeleton variant="text" className="h-3 w-3/4" />
+          </div>
+          <Skeleton variant="text" className="h-3 w-10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TaskListSkeleton() {
+  return (
+    <div className="flex flex-col h-full gap-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <Skeleton variant="text" className="h-5 w-40" />
+          <Skeleton variant="text" className="h-3 w-20" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-28 rounded-xl" />
+          <Skeleton className="h-8 w-24 rounded-xl" />
+          <Skeleton className="h-8 w-20 rounded-xl" />
+        </div>
+      </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton variant="text" className="h-4 w-1/3" />
+              <Skeleton className="h-5 w-12 rounded-full" />
+              <Skeleton className="h-5 w-10 rounded-full" />
+            </div>
+            <Skeleton variant="text" className="h-3 w-2/3" />
+            <div className="flex gap-3">
+              <Skeleton variant="text" className="h-3 w-16" />
+              <Skeleton variant="text" className="h-3 w-12" />
+              <Skeleton variant="text" className="h-3 w-20" />
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-lg" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

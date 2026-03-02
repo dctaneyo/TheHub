@@ -49,9 +49,34 @@ function isJoinDomain(hostname: string): boolean {
   return hubDomains.some((d) => host === `join.${d}`);
 }
 
+// Paths exempt from CSRF check (auth flow, health, webhooks)
+const csrfExemptPaths = [
+  "/api/auth/",
+  "/api/session/pending",
+  "/api/health",
+  "/api/livekit/",
+  "/api/graphql",
+];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "localhost";
+
+  // ── CSRF protection for API mutations ──
+  const method = request.method.toUpperCase();
+  if (
+    pathname.startsWith("/api/") &&
+    method !== "GET" && method !== "HEAD" && method !== "OPTIONS" &&
+    !csrfExemptPaths.some((p) => pathname.startsWith(p))
+  ) {
+    const csrfHeader = request.headers.get("x-hub-request");
+    if (csrfHeader !== "1") {
+      return NextResponse.json(
+        { error: "CSRF validation failed" },
+        { status: 403 }
+      );
+    }
+  }
 
   // ── Join subdomain → rewrite to /meeting ──
   if (isJoinDomain(hostname)) {

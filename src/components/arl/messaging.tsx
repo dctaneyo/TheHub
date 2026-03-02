@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
   ArrowLeft,
@@ -10,520 +8,53 @@ import {
   Check,
   Store,
   MessageCircle,
-  Globe,
   Users,
   Plus,
-  X,
   Hash,
-  Trash2,
-  Heart,
-  ThumbsUp,
-  Laugh,
   Smile,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { format, formatDistanceToNow } from "date-fns";
-import { useSocket } from "@/lib/socket-context";
+import { format } from "date-fns";
 import { Emoji } from "@/components/ui/emoji";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
 import { Info, BellOff, Bell, Search, XCircle } from "lucide-react";
 import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
 import { MentionInput, MessageContent } from "@/components/mention-input";
-import type { Mentionable } from "@/components/mention-input";
+import { SwipeableConvoRow, convIcon, convIconBg } from "./swipeable-convo-row";
+import { useMessaging } from "./use-messaging";
+import { ConversationListSkeleton } from "@/components/ui/skeleton";
 
-interface Conversation {
-  id: string;
-  type: "direct" | "global" | "group";
-  name: string;
-  subtitle: string;
-  lastMessage: {
-    content: string;
-    createdAt: string;
-    senderType: string;
-    senderName: string;
-  } | null;
-  unreadCount: number;
-  memberCount: number;
-  members?: Array<{ memberId: string; memberType: string }>;
-}
-
-interface Message {
-  id: string;
-  conversationId: string;
-  senderType: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  messageType: string;
-  createdAt: string;
-  reads: Array<{ readerType: string; readerId: string; readAt: string }>;
-  reactions?: Array<{ emoji: string; userId: string; userName: string; createdAt: string }>;
-}
-
-interface MemberInfo {
-  id: string;
-  name: string;
-  type: "location" | "arl";
-}
-
-type ConvType = "direct" | "global" | "group";
-
-interface NewGroupState {
-  name: string;
-  memberIds: string[];
-  memberTypes: string[];
-}
-
-interface Participant {
-  id: string;
-  name: string;
-  type: "location" | "arl";
-  storeNumber?: string;
-}
-
-function convIcon(type: ConvType) {
-  if (type === "global") return <Globe className="h-5 w-5" />;
-  if (type === "group") return <Users className="h-5 w-5" />;
-  return <Store className="h-5 w-5" />;
-}
-
-function convIconBg(type: ConvType) {
-  if (type === "global") return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
-  if (type === "group") return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
-  return "bg-muted text-muted-foreground";
-}
-
-const SWIPE_THRESHOLD = 60; // px to reveal delete button
-const DELETE_WIDTH = 72;   // width of the revealed delete zone
-
-interface SwipeableConvoRowProps {
-  convo: Conversation;
-  onOpen: () => void;
-  onDelete: () => void;
-}
-
-function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRowProps) {
-  const x = useMotionValue(0);
-  const [swiped, setSwiped] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const startXRef = useRef(0);
-  const isDraggingRef = useRef(false);
-
-  // Clamp x between -DELETE_WIDTH and 0
-  const clampedX = useTransform(x, (v) => Math.min(0, Math.max(-DELETE_WIDTH, v)));
-  // Delete button opacity/scale based on how far swiped
-  const deleteOpacity = useTransform(x, [-DELETE_WIDTH, -SWIPE_THRESHOLD], [1, 0]);
-
-  const snapOpen = useCallback(() => {
-    animate(x, -DELETE_WIDTH, { type: "spring", stiffness: 400, damping: 35 });
-    setSwiped(true);
-  }, [x]);
-
-  const snapClosed = useCallback(() => {
-    animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
-    setSwiped(false);
-    setConfirming(false);
-  }, [x]);
-
-  const canDelete = convo.type !== "global";
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!canDelete) return;
-    startXRef.current = e.touches[0].clientX;
-    isDraggingRef.current = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!canDelete) return;
-    const dx = e.touches[0].clientX - startXRef.current;
-    if (Math.abs(dx) > 5) isDraggingRef.current = true;
-    // Only allow left swipe (negative dx)
-    const next = swiped ? -DELETE_WIDTH + dx : dx;
-    x.set(Math.min(0, Math.max(-DELETE_WIDTH, next)));
-  };
-
-  const handleTouchEnd = () => {
-    if (!canDelete || !isDraggingRef.current) return;
-    const cur = x.get();
-    if (cur < -SWIPE_THRESHOLD) {
-      snapOpen();
-    } else {
-      snapClosed();
-    }
-  };
-
-  const handleRowClick = () => {
-    if (isDraggingRef.current) return;
-    if (swiped) { snapClosed(); return; }
-    onOpen();
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirming) {
-      setConfirming(true);
-      // Auto-reset confirm state after 3s if not tapped again
-      setTimeout(() => setConfirming(false), 3000);
-    } else {
-      onDelete();
-    }
-  };
-
-  return (
-    <div className="group relative overflow-hidden rounded-xl">
-      {/* Delete button revealed behind — only for non-global conversations */}
-      {canDelete && (
-        <motion.div
-          style={{ opacity: deleteOpacity, width: DELETE_WIDTH }}
-          className="absolute inset-y-0 right-0 flex items-center justify-end"
-        >
-          <button
-            onClick={handleDeleteClick}
-            className={cn(
-              "flex h-full w-full items-center justify-center gap-1 rounded-xl text-white text-xs font-bold transition-colors",
-              confirming ? "bg-red-700" : "bg-red-500"
-            )}
-          >
-            <Trash2 className="h-4 w-4" />
-            {confirming ? "Sure?" : "Delete"}
-          </button>
-        </motion.div>
-      )}
-
-      {/* Swipeable row */}
-      <motion.div
-        style={{ x: clampedX }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleRowClick}
-        className={cn(
-          "relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors cursor-pointer select-none",
-          convo.unreadCount > 0 ? "bg-red-50" : "bg-card hover:bg-muted"
-        )}
-      >
-        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
-          {convIcon(convo.type)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
-            {convo.lastMessage && (
-              <span className="shrink-0 text-[10px] text-muted-foreground">
-                {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
-              </span>
-            )}
-          </div>
-          <p className="text-[10px] text-muted-foreground">{convo.subtitle}</p>
-          {convo.lastMessage && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              <span className="text-muted-foreground">{convo.lastMessage.senderName}: </span>
-              {convo.lastMessage.content}
-            </p>
-          )}
-        </div>
-        {convo.unreadCount > 0 && (
-          <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
-            {convo.unreadCount}
-          </span>
-        )}
-        {/* Desktop-only delete button (hover) */}
-        {convo.type !== "global" && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="hidden sm:group-hover:flex absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600"
-            title="Delete conversation"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
-        )}
-      </motion.div>
-    </div>
-  );
-}
+const reactions = ["❤️", "👍", "😂", "😊"];
 
 export function Messaging() {
-  const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [showAllMessages, setShowAllMessages] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [showNewGroup, setShowNewGroup] = useState(false);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [newGroup, setNewGroup] = useState<NewGroupState>({ name: "", memberIds: [], memberTypes: [] });
-  const [creatingGroup, setCreatingGroup] = useState(false);
-  const [memberInfoMap, setMemberInfoMap] = useState<Map<string, MemberInfo>>(new Map());
-  const [receiptPopover, setReceiptPopover] = useState<string | null>(null); // message id
-  const [showNewDirect, setShowNewDirect] = useState(false);
-  const [directSearch, setDirectSearch] = useState("");
-  const [startingDirect, setStartingDirect] = useState(false);
-  const [mentionables, setMentionables] = useState<Mentionable[]>([]);
-  const [showReactions, setShowReactions] = useState<string | null>(null);
-  const [showGroupInfo, setShowGroupInfo] = useState(false);
-  const [mutedConvos, setMutedConvos] = useState<Set<string>>(new Set());
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const reactions = ["❤️", "👍", "😂", "😊"];
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const msgScrollRef = useRef<HTMLDivElement>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const prevUnreadRef = useRef<number>(0);
-  const initializedRef = useRef(false);
-  const knownMessageIdsRef = useRef<Set<string>>(new Set());
-  const prevConvsRef = useRef<Conversation[]>([]);
-
-  const playMessageChime = useCallback(() => {
-    try {
-      const ctx = audioCtxRef.current ?? new AudioContext();
-      audioCtxRef.current = ctx;
-      const t = ctx.currentTime;
-      // Subtle 2-note soft beep for office/ARL environment
-      [[660, 0, 0.12], [880, 0.15, 0.18]].forEach(([freq, delay, dur]) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.08, t + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
-        osc.start(t + delay);
-        osc.stop(t + delay + dur);
-      });
-    } catch {}
-  }, []);
-
-  const toggleMute = useCallback(async (conversationId: string) => {
-    try {
-      const res = await fetch("/api/messages/mute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId }),
-      });
-      if (res.ok) {
-        const { isMuted } = await res.json();
-        setMutedConvos((prev) => {
-          const next = new Set(prev);
-          if (isMuted) next.add(conversationId);
-          else next.delete(conversationId);
-          return next;
-        });
-      }
-    } catch {}
-  }, []);
-
-  const fetchMentionables = useCallback(async () => {
-    try {
-      const [locRes, arlRes] = await Promise.all([fetch("/api/locations"), fetch("/api/arls")]);
-      const items: Mentionable[] = [];
-      if (locRes.ok) { const d = await locRes.json(); for (const l of d.locations || []) items.push({ id: l.id, name: l.name, type: "location", storeNumber: l.storeNumber }); }
-      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.arls || []) items.push({ id: a.id, name: a.name, type: "arl" }); }
-      setMentionables(items);
-    } catch {}
-  }, []);
-
-  const fetchConversations = useCallback(async () => {
-    try {
-      const res = await fetch("/api/messages");
-      if (res.ok) {
-        const data = await res.json();
-        const convs: Conversation[] = data.conversations;
-        const newTotal = convs.reduce((s, c) => s + c.unreadCount, 0);
-        // Only chime for messages that arrive after the initial load, and not for muted convos
-        if (initializedRef.current && newTotal > prevUnreadRef.current) {
-          const prevConvs = prevConvsRef.current;
-          const hasUnmutedIncrease = convs.some((c) => {
-            const prev = prevConvs.find((p) => p.id === c.id);
-            return !mutedConvos.has(c.id) && c.unreadCount > (prev?.unreadCount ?? 0);
-          });
-          if (hasUnmutedIncrease) playMessageChime();
-        }
-        prevConvsRef.current = convs;
-        prevUnreadRef.current = newTotal;
-        initializedRef.current = true;
-        setConversations(convs);
-      }
-    } catch (err) {
-      console.error("Failed to fetch conversations:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [playMessageChime, mutedConvos]);
-
-  const fetchMemberInfo = useCallback(async () => {
-    try {
-      const [locRes, arlRes] = await Promise.all([
-        fetch("/api/locations"),
-        fetch("/api/arls"),
-      ]);
-      const map = new Map<string, MemberInfo>();
-      if (locRes.ok) {
-        const d = await locRes.json();
-        for (const l of d.locations || []) map.set(l.id, { id: l.id, name: l.name, type: "location" });
-      }
-      if (arlRes.ok) {
-        const d = await arlRes.json();
-        for (const a of d.arls || []) map.set(a.id, { id: a.id, name: a.name, type: "arl" });
-      }
-      setMemberInfoMap(map);
-    } catch {}
-  }, []);
-
-  const fetchParticipants = useCallback(async () => {
-    try {
-      const [locRes, arlRes] = await Promise.all([
-        fetch("/api/locations"),
-        fetch("/api/arls"),
-      ]);
-      const parts: Participant[] = [];
-      if (locRes.ok) {
-        const d = await locRes.json();
-        for (const l of d.locations || []) parts.push({ id: l.id, name: l.name, type: "location", storeNumber: l.storeNumber });
-      }
-      if (arlRes.ok) {
-        const d = await arlRes.json();
-        for (const a of d.arls || []) parts.push({ id: a.id, name: a.name, type: "arl" });
-      }
-      setParticipants(parts);
-    } catch {}
-  }, []);
-
-  const fetchMessages = useCallback(async (convId: string) => {
-    try {
-      fetch("/api/messages/purge", { method: "POST" }).catch(() => {});
-      const res = await fetch(`/api/messages?conversationId=${convId}`);
-      if (res.ok) {
-        const data = await res.json();
-        // Track known IDs so only truly new messages animate
-        for (const m of data.messages) knownMessageIdsRef.current.add(m.id);
-        setMessages(data.messages);
-        const unreadIds = data.messages
-          .filter((m: Message) => m.reads.length === 0 && m.senderId !== user?.id)
-          .map((m: Message) => m.id);
-        if (unreadIds.length > 0) {
-          await fetch("/api/messages/read", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageIds: unreadIds }),
-          });
-          fetchConversations();
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch messages:", err);
-    }
-  }, [fetchConversations]);
-
-  // WebSocket for instant updates
-  const { socket, joinConversation, leaveConversation, startTyping, stopTyping } = useSocket();
-  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
-  const typingTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  useEffect(() => {
-    fetchConversations();
-    fetchParticipants();
-    fetchMentionables();
-    fetchMemberInfo();
-  }, [fetchConversations, fetchParticipants, fetchMentionables, fetchMemberInfo]);
-
-  // Socket listeners
-  useEffect(() => {
-    if (!socket) return;
-    const handleConvoUpdate = (data?: { conversationId: string }) => {
-      fetchConversations();
-      // If this is the active conversation, refetch messages to show updated reactions
-      if (activeConvo && data?.conversationId === activeConvo.id) {
-        fetchMessages(activeConvo.id);
-      }
-    };
-    const handleNewMessage = (data: { conversationId: string }) => {
-      fetchConversations();
-      if (activeConvo && data.conversationId === activeConvo.id) {
-        fetchMessages(activeConvo.id);
-      }
-    };
-    const handleMessageRead = () => fetchConversations();
-    const handleTypingStart = (data: { conversationId: string; userId: string; userName: string }) => {
-      if (activeConvo && data.conversationId === activeConvo.id) {
-        setTypingUsers((prev) => new Map(prev).set(data.userId, data.userName));
-        const existing = typingTimeoutsRef.current.get(data.userId);
-        if (existing) clearTimeout(existing);
-        typingTimeoutsRef.current.set(data.userId, setTimeout(() => {
-          setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
-        }, 3000));
-      }
-    };
-    const handleTypingStop = (data: { userId: string }) => {
-      setTypingUsers((prev) => { const n = new Map(prev); n.delete(data.userId); return n; });
-    };
-    socket.on("conversation:updated", handleConvoUpdate);
-    socket.on("message:new", handleNewMessage);
-    socket.on("message:read", handleMessageRead);
-    socket.on("typing:start", handleTypingStart);
-    socket.on("typing:stop", handleTypingStop);
-    return () => {
-      socket.off("conversation:updated", handleConvoUpdate);
-      socket.off("message:new", handleNewMessage);
-      socket.off("message:read", handleMessageRead);
-      socket.off("typing:start", handleTypingStart);
-      socket.off("typing:stop", handleTypingStop);
-    };
-  }, [socket, fetchConversations, fetchMessages, activeConvo]);
-
-  // Add reaction functionality
-  const addReaction = async (messageId: string, emoji: string) => {
-    try {
-      const res = await fetch("/api/messages/reaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId, emoji }),
-      });
-      if (res.ok) {
-        setShowReactions(null);
-        // Refresh messages to show the reaction
-        if (activeConvo) {
-          fetchMessages(activeConvo.id);
-        }
-      }
-    } catch {}
-  };
-
-  // Join/leave conversation rooms
-  useEffect(() => {
-    if (activeConvo) {
-      knownMessageIdsRef.current.clear();
-      setShowAllMessages(false);
-      fetchMessages(activeConvo.id);
-      joinConversation(activeConvo.id);
-      setTypingUsers(new Map());
-      return () => { leaveConversation(activeConvo.id); };
-    }
-  }, [activeConvo, fetchMessages, joinConversation, leaveConversation]);
-
-  // Compute visible messages for the virtualizer
-  const { visibleMessages, hasPast } = useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const yesterdayStart = todayStart - 86400000;
-    const searchFiltered = searchQuery
-      ? messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-      : null;
-    const visible = searchFiltered ?? (showAllMessages
-      ? messages
-      : messages.filter((m) => new Date(m.createdAt).getTime() >= yesterdayStart));
-    const past = !searchFiltered && messages.some((m) => new Date(m.createdAt).getTime() < yesterdayStart);
-    return { visibleMessages: visible, hasPast: past };
-  }, [messages, searchQuery, showAllMessages]);
+  const {
+    user,
+    conversations, activeConvo, setActiveConvo,
+    messages, visibleMessages, hasPast,
+    showAllMessages, setShowAllMessages,
+    newMessage, setNewMessage,
+    loading, sending,
+    showNewGroup, setShowNewGroup,
+    participants, newGroup, setNewGroup, creatingGroup,
+    memberInfoMap, receiptPopover, setReceiptPopover,
+    showNewDirect, setShowNewDirect,
+    directSearch, setDirectSearch, startingDirect,
+    mentionables, showReactions, setShowReactions,
+    showGroupInfo, setShowGroupInfo,
+    mutedConvos, showSearch, setShowSearch,
+    searchQuery, setSearchQuery,
+    typingUsers, totalUnread,
+    searchInputRef, messagesEndRef, msgScrollRef,
+    handleSend, handleCreateGroup, startDirectChat,
+    toggleMember, deleteConversation, addReaction,
+    toggleMute, fetchParticipants, fetchConversations,
+    fetchMessages, getReceiptDetail,
+    startTyping, stopTyping,
+  } = useMessaging();
 
   const msgVirtualizer = useVirtualizer({
     count: visibleMessages.length,
@@ -533,129 +64,8 @@ export function Messaging() {
     overscan: 8,
   });
 
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      if (msgScrollRef.current) {
-        msgScrollRef.current.scrollTop = msgScrollRef.current.scrollHeight;
-      }
-    });
-  }, [messages]);
-
-  const handleSend = async (directContent?: string) => {
-    const content = (directContent || newMessage).trim();
-    if (!content || !activeConvo || sending) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: activeConvo.id, content }),
-      });
-      if (res.ok) {
-        setNewMessage("");
-        await fetchMessages(activeConvo.id);
-        fetchConversations();
-      }
-    } catch (err) {
-      console.error("Send message error:", err);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleCreateGroup = async () => {
-    if (!newGroup.name.trim() || newGroup.memberIds.length === 0) return;
-    setCreatingGroup(true);
-    try {
-      const res = await fetch("/api/messages", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "group", name: newGroup.name.trim(), memberIds: newGroup.memberIds, memberTypes: newGroup.memberTypes }),
-      });
-      if (res.ok) {
-        setShowNewGroup(false);
-        setNewGroup({ name: "", memberIds: [], memberTypes: [] });
-        await fetchConversations();
-      }
-    } catch {}
-    setCreatingGroup(false);
-  };
-
-  const startDirectChat = async (p: Participant) => {
-    setStartingDirect(true);
-    try {
-      const res = await fetch("/api/messages", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "direct", memberIds: [p.id], memberTypes: [p.type] }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        await fetchConversations();
-        const convId = data.conversation?.id;
-        if (convId) {
-          const res2 = await fetch("/api/messages");
-          if (res2.ok) {
-            const d = await res2.json();
-            const found = (d.conversations || []).find((c: Conversation) => c.id === convId);
-            if (found) {
-              setShowNewDirect(false);
-              setDirectSearch("");
-              setActiveConvo(found);
-            }
-          }
-        }
-      }
-    } catch {}
-    setStartingDirect(false);
-  };
-
-  const toggleMember = (p: Participant) => {
-    setNewGroup((prev) => {
-      const idx = prev.memberIds.indexOf(p.id);
-      if (idx >= 0) {
-        return { ...prev, memberIds: prev.memberIds.filter((_, i) => i !== idx), memberTypes: prev.memberTypes.filter((_, i) => i !== idx) };
-      }
-      return { ...prev, memberIds: [...prev.memberIds, p.id], memberTypes: [...prev.memberTypes, p.type] };
-    });
-  };
-
-  const deleteConversation = async (convId: string) => {
-    try {
-      const res = await fetch("/api/messages/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convId }),
-      });
-      if (res.ok) {
-        setConversations((prev) => prev.filter((c) => c.id !== convId));
-        if (activeConvo?.id === convId) setActiveConvo(null);
-      }
-    } catch {}
-  };
-
-  const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
-
-  // Build read receipt detail for a message in a group/global convo
-  const getReceiptDetail = (msg: Message, convo: Conversation) => {
-    if (convo.type === "direct") return null;
-    const readIds = new Set(msg.reads.map((r) => r.readerId));
-    // Get all members except the sender
-    const members = convo.members || [];
-    const others = members.filter((m) => m.memberId !== msg.senderId);
-    const readMembers = others.filter((m) => readIds.has(m.memberId));
-    const unreadMembers = others.filter((m) => !readIds.has(m.memberId));
-    return { readMembers, unreadMembers };
-  };
-
   if (loading) {
-    return (
-      <div className="rounded-2xl border border-border bg-card shadow-sm">
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
-        </div>
-      </div>
-    );
+    return <ConversationListSkeleton />;
   }
 
   // New group modal
@@ -838,7 +248,7 @@ export function Messaging() {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", convIconBg(activeConvo.type))}>
@@ -853,6 +263,7 @@ export function Messaging() {
             onClick={() => setShowGroupInfo(true)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
             title="Group Info"
+            aria-label="Group info"
           >
             <Info className="h-4 w-4" />
           </button>
@@ -864,6 +275,7 @@ export function Messaging() {
             showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"
           )}
           title="Search messages"
+          aria-label="Search messages"
         >
           <Search className="h-4 w-4" />
         </button>
@@ -876,6 +288,7 @@ export function Messaging() {
               : "text-muted-foreground hover:bg-muted"
           )}
           title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
+          aria-label={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
         >
           {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
         </button>
@@ -1002,12 +415,12 @@ export function Messaging() {
                                 {receiptDetail.readMembers.length > 0 && (
                                   <div className="mb-2">
                                     <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1">Read by</p>
-                                    {receiptDetail.readMembers.map((m) => {
-                                      const info = memberInfoMap.get(m.memberId);
+                                    {receiptDetail.readMembers.map((rm) => {
+                                      const info = memberInfoMap.get(rm.memberId);
                                       return (
-                                        <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
+                                        <div key={rm.memberId} className="flex items-center gap-1.5 py-0.5">
                                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                          <span className="text-xs text-foreground">{info?.name ?? m.memberId}</span>
+                                          <span className="text-xs text-foreground">{info?.name ?? rm.memberId}</span>
                                         </div>
                                       );
                                     })}
@@ -1016,12 +429,12 @@ export function Messaging() {
                                 {receiptDetail.unreadMembers.length > 0 && (
                                   <div>
                                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
-                                    {receiptDetail.unreadMembers.map((m) => {
-                                      const info = memberInfoMap.get(m.memberId);
+                                    {receiptDetail.unreadMembers.map((um) => {
+                                      const info = memberInfoMap.get(um.memberId);
                                       return (
-                                        <div key={m.memberId} className="flex items-center gap-1.5 py-0.5">
+                                        <div key={um.memberId} className="flex items-center gap-1.5 py-0.5">
                                           <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-                                          <span className="text-xs text-muted-foreground">{info?.name ?? m.memberId}</span>
+                                          <span className="text-xs text-muted-foreground">{info?.name ?? um.memberId}</span>
                                         </div>
                                       );
                                     })}
@@ -1124,6 +537,7 @@ export function Messaging() {
             />
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+              aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </Button>

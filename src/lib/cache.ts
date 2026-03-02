@@ -10,6 +10,7 @@ interface CacheEntry<T> {
 }
 
 const store = new Map<string, CacheEntry<any>>();
+const MAX_ENTRIES = 1000;
 
 /**
  * Get a cached value. Returns undefined if not found or expired.
@@ -28,6 +29,11 @@ export function cacheGet<T>(key: string): T | undefined {
  * Set a cached value with TTL in seconds.
  */
 export function cacheSet<T>(key: string, data: T, ttlSeconds: number): void {
+  // Evict oldest entries if at capacity (simple LRU: Map iteration order = insertion order)
+  if (store.size >= MAX_ENTRIES && !store.has(key)) {
+    const firstKey = store.keys().next().value;
+    if (firstKey !== undefined) store.delete(firstKey);
+  }
   store.set(key, {
     data,
     expiresAt: Date.now() + ttlSeconds * 1000,

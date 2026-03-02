@@ -44,10 +44,21 @@ export function getIO(): SocketIOServer | null {
 export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
   if (_g.__hubSocketIO) return _g.__hubSocketIO;
 
+  // Build allowed origins for CORS — restrict in production, allow localhost in dev
+  const allowedOrigins: (string | RegExp)[] = [
+    /\.meetthehub\.com$/,
+    /\.meethehub\.com$/,
+    "https://meetthehub.com",
+    "https://meethehub.com",
+  ];
+  if (process.env.NODE_ENV !== "production") {
+    allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
+  }
+
   const io = new SocketIOServer(httpServer, {
     path: "/api/socketio",
     addTrailingSlash: false,
-    cors: { origin: "*" },
+    cors: { origin: allowedOrigins, credentials: true },
     pingInterval: 25000,
     pingTimeout: 20000,
     transports: ["websocket", "polling"],
@@ -120,15 +131,17 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
       (socket as any).user = user;
 
-      // ── Presence broadcast ──
+      // ── Presence broadcast (tenant-scoped + legacy) ──
       if (!(socket as any)._isGuest) {
-        io.to("arls").emit("presence:update", {
+        const presenceData = {
           userId: user.id,
           userType: user.userType,
           name: user.name,
           storeNumber: user.userType === "location" ? user.storeNumber : undefined,
           isOnline: true,
-        });
+        };
+        io.to(`${tp}:arls`).emit("presence:update", presenceData);
+        io.to("arls").emit("presence:update", presenceData);
 
         if (user.userType === "location") {
           const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
@@ -317,25 +330,43 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 export { _findActiveMeetingByCode as findActiveMeetingByCode };
 
 // ── Emit helpers ──
+// Each helper emits to BOTH tenant-scoped and legacy rooms so events
+// reach all connected sockets regardless of which rooms they joined.
+// Once all clients connect with tenant context, the legacy rooms can be removed.
 
-export function emitToAll(event: string, data: any) {
-  getIO()?.to("all").emit(event, data);
+export function emitToAll(event: string, data: any, tenantId?: string) {
+  const io = getIO();
+  if (!io) return;
+  if (tenantId) io.to(`tenant:${tenantId}:all`).emit(event, data);
+  io.to("all").emit(event, data);
 }
 
-export function emitToLocations(event: string, data: any) {
-  getIO()?.to("locations").emit(event, data);
+export function emitToLocations(event: string, data: any, tenantId?: string) {
+  const io = getIO();
+  if (!io) return;
+  if (tenantId) io.to(`tenant:${tenantId}:locations`).emit(event, data);
+  io.to("locations").emit(event, data);
 }
 
-export function emitToArls(event: string, data: any) {
-  getIO()?.to("arls").emit(event, data);
+export function emitToArls(event: string, data: any, tenantId?: string) {
+  const io = getIO();
+  if (!io) return;
+  if (tenantId) io.to(`tenant:${tenantId}:arls`).emit(event, data);
+  io.to("arls").emit(event, data);
 }
 
-export function emitToLocation(locationId: string, event: string, data: any) {
-  getIO()?.to(`location:${locationId}`).emit(event, data);
+export function emitToLocation(locationId: string, event: string, data: any, tenantId?: string) {
+  const io = getIO();
+  if (!io) return;
+  if (tenantId) io.to(`tenant:${tenantId}:location:${locationId}`).emit(event, data);
+  io.to(`location:${locationId}`).emit(event, data);
 }
 
-export function emitToArl(arlId: string, event: string, data: any) {
-  getIO()?.to(`arl:${arlId}`).emit(event, data);
+export function emitToArl(arlId: string, event: string, data: any, tenantId?: string) {
+  const io = getIO();
+  if (!io) return;
+  if (tenantId) io.to(`tenant:${tenantId}:arl:${arlId}`).emit(event, data);
+  io.to(`arl:${arlId}`).emit(event, data);
 }
 
 export function emitToConversation(conversationId: string, event: string, data: any) {

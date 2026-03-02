@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
@@ -7,6 +6,8 @@ import { eq, and } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
+import { validate, createArlSchema, updateArlSchema } from "@/lib/validations";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
       isActive: schema.arls.isActive,
       createdAt: schema.arls.createdAt,
     }).from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
-    return NextResponse.json({ arls });
+    return apiSuccess({ arls });
   } catch (error) {
     console.error("Get ARLs error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -41,10 +42,12 @@ export async function POST(req: NextRequest) {
     const denied = await requirePermission(session, PERMISSIONS.ARLS_CREATE);
     if (denied) return denied;
 
-    const { name, email, userId, pin, role } = await req.json();
-    if (!name || !userId || !pin || userId.length !== 4 || pin.length !== 4) {
-      return NextResponse.json({ error: "name, 4-digit userId, and 4-digit pin required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(createArlSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { name, email, userId, pin, role } = parsed.data;
     const existing = db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
     if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
 
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
     const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
     db.insert(schema.arls).values(arl).run();
     broadcastUserUpdate();
-    return NextResponse.json({ success: true, arl: { ...arl, pinHash: undefined } });
+    return apiSuccess({ arl: { ...arl, pinHash: undefined } });
   } catch (error) {
     console.error("Create ARL error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -68,8 +71,12 @@ export async function PUT(req: NextRequest) {
     const denied = await requirePermission(session, PERMISSIONS.ARLS_EDIT);
     if (denied) return denied;
 
-    const { id, name, email, pin, role, isActive, permissions: perms } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(updateArlSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { id, name, email, pin, role, isActive, permissions: perms } = parsed.data;
 
     // Only admins can change roles or permissions
     const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
@@ -98,10 +105,10 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate();
-    return NextResponse.json({ success: true });
+    return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Update ARL error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 

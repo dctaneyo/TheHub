@@ -1,262 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import {
   Plus,
-  Pencil,
-  Trash2,
-  X,
-  Clock,
-  CalendarDays,
-  Repeat,
-  AlertTriangle,
-  SprayCan,
-  ClipboardList,
-  Sparkles,
-  Eye,
-  EyeOff,
   BookOpen,
   ChevronDown,
   ChevronUp,
+  SprayCan,
+  Clock,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  type: string;
-  priority: string;
-  dueTime: string;
-  dueDate: string | null;
-  isRecurring: boolean;
-  recurringType: string | null;
-  recurringDays: string | null;
-  locationId: string | null;
-  isHidden: boolean;
-  allowEarlyComplete: boolean;
-  showInToday: boolean;
-  showIn7Day: boolean;
-  showInCalendar: boolean;
-  points: number;
-  createdAt: string;
-}
-
-const RECURRING_TYPES = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Bi-weekly" },
-  { value: "monthly", label: "Monthly" },
-];
-
-interface Location {
-  id: string;
-  name: string;
-  storeNumber: string;
-}
-
-const DAYS = [
-  { key: "mon", label: "Mon" },
-  { key: "tue", label: "Tue" },
-  { key: "wed", label: "Wed" },
-  { key: "thu", label: "Thu" },
-  { key: "fri", label: "Fri" },
-  { key: "sat", label: "Sat" },
-  { key: "sun", label: "Sun" },
-];
-
-const TYPES = [
-  { value: "task", label: "Task", icon: ClipboardList },
-  { value: "cleaning", label: "Cleaning", icon: SprayCan },
-  { value: "reminder", label: "Reminder", icon: Clock },
-  { value: "training", label: "Training", icon: Sparkles },
-];
-
-interface TaskTemplate {
-  label: string;
-  category: string;
-  fields: {
-    title: string;
-    description?: string;
-    type: string;
-    priority: string;
-    dueTime: string;
-    isRecurring: boolean;
-    recurringType: string;
-    recurringDays?: string[];
-    points: number;
-    allowEarlyComplete?: boolean;
-  };
-}
-
-const TASK_TEMPLATES: TaskTemplate[] = [
-  // Opening
-  { label: "Opening Checklist", category: "Opening", fields: { title: "Opening Checklist", description: "Complete all opening procedures before service", type: "task", priority: "urgent", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 20, allowEarlyComplete: false } },
-  { label: "Cash Drawer Setup", category: "Opening", fields: { title: "Cash Drawer Setup", description: "Count and verify cash drawer balance", type: "task", priority: "high", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 15 } },
-  // Cleaning
-  { label: "Morning Deep Clean", category: "Cleaning", fields: { title: "Morning Deep Clean", description: "Deep clean kitchen equipment and surfaces", type: "cleaning", priority: "high", dueTime: "08:00", isRecurring: true, recurringType: "daily", points: 25 } },
-  { label: "Fryer Cleaning", category: "Cleaning", fields: { title: "Fryer Filter & Clean", description: "Filter fryer oil and clean fryer equipment", type: "cleaning", priority: "urgent", dueTime: "14:00", isRecurring: true, recurringType: "daily", points: 20 } },
-  { label: "Bathroom Check", category: "Cleaning", fields: { title: "Bathroom Inspection & Clean", description: "Inspect and clean customer restrooms", type: "cleaning", priority: "normal", dueTime: "11:00", isRecurring: true, recurringType: "daily", recurringDays: ["mon","tue","wed","thu","fri","sat","sun"], points: 10 } },
-  { label: "Dining Room Wipe", category: "Cleaning", fields: { title: "Dining Room Wipe Down", description: "Wipe all tables, chairs and touch surfaces", type: "cleaning", priority: "normal", dueTime: "12:00", isRecurring: true, recurringType: "daily", points: 10 } },
-  { label: "Weekly Deep Clean", category: "Cleaning", fields: { title: "Weekly Deep Clean", description: "Full restaurant deep clean including walk-in cooler", type: "cleaning", priority: "high", dueTime: "09:00", isRecurring: true, recurringType: "weekly", recurringDays: ["sun"], points: 50 } },
-  // Prep
-  { label: "Food Temp Check", category: "Prep", fields: { title: "Food Temperature Check", description: "Log temperatures for all hot/cold holding equipment", type: "task", priority: "urgent", dueTime: "10:00", isRecurring: true, recurringType: "daily", points: 15, allowEarlyComplete: true } },
-  { label: "Chicken Thaw", category: "Prep", fields: { title: "Chicken Thaw & Prep", description: "Move chicken from freezer, begin marination", type: "task", priority: "high", dueTime: "08:00", isRecurring: true, recurringType: "daily", points: 15 } },
-  { label: "Waste Log", category: "Prep", fields: { title: "Waste Log Completion", description: "Record all food waste for the day", type: "task", priority: "normal", dueTime: "22:00", isRecurring: true, recurringType: "daily", points: 10 } },
-  // Closing
-  { label: "Closing Checklist", category: "Closing", fields: { title: "Closing Checklist", description: "Complete all closing procedures", type: "task", priority: "urgent", dueTime: "22:30", isRecurring: true, recurringType: "daily", points: 20 } },
-  { label: "Safe Count", category: "Closing", fields: { title: "End of Day Safe Count", description: "Count and secure all cash in safe", type: "task", priority: "high", dueTime: "23:00", isRecurring: true, recurringType: "daily", points: 20 } },
-  // Compliance
-  { label: "Health Inspection Prep", category: "Compliance", fields: { title: "Health Inspection Prep", description: "Review food safety logs and ensure compliance", type: "task", priority: "urgent", dueTime: "09:00", isRecurring: false, recurringType: "daily", points: 30 } },
-  { label: "Monthly Safety Review", category: "Compliance", fields: { title: "Monthly Safety Review", description: "Review safety procedures and log completion", type: "reminder", priority: "high", dueTime: "10:00", isRecurring: true, recurringType: "monthly", points: 20 } },
-];
-
-const TEMPLATE_CATEGORIES = [...new Set(TASK_TEMPLATES.map((t) => t.category))];
-
-const PRIORITIES = [
-  { value: "low", label: "Low", color: "bg-muted text-muted-foreground" },
-  { value: "normal", label: "Normal", color: "bg-blue-100 text-blue-700" },
-  { value: "high", label: "High", color: "bg-orange-100 text-orange-700" },
-  { value: "urgent", label: "Urgent", color: "bg-red-100 text-red-700" },
-];
-
-function formatTime12(time: string): string {
-  const [h, m] = time.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
-}
-
-function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }: {
-  tasks: Task[];
-  locations: Location[];
-  onEdit: (task: Task) => void;
-  onDelete: (id: string) => void;
-  onToggleHidden: (task: Task) => void;
-}) {
-  const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: sorted.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 88,
-    gap: 8,
-    overscan: 5,
-  });
-
-  if (sorted.length === 0) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">No tasks match your filter.</div>;
-  }
-
-  return (
-    <div ref={parentRef} className="overflow-y-auto rounded-xl flex-1 min-h-0">
-      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
-        {virtualizer.getVirtualItems().map((vRow) => {
-          const task = sorted[vRow.index];
-          const priorityStyle = PRIORITIES.find((p) => p.value === task.priority);
-          return (
-            <div
-              key={task.id}
-              data-index={vRow.index}
-              ref={virtualizer.measureElement}
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
-            >
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-foreground">{task.title}</span>
-                    <Badge variant="secondary" className={cn("text-[10px]", priorityStyle?.color)}>
-                      {task.priority}
-                    </Badge>
-                    <Badge variant="outline" className="text-[10px] capitalize">
-                      {task.type}
-                    </Badge>
-                    {task.isRecurring && (
-                      <Badge variant="outline" className="gap-1 text-[10px]">
-                        <Repeat className="h-2.5 w-2.5" />
-                        Recurring
-                      </Badge>
-                    )}
-                    {task.allowEarlyComplete && (
-                      <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700">
-                        Early OK
-                      </Badge>
-                    )}
-                    {(!task.showInToday || !task.showIn7Day || !task.showInCalendar) && (
-                      <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
-                        {[!task.showInToday && "Today", !task.showIn7Day && "7-Day", !task.showInCalendar && "Cal"].filter(Boolean).join("/")} hidden
-                      </Badge>
-                    )}
-                  </div>
-                  {task.description && (
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
-                  )}
-                  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                    {!task.isRecurring && task.dueDate && (
-                      <span className="flex items-center gap-1">
-                        <CalendarDays className="h-3 w-3" />
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                    {task.type !== "reminder" && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTime12(task.dueTime)}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      {task.points} pts
-                    </span>
-                    {task.locationId ? (
-                      <span>
-                        {locations.find((l) => l.id === task.locationId)?.name || "Specific location"}
-                      </span>
-                    ) : (
-                      <span>All locations</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1 self-start mt-1 sm:mt-0 sm:self-center">
-                  <button
-                    onClick={() => onToggleHidden(task)}
-                    title={task.isHidden ? "Show task" : "Hide task"}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                      task.isHidden
-                        ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                  <button
-                    onClick={() => onEdit(task)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(task.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import { TaskVirtualList } from "./task-virtual-list";
+import { TaskFormModal } from "./task-form-modal";
+import { TaskListSkeleton } from "@/components/ui/skeleton";
+import {
+  TASK_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+} from "./task-manager-types";
+import type { Task, Location, TaskTemplate } from "./task-manager-types";
 
 export function TaskManager() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -268,27 +33,8 @@ export function TaskManager() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateCategory, setTemplateCategory] = useState<string>(TEMPLATE_CATEGORIES[0]);
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState("task");
-  const [priority, setPriority] = useState("normal");
-  const [dueTime, setDueTime] = useState("09:00");
-  const [dueDate, setDueDate] = useState("");
-  const [isRecurring, setIsRecurring] = useState(true);
-  const [recurringType, setRecurringType] = useState("daily");
-  const [recurringDays, setRecurringDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-  const [recurringMonthDays, setRecurringMonthDays] = useState<number[]>([1]);
-  const [biweeklyStart, setBiweeklyStart] = useState<"this" | "next">("this");
-  // Location assignment: "all" | "single" | "multiple"
-  const [assignMode, setAssignMode] = useState<"all" | "single" | "multiple">("all");
-  const [locationId, setLocationId] = useState("");
-  const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
-  const [points, setPoints] = useState(10);
-  const [allowEarlyComplete, setAllowEarlyComplete] = useState(false);
-  const [showInToday, setShowInToday] = useState(true);
-  const [showIn7Day, setShowIn7Day] = useState(true);
-  const [showInCalendar, setShowInCalendar] = useState(true);
+  // Form initial values for pre-filling from templates or editing
+  const [formInitial, setFormInitial] = useState<any>(undefined);
 
   const fetchData = useCallback(async () => {
     try {
@@ -324,165 +70,65 @@ export function TaskManager() {
     return () => { socket.off("task:updated", handler); };
   }, [socket, fetchData]);
 
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setType("task");
-    setPriority("normal");
-    setDueTime("09:00");
-    setDueDate("");
-    setIsRecurring(true);
-    setRecurringType("daily");
-    setRecurringDays(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-    setRecurringMonthDays([1]);
-    setBiweeklyStart("this");
-    setAssignMode("all");
-    setLocationId("");
-    setSelectedLocationIds([]);
-    setPoints(10);
-    setAllowEarlyComplete(false);
-    setShowInToday(true);
-    setShowIn7Day(true);
-    setShowInCalendar(true);
-    setEditingTask(null);
-  };
-
   const openCreate = () => {
-    resetForm();
+    setEditingTask(null);
+    setFormInitial(undefined);
     setShowTemplates(false);
     setShowForm(true);
   };
 
   const applyTemplate = (tpl: TaskTemplate) => {
-    resetForm();
-    setTitle(tpl.fields.title);
-    setDescription(tpl.fields.description || "");
-    setType(tpl.fields.type);
-    setPriority(tpl.fields.priority);
-    setDueTime(tpl.fields.dueTime);
-    setIsRecurring(tpl.fields.isRecurring);
-    setRecurringType(tpl.fields.recurringType);
-    if (tpl.fields.recurringDays) setRecurringDays(tpl.fields.recurringDays);
-    setPoints(tpl.fields.points);
-    setAllowEarlyComplete(tpl.fields.allowEarlyComplete ?? false);
+    setEditingTask(null);
+    setFormInitial({
+      title: tpl.fields.title,
+      description: tpl.fields.description || "",
+      type: tpl.fields.type,
+      priority: tpl.fields.priority,
+      dueTime: tpl.fields.dueTime,
+      dueDate: "",
+      isRecurring: tpl.fields.isRecurring,
+      recurringType: tpl.fields.recurringType,
+      recurringDays: tpl.fields.recurringDays || ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      recurringMonthDays: [1],
+      biweeklyStart: "this" as const,
+      assignMode: "all" as const,
+      locationId: "",
+      selectedLocationIds: [],
+      points: tpl.fields.points,
+      allowEarlyComplete: tpl.fields.allowEarlyComplete ?? false,
+      showInToday: true,
+      showIn7Day: true,
+      showInCalendar: true,
+    });
     setShowTemplates(false);
     setShowForm(true);
   };
 
   const openEdit = (task: Task) => {
     setEditingTask(task);
-    setTitle(task.title);
-    setDescription(task.description || "");
-    setType(task.type);
-    setPriority(task.priority);
-    setDueTime(task.dueTime);
-    setDueDate(task.dueDate || "");
-    setIsRecurring(task.isRecurring);
     const rType = task.recurringType || "daily";
-    setRecurringType(rType);
-    if (rType === "monthly") {
-      setRecurringMonthDays(task.recurringDays ? JSON.parse(task.recurringDays) : [1]);
-      setRecurringDays([]);
-    } else {
-      setRecurringDays(task.recurringDays ? JSON.parse(task.recurringDays) : []);
-      setRecurringMonthDays([1]);
-    }
-    if (task.locationId) {
-      setAssignMode("single");
-      setLocationId(task.locationId);
-    } else {
-      setAssignMode("all");
-      setLocationId("");
-    }
-    setSelectedLocationIds([]);
-    setPoints(task.points);
-    setAllowEarlyComplete(task.allowEarlyComplete ?? false);
-    setShowInToday(task.showInToday ?? true);
-    setShowIn7Day(task.showIn7Day ?? true);
-    setShowInCalendar(task.showInCalendar ?? true);
+    setFormInitial({
+      title: task.title,
+      description: task.description || "",
+      type: task.type,
+      priority: task.priority,
+      dueTime: task.dueTime,
+      dueDate: task.dueDate || "",
+      isRecurring: task.isRecurring,
+      recurringType: rType,
+      recurringDays: rType === "monthly" ? [] : (task.recurringDays ? JSON.parse(task.recurringDays) : []),
+      recurringMonthDays: rType === "monthly" ? (task.recurringDays ? JSON.parse(task.recurringDays) : [1]) : [1],
+      biweeklyStart: "this" as const,
+      assignMode: task.locationId ? "single" as const : "all" as const,
+      locationId: task.locationId || "",
+      selectedLocationIds: [],
+      points: task.points,
+      allowEarlyComplete: task.allowEarlyComplete ?? false,
+      showInToday: task.showInToday ?? true,
+      showIn7Day: task.showIn7Day ?? true,
+      showInCalendar: task.showInCalendar ?? true,
+    });
     setShowForm(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!title.trim()) return;
-    if (type !== "reminder" && !dueTime) return;
-
-    const isReminder = type === "reminder";
-    const baseBody = {
-      title: title.trim(),
-      description: description.trim() || null,
-      type,
-      priority,
-      dueTime: isReminder && !dueTime ? "00:00" : dueTime,
-      dueDate: isRecurring ? null : (dueDate || null),
-      isRecurring,
-      recurringType: isRecurring ? recurringType : null,
-      recurringDays: isRecurring
-        ? recurringType === "monthly"
-          ? JSON.stringify(recurringMonthDays)
-          : recurringType === "daily"
-          ? null
-          : JSON.stringify(recurringDays)
-        : null,
-      biweeklyStart: isRecurring && recurringType === "biweekly" ? biweeklyStart : null,
-      points,
-      allowEarlyComplete,
-      showInToday,
-      showIn7Day,
-      showInCalendar,
-    };
-
-    // Build list of locationIds to save individually
-    const locationIds: Array<string | null> =
-      assignMode === "all" ? [null]
-      : assignMode === "single" ? [locationId || null]
-      : selectedLocationIds.length > 0 ? selectedLocationIds
-      : [null];
-
-    try {
-      if (editingTask) {
-        // Single update for edit
-        const res = await fetch("/api/tasks", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...baseBody, id: editingTask.id, locationId: locationIds[0] }),
-        });
-        if (res.ok) { setShowForm(false); resetForm(); fetchData(); }
-        return;
-      }
-      // For create: save one task per location
-      await Promise.all(locationIds.map((lid) =>
-        fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...baseBody, locationId: lid }),
-        })
-      ));
-      setShowForm(false);
-      resetForm();
-      fetchData();
-      return;
-    } catch (err) {
-      console.error("Save task error:", err);
-    }
-
-    // legacy fallback path (unreachable but kept for safety)
-    const body = { ...(editingTask ? { id: editingTask.id } : {}), ...baseBody, locationId: locationId || null };
-    try {
-      const res = await fetch("/api/tasks", {
-        method: editingTask ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (res.ok) {
-        setShowForm(false);
-        resetForm();
-        fetchData();
-      }
-    } catch (err) {
-      console.error("Save task error:", err);
-    }
   };
 
   const handleDelete = async (id: string) => {
@@ -507,21 +153,9 @@ export function TaskManager() {
     }
   };
 
-  const toggleDay = (day: string) => {
-    setRecurringDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
-
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
-      </div>
-    );
+    return <TaskListSkeleton />;
   }
-
-  const isReminder = type === "reminder";
 
   const filteredTasks = filterLocationId === "all"
     ? tasks
@@ -565,12 +199,7 @@ export function TaskManager() {
       {/* Template picker */}
       <AnimatePresence>
         {showTemplates && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
+          <div className="overflow-hidden">
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
@@ -618,7 +247,7 @@ export function TaskManager() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -634,378 +263,13 @@ export function TaskManager() {
       {/* Create/Edit Form Modal */}
       <AnimatePresence>
         {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-            onClick={() => setShowForm(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-foreground">
-                  {editingTask ? "Edit Task" : "New Task"}
-                </h3>
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Title */}
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Title</label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Task title..."
-                    className="rounded-xl"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Description / Instructions</label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Details, notes, or instructions..."
-                    rows={3}
-                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                </div>
-
-                {/* Type */}
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Type</label>
-                  <div className="flex flex-wrap gap-2">
-                    {TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        onClick={() => setType(t.value)}
-                        className={cn(
-                          "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all",
-                          type === t.value
-                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
-                        )}
-                      >
-                        <t.icon className="h-3.5 w-3.5" />
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Priority</label>
-                  <div className="flex flex-wrap gap-2">
-                    {PRIORITIES.map((p) => (
-                      <button
-                        key={p.value}
-                        onClick={() => setPriority(p.value)}
-                        className={cn(
-                          "rounded-xl border px-3 py-2 text-xs font-medium transition-all",
-                          priority === p.value
-                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
-                        )}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Due Date + Time + Points */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {!isRecurring && (
-                    <div className="flex-1">
-                      <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Date</label>
-                      <Input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) => setDueDate(e.target.value)}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  )}
-                  {!isReminder && (
-                    <div className="flex-1">
-                      <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Time</label>
-                      <Input
-                        type="time"
-                        value={dueTime}
-                        onChange={(e) => setDueTime(e.target.value)}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  )}
-                  <div className="w-24">
-                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Points</label>
-                    <Input
-                      type="number"
-                      value={points}
-                      onChange={(e) => setPoints(Number(e.target.value))}
-                      min={1}
-                      max={100}
-                      className="rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                {/* Recurring */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={isRecurring}
-                      onChange={(e) => setIsRecurring(e.target.checked)}
-                      className="rounded"
-                    />
-                    Recurring Task
-                  </label>
-                  {isRecurring && (
-                    <>
-                      {/* Recurring type selector */}
-                      <div className="flex gap-1.5">
-                        {RECURRING_TYPES.map((rt) => (
-                          <button
-                            key={rt.value}
-                            onClick={() => setRecurringType(rt.value)}
-                            className={cn(
-                              "flex-1 rounded-xl border px-2 py-1.5 text-xs font-semibold transition-all",
-                              recurringType === rt.value
-                                ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                                : "border-border text-muted-foreground hover:border-muted-foreground/40"
-                            )}
-                          >
-                            {rt.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Weekly / Biweekly: day-of-week picker */}
-                      {(recurringType === "weekly" || recurringType === "biweekly") && (
-                        <div>
-                          <p className="mb-1.5 text-[11px] text-muted-foreground">
-                            {recurringType === "biweekly" ? "Repeats every other week on:" : "Repeats on:"}
-                          </p>
-                          <div className="flex gap-1.5">
-                            {DAYS.map((d) => (
-                              <button
-                                key={d.key}
-                                onClick={() => toggleDay(d.key)}
-                                className={cn(
-                                  "flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold transition-all",
-                                  recurringDays.includes(d.key)
-                                    ? "bg-[var(--hub-red)] text-white"
-                                    : "bg-muted text-muted-foreground"
-                                )}
-                              >
-                                {d.label.charAt(0)}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Biweekly: start week selection */}
-                      {recurringType === "biweekly" && (
-                        <div>
-                          <p className="mb-1.5 text-[11px] text-muted-foreground">First occurrence:</p>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setBiweeklyStart("this")}
-                              className={cn(
-                                "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-                                biweeklyStart === "this"
-                                  ? "bg-[var(--hub-red)] text-white"
-                                  : "bg-muted text-muted-foreground"
-                              )}
-                            >
-                              This week
-                            </button>
-                            <button
-                              onClick={() => setBiweeklyStart("next")}
-                              className={cn(
-                                "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-                                biweeklyStart === "next"
-                                  ? "bg-[var(--hub-red)] text-white"
-                                  : "bg-muted text-muted-foreground"
-                              )}
-                            >
-                              Next week
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Monthly: day-of-month picker */}
-                      {recurringType === "monthly" && (
-                        <div>
-                          <p className="mb-1.5 text-[11px] text-muted-foreground">Repeats on day(s) of month:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                              <button
-                                key={day}
-                                onClick={() => setRecurringMonthDays((prev) =>
-                                  prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => a - b)
-                                )}
-                                className={cn(
-                                  "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-all",
-                                  recurringMonthDays.includes(day)
-                                    ? "bg-[var(--hub-red)] text-white"
-                                    : "bg-muted text-muted-foreground"
-                                )}
-                              >
-                                {day}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {recurringType === "daily" && (
-                        <p className="text-[11px] text-muted-foreground">Repeats every day.</p>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Location Assignment */}
-                <div className="space-y-2">
-                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Assign to</label>
-                  <div className="flex gap-2">
-                    {(["all", "single", "multiple"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => setAssignMode(mode)}
-                        className={cn(
-                          "flex-1 rounded-xl border px-3 py-2 text-xs font-medium capitalize transition-all",
-                          assignMode === mode
-                            ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                            : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
-                        )}
-                      >
-                        {mode === "all" ? "All Locations" : mode === "single" ? "One Location" : "Multiple"}
-                      </button>
-                    ))}
-                  </div>
-                  {assignMode === "single" && (
-                    <select
-                      value={locationId}
-                      onChange={(e) => setLocationId(e.target.value)}
-                      className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Select a location...</option>
-                      {locations.map((loc) => (
-                        <option key={loc.id} value={loc.id}>{loc.name} (#{loc.storeNumber})</option>
-                      ))}
-                    </select>
-                  )}
-                  {assignMode === "multiple" && (
-                    <div className="flex flex-wrap gap-2">
-                      {locations.map((loc) => (
-                        <button
-                          key={loc.id}
-                          onClick={() => setSelectedLocationIds((prev) =>
-                            prev.includes(loc.id) ? prev.filter((id) => id !== loc.id) : [...prev, loc.id]
-                          )}
-                          className={cn(
-                            "rounded-xl border px-3 py-1.5 text-xs font-medium transition-all",
-                            selectedLocationIds.includes(loc.id)
-                              ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                              : "border-border text-muted-foreground hover:border-muted-foreground/40"
-                          )}
-                        >
-                          {loc.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {assignMode === "multiple" && selectedLocationIds.length > 0 && !editingTask && (
-                    <p className="text-[11px] text-muted-foreground">
-                      Will create {selectedLocationIds.length} separate task{selectedLocationIds.length > 1 ? "s" : ""}, one per location.
-                    </p>
-                  )}
-                </div>
-
-                {/* Options */}
-                <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Options</p>
-
-                  <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={allowEarlyComplete}
-                      onChange={(e) => setAllowEarlyComplete(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span className="font-medium">Allow early completion</span>
-                    <span className="text-[10px] text-muted-foreground">(can be completed before due date)</span>
-                  </label>
-
-                  <div>
-                    <p className="mb-1.5 text-[11px] text-muted-foreground">Show this task in:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {([
-                        { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
-                        { key: "showIn7Day", label: "7-Day View", value: showIn7Day, set: setShowIn7Day },
-                        { key: "showInCalendar", label: "Calendar", value: showInCalendar, set: setShowInCalendar },
-                      ] as const).map((opt) => (
-                        <button
-                          key={opt.key}
-                          onClick={() => opt.set(!opt.value)}
-                          className={cn(
-                            "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
-                            opt.value
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
-                              : "border-border bg-card text-muted-foreground"
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    {(!showInToday || !showIn7Day || !showInCalendar) && (
-                      <p className="mt-1 text-[10px] text-amber-600">
-                        Hidden from: {[!showInToday && "Today's Tasks", !showIn7Day && "7-Day View", !showInCalendar && "Calendar"].filter(Boolean).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Submit */}
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    onClick={() => setShowForm(false)}
-                    variant="outline"
-                    className="flex-1 rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    className="flex-1 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
-                    disabled={!title.trim()}
-                  >
-                    {editingTask ? "Update Task" : "Create Task"}
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <TaskFormModal
+            editingTask={editingTask}
+            locations={locations}
+            onClose={() => { setShowForm(false); setEditingTask(null); }}
+            onSaved={fetchData}
+            initialValues={formInitial}
+          />
         )}
       </AnimatePresence>
     </div>

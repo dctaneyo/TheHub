@@ -6,6 +6,7 @@ import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, A
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
+import { CardSkeleton } from "@/components/ui/skeleton";
 
 interface PendingSession {
   id: string;
@@ -228,11 +229,7 @@ export function RemoteLogin() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   return (

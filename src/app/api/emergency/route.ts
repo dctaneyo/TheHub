@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
@@ -7,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed, broadcastEmergencyViewedLocal } from "@/lib/socket-emit";
 import { createNotificationBulk } from "@/lib/notifications";
+import { validate, emergencyBroadcastSchema } from "@/lib/validations";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -81,7 +81,12 @@ export async function POST(req: NextRequest) {
     const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
     if (denied) return denied;
 
-    const { message, targetLocationIds } = await req.json();
+    const body = await req.json();
+    const parsed = validate(emergencyBroadcastSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { message, targetLocationIds } = parsed.data;
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
 
     // Deactivate all previous messages for this tenant
@@ -147,7 +152,7 @@ export async function POST(req: NextRequest) {
 // Auto-archives when all targeted recipients have viewed it
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Location only" }, { status: 403 });
     }

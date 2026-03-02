@@ -4,7 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SocketProvider } from "@/lib/socket-context";
 import { ThemeProvider } from "next-themes";
-import { ApolloProvider } from "@/lib/apollo-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { CsrfInit } from "@/components/csrf-init";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -77,6 +78,8 @@ export default function RootLayout({
             e.preventDefault();
           }, { passive: false });
         `}} />
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-lg focus:bg-[var(--hub-red)] focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg">Skip to main content</a>
+        <CsrfInit />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -84,13 +87,15 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="hub-theme"
         >
-          <ApolloProvider>
-            <AuthProvider>
-              <SocketProvider>
-                {children}
-              </SocketProvider>
-            </AuthProvider>
-          </ApolloProvider>
+          <AuthProvider>
+            <SocketProvider>
+              <ErrorBoundary>
+                <main id="main-content">
+                  {children}
+                </main>
+              </ErrorBoundary>
+            </SocketProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
+import { CardSkeleton } from "@/components/ui/skeleton";
 
 interface ArlUser {
   id: string;
@@ -233,11 +234,7 @@ export function UserManagement() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   const items = tab === "arls" ? arls : locations;

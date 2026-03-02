@@ -1071,6 +1071,7 @@ function ActiveConvoView({
           <Shake trigger={sendError} intensity="medium">
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
               className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+              aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </Button>

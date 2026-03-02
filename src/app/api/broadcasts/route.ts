@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { validate, createBroadcastSchema } from "@/lib/validations";
 
 // GET - Fetch broadcasts (active, scheduled, or past)
 export async function GET(request: Request) {
@@ -41,11 +42,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, streamMode, targetAudience, targetLocationIds, scheduledFor } = body;
-
-    if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    const parsed = validate(createBroadcastSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { title, description, streamMode, targetAudience, targetLocationIds, scheduledFor } = parsed.data;
 
     const broadcastId = uuidv4();
     const now = new Date().toISOString();

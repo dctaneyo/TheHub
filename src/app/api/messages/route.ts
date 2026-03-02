@@ -1,22 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
-import { db, schema } from "@/lib/db";
+import { db, sqlite, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { sendPushToARL } from "@/lib/push";
 import { broadcastNewMessage, broadcastConversationUpdate, broadcastMessageRead } from "@/lib/socket-emit";
+import { validate, sendMessageSchema } from "@/lib/validations";
 
-// Helper: get unread count for a conversation for the current session user
-function getUnreadCount(conversationId: string, sessionId: string, sessionType: string): number {
-  const allMsgs = db.select().from(schema.messages)
-    .where(eq(schema.messages.conversationId, conversationId)).all();
-  const readIds = new Set(
-    db.select().from(schema.messageReads)
-      .where(and(eq(schema.messageReads.readerId, sessionId), eq(schema.messageReads.readerType, sessionType)))
-      .all().map((r) => r.messageId)
-  );
-  return allMsgs.filter((m) => m.senderId !== sessionId && !readIds.has(m.id)).length;
+/**
+ * Batch unread counts for multiple conversations in a single query.
+ * Returns Map<conversationId, unreadCount>
+ */
+function getUnreadCountsBatch(convIds: string[], sessionId: string, sessionType: string): Map<string, number> {
+  const result = new Map<string, number>();
+  if (convIds.length === 0) return result;
+
+  const placeholders = convIds.map(() => "?").join(",");
+  const rows = sqlite.prepare(`
+    SELECT m.conversation_id, COUNT(*) as cnt
+    FROM messages m
+    LEFT JOIN message_reads mr ON mr.message_id = m.id AND mr.reader_id = ? AND mr.reader_type = ?
+    WHERE m.conversation_id IN (${placeholders})
+      AND m.sender_id != ?
+      AND mr.id IS NULL
+    GROUP BY m.conversation_id
+  `).all(sessionId, sessionType, ...convIds, sessionId) as Array<{ conversation_id: string; cnt: number }>;
+
+  for (const row of rows) {
+    result.set(row.conversation_id, row.cnt);
+  }
+  return result;
+}
+
+/**
+ * Batch last messages for multiple conversations in a single query.
+ * Returns Map<conversationId, lastMessage>
+ */
+function getLastMessagesBatch(convIds: string[]): Map<string, { content: string; createdAt: string; senderType: string; senderName: string }> {
+  const result = new Map();
+  if (convIds.length === 0) return result;
+
+  const placeholders = convIds.map(() => "?").join(",");
+  const rows = sqlite.prepare(`
+    SELECT m.conversation_id, m.content, m.created_at, m.sender_type, m.sender_name
+    FROM messages m
+    INNER JOIN (
+      SELECT conversation_id, MAX(created_at) as max_at
+      FROM messages
+      WHERE conversation_id IN (${placeholders})
+      GROUP BY conversation_id
+    ) latest ON m.conversation_id = latest.conversation_id AND m.created_at = latest.max_at
+  `).all(...convIds) as Array<{ conversation_id: string; content: string; created_at: string; sender_type: string; sender_name: string }>;
+
+  for (const row of rows) {
+    result.set(row.conversation_id, {
+      content: row.content,
+      createdAt: row.created_at,
+      senderType: row.sender_type,
+      senderName: row.sender_name,
+    });
+  }
+  return result;
+}
+
+/**
+ * Batch member counts + members for multiple conversations.
+ */
+function getMembersBatch(convIds: string[]): Map<string, Array<{ memberId: string; memberType: string }>> {
+  const result = new Map<string, Array<{ memberId: string; memberType: string }>>();
+  if (convIds.length === 0) return result;
+
+  const placeholders = convIds.map(() => "?").join(",");
+  const rows = sqlite.prepare(`
+    SELECT conversation_id, member_id, member_type
+    FROM conversation_members
+    WHERE conversation_id IN (${placeholders})
+  `).all(...convIds) as Array<{ conversation_id: string; member_id: string; member_type: string }>;
+
+  for (const row of rows) {
+    if (!result.has(row.conversation_id)) result.set(row.conversation_id, []);
+    result.get(row.conversation_id)!.push({ memberId: row.member_id, memberType: row.member_type });
+  }
+  return result;
 }
 
 // Helper: get display name for a conversation from the perspective of the current user
@@ -58,12 +123,25 @@ export async function GET(req: NextRequest) {
         .all();
       const convIds = memberships.map((m) => m.conversationId);
 
+      if (convIds.length === 0) {
+        return NextResponse.json({ conversations: [] });
+      }
+
       const allConvs = db.select().from(schema.conversations).all()
         .filter((c) => convIds.includes(c.id))
         .filter((c) => {
           const deletedBy: string[] = JSON.parse(c.deletedBy || "[]");
           return !deletedBy.includes(session.id);
         });
+
+      const filteredIds = allConvs.map((c) => c.id);
+
+      // Batch lookups — 3 queries instead of 3×N
+      const [unreadCounts, lastMessages, membersMap] = [
+        getUnreadCountsBatch(filteredIds, session.id, session.userType),
+        getLastMessagesBatch(filteredIds),
+        getMembersBatch(filteredIds),
+      ];
 
       const locations = db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
       const arls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
@@ -74,21 +152,18 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => (b.lastMessageAt || b.createdAt).localeCompare(a.lastMessageAt || a.createdAt))
         .map((conv) => {
           const { name, subtitle } = getConvDisplayName(conv, session.id, locationMap, arlMap);
-          const lastMessage = db.select().from(schema.messages)
-            .where(eq(schema.messages.conversationId, conv.id))
-            .orderBy(desc(schema.messages.createdAt)).limit(1).get();
-          const unreadCount = getUnreadCount(conv.id, session.id, session.userType);
-          const members = db.select().from(schema.conversationMembers)
-            .where(eq(schema.conversationMembers.conversationId, conv.id)).all();
+          const lastMessage = lastMessages.get(conv.id) || null;
+          const unreadCount = unreadCounts.get(conv.id) || 0;
+          const members = membersMap.get(conv.id) || [];
           return {
             id: conv.id,
             type: conv.type,
             name,
             subtitle,
-            lastMessage: lastMessage ? { content: lastMessage.content, createdAt: lastMessage.createdAt, senderType: lastMessage.senderType, senderName: lastMessage.senderName } : null,
+            lastMessage,
             unreadCount,
             memberCount: members.length,
-            members: members.map((m) => ({ memberId: m.memberId, memberType: m.memberType })),
+            members,
           };
         });
 
@@ -106,24 +181,32 @@ export async function GET(req: NextRequest) {
       .orderBy(schema.messages.createdAt).all();
 
     const messageIds = messages.map((m) => m.id);
-    const reads = db.select().from(schema.messageReads).all();
+
+    // Fetch reads only for this conversation's messages (scoped query, not full table)
     const readMap = new Map<string, Array<{ readerType: string; readerId: string; readAt: string }>>();
-    for (const read of reads) {
-      if (messageIds.includes(read.messageId)) {
-        if (!readMap.has(read.messageId)) readMap.set(read.messageId, []);
-        readMap.get(read.messageId)!.push({ readerType: read.readerType, readerId: read.readerId, readAt: read.readAt });
+    if (messageIds.length > 0) {
+      const ph = messageIds.map(() => "?").join(",");
+      const reads = sqlite.prepare(`
+        SELECT id, message_id, reader_type, reader_id, read_at
+        FROM message_reads
+        WHERE message_id IN (${ph})
+      `).all(...messageIds) as Array<{ id: string; message_id: string; reader_type: string; reader_id: string; read_at: string }>;
+      for (const read of reads) {
+        if (!readMap.has(read.message_id)) readMap.set(read.message_id, []);
+        readMap.get(read.message_id)!.push({ readerType: read.reader_type, readerId: read.reader_id, readAt: read.read_at });
       }
     }
 
     // Auto-mark all messages from OTHER users as read for the current user.
     // Viewing a conversation = reading its messages.
-    const myReadIds = new Set(
-      reads.filter((r) => r.readerId === session.id).map((r) => r.messageId)
-    );
+    const myReadIdsFinal = new Set<string>();
+    for (const [msgId, readers] of readMap) {
+      if (readers.some((r) => r.readerId === session.id)) myReadIdsFinal.add(msgId);
+    }
     const now = new Date().toISOString();
     let markedAny = false;
     for (const msg of messages) {
-      if (msg.senderId !== session.id && !myReadIds.has(msg.id)) {
+      if (msg.senderId !== session.id && !myReadIdsFinal.has(msg.id)) {
         db.insert(schema.messageReads).values({
           id: uuid(),
           messageId: msg.id,
@@ -142,18 +225,23 @@ export async function GET(req: NextRequest) {
       broadcastConversationUpdate(conversationId);
     }
 
-    // Build reactions map
+    // Build reactions map — scoped to this conversation's messages
     let reactionMap = new Map<string, Array<{ emoji: string; userId: string; userName: string; createdAt: string }>>();
     try {
-      const allReactions = db.select().from(schema.messageReactions).all()
-        .filter((r) => messageIds.includes(r.messageId));
-      for (const r of allReactions) {
-        if (!reactionMap.has(r.messageId)) reactionMap.set(r.messageId, []);
-        reactionMap.get(r.messageId)!.push({ emoji: r.emoji, userId: r.userId, userName: r.userName, createdAt: r.createdAt });
+      if (messageIds.length > 0) {
+        const ph = messageIds.map(() => "?").join(",");
+        const reactions = sqlite.prepare(`
+          SELECT message_id, emoji, user_id, user_name, created_at
+          FROM message_reactions
+          WHERE message_id IN (${ph})
+        `).all(...messageIds) as Array<{ message_id: string; emoji: string; user_id: string; user_name: string; created_at: string }>;
+        for (const r of reactions) {
+          if (!reactionMap.has(r.message_id)) reactionMap.set(r.message_id, []);
+          reactionMap.get(r.message_id)!.push({ emoji: r.emoji, userId: r.user_id, userName: r.user_name, createdAt: r.created_at });
+        }
       }
     } catch (reactionError) {
       console.error("Failed to load reactions (table may not exist):", reactionError);
-      // Continue without reactions if table doesn't exist
     }
 
     return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [], reactions: reactionMap.get(m.id) || [] })) });
@@ -169,8 +257,12 @@ export async function POST(req: NextRequest) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const { conversationId, content } = await req.json();
-    if (!conversationId || !content) return NextResponse.json({ error: "conversationId and content required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(sendMessageSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { conversationId, content } = parsed.data;
 
     // Verify membership
     const membership = db.select().from(schema.conversationMembers)
