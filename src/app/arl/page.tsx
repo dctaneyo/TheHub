@@ -37,6 +37,7 @@ import {
   Sun,
   Monitor,
   MoreVertical,
+  Hash,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
@@ -164,6 +165,8 @@ export default function ArlPage() {
   const [showQuickSettings, setShowQuickSettings] = useState(false);
   const quickSettingsRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [sessionCount, setSessionCount] = useState(0);
 
   const isMobileOrTablet = device === "mobile" || device === "tablet";
   const isOnline = useOnlineStatus();
@@ -198,6 +201,21 @@ export default function ArlPage() {
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
   };
+
+  // Fetch current session code + active session count for quick settings
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/session/code", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setSessionCode(data.sessionCode || null);
+          setSessionCount(data.sessions?.length || 0);
+        }
+      } catch {}
+    };
+    fetchSession();
+  }, [socketConnected]);
 
   // Play subtle 2-note beep for new messages (ARL office environment — not a loud kitchen)
   const playMessageChime = useCallback(() => {
@@ -485,7 +503,7 @@ export default function ArlPage() {
   }, []);
 
   return (
-    <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]">
+    <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]" style={{ overscrollBehavior: "none" }}>
       {/* Offline indicator with sync status */}
       <OfflineIndicator />
 
@@ -522,7 +540,10 @@ export default function ArlPage() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar - hide on mobile when in meeting */}
         {!joiningMeeting && activeView !== "broadcast" && (
-          <header className="sticky top-0 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 z-[100]">
+          <header className={cn(
+            "flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4",
+            isMobileOrTablet ? "fixed top-0 left-0 right-0 z-[100]" : "sticky top-0 z-[100]"
+          )}>
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
               <button
@@ -585,7 +606,14 @@ export default function ArlPage() {
                             {isOnline && socketConnected ? "Connected" : "Offline"}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
-                            {isOnline && socketConnected ? "Server reachable" : "Check your connection"}
+                            {isOnline && socketConnected
+                              ? sessionCode
+                                ? <>
+                                    <span className="font-mono font-bold tracking-wider">#{sessionCode}</span>
+                                    {sessionCount > 1 && <span> · +{sessionCount - 1} other{sessionCount > 2 ? "s" : ""}</span>}
+                                  </>
+                                : "Server reachable"
+                              : "Check your connection"}
                           </p>
                         </div>
                         <div className={cn(
@@ -660,6 +688,11 @@ export default function ArlPage() {
           </header>
         )}
 
+        {/* Spacer for fixed header on mobile */}
+        {isMobileOrTablet && !joiningMeeting && activeView !== "broadcast" && (
+          <div className="h-14 shrink-0" />
+        )}
+
         {/* Content area */}
         <main className={cn(
           "flex-1 flex flex-col overflow-hidden relative",
@@ -676,20 +709,20 @@ export default function ArlPage() {
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="flex flex-col flex-1 h-full min-h-0"
               >
-                {activeView === "overview" && <div className="flex-1 overflow-y-auto p-4"><OverviewDashboard /></div>}
-                {activeView === "messages" && <div className="flex flex-col flex-1 min-h-0 p-4"><Messaging /></div>}
-                {activeView === "tasks" && <div className="flex flex-col flex-1 min-h-0 p-4"><TaskManager /></div>}
-                {activeView === "calendar" && <div className="flex flex-col flex-1 min-h-0 p-4"><ArlCalendar /></div>}
-                {activeView === "locations" && <div className="flex-1 overflow-y-auto p-4"><LocationsManager /></div>}
-                {activeView === "forms" && <div className="flex-1 overflow-y-auto p-4"><FormsRepository /></div>}
-                {activeView === "emergency" && <div className="flex-1 overflow-y-auto p-4"><EmergencyBroadcast /></div>}
-                {activeView === "users" && <div className="flex-1 overflow-y-auto p-4"><UserManagement /></div>}
-                {activeView === "leaderboard" && <div className="flex-1 overflow-y-auto p-4"><Leaderboard /></div>}
-                {activeView === "remote-login" && <div className="flex-1 overflow-y-auto p-4"><RemoteLogin /></div>}
-                {activeView === "data-management" && <div className="flex-1 overflow-y-auto p-4"><DataManagement /></div>}
-                {activeView === "analytics" && <div className="flex-1 overflow-y-auto p-4"><AnalyticsDashboard /></div>}
+                {activeView === "overview" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><OverviewDashboard /></div>}
+                {activeView === "messages" && <div className="flex flex-col flex-1 min-h-0 overscroll-contain p-4"><Messaging /></div>}
+                {activeView === "tasks" && <div className="flex flex-col flex-1 min-h-0 overscroll-contain p-4"><TaskManager /></div>}
+                {activeView === "calendar" && <div className="flex flex-col flex-1 min-h-0 overscroll-contain p-4"><ArlCalendar /></div>}
+                {activeView === "locations" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><LocationsManager /></div>}
+                {activeView === "forms" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><FormsRepository /></div>}
+                {activeView === "emergency" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><EmergencyBroadcast /></div>}
+                {activeView === "users" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><UserManagement /></div>}
+                {activeView === "leaderboard" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><Leaderboard /></div>}
+                {activeView === "remote-login" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><RemoteLogin /></div>}
+                {activeView === "data-management" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><DataManagement /></div>}
+                {activeView === "analytics" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><AnalyticsDashboard /></div>}
                 {activeView === "meetings" && (
-                  <div className="flex-1 overflow-y-auto p-4"><div className="space-y-6">
+                  <div className="flex-1 overflow-y-auto overscroll-contain p-4"><div className="space-y-6">
                     {activeMeetings.length > 0 && (
                       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
                         <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">

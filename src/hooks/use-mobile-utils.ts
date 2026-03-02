@@ -13,6 +13,8 @@ export function useSwipeNavigation(
   const touchStartY = useRef(0);
   const swiping = useRef(false);
 
+  const lockedAxis = useRef<"h" | "v" | null>(null);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -20,6 +22,23 @@ export function useSwipeNavigation(
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;
       swiping.current = true;
+      lockedAxis.current = null;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!swiping.current) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+
+      // Lock axis once movement exceeds 10px threshold
+      if (!lockedAxis.current && (dx > 10 || dy > 10)) {
+        lockedAxis.current = dx > dy ? "h" : "v";
+      }
+
+      // If horizontal swipe, prevent vertical scroll (stops bounce/jitter)
+      if (lockedAxis.current === "h") {
+        e.preventDefault();
+      }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
@@ -45,9 +64,12 @@ export function useSwipeNavigation(
     };
 
     document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    // touchmove must be non-passive to allow preventDefault
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
     return () => {
       document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
   }, [viewIds, activeView, setActiveView, enabled]);
