@@ -3,40 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Trash2, Database, AlertTriangle, CheckCircle2, Trophy, Download, Calendar,
-  HardDrive, Activity, Unlink, Shield, ListChecks, Search, Copy, Upload,
+  HardDrive, Unlink, Shield, ListChecks, Copy, Upload,
   BarChart3, RefreshCw, X, Archive, ScrollText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
-
-interface AuditLogEntry {
-  id: string;
-  user_id: string;
-  user_type: string;
-  user_name: string;
-  action: string;
-  details: string | null;
-  ip_address: string | null;
-  created_at: string;
-}
-
-interface SystemReport {
-  database: { size: number; sizeFormatted: string; tables: { name: string; records: number }[] };
-  counts: Record<string, number>;
-  system: { nodeVersion: string; uptimeFormatted: string; memoryFormatted: string };
-}
-
-interface IntegrityResult {
-  healthy: boolean;
-  integrityOk: boolean;
-  issues: { table: string; issue: string; count: number }[];
-}
-
-interface DuplicateResult {
-  hasDuplicates: boolean;
-  duplicates: { type: string; description: string; count: number }[];
-}
+import { DataManagementHealth, type SystemReport, type IntegrityResult, type DuplicateResult } from "@/components/arl/data-management-health";
+import { DataManagementAuditLog } from "@/components/arl/data-management-audit-log";
 
 type ConfirmAction = {
   id: string;
@@ -58,10 +32,9 @@ export function DataManagement() {
   const [loadingReport, setLoadingReport] = useState(false);
 
   // Audit log state
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [loadingAudit, setLoadingAudit] = useState(false);
-  const [auditFilter, setAuditFilter] = useState("");
 
   const clearAlerts = () => { setSuccess(null); setError(null); };
 
@@ -399,172 +372,16 @@ export function DataManagement() {
       {/* ── Audit Log Viewer ── */}
       <AnimatePresence>
         {showAuditLog && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                    <ScrollText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">Audit Log</h3>
-                    <p className="text-xs text-muted-foreground">{auditLogs.length} recent actions</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={auditFilter}
-                    onChange={(e) => setAuditFilter(e.target.value)}
-                    placeholder="Filter..."
-                    className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring w-32 sm:w-56"
-                  />
-                  <button
-                    onClick={() => { setShowAuditLog(false); setAuditLogs([]); setAuditFilter(""); }}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {loadingAudit ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">Loading audit log...</span>
-                </div>
-              ) : auditLogs.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No audit log entries found.</p>
-              ) : (
-                <div className="space-y-1 max-h-96 overflow-y-auto">
-                  {auditLogs
-                    .filter((log) => {
-                      if (!auditFilter) return true;
-                      const q = auditFilter.toLowerCase();
-                      return log.action.toLowerCase().includes(q) ||
-                        log.user_name.toLowerCase().includes(q) ||
-                        (log.details || "").toLowerCase().includes(q);
-                    })
-                    .map((log) => (
-                      <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-2.5 text-xs">
-                        <div className={cn(
-                          "mt-0.5 shrink-0 h-5 w-5 flex items-center justify-center rounded-md text-[10px] font-bold",
-                          log.user_type === "arl" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                        )}>
-                          {log.user_type === "arl" ? "A" : "L"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-foreground">{log.user_name}</span>
-                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground">{log.action}</span>
-                            {log.details && <span className="text-muted-foreground truncate">{log.details}</span>}
-                          </div>
-                          <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
-                            <span>{new Date(log.created_at).toLocaleString()}</span>
-                            {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
+          <DataManagementAuditLog
+            logs={auditLogs}
+            loading={loadingAudit}
+            onClose={() => { setShowAuditLog(false); setAuditLogs([]); }}
+          />
         )}
       </AnimatePresence>
 
       {/* ── Health Dashboard ── */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"><Activity className="h-5 w-5" /></div>
-          <div>
-            <h3 className="text-lg font-bold text-foreground">System Health</h3>
-            <p className="text-xs text-muted-foreground">Real-time database and system status</p>
-          </div>
-        </div>
-
-        {report ? (
-          <div className="space-y-5">
-            {/* Stats row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: "Database Size", value: report.database.sizeFormatted, color: "text-blue-600" },
-                { label: "Uptime", value: report.system.uptimeFormatted, color: "text-emerald-600" },
-                { label: "Memory", value: report.system.memoryFormatted, color: "text-purple-600" },
-                { label: "Node.js", value: report.system.nodeVersion, color: "text-muted-foreground" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl bg-muted/50 p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
-                  <p className={cn("mt-1 text-lg font-bold", s.color)}>{s.value}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Record counts */}
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Record Counts</p>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {Object.entries(report.counts).map(([key, val]) => (
-                  <div key={key} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
-                    <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
-                    <span className="text-sm font-bold text-foreground">{val.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Integrity & Duplicates */}
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className={cn("rounded-xl p-4 border", integrity?.healthy ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50")}>
-                <div className="flex items-center gap-2 mb-1">
-                  {integrity?.healthy ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-red-600" />}
-                  <p className={cn("text-sm font-bold", integrity?.healthy ? "text-emerald-800" : "text-red-800")}>
-                    Integrity: {integrity?.healthy ? "Healthy" : `${integrity?.issues.length} issue(s)`}
-                  </p>
-                </div>
-                {integrity?.issues.map((iss, i) => (
-                  <p key={i} className="text-xs text-red-600 ml-6">{iss.issue}: {iss.count} records</p>
-                ))}
-              </div>
-              <div className={cn("rounded-xl p-4 border", !duplicates?.hasDuplicates ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50")}>
-                <div className="flex items-center gap-2 mb-1">
-                  {!duplicates?.hasDuplicates ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-amber-600" />}
-                  <p className={cn("text-sm font-bold", !duplicates?.hasDuplicates ? "text-emerald-800" : "text-amber-800")}>
-                    Duplicates: {!duplicates?.hasDuplicates ? "None found" : `${duplicates.duplicates.length} type(s)`}
-                  </p>
-                </div>
-                {duplicates?.duplicates.map((d, i) => (
-                  <p key={i} className="text-xs text-amber-600 ml-6">{d.description}: {d.count}</p>
-                ))}
-              </div>
-            </div>
-
-            {/* Table breakdown */}
-            <details className="group">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
-                Table Breakdown ▸
-              </summary>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {report.database.tables.map((t) => (
-                  <div key={t.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-1.5">
-                    <span className="text-[11px] text-muted-foreground truncate mr-2">{t.name}</span>
-                    <span className="text-xs font-bold text-foreground">{t.records.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
-            <span className="text-sm text-muted-foreground">Loading system report...</span>
-          </div>
-        )}
-      </div>
+      <DataManagementHealth report={report} integrity={integrity} duplicates={duplicates} />
 
       {/* ── Action Sections ── */}
       {sections.map((section) => (
