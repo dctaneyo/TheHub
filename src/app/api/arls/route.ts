@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
     db.insert(schema.arls).values(arl).run();
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return apiSuccess({ arl: { ...arl, pinHash: undefined } });
   } catch (error) {
     console.error("Create ARL error:", error);
@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
     }
 
     db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Update ARL error:", error);
@@ -188,7 +188,7 @@ export async function DELETE(req: NextRequest) {
 
     // 7. Delete the ARL record
     db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete ARL error:", error);

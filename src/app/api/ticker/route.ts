@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const msg = { id, content: content.trim(), icon: icon || "📢", arlId: session.userId, arlName: session.name, expiresAt, createdAt: now };
 
     // Broadcast to all locations via socket
-    emitTickerMessage(msg);
+    emitTickerMessage(msg, session.tenantId);
 
     return NextResponse.json({ message: msg });
   } catch (error) {
@@ -86,7 +86,7 @@ export async function DELETE(req: NextRequest) {
 
     db.delete(schema.tickerMessages).where(and(eq(schema.tickerMessages.id, id), eq(schema.tickerMessages.tenantId, session.tenantId))).run();
 
-    emitTickerDelete(id);
+    emitTickerDelete(id, session.tenantId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

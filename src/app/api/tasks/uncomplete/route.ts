@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
       .where(eq(schema.taskCompletions.id, completion.id))
       .run();
 
-    broadcastTaskUpdate(session.id);
-    broadcastTaskUncompleted(session.id, taskId);
-    broadcastLeaderboardUpdate(session.id);
+    broadcastTaskUpdate(session.id, session.tenantId);
+    broadcastTaskUncompleted(session.id, taskId, session.tenantId);
+    broadcastLeaderboardUpdate(session.id, session.tenantId);
     refreshTaskTimers();
 
     return NextResponse.json({ success: true, pointsRevoked: completion.pointsEarned });

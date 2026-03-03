@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       .run();
 
     // Instantly notify login page watcher + ARLs
-    broadcastSessionActivated(pendingId);
+    broadcastSessionActivated(pendingId, session.tenantId);
 
     return NextResponse.json({
       success: true,

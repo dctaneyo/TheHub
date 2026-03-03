@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest) {
       .where(eq(schema.locations.id, targetId))
       .run();
 
-    broadcastSoundToggle(targetId, muted);
+    broadcastSoundToggle(targetId, muted, session.tenantId);
     return NextResponse.json({ ok: true, muted });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

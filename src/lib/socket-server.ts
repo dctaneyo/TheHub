@@ -170,6 +170,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         socket.join(`meeting:${gMeetingId}`);
         console.log(`📹 Guest ${user.name} auto-joined Socket.io room meeting:${gMeetingId}`);
 
+        const gtp = (socket as any)._tenantPrefix;
+        if (gtp) io.to(`${gtp}:arls`).emit("meeting:guest-waiting", {
+          meetingId: gMeetingId, meetingTitle: gMeetingId,
+          guestName: user.name, guestSocketId: socket.id,
+        });
         io.to("arls").emit("meeting:guest-waiting", {
           meetingId: gMeetingId, meetingTitle: gMeetingId,
           guestName: user.name, guestSocketId: socket.id,
@@ -204,6 +209,8 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     // ── Self-ping ──
     socket.on("session:self-ping", (data: { pendingId: string; code: string }) => {
+      const tp = (socket as any)._tenantPrefix;
+      if (tp) io.to(`${tp}:arls`).emit("session:self-ping", { pendingId: data.pendingId, code: data.code });
       io.to("arls").emit("session:self-ping", { pendingId: data.pendingId, code: data.code });
     });
 
@@ -233,11 +240,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Client heartbeat ──
     socket.on("client:heartbeat", () => {
       if (!user) return;
-      io.to("arls").emit("presence:update", {
+      const tp = (socket as any)._tenantPrefix;
+      const presenceData = {
         userId: user.id, userType: user.userType, name: user.name,
         storeNumber: user.userType === "location" ? user.storeNumber : undefined,
         isOnline: true,
-      });
+      };
+      if (tp) io.to(`${tp}:arls`).emit("presence:update", presenceData);
+      io.to("arls").emit("presence:update", presenceData);
       try {
         const now = new Date().toISOString();
         if (user.sessionCode) {
@@ -256,18 +266,23 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       try {
         db.update(schema.sessions).set({ currentPage: data.page }).where(eq(schema.sessions.socketId, socket.id)).run();
       } catch (err) { console.error("Failed to update session currentPage:", err); }
-      io.to("arls").emit("activity:update", {
+      const atp = (socket as any)._tenantPrefix;
+      const actData = {
         userId: user.id, userType: user.userType, name: user.name,
         storeNumber: user.userType === "location" ? user.storeNumber : undefined,
         page: data.page,
-      });
+      };
+      if (atp) io.to(`${atp}:arls`).emit("activity:update", actData);
+      io.to("arls").emit("activity:update", actData);
     });
 
     // ── Notification dismiss sync (same-location cross-kiosk only) ──
     socket.on("notification:dismiss", (data: { notificationIds: string[]; locationId?: string }) => {
       if (!user || user.userType !== "location") return;
       const locId = data.locationId || user.id;
+      const ntp = (socket as any)._tenantPrefix;
       // Broadcast only to OTHER sockets in the same location room (exclude sender)
+      if (ntp) socket.to(`${ntp}:location:${locId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
       socket.to(`location:${locId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
     });
 
@@ -289,11 +304,14 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // ── Disconnect ──
     socket.on("disconnect", () => {
       if (user) {
-        io.to("arls").emit("presence:update", {
+        const dtp = (socket as any)._tenantPrefix;
+        const offlineData = {
           userId: user.id, userType: user.userType, name: user.name,
           storeNumber: user.userType === "location" ? user.storeNumber : undefined,
           isOnline: false,
-        });
+        };
+        if (dtp) io.to(`${dtp}:arls`).emit("presence:update", offlineData);
+        io.to("arls").emit("presence:update", offlineData);
         try {
           db.update(schema.sessions).set({ isOnline: false }).where(eq(schema.sessions.userId, user.id)).run();
         } catch {}

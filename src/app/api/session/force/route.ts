@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
       // Emit socket event to force client redirect to login (primary / instant)
       broadcastForceLogout(targetSession.userId, targetSession.userType);
-      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
       return NextResponse.json({ success: true, action: "logout" });
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
 
       // Emit socket event to force client to apply new token and redirect
       broadcastForceRedirect(targetSession.userId, targetSession.userType, token, redirectTo);
-      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false);
+      broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
       return NextResponse.json({ success: true, action: "reassign", targetName, redirectTo });

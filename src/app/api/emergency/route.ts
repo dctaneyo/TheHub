@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       message: message.trim(),
       sentByName: session.name,
       targetLocationIds: targetLocationIds && targetLocationIds.length > 0 ? targetLocationIds : null,
-    });
+    }, session.tenantId);
 
     // Create urgent notifications for all targeted locations
     const targetIds = targetLocationIds && targetLocationIds.length > 0 
@@ -189,9 +189,9 @@ export async function PATCH(req: NextRequest) {
       .where(eq(schema.emergencyMessages.id, messageId)).run();
 
     // Notify ARLs in real-time that this location viewed the message
-    broadcastEmergencyViewed(messageId, session.id, session.name);
+    broadcastEmergencyViewed(messageId, session.id, session.name, session.tenantId);
     // Notify sibling kiosks at this location so they also dismiss the overlay
-    broadcastEmergencyViewedLocal(session.id, messageId);
+    broadcastEmergencyViewedLocal(session.id, messageId, session.tenantId);
 
     return NextResponse.json({ success: true, archived: shouldArchive });
   } catch (error) {
@@ -214,7 +214,7 @@ export async function DELETE() {
       .set({ isActive: false })
       .where(eq(schema.emergencyMessages.isActive, true)).run();
 
-    broadcastEmergencyDismissed();
+    broadcastEmergencyDismissed(session.tenantId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

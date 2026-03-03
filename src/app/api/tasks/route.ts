@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     db.insert(schema.tasks).values(task).run();
 
-    broadcastTaskUpdate(resolvedLocationId);
+    broadcastTaskUpdate(resolvedLocationId, session.tenantId);
     refreshTaskTimers();
 
     return NextResponse.json({ success: true, task });
@@ -151,7 +151,7 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();
 
-    broadcastTaskUpdate(existing.locationId);
+    broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();
 
     return NextResponse.json({ success: true });
@@ -190,7 +190,7 @@ export async function DELETE(req: NextRequest) {
 
     db.delete(schema.tasks).where(eq(schema.tasks.id, id)).run();
 
-    broadcastTaskUpdate(existing.locationId);
+    broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();
 
     return NextResponse.json({ success: true });

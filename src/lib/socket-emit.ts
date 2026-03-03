@@ -20,29 +20,30 @@ function isAvailable(): boolean {
 }
 
 // ── Task events ──
-export function broadcastTaskUpdate(locationId?: string | null) {
+export function broadcastTaskUpdate(locationId?: string | null, tenantId?: string) {
   if (!isAvailable()) return;
   // Notify all locations to refresh tasks (or a specific one)
   if (locationId) {
-    emitToLocation(locationId, "task:updated", { locationId });
+    emitToLocation(locationId, "task:updated", { locationId }, tenantId);
   } else {
-    emitToLocations("task:updated", {});
+    emitToLocations("task:updated", {}, tenantId);
   }
   // Also notify ARLs so their task manager / overview refreshes
-  emitToArls("task:updated", { locationId });
+  emitToArls("task:updated", { locationId }, tenantId);
 }
 
-export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, pointsEarned: number, locationName?: string) {
+export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, pointsEarned: number, locationName?: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("task:completed", { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" });
-  emitToLocations("task:completed", { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" });
-  emitToLocation(locationId, "task:updated", { locationId });
+  const payload = { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" };
+  emitToArls("task:completed", payload, tenantId);
+  emitToLocations("task:completed", payload, tenantId);
+  emitToLocation(locationId, "task:updated", { locationId }, tenantId);
 }
 
-export function broadcastTaskUncompleted(locationId: string, taskId: string) {
+export function broadcastTaskUncompleted(locationId: string, taskId: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("task:uncompleted", { locationId, taskId });
-  emitToLocations("task:uncompleted", { locationId, taskId });
+  emitToArls("task:uncompleted", { locationId, taskId }, tenantId);
+  emitToLocations("task:uncompleted", { locationId, taskId }, tenantId);
 }
 
 // ── Message events ──
@@ -89,37 +90,37 @@ export function broadcastConversationUpdate(conversationId: string) {
 }
 
 // ── Emergency events ──
-export function broadcastEmergency(data: { id: string; message: string; sentByName: string; targetLocationIds?: string[] | null }) {
+export function broadcastEmergency(data: { id: string; message: string; sentByName: string; targetLocationIds?: string[] | null }, tenantId?: string) {
   if (!isAvailable()) return;
   if (data.targetLocationIds && data.targetLocationIds.length > 0) {
     for (const locId of data.targetLocationIds) {
-      emitToLocation(locId, "emergency:broadcast", data);
+      emitToLocation(locId, "emergency:broadcast", data, tenantId);
     }
   } else {
-    emitToLocations("emergency:broadcast", data);
+    emitToLocations("emergency:broadcast", data, tenantId);
   }
-  emitToArls("emergency:updated", data);
+  emitToArls("emergency:updated", data, tenantId);
 }
 
-export function broadcastEmergencyDismissed() {
+export function broadcastEmergencyDismissed(tenantId?: string) {
   if (!isAvailable()) return;
-  emitToAll("emergency:dismissed", {});
+  emitToAll("emergency:dismissed", {}, tenantId);
 }
 
-export function broadcastEmergencyViewed(messageId: string, locationId: string, locationName: string) {
+export function broadcastEmergencyViewed(messageId: string, locationId: string, locationName: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("emergency:viewed", { messageId, locationId, locationName });
+  emitToArls("emergency:viewed", { messageId, locationId, locationName }, tenantId);
 }
 
-export function broadcastEmergencyViewedLocal(locationId: string, messageId: string) {
+export function broadcastEmergencyViewedLocal(locationId: string, messageId: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToLocation(locationId, "emergency:viewed-local", { messageId });
+  emitToLocation(locationId, "emergency:viewed-local", { messageId }, tenantId);
 }
 
 // ── Presence events ──
-export function broadcastPresenceUpdate(userId: string, userType: string, name: string, isOnline: boolean, storeNumber?: string) {
+export function broadcastPresenceUpdate(userId: string, userType: string, name: string, isOnline: boolean, storeNumber?: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("presence:update", { userId, userType, name, isOnline, storeNumber });
+  emitToArls("presence:update", { userId, userType, name, isOnline, storeNumber }, tenantId);
 }
 
 // Notify a specific user's connected sockets that their session list changed
@@ -131,17 +132,17 @@ export function broadcastSessionUpdated(userId: string, userType: string) {
 }
 
 // ── Remote login / pending session events ──
-export function broadcastPendingSession(data: { id: string; code: string; userAgent: string; createdAt: string; expiresAt: string }) {
+export function broadcastPendingSession(data: { id: string; code: string; userAgent: string; createdAt: string; expiresAt: string }, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("session:pending", data);
+  emitToArls("session:pending", data, tenantId);
 }
 
-export function broadcastSessionActivated(pendingId: string) {
+export function broadcastSessionActivated(pendingId: string, tenantId?: string) {
   if (!isAvailable()) return;
   // Tell the login page watcher that their session was activated
   emitToLoginWatchers("session:activated", { pendingId });
   // Also tell ARLs to refresh pending sessions list
-  emitToArls("session:pending:refresh", {});
+  emitToArls("session:pending:refresh", {}, tenantId);
 }
 
 export function broadcastPing(pendingId: string) {
@@ -150,16 +151,16 @@ export function broadcastPing(pendingId: string) {
 }
 
 // ── Notification dismiss sync (multi-kiosk) ──
-export function broadcastNotificationDismissed(locationId: string, notificationIds: string[]) {
+export function broadcastNotificationDismissed(locationId: string, notificationIds: string[], tenantId?: string) {
   if (!isAvailable()) return;
-  emitToLocation(locationId, "notification:dismissed", { notificationIds });
+  emitToLocation(locationId, "notification:dismissed", { notificationIds }, tenantId);
 }
 
 // ── Sound mute toggle ──
-export function broadcastSoundToggle(locationId: string, muted: boolean) {
+export function broadcastSoundToggle(locationId: string, muted: boolean, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToLocation(locationId, "location:sound-toggle", { muted });
-  emitToArls("location:sound-toggle", { locationId, muted });
+  emitToLocation(locationId, "location:sound-toggle", { muted }, tenantId);
+  emitToArls("location:sound-toggle", { locationId, muted }, tenantId);
 }
 
 // ── Read receipts ──
@@ -169,15 +170,15 @@ export function broadcastMessageRead(conversationId: string, readerId: string) {
 }
 
 // ── User / location management events ──
-export function broadcastUserUpdate() {
+export function broadcastUserUpdate(tenantId?: string) {
   if (!isAvailable()) return;
-  emitToArls("user:updated", {});
+  emitToArls("user:updated", {}, tenantId);
 }
 
 // ── Leaderboard / gamification events ──
-export function broadcastLeaderboardUpdate(locationId: string) {
+export function broadcastLeaderboardUpdate(locationId: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToAll("leaderboard:updated", { locationId });
+  emitToAll("leaderboard:updated", { locationId }, tenantId);
 }
 
 // ── Force session management ──
@@ -208,14 +209,14 @@ export function broadcastToAll(event: string, data: any) {
 // Old broadcast stream functions removed — meeting system handles real-time via socket events directly.
 
 // ── Ticker message events ──
-export function emitTickerMessage(msg: { id: string; content: string; icon: string; arlName: string; expiresAt: string | null; createdAt: string }) {
+export function emitTickerMessage(msg: { id: string; content: string; icon: string; arlName: string; expiresAt: string | null; createdAt: string }, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToLocations("ticker:new", msg);
+  emitToLocations("ticker:new", msg, tenantId);
 }
 
-export function emitTickerDelete(id: string) {
+export function emitTickerDelete(id: string, tenantId?: string) {
   if (!isAvailable()) return;
-  emitToLocations("ticker:delete", { id });
+  emitToLocations("ticker:delete", { id }, tenantId);
 }
 
 // ── Notification events ──

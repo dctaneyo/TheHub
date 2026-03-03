@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       }).run();
     }
 
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return NextResponse.json({ success: true, location: { ...location, pinHash: undefined } });
   } catch (error) {
     console.error("Create location error:", error);
@@ -212,7 +212,7 @@ export async function PUT(req: NextRequest) {
     if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
 
     db.update(schema.locations).set(updates).where(and(eq(schema.locations.id, id), eq(schema.locations.tenantId, session.tenantId))).run();
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update location error:", error);
@@ -276,7 +276,7 @@ export async function DELETE(req: NextRequest) {
 
     // 10. Delete the location record
     db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
-    broadcastUserUpdate();
+    broadcastUserUpdate(session.tenantId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete location error:", error);

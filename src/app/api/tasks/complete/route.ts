@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
     db.insert(schema.taskCompletions).values(completion).run();
 
     // Broadcast instant update via WebSocket
-    broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name);
-    broadcastLeaderboardUpdate(session.id);
+    broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name, session.tenantId);
+    broadcastLeaderboardUpdate(session.id, session.tenantId);
 
     // Push notification to all ARLs about the task completion
     const pointsTotal = task.points + bonusPoints;
