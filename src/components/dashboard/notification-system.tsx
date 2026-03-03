@@ -42,61 +42,49 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   const [showPanel, setShowPanel] = useState(false);
   const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
   const notifiedRef = useRef<Set<string>>(new Set());
+  const dbIdMapRef = useRef<Map<string, string>>(new Map()); // clientId → DB notification id
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
+  const dbSeededRef = useRef(false);
 
-  // Load dismissed notifications from localStorage on mount
-  // Clear stale dismissals from a previous day so overdue notifications re-fire on login
+  // Seed notifiedRef from DB on mount — replaces localStorage entirely
   useEffect(() => {
-    try {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const storedRaw = localStorage.getItem('dismissed-notifications');
-      if (storedRaw) {
-        const parsed = JSON.parse(storedRaw);
-        // Support new format { date, ids } or legacy array
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.date === todayStr) {
-          notifiedRef.current = new Set(parsed.ids || []);
-        } else {
-          // Stale date or legacy format — clear so notifications re-fire today
-          notifiedRef.current = new Set();
-          localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: [] }));
+    if (dbSeededRef.current) return;
+    dbSeededRef.current = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/notifications/task-alerts", { cache: "no-store" });
+        if (!res.ok) return;
+        const { alerts } = await res.json() as {
+          alerts: Array<{ dbId: string; clientId: string; type: string; taskId: string; title: string; dueTime: string; isRead: boolean }>;
+        };
+        const restoredNotifications: Notification[] = [];
+        for (const a of alerts) {
+          // Track every alert the server already fired so client fallback won't re-fire
+          notifiedRef.current.add(a.clientId);
+          dbIdMapRef.current.set(a.clientId, a.dbId);
+          // Only show unread (not-yet-dismissed) alerts in the UI
+          if (!a.isRead) {
+            restoredNotifications.push({
+              id: a.clientId,
+              taskId: a.taskId,
+              title: a.title,
+              type: a.type === "due_soon" ? "due_soon" : "overdue",
+              dueTime: a.dueTime,
+              dismissed: false,
+            });
+          }
         }
+        if (restoredNotifications.length > 0) {
+          setNotifications(restoredNotifications);
+          setShowPanel(true);
+        }
+      } catch (err) {
+        console.error("Failed to seed notifications from DB:", err);
       }
-    } catch (err) {
-      console.error('Failed to load dismissed notifications:', err);
-    }
+    })();
   }, []);
-
-  // Cleanup: Remove dismissed notifications for completed or non-existent tasks
-  useEffect(() => {
-    if (tasks.length === 0) return;
-    
-    const currentTaskIds = new Set(tasks.map(t => t.id));
-    const dismissedArray = Array.from(notifiedRef.current);
-    let needsUpdate = false;
-    
-    // Filter out dismissed notifications for tasks that are completed or no longer exist
-    const filtered = dismissedArray.filter(id => {
-      // Extract task ID from notification ID (format: "due-{taskId}" or "overdue-{taskId}")
-      const taskId = id.replace(/^(due|overdue)-/, '');
-      const task = tasks.find(t => t.id === taskId);
-      
-      // Keep if task exists and is not completed
-      if (task && !task.isCompleted && currentTaskIds.has(taskId)) {
-        return true;
-      }
-      
-      needsUpdate = true;
-      return false;
-    });
-    
-    if (needsUpdate) {
-      notifiedRef.current = new Set(filtered);
-      const todayStr = new Date().toISOString().split("T")[0];
-      localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: filtered }));
-    }
-  }, [tasks]);
 
   // Cross-kiosk dismiss sync — when another kiosk at this location dismisses, mirror it here
   useEffect(() => {
@@ -111,17 +99,23 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     return () => { socket.off('notification:dismissed', handler); };
   }, [socket]);
 
-  // Save dismissed notifications to localStorage and sync across kiosks
-  const saveDismissedNotifications = useCallback(async (notificationIds: string[]) => {
+  // Persist dismissals to DB and sync across kiosks via socket
+  const saveDismissedNotifications = useCallback(async (clientIds: string[]) => {
     try {
-      // Save to localStorage with date tag so stale dismissals are cleared on new day
-      const todayStr = new Date().toISOString().split("T")[0];
-      const allDismissed = Array.from(notifiedRef.current);
-      localStorage.setItem('dismissed-notifications', JSON.stringify({ date: todayStr, ids: allDismissed }));
-      
+      // Collect DB IDs for the dismissed client notifications
+      const dbIds = clientIds
+        .map((cid) => dbIdMapRef.current.get(cid))
+        .filter(Boolean) as string[];
+      if (dbIds.length > 0) {
+        fetch("/api/notifications/task-alerts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dbIds }),
+        }).catch(() => {});
+      }
       // Broadcast to other kiosks at this location via socket
       if (socket) {
-        socket.emit('notification:dismiss', { notificationIds });
+        socket.emit('notification:dismiss', { notificationIds: clientIds });
       }
     } catch (error) {
       console.error('Failed to save dismissed notifications:', error);
@@ -173,17 +167,8 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     } catch {}
   }, [soundEnabled]);
 
-  // Auto-dismiss notifications for tasks that are now completed
-  useEffect(() => {
-    const completedIds = new Set(tasks.filter((t) => t.isCompleted).map((t) => t.id));
-    if (completedIds.size === 0) return;
-    setNotifications((prev) =>
-      prev.map((n) => (completedIds.has(n.taskId) ? { ...n, dismissed: true } : n))
-    );
-  }, [tasks]);
-
   // ── Server-pushed exact-time notifications ──
-  // Dedup is purely client-side via notifiedRef — no DB write needed on receive.
+  // Dedup via notifiedRef — server creates DB notification at the same time.
   const fireNotification = useCallback((
     type: "due_soon" | "overdue",
     data: { taskId: string; title: string; dueTime: string }
@@ -247,21 +232,17 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   // NOTE: currentTime is HH:mm — changes once per minute, so this fires at most once per minute.
 
   const dismissNotification = async (id: string) => {
-    // Add to dismissed set and save to database
     notifiedRef.current.add(id);
-    await saveDismissedNotifications([id]);
-    
+    saveDismissedNotifications([id]);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, dismissed: true } : n))
     );
   };
 
   const dismissAll = async () => {
-    // Add all current notifications to dismissed set and save to database
-    const notificationIds = notifications.map((n) => n.id);
-    notifications.forEach((n) => notifiedRef.current.add(n.id));
-    await saveDismissedNotifications(notificationIds);
-    
+    const activeIds = notifications.filter((n) => !n.dismissed).map((n) => n.id);
+    activeIds.forEach((id) => notifiedRef.current.add(id));
+    saveDismissedNotifications(activeIds);
     setNotifications((prev) => prev.map((n) => ({ ...n, dismissed: true })));
     setShowPanel(false);
   };
@@ -342,6 +323,15 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     saveDismissedNotifications(ids);
     setNotifications((prev) => prev.map((n) => n.type === "overdue" ? { ...n, dismissed: true } : n));
   };
+
+  // Cleanup: auto-dismiss UI notifications for tasks that are now completed
+  useEffect(() => {
+    const completedIds = new Set(tasks.filter((t) => t.isCompleted).map((t) => t.id));
+    if (completedIds.size === 0) return;
+    setNotifications((prev) =>
+      prev.map((n) => (completedIds.has(n.taskId) ? { ...n, dismissed: true } : n))
+    );
+  }, [tasks]);
 
   return (
     <>
