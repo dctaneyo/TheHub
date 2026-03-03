@@ -102,17 +102,16 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
   // Persist dismissals to DB and sync across kiosks via socket
   const saveDismissedNotifications = useCallback(async (clientIds: string[]) => {
     try {
-      // Collect DB IDs for the dismissed client notifications
+      // Collect any known DB IDs, but always send clientIds so the server
+      // can resolve them even for socket-pushed notifications without a dbId mapping
       const dbIds = clientIds
         .map((cid) => dbIdMapRef.current.get(cid))
         .filter(Boolean) as string[];
-      if (dbIds.length > 0) {
-        fetch("/api/notifications/task-alerts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dbIds }),
-        }).catch(() => {});
-      }
+      fetch("/api/notifications/task-alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dbIds, clientIds }),
+      }).catch(() => {});
       // Broadcast to other kiosks at this location via socket
       if (socket) {
         socket.emit('notification:dismiss', { notificationIds: clientIds });

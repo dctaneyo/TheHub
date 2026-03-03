@@ -75,27 +75,69 @@ export async function GET(req: NextRequest) {
  * POST /api/notifications/task-alerts
  *
  * Mark one or more task alert DB notifications as read (dismissed).
- * Body: { dbIds: string[] }
+ * Body: { dbIds?: string[], clientIds?: string[] }
+ *
+ * clientIds are in the format "due-{taskId}" or "overdue-{taskId}".
+ * They are resolved server-side by querying today's notifications and
+ * matching metadata.taskId + type, so dismissals always persist even when
+ * the client doesn't know the DB notification ID (e.g. socket-pushed alerts).
  */
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const { dbIds } = await req.json();
-    if (!Array.isArray(dbIds) || dbIds.length === 0) {
-      return NextResponse.json({ error: "dbIds required" }, { status: 400 });
+    const body = await req.json();
+    const dbIds: string[] = body.dbIds || [];
+    const clientIds: string[] = body.clientIds || [];
+
+    if (dbIds.length === 0 && clientIds.length === 0) {
+      return NextResponse.json({ error: "dbIds or clientIds required" }, { status: 400 });
     }
 
     const now = new Date().toISOString();
-    for (const dbId of dbIds) {
-      await db
-        .update(notifications)
-        .set({ isRead: true, readAt: now })
-        .where(and(eq(notifications.id, dbId), eq(notifications.userId, session.id)));
+    const idsToMark = new Set<string>(dbIds);
+
+    // Resolve clientIds → DB notification IDs by querying today's alerts
+    if (clientIds.length > 0) {
+      const hawaiiDate = new Date().toLocaleDateString("en-CA", { timeZone: "Pacific/Honolulu" });
+
+      const rows = db
+        .select({ id: notifications.id, type: notifications.type, metadata: notifications.metadata })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, session.id),
+            sql`${notifications.type} IN ('task_due_soon', 'task_overdue')`,
+            sql`${notifications.createdAt} >= ${hawaiiDate}`
+          )
+        )
+        .all();
+
+      // Build a set of requested clientIds for fast lookup
+      const requestedClientIds = new Set(clientIds);
+
+      for (const row of rows) {
+        try {
+          const meta = row.metadata ? JSON.parse(row.metadata) : {};
+          const taskId = meta.taskId || "";
+          const cid = row.type === "task_due_soon" ? `due-${taskId}` : `overdue-${taskId}`;
+          if (requestedClientIds.has(cid)) {
+            idsToMark.add(row.id);
+          }
+        } catch {}
+      }
     }
 
-    return NextResponse.json({ success: true });
+    // Mark all resolved DB notifications as read
+    for (const dbId of idsToMark) {
+      db.update(notifications)
+        .set({ isRead: true, readAt: now })
+        .where(and(eq(notifications.id, dbId), eq(notifications.userId, session.id)))
+        .run();
+    }
+
+    return NextResponse.json({ success: true, dismissed: idsToMark.size });
   } catch (error) {
     console.error("Error dismissing task alerts:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
