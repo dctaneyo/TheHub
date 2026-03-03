@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { validate, createRoleSchema, updateRoleSchema, deleteRoleSchema } from "@/lib/validations";
 
 export async function GET() {
   try {
@@ -36,9 +37,10 @@ export async function POST(req: NextRequest) {
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
-    const { name, description, permissions } = await req.json();
-    if (!name?.trim()) return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    if (!Array.isArray(permissions)) return NextResponse.json({ error: "Permissions must be an array" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(createRoleSchema, body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { name, description, permissions } = parsed.data;
 
     const now = new Date().toISOString();
     const role = {
@@ -69,8 +71,10 @@ export async function PUT(req: NextRequest) {
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
-    const { id, name, description, permissions } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(updateRoleSchema, body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { id, name, description, permissions } = parsed.data;
 
     // Prevent editing default system roles
     const existing = db.select().from(schema.roles)
@@ -101,8 +105,10 @@ export async function DELETE(req: NextRequest) {
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
-    const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(deleteRoleSchema, body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { id } = parsed.data;
 
     // Prevent deleting system default roles
     const existing = db.select().from(schema.roles)

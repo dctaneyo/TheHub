@@ -6,6 +6,7 @@ import { signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
 import { broadcastSessionUpdated } from "@/lib/socket-emit";
 import { checkRateLimit, resetRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { validate, loginSchema } from "@/lib/validations";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -23,14 +24,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, pin } = await req.json();
-
-    if (!userId || !pin || userId.length !== 4 || pin.length !== 4) {
-      return NextResponse.json(
-        { error: "Invalid credentials format" },
-        { status: 400 }
-      );
+    const body = await req.json();
+    const parsed = validate(loginSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
     }
+    const { userId, pin } = parsed.data;
 
     // Resolve tenant from middleware header
     const tenantId = req.headers.get("x-tenant-id") || "kazi";

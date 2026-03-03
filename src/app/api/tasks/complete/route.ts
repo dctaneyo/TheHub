@@ -8,6 +8,7 @@ import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket
 import { sendPushToAllARLs } from "@/lib/push";
 import { createNotificationBulk } from "@/lib/notifications";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
+import { validate, completeTaskSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId, notes, completedDate: requestedDate, localDate } = await req.json();
+    const body = await req.json();
+    const parsed = validate(completeTaskSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { taskId, notes, completedDate: requestedDate, localDate } = parsed.data;
 
     const task = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!task) {

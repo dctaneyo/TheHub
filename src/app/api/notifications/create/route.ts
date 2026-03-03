@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, type NotificationType, type NotificationPriority } from "@/lib/notifications";
+import { validate, createNotificationSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,30 +10,11 @@ export async function POST(req: NextRequest) {
     if (!session) return unauthorized();
 
     const body = await req.json();
-    const {
-      userId,
-      userType,
-      type,
-      title,
-      message,
-      priority = "medium",
-      metadata = {},
-    } = body;
-
-    if (!userId || !userType || !type || !title || !message) {
-      return NextResponse.json(
-        { error: "Missing required fields: userId, userType, type, title, message" },
-        { status: 400 }
-      );
+    const parsed = validate(createNotificationSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    const validPriorities = ["low", "medium", "high", "urgent"];
-    if (!validPriorities.includes(priority)) {
-      return NextResponse.json(
-        { error: "Invalid priority. Must be one of: low, medium, high, urgent" },
-        { status: 400 }
-      );
-    }
+    const { userId, userType, type, title, message, priority = "normal", metadata = {} } = parsed.data;
 
     // ARLs can create notifications for any user; others only for themselves
     if (session.userType !== "arl" && session.id !== userId) {
@@ -42,10 +24,10 @@ export async function POST(req: NextRequest) {
     const notification = await createNotification({
       userId,
       userType,
-      type,
+      type: type as NotificationType,
       title,
       message,
-      priority,
+      priority: priority as NotificationPriority,
       metadata,
     });
 

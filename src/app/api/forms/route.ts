@@ -8,6 +8,7 @@ import { v4 as uuid } from "uuid";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { createNotificationBulk } from "@/lib/notifications";
+import { validate, uploadFormSchema, deleteFormSchema } from "@/lib/validations";
 
 const FORMS_DIR = join(process.cwd(), "data", "forms");
 
@@ -35,16 +36,22 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string | null;
-    const category = formData.get("category") as string | null;
-
-    if (!file || !title) {
-      return NextResponse.json({ error: "file and title required" }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
     if (!file.name.endsWith(".pdf")) {
       return NextResponse.json({ error: "Only PDF files allowed" }, { status: 400 });
     }
+
+    const parsed = validate(uploadFormSchema, {
+      title: formData.get("title"),
+      description: formData.get("description"),
+      category: formData.get("category"),
+    });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { title, description, category } = parsed.data;
 
     const bytes = await file.arrayBuffer();
     const fileBuffer = Buffer.from(bytes);
@@ -109,8 +116,12 @@ export async function DELETE(req: NextRequest) {
     }
     const denied = await requirePermission(session, PERMISSIONS.FORMS_DELETE);
     if (denied) return denied;
-    const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(deleteFormSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { id } = parsed.data;
     db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();
     return NextResponse.json({ success: true });
   } catch (error) {

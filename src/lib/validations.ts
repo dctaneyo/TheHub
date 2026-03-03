@@ -62,7 +62,13 @@ export const sendMessageSchema = z.object({
 export const createNotificationSchema = z.object({
   userId: z.string().min(1),
   userType: z.enum(["location", "arl", "admin"]),
-  type: z.string().min(1),
+  type: z.enum([
+    "task_due_soon", "task_overdue", "new_message", "new_shoutout",
+    "achievement_unlocked", "high_five", "emergency_broadcast",
+    "meeting_starting", "form_uploaded", "task_completed",
+    "location_online", "location_offline", "task_overdue_location",
+    "meeting_joined", "analytics_alert", "system_update",
+  ]),
   title: z.string().min(1).max(500),
   message: z.string().min(1).max(2000),
   actionUrl: z.string().optional(),
@@ -187,6 +193,52 @@ export const updateScheduledReportSchema = z.object({
     groupIds: z.array(z.string()).optional(),
   }).nullable().optional(),
   isActive: z.boolean().optional(),
+});
+
+// ── Task completion schemas ──
+
+export const completeTaskSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required"),
+  notes: z.string().max(2000).nullable().optional(),
+  completedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+});
+
+export const uncompleteTaskSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required"),
+  completedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+});
+
+// ── Form schemas ──
+
+export const uploadFormSchema = z.object({
+  title: z.string().min(1, "Title is required").max(500),
+  description: z.string().max(2000).nullable().optional(),
+  category: z.string().max(100).nullable().optional(),
+});
+
+export const deleteFormSchema = z.object({
+  id: z.string().min(1, "Form ID is required"),
+});
+
+// ── Role schemas ──
+
+export const createRoleSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  description: z.string().max(1000).nullable().optional(),
+  permissions: z.array(z.string()),
+});
+
+export const updateRoleSchema = z.object({
+  id: z.string().min(1, "Role ID is required"),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  permissions: z.array(z.string()).optional(),
+});
+
+export const deleteRoleSchema = z.object({
+  id: z.string().min(1, "Role ID is required"),
 });
 
 // ── Helper: validate and return parsed data or error response ──

@@ -5,6 +5,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { broadcastTaskUpdate, broadcastTaskUncompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
+import { validate, uncompleteTaskSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,8 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const { taskId, completedDate: requestedDate, localDate } = await req.json();
-    if (!taskId) return NextResponse.json({ error: "taskId required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = validate(uncompleteTaskSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { taskId, completedDate: requestedDate, localDate } = parsed.data;
 
     const targetDate = requestedDate || localDate || new Date().toISOString().split("T")[0];
 
