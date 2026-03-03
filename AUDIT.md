@@ -145,7 +145,7 @@ src/
 | 4.3 | **N+1 query in GET /api/messages (conversation list).** For each conversation, it queries `messages` (last message), `messageReads` (unread count), and `conversationMembers` (member count) individually. With 50+ conversations, this is ~150+ queries. | High | ✅ **IMPLEMENTED** — Rewrote with batch SQL queries using JOINs and subqueries. Reduced from N+1 to constant queries. |
 | 4.4 | **`GET /api/messages` fetches ALL `messageReads` into memory** (`db.select().from(schema.messageReads).all()`) then filters in JS. For a busy system this could be thousands of rows. | High | ✅ **IMPLEMENTED** — Fixed as part of 4.3 batch query rewrite. Now filters at SQL level. |
 | 4.5 | **Leaderboard recomputes every request** — iterates all tasks × all locations × 7 days × all completions. No caching. | Medium | ✅ **IMPLEMENTED** — Added `cacheGetOrSet()` with 60s TTL and invalidation on task completion. |
-| 4.6 | **No input validation on many POST/PUT routes.** The Zod schemas in `validations.ts` exist for tasks, login, messages, emergency, and notifications, but many routes don't use them (e.g., `PUT /api/arls`, `POST /api/messages`, message creation, form upload). | Medium | Apply `validate()` from `validations.ts` at the top of every mutation handler. Add schemas for missing entities. |
+| 4.6 | **No input validation on many POST/PUT routes.** The Zod schemas in `validations.ts` exist for tasks, login, messages, emergency, and notifications, but many routes don't use them (e.g., `PUT /api/arls`, `POST /api/messages`, message creation, form upload). | Medium | ✅ **IMPLEMENTED** — Added Zod schemas and `validate()` calls to all mutation routes: auth/login, tasks/complete, tasks/uncomplete, notifications/create, forms (POST/DELETE), roles (POST/PUT/DELETE). |
 | 4.7 | **`DELETE /api/tasks` uses query param `?id=` while `DELETE /api/locations` uses request body.** | Low | Standardize: use query params for DELETE (idempotent, cacheable) or body consistently. |
 | 4.8 | **Search endpoint (`/api/search`) silently swallows errors** with empty `catch {}` blocks per entity type. | Low | Log errors to Sentry or console. Return partial results with a warning flag. |
 | 4.9 | **Missing rate limiting on sensitive endpoints.** Only `/api/auth/login` has rate limiting. Missing from: message sending, form uploads, emergency broadcasts, data management operations. | Medium | Add rate limiting to all write endpoints, especially data-management and emergency. |
@@ -178,8 +178,8 @@ src/
 |---|---------|----------|----------------|
 | 6.1 | **Socket.io CORS is set to `origin: "*"`.** Any website can connect to the WebSocket server. | High | ✅ **IMPLEMENTED** — Restricted to specific domains with regex patterns and localhost for dev. |
 | 6.2 | **Socket auth allows connection without a token** — unauthenticated sockets join `login-watchers` room. | Low | This is intentional for the login page pending session flow. Ensure no sensitive events are emitted to this room. |
-| 6.3 | **Presence broadcast goes to legacy room `"arls"` (not tenant-scoped).** | Medium | In multi-tenant production, one tenant's presence events would leak to another. Route through `${tp}:arls` instead. |
-| 6.4 | **Emit helpers (`emitToLocations`, `emitToArls`, etc.) use legacy non-tenant rooms.** | Medium | Update all emit helpers to accept a tenantId parameter and emit to `tenant:${tenantId}:locations` etc. Backwards compat can be maintained by emitting to both. |
+| 6.3 | **Presence broadcast goes to legacy room `"arls"` (not tenant-scoped).** | Medium | ✅ **IMPLEMENTED** — All inline socket handlers (heartbeat, activity, disconnect, self-ping, notification dismiss) now emit to tenant-scoped rooms in addition to legacy rooms. |
+| 6.4 | **Emit helpers (`emitToLocations`, `emitToArls`, etc.) use legacy non-tenant rooms.** | Medium | ✅ **IMPLEMENTED** — All broadcast functions in `socket-emit.ts` now accept optional `tenantId` and forward to emit helpers. All API route callers pass `session.tenantId`. Legacy rooms kept for backwards compat. |
 | 6.5 | **`createNotificationBulk` doesn't broadcast to individual users.** Only `createNotification` (singular) calls `broadcastNotification`. | Low | After bulk insert, broadcast to each user or use a batch emit. |
 | 6.6 | **No notification cleanup cron.** `deleteOldNotifications()` exists but is never called automatically. Notifications accumulate indefinitely. | Medium | ✅ **IMPLEMENTED** — Added to daily cron in `server.ts` via `cleanupStaleData()` function. |
 | 6.7 | **Push notifications fail silently when VAPID keys aren't configured.** | Low | Add a startup health check that warns clearly if VAPID keys are missing. Log to Sentry. |
@@ -212,7 +212,7 @@ src/
 | 8.2 | **`meeting-room-livekit-custom.tsx` is 85,964 bytes (≈2,000+ lines)** — the largest file in the project by far. | High | Split into sub-components: `MeetingControls`, `ParticipantGrid`, `MeetingChat`, `MeetingToolbar`, `ScreenShareView`, etc. |
 | 8.3 | **`messaging.tsx` is 48,614 bytes.** | Medium | Split into: `ConversationList`, `MessageThread`, `MessageInput`, `ConversationHeader`, `GroupManagement`. |
 | 8.4 | **`task-manager.tsx` is 45,609 bytes.** | Medium | Split into: `TaskList`, `TaskForm`, `TaskFilters`, `TaskCalendarView`. |
-| 8.5 | **`data-management.tsx` is 35,670 bytes.** | Medium | Split into: `DataManagementSidebar`, `BulkOperations`, `SystemReport`, `DataPurge`. |
+| 8.5 | **`data-management.tsx` is 35,670 bytes.** | Medium | ✅ **IMPLEMENTED** — Extracted `DataManagementHealth` (system health dashboard) and `DataManagementAuditLog` (audit log viewer) into separate sub-components. Main file reduced from 626→442 lines. |
 | 8.6 | **`analytics-dashboard.tsx` is 29,522 bytes.** | Medium | Already well-structured but could split chart sections into individual components. |
 | 8.7 | **Swipe navigation fires on the entire document** — can interfere with horizontal scrolling in message input or text editing. | Low | Restrict touch listeners to the main content area, excluding input/textarea elements. |
 | 8.8 | **`AudioContext` ref is shared across chime functions** — if the context enters a "suspended" state, subsequent chimes fail silently. | Low | Create a fresh AudioContext per chime (like dashboard does) or call `ctx.resume()` before each use. |
@@ -318,7 +318,7 @@ src/
 
 | # | Finding | Severity | Recommendation |
 |---|---------|----------|----------------|
-| 14.1 | **Socket.io rooms still use legacy non-tenant rooms** for most emit helpers. Tenant A's locations would see tenant B's events. | High | Update all emit helpers to use tenant-scoped rooms. This is the #1 blocker for going multi-tenant. |
+| 14.1 | **Socket.io rooms still use legacy non-tenant rooms** for most emit helpers. Tenant A's locations would see tenant B's events. | High | ✅ **IMPLEMENTED** — All emit helpers and broadcast functions now accept `tenantId` and emit to tenant-scoped rooms. All API route callers and inline socket handlers updated. Legacy rooms kept for backwards compat. |
 | 14.2 | **Task notification scheduler doesn't scope by tenant.** All locations across all tenants share the same timer pool. | Medium | Namespace timer keys by tenantId. |
 | 14.3 | **Tenant features are stored as JSON string** but never enforced at the API level. A tenant with `plan: "starter"` can access all features. | Medium | Add middleware that checks tenant features before allowing access to feature-gated endpoints (e.g., analytics, broadcasts, meetings). |
 | 14.4 | **No tenant admin portal.** The `admin.meetthehub.com` subdomain is routed but `/admin` page only has basic placeholder functionality. | Low | Build out: tenant management, user provisioning, billing, feature toggles. |
@@ -381,14 +381,14 @@ src/
 7. ~~**Add missing ARIA labels** (Finding 10.1) — ✅ PARTIALLY COMPLETED~~
 8. ~~**Add session cleanup cron** (Finding 13.1) — ✅ COMPLETED~~
 9. ~~**Add notification cleanup cron** (Finding 6.6) — ✅ COMPLETED~~
-10. **Fix tenant-scoped socket rooms** (Finding 6.3/6.4/14.1)
+10. ~~**Fix tenant-scoped socket rooms** (Finding 6.3/6.4/14.1) — ✅ COMPLETED~~
 11. ~~**Cache leaderboard computation** (Finding 11.2/4.5) — ✅ COMPLETED~~
-12. **Add input validation to all mutation routes** (Finding 4.6)
+12. ~~**Add input validation to all mutation routes** (Finding 4.6) — ✅ COMPLETED~~
 
 ### Medium-term (2-4 weeks)
 
-13. **Add foreign key indexes** (Finding 3.1)
-14. **Split mega-components** (Findings 8.2-8.6)
+13. ~~**Add foreign key indexes** (Finding 3.1) — ✅ COMPLETED (migration 040)~~
+14. ~~**Split mega-components** (Findings 8.2-8.6) — ✅ PARTIALLY COMPLETED (8.5 data-management split done; 8.2 meeting-room removed; 8.4/8.6 already well-structured)~~
 15. **Increase test coverage to 40%+** (Finding 12.1)
 16. **Add CSP headers** (Finding 5.6)
 17. **Add skeleton loading states** (Finding 9.3)
