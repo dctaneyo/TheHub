@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { addDays, format, isSameDay } from "date-fns";
-import { CalendarDays, ChevronRight, CheckCircle2, Circle } from "lucide-react";
+import { CalendarDays, ChevronRight, CheckCircle2, Circle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface UpcomingTask {

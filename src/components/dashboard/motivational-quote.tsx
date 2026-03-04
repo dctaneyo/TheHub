@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getDailyQuote } from "@/lib/motivational-quotes";
-import { Sparkles } from "lucide-react";
+import { Sparkles } from "@/lib/icons";
 import { motion } from "framer-motion";
 
 export function MotivationalQuote() {

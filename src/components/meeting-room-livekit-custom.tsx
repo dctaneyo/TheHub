@@ -7,7 +7,7 @@ import {
   PhoneOff, MessageCircle, HelpCircle, Hand, Users,
   Send, CheckCircle, ThumbsUp, X, Crown, Shield,
   Keyboard, Loader2, SwitchCamera, Timer, ArrowRightLeft, Edit3,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ import {
 import { ZoomableVideo } from "./meeting-room/zoomable-video";
 import { Track, RoomEvent, LocalParticipant, RemoteParticipant, LocalTrackPublication } from "livekit-client";
 import "@livekit/components-styles";
-import { LogOut, DoorOpen, Settings, AudioLines } from "lucide-react";
+import { LogOut, DoorOpen, Settings, AudioLines } from "@/lib/icons";
 import { RNNoiseProcessor } from "@/lib/rnnoise-processor";
 
 interface ChatMessage {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, Send, Trash2, Radio, Eye, EyeOff, Store, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, Send, Trash2, Radio, Eye, EyeOff, Store, Check, ChevronDown, ChevronUp } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";

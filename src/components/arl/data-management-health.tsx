@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, CheckCircle2, AlertTriangle, Copy, RefreshCw } from "lucide-react";
+import { Activity, CheckCircle2, AlertTriangle, Copy, RefreshCw } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 export interface SystemReport {

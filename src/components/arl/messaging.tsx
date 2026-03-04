@@ -12,7 +12,7 @@ import {
   Plus,
   Hash,
   Smile,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
@@ -21,7 +21,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { format } from "date-fns";
 import { Emoji } from "@/components/ui/emoji";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
-import { Info, BellOff, Bell, Search, XCircle } from "lucide-react";
+import { Info, BellOff, Bell, Search, XCircle } from "@/lib/icons";
 import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
 import { MentionInput, MessageContent } from "@/components/mention-input";
 import { SwipeableConvoRow, convIcon, convIconBg } from "./swipeable-convo-row";

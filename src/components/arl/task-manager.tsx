@@ -10,7 +10,7 @@ import {
   SprayCan,
   Clock,
   ClipboardList,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";

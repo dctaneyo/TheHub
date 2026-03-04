@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Trash2, Copy, Check, Clock, Calendar,
   Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown, Play,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

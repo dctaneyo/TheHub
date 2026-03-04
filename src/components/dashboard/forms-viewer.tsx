@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, FolderOpen, X, Mail, Loader2 } from "lucide-react";
+import { FileText, FolderOpen, X, Mail, Loader2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 

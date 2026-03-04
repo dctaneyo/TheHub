@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, AlertTriangle, Clock } from "lucide-react";
+import { Bell, X, AlertTriangle, Clock } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { type TaskItem } from "./timeline";
 import { useSocket } from "@/lib/socket-context";

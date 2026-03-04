@@ -8,7 +8,7 @@ import {
   Video,
   X,
   CheckCircle2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Timeline, type TaskItem } from "@/components/dashboard/timeline";

@@ -3,7 +3,7 @@ import {
   SprayCan,
   ClipboardList,
   Sparkles,
-} from "lucide-react";
+} from "@/lib/icons";
 
 export interface Task {
   id: string;

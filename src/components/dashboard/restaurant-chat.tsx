@@ -23,7 +23,7 @@ import {
   ThumbsUp,
   Laugh,
   Smile,
-} from "lucide-react";
+} from "@/lib/icons";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ import { useSocket } from "@/lib/socket-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
-import { Info, BellOff, Bell, XCircle } from "lucide-react";
+import { Info, BellOff, Bell, XCircle } from "@/lib/icons";
 import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
 import { MentionInput, MessageContent } from "@/components/mention-input";
 import type { Mentionable } from "@/components/mention-input";

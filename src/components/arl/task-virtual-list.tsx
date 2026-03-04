@@ -11,7 +11,7 @@ import {
   Sparkles,
   Eye,
   EyeOff,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PRIORITIES, formatTime12 } from "./task-manager-types";

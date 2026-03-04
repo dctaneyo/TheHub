@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Video, Play, X, Copy, Check, Lock, Globe } from "lucide-react";
+import { Video, Play, X, Copy, Check, Lock, Globe } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSocket } from "@/lib/socket-context";

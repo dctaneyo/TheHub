@@ -10,7 +10,7 @@ import {
   SprayCan,
   ClipboardList,
   Undo2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { TaskCheckmark } from "@/components/ui/success-checkmark";

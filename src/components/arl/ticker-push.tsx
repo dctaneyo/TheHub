@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Plus, Trash2, Clock, Send, X } from "lucide-react";
+import { Zap, Plus, Trash2, Clock, Send, X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface TickerMessage {

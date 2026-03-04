@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell, Hand } from "lucide-react";
+import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell, Hand } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";

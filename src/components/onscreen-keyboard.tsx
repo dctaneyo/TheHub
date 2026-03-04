@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Globe, Smile, ArrowUp, Space, CornerDownLeft, X } from "lucide-react";
+import { Delete, Globe, Smile, ArrowUp, Space, CornerDownLeft, X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface OnscreenKeyboardProps {

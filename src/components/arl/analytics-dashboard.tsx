@@ -9,7 +9,7 @@ import {
   TrendingUp, TrendingDown, CheckCircle2, MessageCircle, Trophy,
   Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Zap, Target,
   Clock, Star, Award,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 

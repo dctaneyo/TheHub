@@ -1,7 +1,7 @@
 import {
   MessageCircle, ClipboardList, CalendarDays, Users, Store,
   Video, BarChart3, Shield, Zap, ArrowRight, ChevronRight,
-} from "lucide-react";
+} from "@/lib/icons";
 
 const features = [
   { icon: ClipboardList, title: "Tasks & Reminders", desc: "Assign, track, and complete tasks across all locations with gamification" },

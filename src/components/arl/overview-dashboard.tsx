@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Wifi,
   WifiOff,
-} from "lucide-react";
+} from "@/lib/icons";
 import { useSocket } from "@/lib/socket-context";
 import { cn } from "@/lib/utils";
 import { ShoutoutsFeed } from "@/components/shoutouts-feed";

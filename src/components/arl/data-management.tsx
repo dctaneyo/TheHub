@@ -5,7 +5,7 @@ import {
   Trash2, Database, AlertTriangle, CheckCircle2, Trophy, Download, Calendar,
   HardDrive, Unlink, Shield, ListChecks, Copy, Upload,
   BarChart3, RefreshCw, X, Archive, ScrollText,
-} from "lucide-react";
+} from "@/lib/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { NotificationTester } from "@/components/arl/notification-tester";

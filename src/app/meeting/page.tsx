@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle2, LogIn, UserPlus, Delete } from "lucide-react";
+import { Video, Lock, User, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle2, LogIn, UserPlus, Delete } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";

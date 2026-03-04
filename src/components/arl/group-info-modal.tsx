@@ -25,7 +25,7 @@ import {
   Save,
   X,
   Palette,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 

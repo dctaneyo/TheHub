@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Megaphone, Heart, ThumbsUp, Star, Sparkles, Trash2 } from "lucide-react";
+import { Megaphone, Heart, ThumbsUp, Star, Sparkles, Trash2 } from "@/lib/icons";
 import { useAuth } from "@/lib/auth-context";
 
 interface Shoutout {

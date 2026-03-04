@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings, Volume2, VolumeX, Monitor, MonitorOff, Play, Sun, Moon } from "lucide-react";
+import { Settings, Volume2, VolumeX, Monitor, MonitorOff, Play, Sun, Moon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 

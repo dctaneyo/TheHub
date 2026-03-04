@@ -10,7 +10,7 @@ import {
   FileText,
   Volume2,
   VolumeX,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
 import { GamificationHub } from "@/components/dashboard/gamification-hub";

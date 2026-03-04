@@ -38,7 +38,7 @@ import {
   Monitor,
   MoreVertical,
   Hash,
-} from "lucide-react";
+} from "@/lib/icons";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
 import { ConnectionStatus } from "@/components/connection-status";

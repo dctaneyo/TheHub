@@ -16,7 +16,7 @@ import {
   Video,
   TrendingUp,
   BarChart3,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 

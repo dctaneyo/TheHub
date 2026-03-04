@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSocket } from "@/lib/socket-context";
-import { Zap } from "lucide-react";
+import { Zap } from "@/lib/icons";
 
 interface TickerItem {
   id: string;

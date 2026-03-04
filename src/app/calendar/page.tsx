@@ -11,7 +11,7 @@ import {
   SprayCan,
   CalendarDays,
   Repeat,
-} from "lucide-react";
+} from "@/lib/icons";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {

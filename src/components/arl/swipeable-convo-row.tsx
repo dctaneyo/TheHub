@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { Trash2, Store, Globe, Users } from "lucide-react";
+import { Trash2, Store, Globe, Users } from "@/lib/icons";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Conversation, ConvType } from "./messaging-types";

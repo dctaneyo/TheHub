@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Edit2, Trash2, UserCheck, UserX,
   Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

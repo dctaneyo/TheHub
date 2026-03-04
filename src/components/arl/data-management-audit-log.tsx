@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ScrollText, RefreshCw, X, Search } from "lucide-react";
+import { ScrollText, RefreshCw, X, Search } from "@/lib/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

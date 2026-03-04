@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, Square, Play, Pause, Trash2, Send, Loader2 } from "lucide-react";
+import { Mic, Square, Play, Pause, Trash2, Send, Loader2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface VoiceRecorderProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, Zap, Sparkles } from "lucide-react";
+import { Trophy, Zap, Sparkles } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { ConfettiBurst } from "./celebrations";

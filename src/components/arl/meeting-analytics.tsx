@@ -6,7 +6,7 @@ import {
   BarChart3, Users, Clock, MessageCircle, Hand, ThumbsUp,
   HelpCircle, TrendingUp, Video, ChevronRight, ChevronLeft,
   Calendar, Loader2, ArrowLeft, Trash2,
-} from "lucide-react";
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface MeetingAnalytics {

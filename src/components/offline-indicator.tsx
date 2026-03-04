@@ -1,7 +1,7 @@
 "use client";
 
 import { useOfflineSync } from "@/hooks/use-offline-sync";
-import { WifiOff, RefreshCw, CloudOff, Check } from "lucide-react";
+import { WifiOff, RefreshCw, CloudOff, Check } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 

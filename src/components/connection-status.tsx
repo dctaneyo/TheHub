@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, Hash, Monitor, Smartphone, Tablet, AlertTriangle } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, Hash, Monitor, Smartphone, Tablet, AlertTriangle } from "@/lib/icons";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 

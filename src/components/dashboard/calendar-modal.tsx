@@ -15,7 +15,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Circle,
-} from "lucide-react";
+} from "@/lib/icons";
 
 interface CalModalTask {
   id: string; title: string; type: string; priority: string;

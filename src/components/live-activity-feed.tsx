@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Activity, CheckCircle, MessageCircle, Trophy, Zap, Trash2 } from "lucide-react";
+import { Activity, CheckCircle, MessageCircle, Trophy, Zap, Trash2 } from "@/lib/icons";
 
 interface ActivityItem {
   id: string;

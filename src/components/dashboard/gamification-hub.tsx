@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
-import { Trophy, ChevronDown, Flame, Star, Medal, Zap, Snowflake, X } from "lucide-react";
+import { Trophy, ChevronDown, Flame, Star, Medal, Zap, Snowflake, X } from "@/lib/icons";
 
 interface StreakData {
   current: number;

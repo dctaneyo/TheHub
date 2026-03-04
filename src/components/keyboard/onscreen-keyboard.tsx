@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Delete, ChevronDown } from "lucide-react";
+import { Delete, ChevronDown } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 interface OnscreenKeyboardProps {

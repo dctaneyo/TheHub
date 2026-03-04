@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, FileText, MessageCircle, ClipboardList, Store, Loader2 } from "lucide-react";
+import { Search, X, FileText, MessageCircle, ClipboardList, Store, Loader2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 

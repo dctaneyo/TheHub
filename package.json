@@ -29,6 +29,7 @@
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
     "@livekit/track-processors": "^0.7.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/nextjs": "^10.40.0",
     "@shiguredo/rnnoise-wasm": "^2025.1.5",

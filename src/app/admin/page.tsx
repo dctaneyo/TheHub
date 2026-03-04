@@ -6,7 +6,7 @@ import {
   Building2, Plus, Pencil, Trash2, Eye, Users, Store,
   Shield, X, Check, Loader2, LogIn, ChevronRight,
   Palette, Globe, Zap, BarChart3,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
