@@ -3,6 +3,10 @@ builder = "nixpacks"
 installCommand = "npm install"
 buildCommand = "npm run build"
 
+# Override Nixpacks default npm ci behavior
+[nixpacks]
+install = "npm install"
+
 [deploy]
 startCommand = "sh -c 'sleep 10 && npm start'"
 healthcheckPath = "/api/health"
