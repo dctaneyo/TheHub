@@ -7,7 +7,10 @@ import path from "path";
 import fs from "fs";
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "hub.db");
-const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
+const DATABASE_URL = process.env.DATABASE_URL
+  || (DB_PATH.startsWith("libsql://") || DB_PATH.startsWith("https://") || DB_PATH.startsWith("file:")
+    ? DB_PATH
+    : `file:${DB_PATH}`);
 
 // Ensure data directory exists for local file databases
 if (DATABASE_URL.startsWith("file:")) {
@@ -115,6 +118,19 @@ async function seed() {
 
   // Seed demo data
   const now = new Date().toISOString();
+
+  // Create default tenant (required for foreign keys)
+  const tenantId = "kazi";
+  await db.insert(schema.tenants).values({
+    id: tenantId,
+    slug: "kazi",
+    name: "KFC Kazi",
+    primaryColor: "#dc2626",
+    plan: "enterprise",
+    createdAt: now,
+    updatedAt: now,
+  }).run();
+  console.log("  ✓ Created tenant: kazi");
 
   // Create demo ARL (admin)
   const adminId = uuid();
