@@ -17,7 +17,7 @@ export async function GET() {
 
     // Duplicate conversations (same type + same members)
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         `SELECT type, name, COUNT(*) as c FROM conversations GROUP BY type, name HAVING c > 1`
       ).all() as any[];
       for (const row of r) {
@@ -31,7 +31,7 @@ export async function GET() {
 
     // Duplicate task completions (same task + same location + same date)
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         `SELECT task_id, location_id, completed_date, COUNT(*) as c 
          FROM task_completions 
          GROUP BY task_id, location_id, completed_date 
@@ -49,7 +49,7 @@ export async function GET() {
 
     // Duplicate sessions (same user with multiple active sessions)
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         `SELECT user_id, user_type, COUNT(*) as c 
          FROM sessions 
          WHERE is_online = 1 
@@ -91,7 +91,7 @@ export async function POST() {
 
     // Remove duplicate task completions (keep the earliest)
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         `DELETE FROM task_completions WHERE rowid NOT IN (
           SELECT MIN(rowid) FROM task_completions GROUP BY task_id, location_id, completed_date
         )`
@@ -101,7 +101,7 @@ export async function POST() {
 
     // Remove duplicate online sessions (keep the newest)
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         `DELETE FROM sessions WHERE rowid NOT IN (
           SELECT MAX(rowid) FROM sessions GROUP BY user_id, user_type
         )`

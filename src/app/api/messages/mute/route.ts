@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const { conversationId } = await req.json();
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
 
-    const existing = db
+    const existing = await db
       .select()
       .from(schema.conversationSettings)
       .where(
@@ -30,13 +30,13 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       const newMuted = !existing.isMuted;
-      db.update(schema.conversationSettings)
+      await db.update(schema.conversationSettings)
         .set({ isMuted: newMuted, updatedAt: now })
         .where(eq(schema.conversationSettings.id, existing.id))
         .run();
       return NextResponse.json({ isMuted: newMuted });
     } else {
-      db.insert(schema.conversationSettings).values({
+      await db.insert(schema.conversationSettings).values({
         id: uuid(),
         conversationId,
         userId: session.id,
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     const conversationId = searchParams.get("conversationId");
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
 
-    const setting = db
+    const setting = await db
       .select()
       .from(schema.conversationSettings)
       .where(

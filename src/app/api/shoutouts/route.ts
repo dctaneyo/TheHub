@@ -9,9 +9,9 @@ import { sendPushToAllARLs } from "@/lib/push";
 import { createNotification } from "@/lib/notifications";
 
 // Ensure shoutouts table exists
-function ensureShoutoutsTable() {
+async function ensureShoutoutsTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS shoutouts (
         id TEXT PRIMARY KEY,
         tenant_id TEXT NOT NULL DEFAULT 'kazi',
@@ -26,7 +26,7 @@ function ensureShoutoutsTable() {
       )
     `);
     // Add tenant_id column if missing (existing tables)
-    try { sqlite.exec(`ALTER TABLE shoutouts ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
+    try { await sqlite.execute(`ALTER TABLE shoutouts ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
   } catch {}
 }
 
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    ensureShoutoutsTable();
+    await ensureShoutoutsTable();
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     query += " ORDER BY created_at DESC LIMIT ?";
     params.push(limit);
 
-    const shoutouts = sqlite.prepare(query).all(...params) as any[];
+    const shoutouts = await sqlite.prepare(query).all(...params) as any[];
 
     // Parse reactions JSON
     const parsed = shoutouts.map(s => ({
@@ -85,12 +85,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    ensureShoutoutsTable();
+    await ensureShoutoutsTable();
 
     const shoutoutId = uuid();
     const now = new Date().toISOString();
 
-    sqlite.prepare(`
+    await sqlite.prepare(`
       INSERT INTO shoutouts (
         id, tenant_id, from_user_id, from_user_type, from_user_name,
         to_location_id, to_location_name, message, created_at, reactions
@@ -165,9 +165,9 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    ensureShoutoutsTable();
+    await ensureShoutoutsTable();
 
-    const shoutout = sqlite.prepare("SELECT * FROM shoutouts WHERE id = ?").get(shoutoutId) as any;
+    const shoutout = await sqlite.prepare("SELECT * FROM shoutouts WHERE id = ?").get(shoutoutId) as any;
 
     if (!shoutout) {
       return NextResponse.json({ error: "Shoutout not found" }, { status: 404 });
@@ -183,7 +183,7 @@ export async function PATCH(request: Request) {
       timestamp: new Date().toISOString(),
     });
 
-    sqlite.prepare("UPDATE shoutouts SET reactions = ? WHERE id = ?")
+    await sqlite.prepare("UPDATE shoutouts SET reactions = ? WHERE id = ?")
       .run(JSON.stringify(reactions), shoutoutId);
 
     // Broadcast update
@@ -204,8 +204,8 @@ export async function DELETE() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    ensureShoutoutsTable();
-    sqlite.prepare("DELETE FROM shoutouts WHERE tenant_id = ?").run(session.tenantId);
+    await ensureShoutoutsTable();
+    await sqlite.prepare("DELETE FROM shoutouts WHERE tenant_id = ?").run(session.tenantId);
 
     // Broadcast to all clients so they refresh
     broadcastToAll("shoutout:purged", {});

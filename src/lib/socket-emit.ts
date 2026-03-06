@@ -50,14 +50,14 @@ export function broadcastTaskUncompleted(locationId: string, taskId: string, ten
 
 // Helper: emit to all members of a conversation via their user rooms
 // (not just the conversation room, which users only join when viewing it)
-function emitToConversationMembers(conversationId: string, event: string, data: any) {
+async function emitToConversationMembers(conversationId: string, event: string, data: any) {
   const io = getIO();
   if (!io) return;
   // Always emit to the conversation room (for users actively viewing it)
   emitToConversation(conversationId, event, data);
   // Also emit to each member's user room so they get notified even on the conversation list
   try {
-    const members = db.select().from(schema.conversationMembers)
+    const members = await db.select().from(schema.conversationMembers)
       .where(eq(schema.conversationMembers.conversationId, conversationId))
       .all();
     for (const m of members) {

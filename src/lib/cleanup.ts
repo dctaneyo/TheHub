@@ -21,10 +21,10 @@ export async function cleanupStaleData(): Promise<{
   // 1. Delete expired sessions (7 days past their expiry)
   let sessionsDeleted = 0;
   try {
-    const result = sqlite.prepare(
+    const result = await sqlite.prepare(
       `DELETE FROM sessions WHERE expires_at < ?`
     ).run(sevenDaysAgo);
-    sessionsDeleted = result.changes;
+    sessionsDeleted = result.rowsAffected;
     if (sessionsDeleted > 0) {
       console.log(`🧹 Cleaned up ${sessionsDeleted} expired sessions`);
     }
@@ -35,10 +35,10 @@ export async function cleanupStaleData(): Promise<{
   // 2. Delete expired pending sessions
   let pendingDeleted = 0;
   try {
-    const result = sqlite.prepare(
+    const result = await sqlite.prepare(
       `DELETE FROM pending_sessions WHERE expires_at < ?`
     ).run(now);
-    pendingDeleted = result.changes;
+    pendingDeleted = result.rowsAffected;
     if (pendingDeleted > 0) {
       console.log(`🧹 Cleaned up ${pendingDeleted} expired pending sessions`);
     }
@@ -58,12 +58,12 @@ export async function cleanupStaleData(): Promise<{
 
   // 4. Cleanup orphaned message reads (where message no longer exists)
   try {
-    const result = sqlite.prepare(`
+    const result = await sqlite.prepare(`
       DELETE FROM message_reads
       WHERE message_id NOT IN (SELECT id FROM messages)
     `).run();
-    if (result.changes > 0) {
-      console.log(`🧹 Cleaned up ${result.changes} orphaned message reads`);
+    if (result.rowsAffected > 0) {
+      console.log(`🧹 Cleaned up ${result.rowsAffected} orphaned message reads`);
     }
   } catch (err) {
     console.error("Orphaned message reads cleanup error:", err);

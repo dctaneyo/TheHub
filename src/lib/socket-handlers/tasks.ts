@@ -69,16 +69,16 @@ export function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): bool
  * Schedule due-soon and overdue task notification timers for a specific location.
  * Fires exact-second setTimeout timers that emit socket events directly to the location.
  */
-export function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
+export async function scheduleTaskNotifications(io: SocketIOServer, locationId: string) {
   // Cancel existing timers for this location
   const existing = taskTimers.get(locationId) || [];
   existing.forEach(clearTimeout);
   taskTimers.set(locationId, []);
 
   try {
-    const allTasks = db.select().from(schema.tasks).all();
+    const allTasks = await db.select().from(schema.tasks).all();
     const today = todayStr();
-    const completions = db.select({ taskId: schema.taskCompletions.taskId })
+    const completions = await db.select({ taskId: schema.taskCompletions.taskId })
       .from(schema.taskCompletions)
       .where(and(eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, today)))
       .all();
@@ -101,8 +101,8 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       const dueSoonMinutes = taskMinutes - 30;
       const msUntilDueSoon = (dueSoonMinutes - nowMinutes) * 60 * 1000 - now.getSeconds() * 1000;
       if (msUntilDueSoon > 0) {
-        timers.push(setTimeout(() => {
-          const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
+        timers.push(setTimeout(async () => {
+          const c = await db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
             .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
             .get();
           if (!c) {
@@ -123,8 +123,8 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       // Overdue: exactly at due time
       const msUntilOverdue = (taskMinutes - nowMinutes) * 60 * 1000 - now.getSeconds() * 1000;
       if (msUntilOverdue > 0) {
-        timers.push(setTimeout(() => {
-          const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
+        timers.push(setTimeout(async () => {
+          const c = await db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
             .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
             .get();
           if (!c) {

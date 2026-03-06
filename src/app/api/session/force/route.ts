@@ -21,11 +21,11 @@ export async function GET() {
     // Mark stale sessions offline before listing (same threshold as locations route)
     const STALE_MS = 3 * 60 * 1000;
     const staleTimestamp = new Date(Date.now() - STALE_MS).toISOString();
-    sqlite.prepare(
+    await sqlite.prepare(
       `UPDATE sessions SET is_online = 0 WHERE is_online = 1 AND last_seen < ?`
     ).run(staleTimestamp);
 
-    const activeSessions = db
+    const activeSessions = await db
       .select()
       .from(schema.sessions)
       .where(eq(schema.sessions.isOnline, true))
@@ -33,14 +33,14 @@ export async function GET() {
       .all();
 
     // Enrich with user names
-    const enriched = activeSessions.map((s) => {
+    const enriched = await Promise.all(activeSessions.map(async (s) => {
       let name = "Unknown";
       let storeNumber: string | null = null;
       if (s.userType === "location") {
-        const loc = db.select().from(schema.locations).where(eq(schema.locations.id, s.userId)).get();
+        const loc = await db.select().from(schema.locations).where(eq(schema.locations.id, s.userId)).get();
         if (loc) { name = loc.name; storeNumber = loc.storeNumber; }
       } else {
-        const arl = db.select().from(schema.arls).where(eq(schema.arls.id, s.userId)).get();
+        const arl = await db.select().from(schema.arls).where(eq(schema.arls.id, s.userId)).get();
         if (arl) { name = arl.name; }
       }
       return {
@@ -54,7 +54,7 @@ export async function GET() {
         lastSeen: s.lastSeen,
         createdAt: s.createdAt,
       };
-    });
+    }));
 
     return NextResponse.json({ activeSessions: enriched });
   } catch (error) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find the active session
-    const targetSession = db
+    const targetSession = await db
       .select()
       .from(schema.sessions)
       .where(eq(schema.sessions.id, sessionId))
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Delete the session record so heartbeat can't revive it
-      db.delete(schema.sessions)
+      await db.delete(schema.sessions)
         .where(eq(schema.sessions.id, sessionId))
         .run();
 
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       const sessionCode = genSessionCode();
 
       if (assignToType === "location") {
-        const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
+        const location = await db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
         if (!location) return NextResponse.json({ error: "Location not found" }, { status: 404 });
         if (!location.isActive) return NextResponse.json({ error: "Location is deactivated" }, { status: 403 });
 
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
         redirectTo = "/dashboard";
         targetName = location.name;
       } else {
-        const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
+        const arl = await db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
         if (!arl) return NextResponse.json({ error: "ARL not found" }, { status: 404 });
         if (!arl.isActive) return NextResponse.json({ error: "ARL account is deactivated" }, { status: 403 });
 
@@ -166,12 +166,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Delete old session so heartbeat can't revive it
-      db.delete(schema.sessions)
+      await db.delete(schema.sessions)
         .where(eq(schema.sessions.id, sessionId))
         .run();
 
       // Create new session record
-      db.insert(schema.sessions).values({
+      await db.insert(schema.sessions).values({
         id: uuid(),
         sessionCode,
         userType: assignToType,

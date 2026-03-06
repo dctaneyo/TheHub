@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       // ── Existing operations ──
       case "clear-completions-today": {
         const today = new Date().toISOString().split("T")[0];
-        const r = sqlite.prepare(
+        const r = await sqlite.prepare(
           "DELETE FROM task_completions WHERE completed_date = ?"
         ).run(today);
         deleted = r.changes;
@@ -35,14 +35,14 @@ export async function POST(request: Request) {
       case "clear-completions-week": {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        const r = sqlite.prepare(
+        const r = await sqlite.prepare(
           "DELETE FROM task_completions WHERE completed_date >= ?"
         ).run(weekAgo.toISOString().split("T")[0]);
         deleted = r.changes;
         break;
       }
       case "clear-all-completions": {
-        const r = sqlite.prepare("DELETE FROM task_completions").run();
+        const r = await sqlite.prepare("DELETE FROM task_completions").run();
         deleted = r.changes;
         break;
       }
@@ -54,42 +54,38 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "No tasks provided" }, { status: 400 });
         }
 
-        const insertStmt = sqlite.prepare(`
+        const insertStmt = await sqlite.prepare(`
           INSERT INTO tasks (id, title, description, type, priority, due_time, due_date, is_recurring, recurring_type, recurring_days, biweekly_start, location_id, created_by, created_by_type, is_hidden, allow_early_complete, show_in_today, show_in_7day, show_in_calendar, points, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const now = new Date().toISOString();
-        const insertMany = sqlite.transaction((taskList: any[]) => {
-          for (const task of taskList) {
-            insertStmt.run(
-              uuid(),
-              task.title,
-              task.description || null,
-              task.type || "task",
-              task.priority || "normal",
-              task.dueTime || "09:00",
-              task.dueDate || null,
-              task.isRecurring ? 1 : 0,
-              task.recurringType || null,
-              task.recurringDays ? JSON.stringify(task.recurringDays) : null,
-              task.biweeklyStart || null,
-              task.locationId || null,
-              session.id,
-              "arl",
-              0,
-              task.allowEarlyComplete ? 1 : 0,
-              task.showInToday !== false ? 1 : 0,
-              task.showIn7Day !== false ? 1 : 0,
-              task.showInCalendar !== false ? 1 : 0,
-              task.points || 10,
-              now,
-              now
-            );
-          }
-        });
-
-        insertMany(tasks);
+        for (const task of tasks) {
+          await insertStmt.run(
+            uuid(),
+            task.title,
+            task.description || null,
+            task.type || "task",
+            task.priority || "normal",
+            task.dueTime || "09:00",
+            task.dueDate || null,
+            task.isRecurring ? 1 : 0,
+            task.recurringType || null,
+            task.recurringDays ? JSON.stringify(task.recurringDays) : null,
+            task.biweeklyStart || null,
+            task.locationId || null,
+            session.id,
+            "arl",
+            0,
+            task.allowEarlyComplete ? 1 : 0,
+            task.showInToday !== false ? 1 : 0,
+            task.showIn7Day !== false ? 1 : 0,
+            task.showInCalendar !== false ? 1 : 0,
+            task.points || 10,
+            now,
+            now
+          );
+        }
         created = tasks.length;
         break;
       }
@@ -104,12 +100,12 @@ export async function POST(request: Request) {
         const placeholders = taskIds.map(() => "?").join(",");
 
         // Delete completions first
-        sqlite.prepare(
+        await sqlite.prepare(
           `DELETE FROM task_completions WHERE task_id IN (${placeholders})`
         ).run(...taskIds);
 
         // Delete tasks
-        const r = sqlite.prepare(
+        const r = await sqlite.prepare(
           `DELETE FROM tasks WHERE id IN (${placeholders})`
         ).run(...taskIds);
         deleted = r.changes;
@@ -141,7 +137,7 @@ export async function POST(request: Request) {
         setParams.push(new Date().toISOString());
 
         const placeholdersUpdate = taskIds.map(() => "?").join(",");
-        const r = sqlite.prepare(
+        const r = await sqlite.prepare(
           `UPDATE tasks SET ${setClauses.join(", ")} WHERE id IN (${placeholdersUpdate})`
         ).run(...setParams, ...taskIds);
         updated = r.changes;

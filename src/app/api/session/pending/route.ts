@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     let code = genCode();
     let attempts = 0;
     while (attempts < 10) {
-      const existing = db
+      const existing = await db
         .select()
         .from(schema.pendingSessions)
         .where(
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
     };
 
-    db.insert(schema.pendingSessions).values(pending).run();
+    await db.insert(schema.pendingSessions).values(pending).run();
 
     // Notify ARLs instantly
     broadcastPendingSession({
@@ -73,7 +73,7 @@ export async function GET() {
     const now = new Date().toISOString();
 
     // Get pending sessions that haven't expired
-    const pending = db
+    const pending = await db
       .select()
       .from(schema.pendingSessions)
       .where(

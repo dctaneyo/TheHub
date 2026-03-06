@@ -43,8 +43,8 @@ function getDateRange(frequency: string): { start: string; end: string } {
   return { start, end };
 }
 
-function generateTaskCompletionReport(tenantId: string, dateRange: { start: string; end: string }, filters?: { locationIds?: string[]; groupIds?: string[] }): ReportSection[] {
-  const locations = db.select().from(schema.locations)
+async function generateTaskCompletionReport(tenantId: string, dateRange: { start: string; end: string }, filters?: { locationIds?: string[]; groupIds?: string[] }): Promise<ReportSection[]> {
+  const locations = await db.select().from(schema.locations)
     .where(eq(schema.locations.tenantId, tenantId)).all();
 
   // Filter locations if needed
@@ -53,23 +53,24 @@ function generateTaskCompletionReport(tenantId: string, dateRange: { start: stri
     filteredLocationIds = filters.locationIds;
   }
   if (filters?.groupIds && filters.groupIds.length > 0) {
-    const groupMembers = filters.groupIds.flatMap((gId) =>
-      db.select({ locationId: schema.locationGroupMembers.locationId })
+    const groupMembers: string[] = [];
+    for (const gId of filters.groupIds) {
+      const members = await db.select({ locationId: schema.locationGroupMembers.locationId })
         .from(schema.locationGroupMembers)
-        .where(eq(schema.locationGroupMembers.groupId, gId)).all()
-        .map((m) => m.locationId)
-    );
+        .where(eq(schema.locationGroupMembers.groupId, gId)).all();
+      groupMembers.push(...members.map((m) => m.locationId));
+    }
     filteredLocationIds = filteredLocationIds.filter((id) => groupMembers.includes(id));
   }
 
   const filteredLocations = locations.filter((l) => filteredLocationIds.includes(l.id));
 
   // Get all tasks for tenant
-  const tasks = db.select().from(schema.tasks)
+  const tasks = await db.select().from(schema.tasks)
     .where(eq(schema.tasks.tenantId, tenantId)).all();
 
   // Get completions in date range
-  const completions = db.select().from(schema.taskCompletions).all()
+  const completions = (await db.select().from(schema.taskCompletions).all())
     .filter((c) => c.completedDate >= dateRange.start && c.completedDate <= dateRange.end);
 
   const rows = filteredLocations.map((loc) => {
@@ -104,12 +105,12 @@ function generateTaskCompletionReport(tenantId: string, dateRange: { start: stri
   }];
 }
 
-function generateLeaderboardReport(tenantId: string, dateRange: { start: string; end: string }, filters?: { locationIds?: string[]; groupIds?: string[] }): ReportSection[] {
-  const leaderboard = db.select().from(schema.dailyLeaderboard)
-    .where(eq(schema.dailyLeaderboard.tenantId, tenantId)).all()
+async function generateLeaderboardReport(tenantId: string, dateRange: { start: string; end: string }, filters?: { locationIds?: string[]; groupIds?: string[] }): Promise<ReportSection[]> {
+  const leaderboard = (await db.select().from(schema.dailyLeaderboard)
+    .where(eq(schema.dailyLeaderboard.tenantId, tenantId)).all())
     .filter((l) => l.date >= dateRange.start && l.date <= dateRange.end);
 
-  const locations = db.select().from(schema.locations)
+  const locations = await db.select().from(schema.locations)
     .where(eq(schema.locations.tenantId, tenantId)).all();
 
   const locationMap = new Map(locations.map((l) => [l.id, l]));
@@ -160,11 +161,11 @@ function generateLeaderboardReport(tenantId: string, dateRange: { start: string;
   }];
 }
 
-function generateAttendanceReport(tenantId: string, dateRange: { start: string; end: string }): ReportSection[] {
-  const locations = db.select().from(schema.locations)
+async function generateAttendanceReport(tenantId: string, dateRange: { start: string; end: string }): Promise<ReportSection[]> {
+  const locations = await db.select().from(schema.locations)
     .where(eq(schema.locations.tenantId, tenantId)).all();
 
-  const sessions = db.select().from(schema.sessions).all()
+  const sessions = (await db.select().from(schema.sessions).all())
     .filter((s) => s.createdAt >= dateRange.start && s.createdAt <= dateRange.end + "T23:59:59");
 
   const rows = locations.map((loc) => {
@@ -191,12 +192,12 @@ function generateAttendanceReport(tenantId: string, dateRange: { start: string; 
   }];
 }
 
-function generateMessagingReport(tenantId: string, dateRange: { start: string; end: string }): ReportSection[] {
-  const conversations = db.select().from(schema.conversations)
+async function generateMessagingReport(tenantId: string, dateRange: { start: string; end: string }): Promise<ReportSection[]> {
+  const conversations = await db.select().from(schema.conversations)
     .where(eq(schema.conversations.tenantId, tenantId)).all();
 
   const convIds = new Set(conversations.map((c) => c.id));
-  const messages = db.select().from(schema.messages).all()
+  const messages = (await db.select().from(schema.messages).all())
     .filter((m) => convIds.has(m.conversationId) && m.createdAt >= dateRange.start && m.createdAt <= dateRange.end + "T23:59:59");
 
   // By sender
@@ -228,25 +229,25 @@ function generateMessagingReport(tenantId: string, dateRange: { start: string; e
 /**
  * Generate a report as structured data. Can be converted to HTML/PDF later.
  */
-export function generateReport(
+export async function generateReport(
   report: { name: string; type: string; frequency: string; tenantId: string; filters: string | null }
-): ReportData {
+): Promise<ReportData> {
   const dateRange = getDateRange(report.frequency);
   const filters = report.filters ? JSON.parse(report.filters) : undefined;
 
   let sections: ReportSection[];
   switch (report.type) {
     case "task_completion":
-      sections = generateTaskCompletionReport(report.tenantId, dateRange, filters);
+      sections = await generateTaskCompletionReport(report.tenantId, dateRange, filters);
       break;
     case "leaderboard":
-      sections = generateLeaderboardReport(report.tenantId, dateRange, filters);
+      sections = await generateLeaderboardReport(report.tenantId, dateRange, filters);
       break;
     case "attendance":
-      sections = generateAttendanceReport(report.tenantId, dateRange);
+      sections = await generateAttendanceReport(report.tenantId, dateRange);
       break;
     case "messaging":
-      sections = generateMessagingReport(report.tenantId, dateRange);
+      sections = await generateMessagingReport(report.tenantId, dateRange);
       break;
     default:
       sections = [];
@@ -320,14 +321,14 @@ export async function processScheduledReports(): Promise<{ processed: number; er
   let errors = 0;
 
   // Find all active reports that are due
-  const dueReports = db.select().from(schema.scheduledReports).all()
-    .filter((r) => r.isActive && r.nextRunAt && r.nextRunAt <= now);
+  const dueReports = (await db.select().from(schema.scheduledReports).all())
+    .filter((r: any) => r.isActive && r.nextRunAt && r.nextRunAt <= now);
 
   for (const report of dueReports) {
     const historyId = uuid();
     try {
       // Create history entry
-      db.insert(schema.reportHistory).values({
+      await db.insert(schema.reportHistory).values({
         id: historyId,
         reportId: report.id,
         tenantId: report.tenantId,
@@ -336,11 +337,11 @@ export async function processScheduledReports(): Promise<{ processed: number; er
       }).run();
 
       // Generate report
-      const reportData = generateReport(report);
+      const reportData = await generateReport(report);
       const html = reportToHtml(reportData);
 
       // Store result
-      db.update(schema.reportHistory).set({
+      await db.update(schema.reportHistory).set({
         status: "completed",
         fileContent: Buffer.from(html, "utf-8"),
         completedAt: new Date().toISOString(),
@@ -348,7 +349,7 @@ export async function processScheduledReports(): Promise<{ processed: number; er
 
       // Update next run
       const nextRun = computeNextRunFromFrequency(report.frequency);
-      db.update(schema.scheduledReports).set({
+      await db.update(schema.scheduledReports).set({
         lastRunAt: now,
         nextRunAt: nextRun,
         updatedAt: new Date().toISOString(),
@@ -362,7 +363,7 @@ export async function processScheduledReports(): Promise<{ processed: number; er
       processed++;
     } catch (err) {
       console.error(`❌ Report "${report.name}" failed:`, err);
-      db.update(schema.reportHistory).set({
+      await db.update(schema.reportHistory).set({
         status: "failed",
         error: String(err),
         completedAt: new Date().toISOString(),

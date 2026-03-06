@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     console.log('🧹 Starting duplicate conversation cleanup...');
     
     // Get all conversations
-    const allConversations: Conversation[] = db.select().from(schema.conversations).all();
+    const allConversations: Conversation[] = await db.select().from(schema.conversations).all();
     console.log(`Found ${allConversations.length} total conversations`);
     
     // Group by conversation ID to find duplicates
@@ -83,17 +83,17 @@ export async function POST(req: NextRequest) {
     let deletedCount = 0;
     for (const convo of toDelete) {
       // Delete related records first (foreign key constraints)
-      db.delete(schema.messageReads)
+      await db.delete(schema.messageReads)
         .where(eq(schema.messageReads.messageId, sql`in (select id from ${schema.messages} where conversationId = ${convo.id})`)).run();
       
-      db.delete(schema.messages)
+      await db.delete(schema.messages)
         .where(eq(schema.messages.conversationId, convo.id)).run();
       
-      db.delete(schema.conversationMembers)
+      await db.delete(schema.conversationMembers)
         .where(eq(schema.conversationMembers.conversationId, convo.id)).run();
       
       // Delete the conversation
-      db.delete(schema.conversations)
+      await db.delete(schema.conversations)
         .where(eq(schema.conversations.id, convo.id)).run();
       
       deletedCount++;
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 401 });
     }
 
-    const allConversations: Conversation[] = db.select().from(schema.conversations).all();
+    const allConversations: Conversation[] = await db.select().from(schema.conversations).all();
     
     // Find duplicates
     const conversationMap = new Map<string, Conversation>();

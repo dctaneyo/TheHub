@@ -15,18 +15,18 @@ export async function POST() {
     if (denied) return denied;
 
     // Get global conversation ID before purging
-    const globalConvo = sqlite.prepare(
+    const globalConvo = await sqlite.prepare(
       "SELECT id FROM conversations WHERE type = 'global' LIMIT 1"
-    ).get() as { id: string } | undefined;
+    ).get() as unknown as { id: string } | undefined;
 
     // Delete messages from non-global conversations
     let deletedMessages = 0;
     try {
       if (globalConvo) {
-        const r = sqlite.prepare("DELETE FROM messages WHERE conversation_id != ?").run(globalConvo.id);
+        const r = await sqlite.prepare("DELETE FROM messages WHERE conversation_id != ?").run(globalConvo.id);
         deletedMessages = r.changes;
       } else {
-        const r = sqlite.prepare("DELETE FROM messages").run();
+        const r = await sqlite.prepare("DELETE FROM messages").run();
         deletedMessages = r.changes;
       }
     } catch {}
@@ -34,14 +34,14 @@ export async function POST() {
     // Delete all message reads
     let deletedReads = 0;
     try {
-      const r = sqlite.prepare("DELETE FROM message_reads").run();
+      const r = await sqlite.prepare("DELETE FROM message_reads").run();
       deletedReads = r.changes;
     } catch {}
 
     // Delete all message reactions
     let deletedReactions = 0;
     try {
-      const r = sqlite.prepare("DELETE FROM message_reactions").run();
+      const r = await sqlite.prepare("DELETE FROM message_reactions").run();
       deletedReactions = r.changes;
     } catch {}
 
@@ -49,10 +49,10 @@ export async function POST() {
     let deletedMembers = 0;
     try {
       if (globalConvo) {
-        const r = sqlite.prepare("DELETE FROM conversation_members WHERE conversation_id != ?").run(globalConvo.id);
+        const r = await sqlite.prepare("DELETE FROM conversation_members WHERE conversation_id != ?").run(globalConvo.id);
         deletedMembers = r.changes;
       } else {
-        const r = sqlite.prepare("DELETE FROM conversation_members").run();
+        const r = await sqlite.prepare("DELETE FROM conversation_members").run();
         deletedMembers = r.changes;
       }
     } catch {}
@@ -60,21 +60,21 @@ export async function POST() {
     // Delete all non-global conversations
     let deletedConversations = 0;
     if (globalConvo) {
-      const result = sqlite.prepare("DELETE FROM conversations WHERE type != 'global'").run();
+      const result = await sqlite.prepare("DELETE FROM conversations WHERE type != 'global'").run();
       deletedConversations = result.changes;
     } else {
-      const result = sqlite.prepare("DELETE FROM conversations").run();
+      const result = await sqlite.prepare("DELETE FROM conversations").run();
       deletedConversations = result.changes;
     }
 
     // Ensure global conversation exists
-    const globalExists = sqlite.prepare(
+    const globalExists = await sqlite.prepare(
       "SELECT id FROM conversations WHERE type = 'global' LIMIT 1"
     ).get();
 
     if (!globalExists) {
       const globalId = uuid();
-      sqlite.prepare(`
+      await sqlite.prepare(`
         INSERT INTO conversations (id, type, name, created_at)
         VALUES (?, 'global', 'Global Chat', ?)
       `).run(globalId, new Date().toISOString());

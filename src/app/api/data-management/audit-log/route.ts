@@ -6,9 +6,9 @@ import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 
 // Create audit log table
-function ensureAuditTable() {
+async function ensureAuditTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS audit_log (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -31,12 +31,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    ensureAuditTable();
+    await ensureAuditTable();
 
     const { action, details } = await request.json();
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
 
-    sqlite.prepare(`
+    await sqlite.prepare(`
       INSERT INTO audit_log (id, user_id, user_type, user_name, action, details, ip_address, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
-    ensureAuditTable();
+    await ensureAuditTable();
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "100");
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
     query += " ORDER BY created_at DESC LIMIT ?";
     params.push(limit);
 
-    const logs = sqlite.prepare(query).all(...params);
+    const logs = await sqlite.prepare(query).all(...params);
 
     return NextResponse.json({ logs });
   } catch (error) {

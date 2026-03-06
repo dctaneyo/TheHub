@@ -11,12 +11,12 @@ import { validate, sendMessageSchema } from "@/lib/validations";
  * Batch unread counts for multiple conversations in a single query.
  * Returns Map<conversationId, unreadCount>
  */
-function getUnreadCountsBatch(convIds: string[], sessionId: string, sessionType: string): Map<string, number> {
+async function getUnreadCountsBatch(convIds: string[], sessionId: string, sessionType: string): Promise<Map<string, number>> {
   const result = new Map<string, number>();
   if (convIds.length === 0) return result;
 
   const placeholders = convIds.map(() => "?").join(",");
-  const rows = sqlite.prepare(`
+  const rows = await sqlite.prepare(`
     SELECT m.conversation_id, COUNT(*) as cnt
     FROM messages m
     LEFT JOIN message_reads mr ON mr.message_id = m.id AND mr.reader_id = ? AND mr.reader_type = ?
@@ -24,7 +24,7 @@ function getUnreadCountsBatch(convIds: string[], sessionId: string, sessionType:
       AND m.sender_id != ?
       AND mr.id IS NULL
     GROUP BY m.conversation_id
-  `).all(sessionId, sessionType, ...convIds, sessionId) as Array<{ conversation_id: string; cnt: number }>;
+  `).all(sessionId, sessionType, ...convIds, sessionId) as unknown as Array<{ conversation_id: string; cnt: number }>;
 
   for (const row of rows) {
     result.set(row.conversation_id, row.cnt);
@@ -36,12 +36,12 @@ function getUnreadCountsBatch(convIds: string[], sessionId: string, sessionType:
  * Batch last messages for multiple conversations in a single query.
  * Returns Map<conversationId, lastMessage>
  */
-function getLastMessagesBatch(convIds: string[]): Map<string, { content: string; createdAt: string; senderType: string; senderName: string }> {
+async function getLastMessagesBatch(convIds: string[]): Promise<Map<string, { content: string; createdAt: string; senderType: string; senderName: string }>> {
   const result = new Map();
   if (convIds.length === 0) return result;
 
   const placeholders = convIds.map(() => "?").join(",");
-  const rows = sqlite.prepare(`
+  const rows = await sqlite.prepare(`
     SELECT m.conversation_id, m.content, m.created_at, m.sender_type, m.sender_name
     FROM messages m
     INNER JOIN (
@@ -50,7 +50,7 @@ function getLastMessagesBatch(convIds: string[]): Map<string, { content: string;
       WHERE conversation_id IN (${placeholders})
       GROUP BY conversation_id
     ) latest ON m.conversation_id = latest.conversation_id AND m.created_at = latest.max_at
-  `).all(...convIds) as Array<{ conversation_id: string; content: string; created_at: string; sender_type: string; sender_name: string }>;
+  `).all(...convIds) as unknown as Array<{ conversation_id: string; content: string; created_at: string; sender_type: string; sender_name: string }>;
 
   for (const row of rows) {
     result.set(row.conversation_id, {
@@ -66,16 +66,16 @@ function getLastMessagesBatch(convIds: string[]): Map<string, { content: string;
 /**
  * Batch member counts + members for multiple conversations.
  */
-function getMembersBatch(convIds: string[]): Map<string, Array<{ memberId: string; memberType: string }>> {
+async function getMembersBatch(convIds: string[]): Promise<Map<string, Array<{ memberId: string; memberType: string }>>> {
   const result = new Map<string, Array<{ memberId: string; memberType: string }>>();
   if (convIds.length === 0) return result;
 
   const placeholders = convIds.map(() => "?").join(",");
-  const rows = sqlite.prepare(`
+  const rows = await sqlite.prepare(`
     SELECT conversation_id, member_id, member_type
     FROM conversation_members
     WHERE conversation_id IN (${placeholders})
-  `).all(...convIds) as Array<{ conversation_id: string; member_id: string; member_type: string }>;
+  `).all(...convIds) as unknown as Array<{ conversation_id: string; member_id: string; member_type: string }>;
 
   for (const row of rows) {
     if (!result.has(row.conversation_id)) result.set(row.conversation_id, []);
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
 
     if (!conversationId) {
       // Return all conversations this user is a member of
-      const memberships = db.select().from(schema.conversationMembers)
+      const memberships = await db.select().from(schema.conversationMembers)
         .where(and(eq(schema.conversationMembers.memberId, session.id), eq(schema.conversationMembers.memberType, session.userType)))
         .all();
       const convIds = memberships.map((m) => m.conversationId);
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ conversations: [] });
       }
 
-      const allConvs = db.select().from(schema.conversations).all()
+      const allConvs = (await db.select().from(schema.conversations).all())
         .filter((c) => convIds.includes(c.id))
         .filter((c) => {
           const deletedBy: string[] = JSON.parse(c.deletedBy || "[]");
@@ -137,14 +137,14 @@ export async function GET(req: NextRequest) {
       const filteredIds = allConvs.map((c) => c.id);
 
       // Batch lookups — 3 queries instead of 3×N
-      const [unreadCounts, lastMessages, membersMap] = [
+      const [unreadCounts, lastMessages, membersMap] = await Promise.all([
         getUnreadCountsBatch(filteredIds, session.id, session.userType),
         getLastMessagesBatch(filteredIds),
         getMembersBatch(filteredIds),
-      ];
+      ]);
 
-      const locations = db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
-      const arls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
+      const locations = await db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
+      const arls = await db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
       const locationMap = new Map(locations.map((l) => [l.id, { name: l.name, storeNumber: l.storeNumber }]));
       const arlMap = new Map(arls.map((a) => [a.id, { name: a.name }]));
 
@@ -171,12 +171,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Verify membership
-    const membership = db.select().from(schema.conversationMembers)
+    const membership = await db.select().from(schema.conversationMembers)
       .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.memberId, session.id)))
       .get();
     if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
 
-    const messages = db.select().from(schema.messages)
+    const messages = await db.select().from(schema.messages)
       .where(eq(schema.messages.conversationId, conversationId))
       .orderBy(schema.messages.createdAt).all();
 
@@ -186,11 +186,11 @@ export async function GET(req: NextRequest) {
     const readMap = new Map<string, Array<{ readerType: string; readerId: string; readAt: string }>>();
     if (messageIds.length > 0) {
       const ph = messageIds.map(() => "?").join(",");
-      const reads = sqlite.prepare(`
+      const reads = await sqlite.prepare(`
         SELECT id, message_id, reader_type, reader_id, read_at
         FROM message_reads
         WHERE message_id IN (${ph})
-      `).all(...messageIds) as Array<{ id: string; message_id: string; reader_type: string; reader_id: string; read_at: string }>;
+      `).all(...messageIds) as unknown as Array<{ id: string; message_id: string; reader_type: string; reader_id: string; read_at: string }>;
       for (const read of reads) {
         if (!readMap.has(read.message_id)) readMap.set(read.message_id, []);
         readMap.get(read.message_id)!.push({ readerType: read.reader_type, readerId: read.reader_id, readAt: read.read_at });
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
     let markedAny = false;
     for (const msg of messages) {
       if (msg.senderId !== session.id && !myReadIdsFinal.has(msg.id)) {
-        db.insert(schema.messageReads).values({
+        await db.insert(schema.messageReads).values({
           id: uuid(),
           messageId: msg.id,
           readerType: session.userType,
@@ -230,11 +230,11 @@ export async function GET(req: NextRequest) {
     try {
       if (messageIds.length > 0) {
         const ph = messageIds.map(() => "?").join(",");
-        const reactions = sqlite.prepare(`
+        const reactions = await sqlite.prepare(`
           SELECT message_id, emoji, user_id, user_name, created_at
           FROM message_reactions
           WHERE message_id IN (${ph})
-        `).all(...messageIds) as Array<{ message_id: string; emoji: string; user_id: string; user_name: string; created_at: string }>;
+        `).all(...messageIds) as unknown as Array<{ message_id: string; emoji: string; user_id: string; user_name: string; created_at: string }>;
         for (const r of reactions) {
           if (!reactionMap.has(r.message_id)) reactionMap.set(r.message_id, []);
           reactionMap.get(r.message_id)!.push({ emoji: r.emoji, userId: r.user_id, userName: r.user_name, createdAt: r.created_at });
@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
     const { conversationId, content } = parsed.data;
 
     // Verify membership
-    const membership = db.select().from(schema.conversationMembers)
+    const membership = await db.select().from(schema.conversationMembers)
       .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.memberId, session.id)))
       .get();
     if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
@@ -282,30 +282,30 @@ export async function POST(req: NextRequest) {
       createdAt: now,
     };
 
-    db.insert(schema.messages).values(message).run();
+    await db.insert(schema.messages).values(message).run();
 
     // Un-hide the conversation for any member who had soft-deleted it
     // (a new incoming message should resurface the thread for them)
-    const conv = db.select().from(schema.conversations)
+    const conv = await db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId)).get();
     if (conv) {
       const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
       // Remove everyone except the sender — their own hide stays intact
       const updatedDeletedBy = deletedBy.filter((id) => id === session.id);
       if (updatedDeletedBy.length !== deletedBy.length) {
-        db.update(schema.conversations)
+        await db.update(schema.conversations)
           .set({ deletedBy: JSON.stringify(updatedDeletedBy) })
           .where(eq(schema.conversations.id, conversationId)).run();
       }
     }
 
-    db.update(schema.conversations)
+    await db.update(schema.conversations)
       .set({ lastMessageAt: now, lastMessagePreview: content.slice(0, 80) })
       .where(eq(schema.conversations.id, conversationId)).run();
 
     // Send push notifications to relevant participants
     if (conv) {
-      const members = db.select().from(schema.conversationMembers)
+      const members = await db.select().from(schema.conversationMembers)
         .where(eq(schema.conversationMembers.conversationId, conversationId)).all();
       // Notify ARL members who are not the sender
       const arlMemberIds = members
@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
         }
       } else if (conv.type === "global") {
         // Global: notify all active ARLs except sender
-        const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
+        const allArls = await db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
         for (const arl of allArls) {
           if (arl.id !== session.id) {
             await sendPushToARL(arl.id, {
@@ -382,7 +382,7 @@ export async function PUT(req: NextRequest) {
     if (type === "direct") {
       const [otherId, otherType] = [memberIds[0], memberTypes[0]];
       // Check if direct conv already exists between these two
-      const existing = db.select().from(schema.conversations).all().find(
+      const existing = (await db.select().from(schema.conversations).all()).find(
         (c) => c.type === "direct" && (
           (c.participantAId === session.id && c.participantBId === otherId) ||
           (c.participantAId === otherId && c.participantBId === session.id)
@@ -394,7 +394,7 @@ export async function PUT(req: NextRequest) {
         const deletedBy: string[] = JSON.parse(existing.deletedBy || "[]");
         if (deletedBy.includes(session.id)) {
           const updatedDeletedBy = deletedBy.filter((id) => id !== session.id);
-          db.update(schema.conversations)
+          await db.update(schema.conversations)
             .set({ deletedBy: JSON.stringify(updatedDeletedBy) })
             .where(eq(schema.conversations.id, existing.id))
             .run();
@@ -402,19 +402,19 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ conversation: existing });
       }
 
-      db.insert(schema.conversations).values({
+      await db.insert(schema.conversations).values({
         id: convId, tenantId: session.tenantId, type: "direct",
         participantAId: session.id, participantAType: session.userType,
         participantBId: otherId, participantBType: otherType,
         createdAt: now,
       }).run();
-      db.insert(schema.conversationMembers).values([
+      await db.insert(schema.conversationMembers).values([
         { id: uuid(), conversationId: convId, memberId: session.id, memberType: session.userType, joinedAt: now },
         { id: uuid(), conversationId: convId, memberId: otherId, memberType: otherType, joinedAt: now },
       ]).run();
     } else if (type === "group") {
       if (!name) return NextResponse.json({ error: "Group name required" }, { status: 400 });
-      db.insert(schema.conversations).values({
+      await db.insert(schema.conversations).values({
         id: convId, tenantId: session.tenantId, type: "group", name, createdBy: session.id, createdByType: session.userType, createdAt: now,
       }).run();
       // Add creator + all specified members
@@ -423,7 +423,7 @@ export async function PUT(req: NextRequest) {
       // Locations are members (unless they're the creator)
       const allMembers = [{ id: session.id, type: session.userType }, ...memberIds.map((id: string, i: number) => ({ id, type: memberTypes[i] }))];
       const unique = allMembers.filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i);
-      db.insert(schema.conversationMembers).values(
+      await db.insert(schema.conversationMembers).values(
         unique.map((m) => ({ 
           id: uuid(), 
           conversationId: convId, 
@@ -436,7 +436,7 @@ export async function PUT(req: NextRequest) {
       ).run();
     }
 
-    const conv = db.select().from(schema.conversations).where(eq(schema.conversations.id, convId)).get();
+    const conv = await db.select().from(schema.conversations).where(eq(schema.conversations.id, convId)).get();
     return NextResponse.json({ success: true, conversation: conv });
   } catch (error) {
     console.error("Create conversation error:", error);

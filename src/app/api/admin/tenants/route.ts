@@ -23,19 +23,19 @@ export async function GET() {
   const denied = await requireAdmin();
   if (denied) return denied;
   try {
-    const allTenants = db.select().from(schema.tenants).all();
+    const allTenants = await db.select().from(schema.tenants).all();
 
-    const tenants = allTenants.map((t) => {
-      const locationCount = db
+    const tenants = await Promise.all(allTenants.map(async (t) => {
+      const locationCount = (await db
         .select()
         .from(schema.locations)
         .where(eq(schema.locations.tenantId, t.id))
-        .all().length;
-      const userCount = db
+        .all()).length;
+      const userCount = (await db
         .select()
         .from(schema.arls)
         .where(eq(schema.arls.tenantId, t.id))
-        .all().length;
+        .all()).length;
 
       return {
         ...t,
@@ -43,7 +43,7 @@ export async function GET() {
         locationCount,
         userCount,
       };
-    });
+    }));
 
     return NextResponse.json({ tenants });
   } catch (error) {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check slug uniqueness
-    const existing = db.select().from(schema.tenants).where(eq(schema.tenants.slug, slug)).get();
+    const existing = await db.select().from(schema.tenants).where(eq(schema.tenants.slug, slug)).get();
     if (existing) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const id = slug; // Use slug as ID for simplicity (matches middleware lookup)
 
-    db.insert(schema.tenants).values({
+    await db.insert(schema.tenants).values({
       id,
       slug,
       name,
@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
     if (customDomain !== undefined) updates.customDomain = customDomain;
     if (isActive !== undefined) updates.isActive = isActive;
 
-    db.update(schema.tenants).set(updates).where(eq(schema.tenants.id, id)).run();
+    await db.update(schema.tenants).set(updates).where(eq(schema.tenants.id, id)).run();
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -140,7 +140,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Soft-delete: just mark inactive
-    db.update(schema.tenants)
+    await db.update(schema.tenants)
       .set({ isActive: false, updatedAt: new Date().toISOString() })
       .where(eq(schema.tenants.id, id))
       .run();

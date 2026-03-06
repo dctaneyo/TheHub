@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     messagesByDateQuery += ` GROUP BY DATE(created_at) ORDER BY date DESC`;
 
-    const messagesByDate = sqlite.prepare(messagesByDateQuery).all(...dateParams);
+    const messagesByDate = await sqlite.prepare(messagesByDateQuery).all(...dateParams);
 
     // Top senders
     let topSendersQuery = `
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     topSendersQuery += ` GROUP BY sender_id, sender_type, sender_name ORDER BY messageCount DESC LIMIT 20`;
 
-    const topSenders = sqlite.prepare(topSendersQuery).all(...senderParams);
+    const topSenders = await sqlite.prepare(topSendersQuery).all(...senderParams);
 
     // Peak messaging hours
     let hourlyQuery = `
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
     hourlyQuery += ` GROUP BY hour ORDER BY hour`;
 
-    const hourlyPattern = sqlite.prepare(hourlyQuery).all(...hourlyParams);
+    const hourlyPattern = await sqlite.prepare(hourlyQuery).all(...hourlyParams);
 
     // Summary
     let summaryQuery = `
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
       summaryParams.push(endDate);
     }
 
-    const summary = sqlite.prepare(summaryQuery).get(...summaryParams);
+    const summary = await sqlite.prepare(summaryQuery).get(...summaryParams);
 
     return NextResponse.json({
       messagesByDate,

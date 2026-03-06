@@ -4,7 +4,7 @@ export async function GET() {
   let dbStatus = "unknown";
   try {
     const { sqlite } = await import("@/lib/db");
-    const row = sqlite.prepare("SELECT 1 AS ok").get() as { ok: number } | undefined;
+    const row = await sqlite.prepare("SELECT 1 AS ok").get() as unknown as { ok: number } | undefined;
     dbStatus = row?.ok === 1 ? "ok" : "error";
   } catch {
     dbStatus = "error";

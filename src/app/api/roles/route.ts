@@ -12,7 +12,7 @@ export async function GET() {
     if (!session) return unauthorized();
     if (session.userType !== "arl") return forbidden("ARL access required");
 
-    const roles = db.select().from(schema.roles)
+    const roles = await db.select().from(schema.roles)
       .where(eq(schema.roles.tenantId, session.tenantId)).all();
 
     return apiSuccess({
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!session || session.userType !== "arl") return forbidden("ARL access required");
 
     // Only admins can create roles
-    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const callerArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    db.insert(schema.roles).values(role).run();
+    await db.insert(schema.roles).values(role).run();
     return apiSuccess({ role: { ...role, permissions } });
   } catch (error) {
     console.error("Create role error:", error);
@@ -67,7 +67,7 @@ export async function PUT(req: NextRequest) {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") return forbidden("ARL access required");
 
-    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const callerArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
@@ -77,7 +77,7 @@ export async function PUT(req: NextRequest) {
     const { id, name, description, permissions } = parsed.data;
 
     // Prevent editing default system roles
-    const existing = db.select().from(schema.roles)
+    const existing = await db.select().from(schema.roles)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Role not found" }, { status: 404 });
 
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest) {
     if (description !== undefined) updates.description = description?.trim() || null;
     if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
 
-    db.update(schema.roles).set(updates)
+    await db.update(schema.roles).set(updates)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
 
     return apiSuccess({ updated: true });
@@ -101,7 +101,7 @@ export async function DELETE(req: NextRequest) {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") return forbidden("ARL access required");
 
-    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const callerArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (callerArl?.role !== "admin") return forbidden("Admin access required");
 
@@ -111,19 +111,19 @@ export async function DELETE(req: NextRequest) {
     const { id } = parsed.data;
 
     // Prevent deleting system default roles
-    const existing = db.select().from(schema.roles)
+    const existing = await db.select().from(schema.roles)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Role not found" }, { status: 404 });
     if (existing.isDefault) return NextResponse.json({ error: "Cannot delete system default roles" }, { status: 400 });
 
     // Clear roleId from any ARLs using this role
-    const affectedArls = db.select({ id: schema.arls.id }).from(schema.arls)
+    const affectedArls = await db.select({ id: schema.arls.id }).from(schema.arls)
       .where(and(eq(schema.arls.roleId, id), eq(schema.arls.tenantId, session.tenantId))).all();
     for (const arl of affectedArls) {
-      db.update(schema.arls).set({ roleId: null }).where(eq(schema.arls.id, arl.id)).run();
+      await db.update(schema.arls).set({ roleId: null }).where(eq(schema.arls.id, arl.id)).run();
     }
 
-    db.delete(schema.roles).where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
+    await db.delete(schema.roles).where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
     return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete role error:", error);

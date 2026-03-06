@@ -18,13 +18,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if message exists
-    const message = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
+    const message = await db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
     if (!message) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
     // Toggle: if user already reacted with this emoji, remove it; otherwise add it
-    const existing = db.select().from(schema.messageReactions)
+    const existing = await db.select().from(schema.messageReactions)
       .where(and(
         eq(schema.messageReactions.messageId, messageId),
         eq(schema.messageReactions.userId, session.id),
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
       )).get();
 
     if (existing) {
-      db.delete(schema.messageReactions).where(eq(schema.messageReactions.id, existing.id)).run();
+      await db.delete(schema.messageReactions).where(eq(schema.messageReactions.id, existing.id)).run();
       broadcastConversationUpdate(message.conversationId);
       return NextResponse.json({ success: true, action: "removed" });
     }
 
-    db.insert(schema.messageReactions).values({
+    await db.insert(schema.messageReactions).values({
       id: uuid(),
       messageId,
       userId: session.id,

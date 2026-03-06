@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const tenantId = req.headers.get("x-tenant-id") || "kazi";
 
-    const location = db.select().from(schema.locations)
+    const location = await db.select().from(schema.locations)
       .where(and(eq(schema.locations.userId, userId), eq(schema.locations.tenantId, tenantId))).get();
     if (location) {
       if (!location.isActive) {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ found: true, userType: "location", name: location.name, storeNumber: location.storeNumber });
     }
 
-    const arl = db.select().from(schema.arls)
+    const arl = await db.select().from(schema.arls)
       .where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, tenantId))).get();
     if (arl) {
       if (!arl.isActive) {

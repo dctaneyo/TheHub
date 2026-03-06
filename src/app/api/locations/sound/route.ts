@@ -13,7 +13,7 @@ export async function GET() {
     if (!session || session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
-    const loc = db.select({ soundMuted: schema.locations.soundMuted })
+    const loc = await db.select({ soundMuted: schema.locations.soundMuted })
       .from(schema.locations)
       .where(eq(schema.locations.id, session.userId))
       .get();
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    db.update(schema.locations)
+    await db.update(schema.locations)
       .set({ soundMuted: muted, updatedAt: new Date().toISOString() })
       .where(eq(schema.locations.id, targetId))
       .run();

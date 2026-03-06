@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     for (const messageId of messageIds) {
       // Check if already read
-      const existing = db
+      const existing = await db
         .select()
         .from(schema.messageReads)
         .where(
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         .get();
 
       if (!existing) {
-        db.insert(schema.messageReads).values({
+        await db.insert(schema.messageReads).values({
           id: uuid(),
           messageId,
           readerType: session.userType,
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     // Get conversation IDs for these messages to broadcast read receipts
     const conversationIds = new Set<string>();
     for (const messageId of messageIds) {
-      const msg = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
+      const msg = await db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
       if (msg) conversationIds.add(msg.conversationId);
     }
     for (const convId of conversationIds) {

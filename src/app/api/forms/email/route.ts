@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "formId and recipientEmails required" }, { status: 400 });
     }
 
-    const form = db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
+    const form = await db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
     if (!form) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }

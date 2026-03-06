@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     // Store or update subscription for this ARL — keyed by endpoint (unique per device)
     // This allows multiple devices per ARL to receive push notifications
-    const existing = db.select().from(schema.pushSubscriptions)
+    const existing = await db.select().from(schema.pushSubscriptions)
       .where(and(
         eq(schema.pushSubscriptions.userId, session.id),
         eq(schema.pushSubscriptions.endpoint, subscription.endpoint)
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       .get();
 
     if (existing) {
-      db.update(schema.pushSubscriptions)
+      await db.update(schema.pushSubscriptions)
         .set({ 
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         .where(eq(schema.pushSubscriptions.id, existing.id))
         .run();
     } else {
-      db.insert(schema.pushSubscriptions).values({
+      await db.insert(schema.pushSubscriptions).values({
         id: crypto.randomUUID(),
         userId: session.id,
         endpoint: subscription.endpoint,

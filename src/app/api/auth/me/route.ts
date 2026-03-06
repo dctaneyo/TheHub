@@ -9,7 +9,7 @@ export async function GET() {
 
     // For ARLs, include fresh role + permissions + location assignments from DB
     if (session.userType === "arl") {
-      const arlPerms = getArlPermissions(session.id, session.tenantId);
+      const arlPerms = await getArlPermissions(session.id, session.tenantId);
       const role = arlPerms?.role ?? session.role ?? "arl";
       const permissions = role === "admin" ? ALL_PERMISSIONS : (arlPerms?.permissions ?? ALL_PERMISSIONS);
       const roleId = arlPerms?.roleId ?? null;

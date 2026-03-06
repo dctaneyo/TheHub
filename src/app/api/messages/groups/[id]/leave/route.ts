@@ -17,7 +17,7 @@ export async function POST(
     const { id: conversationId } = await params;
 
     // Get conversation details
-    const conversation = db
+    const conversation = await db
       .select()
       .from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId))
@@ -31,7 +31,7 @@ export async function POST(
     }
 
     // Find user's membership
-    const member = db
+    const member = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -57,17 +57,17 @@ export async function POST(
     if (isCreator) {
       // Creator leaving = delete the entire group
       // Delete all members
-      db.delete(schema.conversationMembers)
+      await db.delete(schema.conversationMembers)
         .where(eq(schema.conversationMembers.conversationId, conversationId))
         .run();
       
       // Delete all messages
-      db.delete(schema.messages)
+      await db.delete(schema.messages)
         .where(eq(schema.messages.conversationId, conversationId))
         .run();
       
       // Delete the conversation
-      db.delete(schema.conversations)
+      await db.delete(schema.conversations)
         .where(eq(schema.conversations.id, conversationId))
         .run();
 
@@ -75,7 +75,7 @@ export async function POST(
     }
 
     // Non-creator leaving = just mark as left
-    db.update(schema.conversationMembers)
+    await db.update(schema.conversationMembers)
       .set({ leftAt: new Date().toISOString() })
       .where(eq(schema.conversationMembers.id, member.id))
       .run();

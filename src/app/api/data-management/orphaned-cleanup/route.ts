@@ -20,7 +20,7 @@ export async function POST() {
 
     // Delete messages whose conversation no longer exists
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM messages WHERE conversation_id NOT IN (SELECT id FROM conversations)"
       ).run();
       orphanedMessages = r.changes;
@@ -28,7 +28,7 @@ export async function POST() {
 
     // Delete message_reads whose message no longer exists
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM message_reads WHERE message_id NOT IN (SELECT id FROM messages)"
       ).run();
       orphanedReads = r.changes;
@@ -36,7 +36,7 @@ export async function POST() {
 
     // Delete message_reactions whose message no longer exists
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM message_reactions WHERE message_id NOT IN (SELECT id FROM messages)"
       ).run();
       orphanedReactions = r.changes;
@@ -44,7 +44,7 @@ export async function POST() {
 
     // Delete task_completions whose task no longer exists
     try {
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM task_completions WHERE task_id NOT IN (SELECT id FROM tasks)"
       ).run();
       orphanedCompletions = r.changes;

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "id parameter required" }, { status: 400 });
     }
 
-    const pending = db
+    const pending = await db
       .select()
       .from(schema.pendingSessions)
       .where(eq(schema.pendingSessions.id, pendingId))

@@ -2,9 +2,9 @@ import { sqlite } from './db';
 import { v4 as uuid } from 'uuid';
 
 // Ensure audit log table exists
-function ensureAuditTable() {
+async function ensureAuditTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS audit_log (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -21,7 +21,7 @@ function ensureAuditTable() {
   } catch {}
 }
 
-export function logBulkOperation(params: {
+export async function logBulkOperation(params: {
   userId: string;
   userType: string;
   operation: string;
@@ -31,9 +31,9 @@ export function logBulkOperation(params: {
   status: 'success' | 'failed';
   errorMessage?: string;
 }) {
-  ensureAuditTable();
+  await ensureAuditTable();
 
-  sqlite.prepare(`
+  await sqlite.prepare(`
     INSERT INTO audit_log (id, user_id, user_type, operation, entity_type, affected_count, payload, status, error_message, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
@@ -50,10 +50,10 @@ export function logBulkOperation(params: {
   );
 }
 
-export function getAuditLog(limit: number = 50) {
-  ensureAuditTable();
+export async function getAuditLog(limit: number = 50) {
+  await ensureAuditTable();
 
-  return sqlite.prepare(`
+  return await sqlite.prepare(`
     SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?
   `).all(limit);
 }

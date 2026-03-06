@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     if (clientIds.length > 0) {
       const hawaiiDate = new Date().toLocaleDateString("en-CA", { timeZone: "Pacific/Honolulu" });
 
-      const rows = db
+      const rows = await db
         .select({ id: notifications.id, type: notifications.type, metadata: notifications.metadata })
         .from(notifications)
         .where(
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 
     // Mark all resolved DB notifications as read
     for (const dbId of idsToMark) {
-      db.update(notifications)
+      await db.update(notifications)
         .set({ isRead: true, readAt: now })
         .where(and(eq(notifications.id, dbId), eq(notifications.userId, session.id)))
         .run();

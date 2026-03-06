@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     // If historyId is provided, return the stored report
     if (historyId) {
-      const history = db.select().from(schema.reportHistory)
+      const history = await db.select().from(schema.reportHistory)
         .where(and(
           eq(schema.reportHistory.id, historyId),
           eq(schema.reportHistory.tenantId, session.tenantId)
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     // If reportId is provided, generate a fresh report on-demand
     if (reportId) {
-      const report = db.select().from(schema.scheduledReports)
+      const report = await db.select().from(schema.scheduledReports)
         .where(and(
           eq(schema.scheduledReports.id, reportId),
           eq(schema.scheduledReports.tenantId, session.tenantId)
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
       if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
-      const data = generateReport(report);
+      const data = await generateReport(report);
       const html = reportToHtml(data);
 
       return new NextResponse(html, {

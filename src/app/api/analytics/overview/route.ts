@@ -19,15 +19,15 @@ export async function GET() {
     const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
     // Locations
-    const allLocations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
-    const allSessions = db.select().from(schema.sessions).all();
+    const allLocations = await db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
+    const allSessions = await db.select().from(schema.sessions).all();
     const onlineLocations = allLocations.filter(loc => {
       return allSessions.some(s => s.userId === loc.id && s.isOnline);
     });
 
     // Tasks
-    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
-    const todayCompletions = db.select().from(schema.taskCompletions)
+    const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
+    const todayCompletions = await db.select().from(schema.taskCompletions)
       .where(eq(schema.taskCompletions.completedDate, todayDate)).all();
 
     // Count overdue tasks across all locations
@@ -54,11 +54,11 @@ export async function GET() {
     const pointsToday = todayCompletions.reduce((sum, c) => sum + (c.pointsEarned || 0) + (c.bonusPoints || 0), 0);
 
     // Emergency alerts
-    const activeEmergencies = db.select().from(schema.emergencyMessages)
+    const activeEmergencies = await db.select().from(schema.emergencyMessages)
       .where(eq(schema.emergencyMessages.isActive, true)).all();
 
     // Unread messages (across all conversations for this ARL)
-    const conversations = db.select().from(schema.conversations).all();
+    const conversations = await db.select().from(schema.conversations).all();
     let unreadMessages = 0;
     // Simple approach: count messages created today that this ARL hasn't read
     // (For a more accurate count, we'd check message_reads)
@@ -69,7 +69,7 @@ export async function GET() {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const dayCompletions = db.select().from(schema.taskCompletions)
+      const dayCompletions = await db.select().from(schema.taskCompletions)
         .where(eq(schema.taskCompletions.completedDate, dateStr)).all();
       trend.push({
         date: dateStr,

@@ -11,9 +11,9 @@ export async function GET(req: Request) {
     if (!session) return unauthorized();
 
     const locationId = session.userType === "location" ? session.id : null;
-    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
+    const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     const allCompletions = locationId
-      ? db.select().from(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, locationId)).all()
+      ? await db.select().from(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, locationId)).all()
       : [];
     const { searchParams } = new URL(req.url);
     const localDate = searchParams.get("localDate");

@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     // Single meeting detail with participants
     // Prefer unique analytics record ID; fall back to meetingId for backwards compat
     const meeting = analyticsId
-      ? db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.id, analyticsId)).get()
-      : db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.meetingId, meetingId!)).get();
+      ? await db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.id, analyticsId)).get()
+      : await db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.meetingId, meetingId!)).get();
 
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     // Use the specific analytics record's meetingId + startedAt to scope participants
     // This avoids mixing data from different meetings with the same meetingId
-    const allParticipants = db
+    const allParticipants = await db
       .select()
       .from(schema.meetingParticipants)
       .where(eq(schema.meetingParticipants.meetingId, meeting.meetingId))
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
 
   // List all meetings, most recent first
-  const meetings = db
+  const meetings = await db
     .select()
     .from(schema.meetingAnalytics)
     .orderBy(desc(schema.meetingAnalytics.startedAt))
@@ -89,10 +89,10 @@ export async function DELETE(req: NextRequest) {
 
   try {
     // Delete all meeting participants
-    db.delete(schema.meetingParticipants).run();
+    await db.delete(schema.meetingParticipants).run();
     
     // Delete all meeting analytics
-    db.delete(schema.meetingAnalytics).run();
+    await db.delete(schema.meetingAnalytics).run();
 
     return NextResponse.json({ success: true, message: "All meeting data deleted" });
   } catch (error) {

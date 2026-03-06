@@ -65,10 +65,10 @@ export function invalidateLeaderboardCache(tenantId?: string) {
   }
 }
 
-function computeLeaderboard(tenantId: string, localDate: string | null) {
-  const locations = db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, tenantId))).all();
-  const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, tenantId)).all();
-  const allCompletions = db.select().from(schema.taskCompletions).all();
+async function computeLeaderboard(tenantId: string, localDate: string | null) {
+  const locations = await db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, tenantId))).all();
+  const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, tenantId)).all();
+  const allCompletions = await db.select().from(schema.taskCompletions).all();
 
   const today = localDate ? new Date(`${localDate}T12:00:00`) : new Date();
   const weekStart = startOfWeekMonday(today);

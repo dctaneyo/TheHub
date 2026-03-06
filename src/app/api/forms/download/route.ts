@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    const form = db.select().from(schema.forms).where(eq(schema.forms.id, id)).get();
+    const form = await db.select().from(schema.forms).where(eq(schema.forms.id, id)).get();
     if (!form) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     let bodyBuffer: Buffer;

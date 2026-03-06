@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "formId required" }, { status: 400 });
     }
 
-    const form = db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
+    const form = await db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
     if (!form) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }
@@ -36,11 +36,11 @@ export async function POST(req: NextRequest) {
     let recipientName: string = "Restaurant";
 
     if (session.userType === "location") {
-      const location = db.select().from(schema.locations).where(eq(schema.locations.id, session.id)).get();
+      const location = await db.select().from(schema.locations).where(eq(schema.locations.id, session.id)).get();
       recipientEmail = location?.email || null;
       recipientName = location?.name || "Restaurant";
     } else if (session.userType === "arl") {
-      const arl = db.select().from(schema.arls).where(eq(schema.arls.id, session.id)).get();
+      const arl = await db.select().from(schema.arls).where(eq(schema.arls.id, session.id)).get();
       recipientEmail = arl?.email || null;
       recipientName = arl?.name || "ARL";
     }

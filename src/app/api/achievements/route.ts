@@ -70,9 +70,9 @@ export const ACHIEVEMENTS = {
   RAINBOW: { id: 'rainbow', name: '???', desc: 'Use all emoji reactions in one day', tier: 'gold', icon: '🌈', category: 'hidden', rarity: 'rare', points: 500, hidden: true },
 } as const;
 
-function ensureAchievementsTable() {
+async function ensureAchievementsTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS achievements (
         id TEXT PRIMARY KEY,
         location_id TEXT NOT NULL,
@@ -91,9 +91,9 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    ensureAchievementsTable();
+    await ensureAchievementsTable();
 
-    const unlocked = sqlite.prepare(
+    const unlocked = await sqlite.prepare(
       "SELECT * FROM achievements WHERE location_id = ? ORDER BY unlocked_at DESC"
     ).all(session.id) as any[];
 
@@ -125,10 +125,10 @@ export async function POST(request: Request) {
 
     const { achievementId } = await request.json();
 
-    ensureAchievementsTable();
+    await ensureAchievementsTable();
 
     // Check if already unlocked
-    const existing = sqlite.prepare(
+    const existing = await sqlite.prepare(
       "SELECT * FROM achievements WHERE location_id = ? AND achievement_id = ?"
     ).get(session.id, achievementId);
 
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     }
 
     // Unlock achievement
-    sqlite.prepare(`
+    await sqlite.prepare(`
       INSERT INTO achievements (id, location_id, achievement_id, unlocked_at, notified)
       VALUES (?, ?, ?, ?, 1)
     `).run(uuid(), session.id, achievementId, new Date().toISOString());

@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     completionsByDateQuery += ` GROUP BY completed_date ORDER BY completed_date DESC`;
 
-    const completionsByDate = sqlite.prepare(completionsByDateQuery).all(...params);
+    const completionsByDate = await sqlite.prepare(completionsByDateQuery).all(...params);
 
     // Top performing locations
     let topLocationsQuery = `
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
     topLocationsQuery += ` GROUP BY tc.location_id ORDER BY completions DESC LIMIT 10`;
 
-    const topLocations = sqlite.prepare(topLocationsQuery).all(...topParams);
+    const topLocations = await sqlite.prepare(topLocationsQuery).all(...topParams);
 
     // Time-of-day pattern
     let timeQuery = `
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     timeQuery += ` GROUP BY hour ORDER BY hour`;
 
-    const timeOfDayPattern = sqlite.prepare(timeQuery).all(...timeParams);
+    const timeOfDayPattern = await sqlite.prepare(timeQuery).all(...timeParams);
 
     // Task performance (which tasks are completed most)
     let taskPerfQuery = `
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     taskPerfQuery += ` GROUP BY tc.task_id ORDER BY completions DESC LIMIT 20`;
 
-    const taskPerformance = sqlite.prepare(taskPerfQuery).all(...taskPerfParams);
+    const taskPerformance = await sqlite.prepare(taskPerfQuery).all(...taskPerfParams);
 
     // Summary stats
     let summaryQuery = `
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
       summaryParams.push(endDate);
     }
 
-    const summary = sqlite.prepare(summaryQuery).get(...summaryParams);
+    const summary = await sqlite.prepare(summaryQuery).get(...summaryParams);
 
     return NextResponse.json({
       completionsByDate,

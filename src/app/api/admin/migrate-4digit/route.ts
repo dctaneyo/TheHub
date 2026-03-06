@@ -10,30 +10,30 @@ export async function POST() {
     
     // Update ARL users (truncate userId)
     console.log('📝 Updating ARL users...');
-    const arlUsers = sqlite.prepare('SELECT id, userId FROM arls WHERE LENGTH(userId) > 4').all();
+    const arlUsers = await sqlite.prepare('SELECT id, userId FROM arls WHERE LENGTH(userId) > 4').all();
     console.log(`Found ${arlUsers.length} ARL users with User IDs longer than 4 digits`);
     
     for (const user of arlUsers as any[]) {
       const newUserId = user.userId.slice(-4); // Take last 4 digits
-      sqlite.prepare('UPDATE arls SET userId = ? WHERE id = ?').run(newUserId, user.id);
+      await sqlite.prepare('UPDATE arls SET userId = ? WHERE id = ?').run(newUserId, user.id);
       console.log(`  Updated ARL ${user.id}: ${user.userId} → ${newUserId}`);
     }
     
     // Update locations (truncate userId)
     console.log('📍 Updating locations...');
-    const locations = sqlite.prepare('SELECT id, userId FROM locations WHERE LENGTH(userId) > 4').all();
+    const locations = await sqlite.prepare('SELECT id, userId FROM locations WHERE LENGTH(userId) > 4').all();
     console.log(`Found ${locations.length} locations with User IDs longer than 4 digits`);
     
     for (const location of locations as any[]) {
       const newUserId = location.userId.slice(-4); // Take last 4 digits
-      sqlite.prepare('UPDATE locations SET userId = ? WHERE id = ?').run(newUserId, location.id);
+      await sqlite.prepare('UPDATE locations SET userId = ? WHERE id = ?').run(newUserId, location.id);
       console.log(`  Updated Location ${location.id}: ${location.userId} → ${newUserId}`);
     }
     
     // Verify the changes
     console.log('\n🔍 Verification:');
-    const arlCount = sqlite.prepare('SELECT COUNT(*) as count FROM arls WHERE LENGTH(userId) = 4').get() as any;
-    const locationCount = sqlite.prepare('SELECT COUNT(*) as count FROM locations WHERE LENGTH(userId) = 4').get() as any;
+    const arlCount = await sqlite.prepare('SELECT COUNT(*) as count FROM arls WHERE LENGTH(userId) = 4').get() as any;
+    const locationCount = await sqlite.prepare('SELECT COUNT(*) as count FROM locations WHERE LENGTH(userId) = 4').get() as any;
     
     const result = {
       success: true,

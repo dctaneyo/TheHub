@@ -12,12 +12,12 @@ export async function GET() {
   try {
     const tenantId = await getTenantIdFromHeaders();
     const now = new Date().toISOString();
-    const messages = db
+    const messages = (await db
       .select()
       .from(schema.tickerMessages)
       .where(eq(schema.tickerMessages.tenantId, tenantId))
       .orderBy(desc(schema.tickerMessages.createdAt))
-      .all()
+      .all())
       .filter((m) => !m.expiresAt || m.expiresAt > now);
 
     return NextResponse.json({ messages });
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       ? new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString()
       : null;
 
-    db.insert(schema.tickerMessages).values({
+    await db.insert(schema.tickerMessages).values({
       id,
       tenantId: session.tenantId,
       content: content.trim(),
@@ -84,7 +84,7 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-    db.delete(schema.tickerMessages).where(and(eq(schema.tickerMessages.id, id), eq(schema.tickerMessages.tenantId, session.tenantId))).run();
+    await db.delete(schema.tickerMessages).where(and(eq(schema.tickerMessages.id, id), eq(schema.tickerMessages.tenantId, session.tenantId))).run();
 
     emitTickerDelete(id, session.tenantId);
 

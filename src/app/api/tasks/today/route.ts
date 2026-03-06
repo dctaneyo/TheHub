@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     // Get all tasks for this location (or all locations if locationId is null)
     const locationId = session.userType === "location" ? session.id : null;
 
-    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
+    const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
 
     // Filter tasks that apply today (exclude hidden and showInToday=false)
     const todayTasks = allTasks.filter((task) => {
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
     // Get completions for today
     const completions = locationId
-      ? db
+      ? await db
           .select()
           .from(schema.taskCompletions)
           .where(
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
     });
 
     const yesterdayCompletions = locationId
-      ? db
+      ? await db
           .select()
           .from(schema.taskCompletions)
           .where(

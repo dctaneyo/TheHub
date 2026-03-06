@@ -18,7 +18,7 @@ export async function GET(
     const { id: conversationId } = await params;
 
     // Get conversation details
-    const conversation = db
+    const conversation = await db
       .select()
       .from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId))
@@ -29,7 +29,7 @@ export async function GET(
     }
 
     // Get active members (leftAt is null)
-    const members = db
+    const members = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -41,17 +41,17 @@ export async function GET(
       .all();
 
     // Get member details
-    const memberDetails = members.map((member) => {
+    const memberDetails = await Promise.all(members.map(async (member) => {
       let name = "Unknown";
       if (member.memberType === "location") {
-        const location = db
+        const location = await db
           .select()
           .from(schema.locations)
           .where(eq(schema.locations.id, member.memberId))
           .get();
         name = location?.name || "Unknown Location";
       } else if (member.memberType === "arl") {
-        const arl = db
+        const arl = await db
           .select()
           .from(schema.arls)
           .where(eq(schema.arls.id, member.memberId))
@@ -67,7 +67,7 @@ export async function GET(
         role: member.role,
         joinedAt: member.joinedAt,
       };
-    });
+    }));
 
     return NextResponse.json({
       id: conversation.id,
@@ -103,7 +103,7 @@ export async function PATCH(
     const { name, description, avatarColor } = body;
 
     // Check if user is admin of this group
-    const member = db
+    const member = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -130,7 +130,7 @@ export async function PATCH(
     if (avatarColor !== undefined) updates.avatarColor = avatarColor;
 
     if (Object.keys(updates).length > 0) {
-      db.update(schema.conversations)
+      await db.update(schema.conversations)
         .set(updates)
         .where(eq(schema.conversations.id, conversationId))
         .run();

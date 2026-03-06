@@ -19,46 +19,46 @@ export async function GET() {
     const dbSize = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0;
 
     // Record counts
-    const locations = db.select().from(schema.locations).all().length;
-    const arls = db.select().from(schema.arls).all().length;
-    const tasks = db.select().from(schema.tasks).all().length;
-    const messages = db.select().from(schema.messages).all().length;
-    const conversations = db.select().from(schema.conversations).all().length;
-    const sessions = db.select().from(schema.sessions).all().length;
-    const onlineSessions = db.select().from(schema.sessions).all().filter((s: any) => s.isOnline).length;
+    const locations = (await db.select().from(schema.locations).all()).length;
+    const arls = (await db.select().from(schema.arls).all()).length;
+    const tasks = (await db.select().from(schema.tasks).all()).length;
+    const messages = (await db.select().from(schema.messages).all()).length;
+    const conversations = (await db.select().from(schema.conversations).all()).length;
+    const sessions = (await db.select().from(schema.sessions).all()).length;
+    const onlineSessions = (await db.select().from(schema.sessions).all()).filter((s: any) => s.isOnline).length;
 
     let taskCompletions = 0;
-    try { taskCompletions = db.select().from(schema.taskCompletions).all().length; } catch {}
+    try { taskCompletions = (await db.select().from(schema.taskCompletions).all()).length; } catch {}
     let messageReads = 0;
-    try { messageReads = db.select().from(schema.messageReads).all().length; } catch {}
+    try { messageReads = (await db.select().from(schema.messageReads).all()).length; } catch {}
     let messageReactions = 0;
-    try { messageReactions = db.select().from(schema.messageReactions).all().length; } catch {}
+    try { messageReactions = (await db.select().from(schema.messageReactions).all()).length; } catch {}
     let forms = 0;
-    try { forms = db.select().from(schema.forms).all().length; } catch {}
+    try { forms = (await db.select().from(schema.forms).all()).length; } catch {}
     let broadcasts = 0;
-    try { broadcasts = db.select().from(schema.broadcasts).all().length; } catch {}
+    try { broadcasts = (await db.select().from(schema.broadcasts).all()).length; } catch {}
     let broadcastMessages = 0;
-    try { broadcastMessages = db.select().from(schema.broadcastMessages).all().length; } catch {}
+    try { broadcastMessages = (await db.select().from(schema.broadcastMessages).all()).length; } catch {}
     let broadcastQuestions = 0;
-    try { broadcastQuestions = db.select().from(schema.broadcastQuestions).all().length; } catch {}
+    try { broadcastQuestions = (await db.select().from(schema.broadcastQuestions).all()).length; } catch {}
     let emergencyMessages = 0;
-    try { emergencyMessages = db.select().from(schema.emergencyMessages).all().length; } catch {}
+    try { emergencyMessages = (await db.select().from(schema.emergencyMessages).all()).length; } catch {}
     let notifications = 0;
-    try { notifications = db.select().from(schema.notifications).all().length; } catch {}
+    try { notifications = (await db.select().from(schema.notifications).all()).length; } catch {}
 
     // Table sizes
-    const tableInfo = sqlite.prepare(
+    const tableInfo = await sqlite.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    ).all() as { name: string }[];
+    ).all() as unknown as { name: string }[];
 
-    const tableSizes = tableInfo.map((t) => {
+    const tableSizes = await Promise.all(tableInfo.map(async (t) => {
       try {
-        const count = (sqlite.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get() as any)?.c || 0;
+        const count = ((await sqlite.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get()) as any)?.c || 0;
         return { name: t.name, records: count };
       } catch {
         return { name: t.name, records: 0 };
       }
-    });
+    }));
 
     return NextResponse.json({
       generatedAt: new Date().toISOString(),

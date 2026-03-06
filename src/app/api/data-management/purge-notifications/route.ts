@@ -16,8 +16,8 @@ export async function POST() {
     let deletedNotifications = 0;
     let deletedEmergency = 0;
 
-    try { deletedNotifications = sqlite.prepare("DELETE FROM notifications").run().changes; } catch {}
-    try { deletedEmergency = sqlite.prepare("DELETE FROM emergency_messages").run().changes; } catch {}
+    try { deletedNotifications = (await sqlite.prepare("DELETE FROM notifications").run()).rowsAffected; } catch {}
+    try { deletedEmergency = (await sqlite.prepare("DELETE FROM emergency_messages").run()).rowsAffected; } catch {}
 
     return NextResponse.json({
       success: true,

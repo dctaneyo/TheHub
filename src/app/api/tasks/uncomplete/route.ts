@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const targetDate = requestedDate || localDate || new Date().toISOString().split("T")[0];
 
-    const completion = db
+    const completion = await db
       .select()
       .from(schema.taskCompletions)
       .where(
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No completion found for this date" }, { status: 404 });
     }
 
-    db.delete(schema.taskCompletions)
+    await db.delete(schema.taskCompletions)
       .where(eq(schema.taskCompletions.id, completion.id))
       .run();
 

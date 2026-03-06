@@ -67,7 +67,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
   const BUILD_ID = readBuildId();
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     let user: AuthPayload | null = null;
 
     socket.emit("build:id", { buildId: BUILD_ID });
@@ -144,7 +144,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         io.to("arls").emit("presence:update", presenceData);
 
         if (user.userType === "location") {
-          const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+          const allArls = await db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
           createNotificationBulk(
             allArls.map(arl => arl.id),
             {
@@ -238,7 +238,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── Client heartbeat ──
-    socket.on("client:heartbeat", () => {
+    socket.on("client:heartbeat", async () => {
       if (!user) return;
       const tp = (socket as any)._tenantPrefix;
       const presenceData = {
@@ -251,7 +251,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       try {
         const now = new Date().toISOString();
         if (user.sessionCode) {
-          db.update(schema.sessions)
+          await db.update(schema.sessions)
             .set({ lastSeen: now, isOnline: true, socketId: socket.id })
             .where(eq(schema.sessions.sessionCode, user.sessionCode))
             .run();
@@ -261,10 +261,10 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
 
     // ── Activity tracking ──
-    socket.on("activity:update", (data: { page: string }) => {
+    socket.on("activity:update", async (data: { page: string }) => {
       if (!user) return;
       try {
-        db.update(schema.sessions).set({ currentPage: data.page }).where(eq(schema.sessions.socketId, socket.id)).run();
+        await db.update(schema.sessions).set({ currentPage: data.page }).where(eq(schema.sessions.socketId, socket.id)).run();
       } catch (err) { console.error("Failed to update session currentPage:", err); }
       const atp = (socket as any)._tenantPrefix;
       const actData = {
@@ -302,7 +302,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     registerTestHandlers(io, socket, user);
 
     // ── Disconnect ──
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       if (user) {
         const dtp = (socket as any)._tenantPrefix;
         const offlineData = {
@@ -313,16 +313,16 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         if (dtp) io.to(`${dtp}:arls`).emit("presence:update", offlineData);
         io.to("arls").emit("presence:update", offlineData);
         try {
-          db.update(schema.sessions).set({ isOnline: false }).where(eq(schema.sessions.userId, user.id)).run();
+          await db.update(schema.sessions).set({ isOnline: false }).where(eq(schema.sessions.userId, user.id)).run();
         } catch {}
 
         if (user.userType === "location") {
           // Delayed offline notification (only if still offline after 5 min)
           const closureUser = user;
-          setTimeout(() => {
-            const session = db.select().from(schema.sessions).where(eq(schema.sessions.userId, closureUser.id)).get();
+          setTimeout(async () => {
+            const session = await db.select().from(schema.sessions).where(eq(schema.sessions.userId, closureUser.id)).get();
             if (session && !session.isOnline) {
-              const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+              const allArls = await db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
               createNotificationBulk(
                 allArls.map(arl => arl.id),
                 {

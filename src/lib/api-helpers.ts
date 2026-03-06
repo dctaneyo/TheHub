@@ -57,7 +57,7 @@ export async function requirePermission(
   }
 
   // Admins always pass
-  const arl = db.select({ role: schema.arls.role, permissions: schema.arls.permissions })
+  const arl = await db.select({ role: schema.arls.role, permissions: schema.arls.permissions })
     .from(schema.arls)
     .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId)))
     .get();
@@ -87,7 +87,7 @@ export async function requireLocationAccess(
 ): Promise<NextResponse | null> {
   if (session.userType !== "arl") return null; // locations always access themselves
 
-  const arl = db.select({ role: schema.arls.role, assignedLocationIds: schema.arls.assignedLocationIds })
+  const arl = await db.select({ role: schema.arls.role, assignedLocationIds: schema.arls.assignedLocationIds })
     .from(schema.arls)
     .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId)))
     .get();
@@ -106,8 +106,8 @@ export async function requireLocationAccess(
  * Get the current ARL's role, parsed permissions, and assigned locations from DB.
  * Useful for returning permissions to the client.
  */
-export function getArlPermissions(arlId: string, tenantId: string): { role: string; roleId: string | null; permissions: PermissionKey[] | null; assignedLocationIds: string[] | null } | null {
-  const arl = db.select({ role: schema.arls.role, roleId: schema.arls.roleId, permissions: schema.arls.permissions, assignedLocationIds: schema.arls.assignedLocationIds })
+export async function getArlPermissions(arlId: string, tenantId: string): Promise<{ role: string; roleId: string | null; permissions: PermissionKey[] | null; assignedLocationIds: string[] | null } | null> {
+  const arl = await db.select({ role: schema.arls.role, roleId: schema.arls.roleId, permissions: schema.arls.permissions, assignedLocationIds: schema.arls.assignedLocationIds })
     .from(schema.arls)
     .where(and(eq(schema.arls.id, arlId), eq(schema.arls.tenantId, tenantId)))
     .get();

@@ -32,7 +32,7 @@ export async function POST() {
     }
 
     // Check if the session record still exists (deleted on force actions)
-    const existing = db.select({ id: schema.sessions.id })
+    const existing = await db.select({ id: schema.sessions.id })
       .from(schema.sessions)
       .where(
         and(

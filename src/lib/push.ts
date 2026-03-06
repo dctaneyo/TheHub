@@ -37,7 +37,7 @@ export async function sendPushToAllARLs(payload: {
   }
 
   try {
-    const activeArls = db.select().from(schema.arls)
+    const activeArls = await db.select().from(schema.arls)
       .where(eq(schema.arls.isActive, true))
       .all();
 
@@ -64,7 +64,7 @@ export async function sendPushToARL(userId: string, payload: {
 
   try {
     // Get all subscriptions for this ARL
-    const subscriptions = db.select()
+    const subscriptions = await db.select()
       .from(schema.pushSubscriptions)
       .where(eq(schema.pushSubscriptions.userId, userId))
       .all();
@@ -105,7 +105,7 @@ export async function sendPushToARL(userId: string, payload: {
     if (failedSubs.length > 0) {
       console.log(`Removing ${failedSubs.length} failed push subscriptions`);
       for (const failedSub of failedSubs) {
-        db.delete(schema.pushSubscriptions)
+        await db.delete(schema.pushSubscriptions)
           .where(eq(schema.pushSubscriptions.id, failedSub!.id))
           .run();
       }

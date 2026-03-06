@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (activeOnly) query += " WHERE is_active = 1";
     query += " ORDER BY scheduled_at ASC";
 
-    const meetings = sqlite.prepare(query).all() as any[];
+    const meetings = await sqlite.prepare(query).all() as any[];
     return NextResponse.json({ meetings });
   } catch (error) {
     console.error("Get meetings error:", error);
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     let meetingCode = generateMeetingCode();
     let attempts = 0;
     while (attempts < 10) {
-      const existing = sqlite.prepare("SELECT id FROM scheduled_meetings WHERE meeting_code = ?").get(meetingCode);
+      const existing = await sqlite.prepare("SELECT id FROM scheduled_meetings WHERE meeting_code = ?").get(meetingCode);
       if (!existing) break;
       meetingCode = generateMeetingCode();
       attempts++;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     const id = `sm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
 
-    sqlite.prepare(`
+    await sqlite.prepare(`
       INSERT INTO scheduled_meetings (
         id, meeting_code, title, description, password, host_id, host_name,
         scheduled_at, duration_minutes, is_recurring, recurring_type,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       allowGuests ? 1 : 0, now, now
     );
 
-    const meeting = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
+    const meeting = await sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
     return NextResponse.json({ meeting });
   } catch (error) {
     console.error("Create meeting error:", error);
@@ -106,7 +106,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Meeting ID required" }, { status: 400 });
     }
 
-    const meeting = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id) as any;
+    const meeting = await sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id) as any;
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
@@ -133,9 +133,9 @@ export async function PATCH(req: NextRequest) {
     values.push(new Date().toISOString());
     values.push(id);
 
-    sqlite.prepare(`UPDATE scheduled_meetings SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+    await sqlite.prepare(`UPDATE scheduled_meetings SET ${fields.join(", ")} WHERE id = ?`).run(...values);
 
-    const updated = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
+    const updated = await sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
     return NextResponse.json({ meeting: updated });
   } catch (error) {
     console.error("Update meeting error:", error);
@@ -159,7 +159,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Meeting ID required" }, { status: 400 });
     }
 
-    sqlite.prepare("DELETE FROM scheduled_meetings WHERE id = ?").run(id);
+    await sqlite.prepare("DELETE FROM scheduled_meetings WHERE id = ?").run(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete meeting error:", error);

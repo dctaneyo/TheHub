@@ -1,5 +1,5 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
@@ -7,191 +7,111 @@ import path from "path";
 import fs from "fs";
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "hub.db");
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
+
+// Ensure data directory exists for local file databases
+if (DATABASE_URL.startsWith("file:")) {
+  const filePath = DATABASE_URL.slice(5);
+  const dbDir = path.dirname(filePath);
+  if (dbDir && !fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 }
 
-const sqlite = new Database(DB_PATH);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-const db = drizzle(sqlite, { schema });
+const client = createClient({
+  url: DATABASE_URL,
+  authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
+});
+const db = drizzle(client, { schema });
 
 async function seed() {
   console.log("🌱 Seeding database...");
 
   // Create tables manually via raw SQL (Drizzle push would be better but this works for seed)
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS locations (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      store_number TEXT NOT NULL UNIQUE,
-      address TEXT,
-      email TEXT,
-      user_id TEXT NOT NULL UNIQUE,
-      pin_hash TEXT NOT NULL,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS arls (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT,
-      user_id TEXT NOT NULL UNIQUE,
-      pin_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'arl',
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      session_code TEXT,
-      user_type TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      token TEXT NOT NULL,
-      socket_id TEXT,
-      is_online INTEGER NOT NULL DEFAULT 0,
-      last_seen TEXT NOT NULL,
-      device_type TEXT,
-      current_page TEXT,
-      created_at TEXT NOT NULL,
-      expires_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS tasks (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      type TEXT NOT NULL DEFAULT 'task',
-      priority TEXT NOT NULL DEFAULT 'normal',
-      due_time TEXT NOT NULL,
-      due_date TEXT,
-      is_recurring INTEGER NOT NULL DEFAULT 0,
-      recurring_type TEXT,
-      recurring_days TEXT,
-      location_id TEXT,
-      created_by TEXT NOT NULL,
-      created_by_type TEXT NOT NULL DEFAULT 'arl',
-      is_hidden INTEGER NOT NULL DEFAULT 0,
-      points INTEGER NOT NULL DEFAULT 10,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS task_completions (
-      id TEXT PRIMARY KEY,
-      task_id TEXT NOT NULL,
-      location_id TEXT NOT NULL,
-      completed_at TEXT NOT NULL,
-      completed_date TEXT NOT NULL,
-      notes TEXT,
+  // @libsql/client execute() only supports single statements, so split them
+  const createStatements = [
+    `CREATE TABLE IF NOT EXISTS locations (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, store_number TEXT NOT NULL UNIQUE,
+      address TEXT, email TEXT, user_id TEXT NOT NULL UNIQUE, pin_hash TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS arls (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, user_id TEXT NOT NULL UNIQUE,
+      pin_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'arl',
+      is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY, session_code TEXT, user_type TEXT NOT NULL, user_id TEXT NOT NULL,
+      token TEXT NOT NULL, socket_id TEXT, is_online INTEGER NOT NULL DEFAULT 0,
+      last_seen TEXT NOT NULL, device_type TEXT, current_page TEXT,
+      created_at TEXT NOT NULL, expires_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
+      type TEXT NOT NULL DEFAULT 'task', priority TEXT NOT NULL DEFAULT 'normal',
+      due_time TEXT NOT NULL, due_date TEXT, is_recurring INTEGER NOT NULL DEFAULT 0,
+      recurring_type TEXT, recurring_days TEXT, location_id TEXT,
+      created_by TEXT NOT NULL, created_by_type TEXT NOT NULL DEFAULT 'arl',
+      is_hidden INTEGER NOT NULL DEFAULT 0, points INTEGER NOT NULL DEFAULT 10,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS task_completions (
+      id TEXT PRIMARY KEY, task_id TEXT NOT NULL, location_id TEXT NOT NULL,
+      completed_at TEXT NOT NULL, completed_date TEXT NOT NULL, notes TEXT,
       points_earned INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL,
-      sender_type TEXT NOT NULL,
-      sender_id TEXT NOT NULL,
-      sender_name TEXT NOT NULL DEFAULT '',
-      content TEXT NOT NULL,
-      message_type TEXT NOT NULL DEFAULT 'text',
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS conversations (
-      id TEXT PRIMARY KEY,
-      type TEXT NOT NULL DEFAULT 'direct',
-      name TEXT,
-      participant_a_id TEXT,
-      participant_a_type TEXT,
-      participant_b_id TEXT,
-      participant_b_type TEXT,
-      last_message_at TEXT,
-      last_message_preview TEXT,
-      created_by TEXT,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS conversation_members (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL,
-      member_id TEXT NOT NULL,
-      member_type TEXT NOT NULL,
-      joined_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS message_reads (
-      id TEXT PRIMARY KEY,
-      message_id TEXT NOT NULL,
-      reader_type TEXT NOT NULL,
-      reader_id TEXT NOT NULL,
-      read_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS message_reactions (
-      id TEXT PRIMARY KEY,
-      message_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      user_type TEXT NOT NULL,
-      user_name TEXT NOT NULL,
-      emoji TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS forms (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      category TEXT NOT NULL DEFAULT 'general',
-      file_name TEXT NOT NULL,
-      file_path TEXT NOT NULL,
-      file_size INTEGER NOT NULL,
-      uploaded_by TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS location_scores (
-      id TEXT PRIMARY KEY,
-      location_id TEXT NOT NULL,
-      date TEXT NOT NULL,
-      points_earned INTEGER NOT NULL DEFAULT 0,
-      tasks_completed INTEGER NOT NULL DEFAULT 0,
-      tasks_missed INTEGER NOT NULL DEFAULT 0,
-      streak INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS notifications (
-      id TEXT PRIMARY KEY,
-      tenant_id TEXT NOT NULL DEFAULT 'kazi',
-      user_id TEXT NOT NULL DEFAULT '',
-      user_type TEXT NOT NULL DEFAULT 'location',
-      type TEXT NOT NULL DEFAULT 'system',
-      title TEXT NOT NULL DEFAULT '',
-      message TEXT NOT NULL DEFAULT '',
-      action_url TEXT,
-      action_label TEXT,
-      priority TEXT NOT NULL DEFAULT 'normal',
-      metadata TEXT,
-      is_read INTEGER NOT NULL DEFAULT 0,
-      read_at TEXT,
+    )`,
+    `CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, sender_type TEXT NOT NULL,
+      sender_id TEXT NOT NULL, sender_name TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL, message_type TEXT NOT NULL DEFAULT 'text', created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY, type TEXT NOT NULL DEFAULT 'direct', name TEXT,
+      participant_a_id TEXT, participant_a_type TEXT, participant_b_id TEXT,
+      participant_b_type TEXT, last_message_at TEXT, last_message_preview TEXT,
+      created_by TEXT, created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS conversation_members (
+      id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, member_id TEXT NOT NULL,
+      member_type TEXT NOT NULL, joined_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS message_reads (
+      id TEXT PRIMARY KEY, message_id TEXT NOT NULL, reader_type TEXT NOT NULL,
+      reader_id TEXT NOT NULL, read_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS message_reactions (
+      id TEXT PRIMARY KEY, message_id TEXT NOT NULL, user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL, user_name TEXT NOT NULL, emoji TEXT NOT NULL, created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS forms (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
+      category TEXT NOT NULL DEFAULT 'general', file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL, file_size INTEGER NOT NULL,
+      uploaded_by TEXT NOT NULL, created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS location_scores (
+      id TEXT PRIMARY KEY, location_id TEXT NOT NULL, date TEXT NOT NULL,
+      points_earned INTEGER NOT NULL DEFAULT 0, tasks_completed INTEGER NOT NULL DEFAULT 0,
+      tasks_missed INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0
+    )`,
+    `CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      user_id TEXT NOT NULL DEFAULT '', user_type TEXT NOT NULL DEFAULT 'location',
+      type TEXT NOT NULL DEFAULT 'system', title TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '', action_url TEXT, action_label TEXT,
+      priority TEXT NOT NULL DEFAULT 'normal', metadata TEXT,
+      is_read INTEGER NOT NULL DEFAULT 0, read_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS emergency_messages (
-      id TEXT PRIMARY KEY,
-      message TEXT NOT NULL,
-      sent_by TEXT NOT NULL,
-      sent_by_name TEXT NOT NULL,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL,
-      expires_at TEXT
-    );
-  `);
+    )`,
+    `CREATE TABLE IF NOT EXISTS emergency_messages (
+      id TEXT PRIMARY KEY, message TEXT NOT NULL, sent_by TEXT NOT NULL,
+      sent_by_name TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL, expires_at TEXT
+    )`,
+  ];
+  for (const stmt of createStatements) {
+    await client.execute(stmt);
+  }
 
   // Seed demo data
   const now = new Date().toISOString();
@@ -199,7 +119,7 @@ async function seed() {
   // Create demo ARL (admin)
   const adminId = uuid();
   const arlId = uuid();
-  db.insert(schema.arls).values([
+  await db.insert(schema.arls).values([
     {
       id: adminId,
       name: "Admin User",
@@ -226,7 +146,7 @@ async function seed() {
   const loc1Id = uuid();
   const loc2Id = uuid();
   const loc3Id = uuid();
-  db.insert(schema.locations).values([
+  await db.insert(schema.locations).values([
     {
       id: loc1Id,
       name: "Downtown Location",
@@ -264,7 +184,7 @@ async function seed() {
 
   // Create demo tasks
   const taskIds = [uuid(), uuid(), uuid(), uuid(), uuid(), uuid(), uuid(), uuid()];
-  db.insert(schema.tasks).values([
+  await db.insert(schema.tasks).values([
     {
       id: taskIds[0],
       title: "Morning Line Check",
@@ -381,7 +301,7 @@ async function seed() {
 
   // Create a Global Chat conversation
   const globalConvId = uuid();
-  db.insert(schema.conversations).values({
+  await db.insert(schema.conversations).values({
     id: globalConvId,
     type: "global",
     name: "Global Chat",
@@ -391,7 +311,7 @@ async function seed() {
 
   // Add all locations + ARLs as members of global chat
   for (const locId of [loc1Id, loc2Id, loc3Id]) {
-    db.insert(schema.conversationMembers).values({
+    await db.insert(schema.conversationMembers).values({
       id: uuid(),
       conversationId: globalConvId,
       memberId: locId,
@@ -400,7 +320,7 @@ async function seed() {
     }).run();
   }
   for (const arlMemberId of [adminId, arlId]) {
-    db.insert(schema.conversationMembers).values({
+    await db.insert(schema.conversationMembers).values({
       id: uuid(),
       conversationId: globalConvId,
       memberId: arlMemberId,
@@ -412,7 +332,7 @@ async function seed() {
   // Create direct ARL↔location conversations
   for (const locId of [loc1Id, loc2Id, loc3Id]) {
     const convId = uuid();
-    db.insert(schema.conversations).values({
+    await db.insert(schema.conversations).values({
       id: convId,
       type: "direct",
       participantAId: arlId,
@@ -421,7 +341,7 @@ async function seed() {
       participantBType: "location",
       createdAt: now,
     }).run();
-    db.insert(schema.conversationMembers).values([
+    await db.insert(schema.conversationMembers).values([
       { id: uuid(), conversationId: convId, memberId: arlId, memberType: "arl", joinedAt: now },
       { id: uuid(), conversationId: convId, memberId: locId, memberType: "location", joinedAt: now },
     ]).run();

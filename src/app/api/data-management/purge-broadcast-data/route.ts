@@ -19,11 +19,11 @@ export async function POST() {
     let deletedReactions = 0;
     let deletedViewers = 0;
 
-    try { deletedViewers = sqlite.prepare("DELETE FROM broadcast_viewers").run().changes; } catch {}
-    try { deletedReactions = sqlite.prepare("DELETE FROM broadcast_reactions").run().changes; } catch {}
-    try { deletedMessages = sqlite.prepare("DELETE FROM broadcast_messages").run().changes; } catch {}
-    try { deletedQuestions = sqlite.prepare("DELETE FROM broadcast_questions").run().changes; } catch {}
-    try { deletedBroadcasts = sqlite.prepare("DELETE FROM broadcasts").run().changes; } catch {}
+    try { deletedViewers = (await sqlite.prepare("DELETE FROM broadcast_viewers").run()).rowsAffected; } catch {}
+    try { deletedReactions = (await sqlite.prepare("DELETE FROM broadcast_reactions").run()).rowsAffected; } catch {}
+    try { deletedMessages = (await sqlite.prepare("DELETE FROM broadcast_messages").run()).rowsAffected; } catch {}
+    try { deletedQuestions = (await sqlite.prepare("DELETE FROM broadcast_questions").run()).rowsAffected; } catch {}
+    try { deletedBroadcasts = (await sqlite.prepare("DELETE FROM broadcasts").run()).rowsAffected; } catch {}
 
     return NextResponse.json({
       success: true,

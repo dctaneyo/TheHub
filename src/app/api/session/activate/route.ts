@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find the pending session
-    const pending = db
+    const pending = await db
       .select()
       .from(schema.pendingSessions)
       .where(eq(schema.pendingSessions.id, pendingId))
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const sessionCode = genSessionCode();
 
     if (assignToType === "location") {
-      const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
+      const location = await db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
       if (!location) return NextResponse.json({ error: "Location not found" }, { status: 404 });
       if (!location.isActive) return NextResponse.json({ error: "Location is deactivated" }, { status: 403 });
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       targetName = location.name;
 
       // Create a real session record
-      db.insert(schema.sessions).values({
+      await db.insert(schema.sessions).values({
         id: uuid(),
         sessionCode,
         userType: "location",
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         expiresAt: getTokenExpiry(),
       }).run();
     } else {
-      const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
+      const arl = await db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
       if (!arl) return NextResponse.json({ error: "ARL not found" }, { status: 404 });
       if (!arl.isActive) return NextResponse.json({ error: "ARL account is deactivated" }, { status: 403 });
 
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       targetName = arl.name;
 
       // Create a real session record
-      db.insert(schema.sessions).values({
+      await db.insert(schema.sessions).values({
         id: uuid(),
         sessionCode,
         userType: "arl",
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update the pending session with the activation info
-    db.update(schema.pendingSessions)
+    await db.update(schema.pendingSessions)
       .set({
         status: "activated",
         assignedUserType: assignToType,

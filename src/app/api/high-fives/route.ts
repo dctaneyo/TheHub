@@ -8,9 +8,9 @@ import { broadcastToAll } from "@/lib/socket-emit";
 import { createNotification } from "@/lib/notifications";
 
 // Ensure high_fives table exists
-function ensureHighFivesTable() {
+async function ensureHighFivesTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS high_fives (
         id TEXT PRIMARY KEY,
         tenant_id TEXT NOT NULL DEFAULT 'kazi',
@@ -24,7 +24,7 @@ function ensureHighFivesTable() {
         created_at TEXT NOT NULL
       )
     `);
-    try { sqlite.exec(`ALTER TABLE high_fives ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
+    try { await sqlite.execute(`ALTER TABLE high_fives ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
   } catch {}
 }
 
@@ -34,14 +34,14 @@ export async function GET(request: Request) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    ensureHighFivesTable();
+    await ensureHighFivesTable();
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId") || session.id;
     const userType = searchParams.get("userType") || session.userType;
 
     // Get high-fives received
-    const received = sqlite.prepare(`
+    const received = await sqlite.prepare(`
       SELECT * FROM high_fives 
       WHERE tenant_id = ? AND to_user_id = ? AND to_user_type = ?
       ORDER BY created_at DESC
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     `).all(session.tenantId, userId, userType) as any[];
 
     // Get high-fives sent
-    const sent = sqlite.prepare(`
+    const sent = await sqlite.prepare(`
       SELECT * FROM high_fives 
       WHERE tenant_id = ? AND from_user_id = ? AND from_user_type = ?
       ORDER BY created_at DESC
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     `).all(session.tenantId, userId, userType) as any[];
 
     // Get total count
-    const totalReceived = sqlite.prepare(`
+    const totalReceived = await sqlite.prepare(`
       SELECT COUNT(*) as count FROM high_fives 
       WHERE tenant_id = ? AND to_user_id = ? AND to_user_type = ?
     `).get(session.tenantId, userId, userType) as any;
@@ -90,12 +90,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    ensureHighFivesTable();
+    await ensureHighFivesTable();
 
     const highFiveId = uuid();
     const now = new Date().toISOString();
 
-    sqlite.prepare(`
+    await sqlite.prepare(`
       INSERT INTO high_fives (
         id, tenant_id, from_user_id, from_user_type, from_user_name,
         to_user_id, to_user_type, to_user_name, message, created_at

@@ -13,8 +13,8 @@ export async function POST() {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
-    const count = db.select().from(schema.taskCompletions).all().length;
-    db.delete(schema.taskCompletions).run();
+    const count = (await db.select().from(schema.taskCompletions).all()).length;
+    await db.delete(schema.taskCompletions).run();
 
     return NextResponse.json({
       success: true,

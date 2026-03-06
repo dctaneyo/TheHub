@@ -36,18 +36,18 @@ export async function GET() {
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
 
-    const reports = db.select().from(schema.scheduledReports)
+    const reports = await db.select().from(schema.scheduledReports)
       .where(eq(schema.scheduledReports.tenantId, session.tenantId)).all();
 
-    const reportsWithHistory = reports.map((report) => {
-      const history = db.select({
+    const reportsWithHistory = await Promise.all(reports.map(async (report) => {
+      const history = (await db.select({
         id: schema.reportHistory.id,
         status: schema.reportHistory.status,
         error: schema.reportHistory.error,
         createdAt: schema.reportHistory.createdAt,
         completedAt: schema.reportHistory.completedAt,
       }).from(schema.reportHistory)
-        .where(eq(schema.reportHistory.reportId, report.id)).all()
+        .where(eq(schema.reportHistory.reportId, report.id)).all())
         .slice(0, 10); // last 10 runs
 
       return {
@@ -56,7 +56,7 @@ export async function GET() {
         filters: report.filters ? JSON.parse(report.filters) : null,
         history,
       };
-    });
+    }));
 
     return apiSuccess({ reports: reportsWithHistory });
   } catch (error) {
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    db.insert(schema.scheduledReports).values(report).run();
+    await db.insert(schema.scheduledReports).values(report).run();
     return apiSuccess({
       report: { ...report, recipients, filters: filters || null },
     });
@@ -124,7 +124,7 @@ export async function PUT(req: NextRequest) {
     }
     const { id, name, type, frequency, recipients, filters, isActive } = parsed.data;
 
-    const existing = db.select().from(schema.scheduledReports)
+    const existing = await db.select().from(schema.scheduledReports)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
@@ -139,7 +139,7 @@ export async function PUT(req: NextRequest) {
     if (filters !== undefined) updates.filters = filters ? JSON.stringify(filters) : null;
     if (isActive !== undefined) updates.isActive = isActive;
 
-    db.update(schema.scheduledReports).set(updates)
+    await db.update(schema.scheduledReports).set(updates)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).run();
 
     return apiSuccess({ updated: true });
@@ -161,16 +161,16 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    const existing = db.select().from(schema.scheduledReports)
+    const existing = await db.select().from(schema.scheduledReports)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
     // Delete history first
-    db.delete(schema.reportHistory)
+    await db.delete(schema.reportHistory)
       .where(eq(schema.reportHistory.reportId, id)).run();
 
     // Delete the report
-    db.delete(schema.scheduledReports)
+    await db.delete(schema.scheduledReports)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).run();
 
     return apiSuccess({ deleted: true });

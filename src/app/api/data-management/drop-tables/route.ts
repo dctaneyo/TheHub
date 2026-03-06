@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         continue;
       }
       try {
-        sqlite.prepare(`DROP TABLE IF EXISTS "${table}"`).run();
+        await sqlite.prepare(`DROP TABLE IF EXISTS "${table}"`).run();
         dropped.push(table);
       } catch (err) {
         skipped.push(table);

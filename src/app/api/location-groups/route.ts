@@ -12,19 +12,19 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const groups = db.select().from(schema.locationGroups)
+    const groups = await db.select().from(schema.locationGroups)
       .where(eq(schema.locationGroups.tenantId, session.tenantId)).all();
 
     // Fetch members for each group
-    const groupsWithMembers = groups.map((group) => {
-      const members = db.select({ locationId: schema.locationGroupMembers.locationId })
+    const groupsWithMembers = await Promise.all(groups.map(async (group) => {
+      const members = await db.select({ locationId: schema.locationGroupMembers.locationId })
         .from(schema.locationGroupMembers)
         .where(eq(schema.locationGroupMembers.groupId, group.id)).all();
       return {
         ...group,
         locationIds: members.map((m) => m.locationId),
       };
-    });
+    }));
 
     return apiSuccess({ groups: groupsWithMembers });
   } catch (error) {
@@ -61,12 +61,12 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    db.insert(schema.locationGroups).values(group).run();
+    await db.insert(schema.locationGroups).values(group).run();
 
     // Add members if provided
     if (locationIds && locationIds.length > 0) {
       for (const locationId of locationIds) {
-        db.insert(schema.locationGroupMembers).values({
+        await db.insert(schema.locationGroupMembers).values({
           id: uuid(),
           groupId: group.id,
           locationId,
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
     }
     const { id, name, description, color, parentId, locationIds } = parsed.data;
 
-    const existing = db.select().from(schema.locationGroups)
+    const existing = await db.select().from(schema.locationGroups)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Group not found" }, { status: 404 });
 
@@ -108,18 +108,18 @@ export async function PUT(req: NextRequest) {
     if (color !== undefined) updates.color = color;
     if (parentId !== undefined) updates.parentId = parentId;
 
-    db.update(schema.locationGroups).set(updates)
+    await db.update(schema.locationGroups).set(updates)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).run();
 
     // Update members if provided
     if (locationIds !== undefined) {
       // Clear existing members
-      db.delete(schema.locationGroupMembers)
+      await db.delete(schema.locationGroupMembers)
         .where(eq(schema.locationGroupMembers.groupId, id)).run();
       // Add new members
       const now = new Date().toISOString();
       for (const locationId of locationIds) {
-        db.insert(schema.locationGroupMembers).values({
+        await db.insert(schema.locationGroupMembers).values({
           id: uuid(),
           groupId: id,
           locationId,
@@ -147,16 +147,16 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    const existing = db.select().from(schema.locationGroups)
+    const existing = await db.select().from(schema.locationGroups)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Group not found" }, { status: 404 });
 
     // Delete members first
-    db.delete(schema.locationGroupMembers)
+    await db.delete(schema.locationGroupMembers)
       .where(eq(schema.locationGroupMembers.groupId, id)).run();
 
     // Delete the group
-    db.delete(schema.locationGroups)
+    await db.delete(schema.locationGroups)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).run();
 
     return apiSuccess({ deleted: true });

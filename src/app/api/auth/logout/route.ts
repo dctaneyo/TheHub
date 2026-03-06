@@ -9,7 +9,7 @@ export async function POST() {
 
     if (session) {
       // Mark sessions as offline
-      const allSessions = db
+      const allSessions = await db
         .select()
         .from(schema.sessions)
         .where(
@@ -21,7 +21,7 @@ export async function POST() {
         .all();
 
       for (const s of allSessions) {
-        db.update(schema.sessions)
+        await db.update(schema.sessions)
           .set({ isOnline: false, lastSeen: new Date().toISOString() })
           .where(eq(schema.sessions.id, s.id))
           .run();

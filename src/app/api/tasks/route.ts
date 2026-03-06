@@ -15,7 +15,7 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const tasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
+    const tasks = await db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     if (session.userType === "location") {
       // Return only tasks that apply to this location
       const locationTasks = tasks.filter(
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    db.insert(schema.tasks).values(task).run();
+    await db.insert(schema.tasks).values(task).run();
 
     broadcastTaskUpdate(resolvedLocationId, session.tenantId);
     refreshTaskTimers();
@@ -126,7 +126,7 @@ export async function PUT(req: NextRequest) {
     }
     const { id, ...updates } = parsed.data;
 
-    const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
+    const existing = await db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -149,7 +149,7 @@ export async function PUT(req: NextRequest) {
     if (updates.showInCalendar !== undefined) updateData.showInCalendar = updates.showInCalendar;
     if (updates.points !== undefined) updateData.points = updates.points;
 
-    db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();
+    await db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();
 
     broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();
@@ -172,7 +172,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
 
-    const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
+    const existing = await db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
     // ARL permission check
@@ -188,7 +188,7 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    db.delete(schema.tasks).where(eq(schema.tasks.id, id)).run();
+    await db.delete(schema.tasks).where(eq(schema.tasks.id, id)).run();
 
     broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();

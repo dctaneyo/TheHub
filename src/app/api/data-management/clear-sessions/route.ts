@@ -21,17 +21,17 @@ export async function POST(request: Request) {
       // Clear sessions older than 7 days that are offline
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM sessions WHERE is_online = 0 AND last_seen < ?"
       ).run(sevenDaysAgo.toISOString());
       deleted = r.changes;
     } else if (mode === "all-offline") {
       // Clear all offline sessions
-      const r = sqlite.prepare("DELETE FROM sessions WHERE is_online = 0").run();
+      const r = await sqlite.prepare("DELETE FROM sessions WHERE is_online = 0").run();
       deleted = r.changes;
     } else if (mode === "force-all") {
       // Force logout everyone (except current session)
-      const r = sqlite.prepare(
+      const r = await sqlite.prepare(
         "DELETE FROM sessions WHERE session_code != ?"
       ).run(session.sessionCode || "");
       deleted = r.changes;

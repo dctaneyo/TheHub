@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     // Create archive tables if they don't exist
     try {
-      sqlite.exec(`
+      await sqlite.execute(`
         CREATE TABLE IF NOT EXISTS archived_messages (
           id TEXT PRIMARY KEY,
           conversation_id TEXT,
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
           archived_at TEXT
         )
       `);
-      sqlite.exec(`
+      await sqlite.execute(`
         CREATE TABLE IF NOT EXISTS archived_task_completions (
           id TEXT PRIMARY KEY,
           task_id TEXT,
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     if (dataType === "messages") {
       // Move old messages to archive
-      const result = sqlite.prepare(`
+      const result = await sqlite.prepare(`
         INSERT INTO archived_messages 
         SELECT id, conversation_id, sender_type, sender_id, sender_name, content, message_type, created_at, ? as archived_at
         FROM messages 
@@ -62,11 +62,11 @@ export async function POST(request: Request) {
       `).run(archivedAt, cutoff);
       
       // Delete from main table
-      const deleted = sqlite.prepare("DELETE FROM messages WHERE created_at < ?").run(cutoff);
+      const deleted = await sqlite.prepare("DELETE FROM messages WHERE created_at < ?").run(cutoff);
       archived = deleted.changes;
     } else if (dataType === "task-completions") {
       // Move old task completions to archive
-      const result = sqlite.prepare(`
+      const result = await sqlite.prepare(`
         INSERT INTO archived_task_completions 
         SELECT id, task_id, location_id, completed_at, completed_date, notes, points_earned, bonus_points, ? as archived_at
         FROM task_completions 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       `).run(archivedAt, cutoff.split("T")[0]);
       
       // Delete from main table
-      const deleted = sqlite.prepare("DELETE FROM task_completions WHERE completed_date < ?").run(cutoff.split("T")[0]);
+      const deleted = await sqlite.prepare("DELETE FROM task_completions WHERE completed_date < ?").run(cutoff.split("T")[0]);
       archived = deleted.changes;
     } else {
       return NextResponse.json({ error: "Invalid data type" }, { status: 400 });
@@ -107,12 +107,12 @@ export async function GET() {
     let archivedCompletions = 0;
 
     try {
-      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_messages").get() as any;
+      const r = await sqlite.prepare("SELECT COUNT(*) as c FROM archived_messages").get() as any;
       archivedMessages = r?.c || 0;
     } catch {}
 
     try {
-      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_task_completions").get() as any;
+      const r = await sqlite.prepare("SELECT COUNT(*) as c FROM archived_task_completions").get() as any;
       archivedCompletions = r?.c || 0;
     } catch {}
 

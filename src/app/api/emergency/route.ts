@@ -16,7 +16,7 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const all = db.select().from(schema.emergencyMessages)
+    const all = await db.select().from(schema.emergencyMessages)
       .where(eq(schema.emergencyMessages.tenantId, session.tenantId))
       .orderBy(schema.emergencyMessages.createdAt).all();
 
@@ -90,13 +90,13 @@ export async function POST(req: NextRequest) {
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
 
     // Deactivate all previous messages for this tenant
-    db.update(schema.emergencyMessages)
+    await db.update(schema.emergencyMessages)
       .set({ isActive: false })
       .where(and(eq(schema.emergencyMessages.isActive, true), eq(schema.emergencyMessages.tenantId, session.tenantId))).run();
 
     const now = new Date().toISOString();
     const id = uuid();
-    db.insert(schema.emergencyMessages).values({
+    await db.insert(schema.emergencyMessages).values({
       id,
       tenantId: session.tenantId,
       message: message.trim(),
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     // Create urgent notifications for all targeted locations
     const targetIds = targetLocationIds && targetLocationIds.length > 0 
       ? targetLocationIds 
-      : db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all().map(l => l.id);
+      : (await db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all()).map(l => l.id);
     
     await createNotificationBulk(
       targetIds,
@@ -160,7 +160,7 @@ export async function PATCH(req: NextRequest) {
     const { messageId } = await req.json();
     if (!messageId) return NextResponse.json({ error: "messageId required" }, { status: 400 });
 
-    const msg = db.select().from(schema.emergencyMessages)
+    const msg = await db.select().from(schema.emergencyMessages)
       .where(eq(schema.emergencyMessages.id, messageId)).get();
     if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -184,7 +184,7 @@ export async function PATCH(req: NextRequest) {
       shouldArchive = false;
     }
 
-    db.update(schema.emergencyMessages)
+    await db.update(schema.emergencyMessages)
       .set({ viewedBy: JSON.stringify(viewedBy), isActive: shouldArchive ? false : msg.isActive })
       .where(eq(schema.emergencyMessages.id, messageId)).run();
 
@@ -210,7 +210,7 @@ export async function DELETE() {
     const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
     if (denied) return denied;
 
-    db.update(schema.emergencyMessages)
+    await db.update(schema.emergencyMessages)
       .set({ isActive: false })
       .where(eq(schema.emergencyMessages.isActive, true)).run();
 

@@ -18,8 +18,8 @@ export async function POST() {
     const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "hub.db");
     const sizeBefore = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0;
 
-    sqlite.exec("VACUUM");
-    sqlite.exec("ANALYZE");
+    await sqlite.execute("VACUUM");
+    await sqlite.execute("ANALYZE");
 
     const sizeAfter = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0;
     const saved = sizeBefore - sizeAfter;

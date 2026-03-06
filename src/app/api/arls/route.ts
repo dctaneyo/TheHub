@@ -17,7 +17,7 @@ export async function GET() {
     if (session.userType !== "arl" && session.userType !== "location") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
-    const arls = db.select({
+    const arls = await db.select({
       id: schema.arls.id,
       name: schema.arls.name,
       email: schema.arls.email,
@@ -57,12 +57,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `ARL user limit reached (${tenant.maxUsers} max for your plan)` }, { status: 403 });
     }
 
-    const existing = db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
+    const existing = await db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
     if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
 
     const now = new Date().toISOString();
     const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
-    db.insert(schema.arls).values(arl).run();
+    await db.insert(schema.arls).values(arl).run();
     broadcastUserUpdate(session.tenantId);
     return apiSuccess({ arl: { ...arl, pinHash: undefined } });
   } catch (error) {
@@ -88,7 +88,7 @@ export async function PUT(req: NextRequest) {
     const { id, name, email, pin, role, isActive, permissions: perms, roleId, assignedLocationIds } = parsed.data;
 
     // Only admins can change roles or permissions
-    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const callerArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     const isCallerAdmin = callerArl?.role === "admin";
 
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Prevent demoting/editing another admin unless caller is also admin
-    const targetArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const targetArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (targetArl?.role === "admin" && !isCallerAdmin) {
       return NextResponse.json({ error: "Only admins can edit other admins" }, { status: 403 });
@@ -116,7 +116,7 @@ export async function PUT(req: NextRequest) {
       updates.assignedLocationIds = assignedLocationIds === null ? null : JSON.stringify(assignedLocationIds);
     }
 
-    db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
+    await db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate(session.tenantId);
     return apiSuccess({ updated: true });
   } catch (error) {
@@ -143,51 +143,51 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Only admins can delete other admins
-    const targetArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const targetArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get();
-    const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
+    const callerArl = await db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (targetArl?.role === "admin" && callerArl?.role !== "admin") {
       return NextResponse.json({ error: "Only admins can delete other admins" }, { status: 403 });
     }
 
     // 1. Delete sessions
-    db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
+    await db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
 
     // 2. Find and delete direct conversations (1:1) involving this ARL
-    const directConvos = db.select().from(schema.conversations).all().filter(
+    const directConvos = (await db.select().from(schema.conversations).all()).filter(
       (c) => c.type === "direct" && (c.participantAId === id || c.participantBId === id)
     );
     for (const conv of directConvos) {
-      const msgIds = db.select({ id: schema.messages.id }).from(schema.messages)
-        .where(eq(schema.messages.conversationId, conv.id)).all().map((m) => m.id);
+      const msgIds = (await db.select({ id: schema.messages.id }).from(schema.messages)
+        .where(eq(schema.messages.conversationId, conv.id)).all()).map((m) => m.id);
       for (const msgId of msgIds) {
-        db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
+        await db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
       }
-      db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
-      db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
-      db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
+      await db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
+      await db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
+      await db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
     }
 
     // 3. Delete this ARL's messages in group/global conversations
-    const userMsgs = db.select({ id: schema.messages.id }).from(schema.messages)
+    const userMsgs = await db.select({ id: schema.messages.id }).from(schema.messages)
       .where(eq(schema.messages.senderId, id)).all();
     for (const msg of userMsgs) {
-      db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
+      await db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
     }
-    db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
+    await db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
 
     // 4. Delete read receipts by this ARL
-    db.delete(schema.messageReads).where(eq(schema.messageReads.readerId, id)).run();
+    await db.delete(schema.messageReads).where(eq(schema.messageReads.readerId, id)).run();
 
     // 5. Remove from remaining group conversation memberships
-    db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
+    await db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
 
     // 6. Delete push notification subscriptions
-    db.delete(schema.pushSubscriptions).where(eq(schema.pushSubscriptions.userId, id)).run();
+    await db.delete(schema.pushSubscriptions).where(eq(schema.pushSubscriptions.userId, id)).run();
 
     // 7. Delete the ARL record
-    db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
+    await db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
     broadcastUserUpdate(session.tenantId);
     return NextResponse.json({ success: true });
   } catch (error) {

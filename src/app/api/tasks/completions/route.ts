@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const completions = db
+    const completions = await db
       .select({
         taskId: schema.taskCompletions.taskId,
         completedDate: schema.taskCompletions.completedDate,

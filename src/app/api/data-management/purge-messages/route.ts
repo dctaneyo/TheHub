@@ -13,18 +13,18 @@ export async function POST() {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
-    const messageCount = db.select().from(schema.messages).all().length;
-    const readCount = db.select().from(schema.messageReads).all().length;
+    const messageCount = (await db.select().from(schema.messages).all()).length;
+    const readCount = (await db.select().from(schema.messageReads).all()).length;
     let reactionCount = 0;
     try {
-      reactionCount = db.select().from(schema.messageReactions).all().length;
+      reactionCount = (await db.select().from(schema.messageReactions).all()).length;
     } catch {
       // Table may not exist yet
     }
 
-    try { db.delete(schema.messageReactions).run(); } catch { /* table may not exist */ }
-    db.delete(schema.messageReads).run();
-    db.delete(schema.messages).run();
+    try { await db.delete(schema.messageReactions).run(); } catch { /* table may not exist */ }
+    await db.delete(schema.messageReads).run();
+    await db.delete(schema.messages).run();
 
     return NextResponse.json({
       success: true,

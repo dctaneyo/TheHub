@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const { conversationId } = await req.json();
     if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
 
-    const conv = db.select().from(schema.conversations)
+    const conv = await db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId))
       .get();
     if (!conv) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       deletedBy.push(session.id);
     }
 
-    db.update(schema.conversations)
+    await db.update(schema.conversations)
       .set({ deletedBy: JSON.stringify(deletedBy) })
       .where(eq(schema.conversations.id, conversationId))
       .run();

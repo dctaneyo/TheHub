@@ -28,7 +28,7 @@ export async function getTenant(): Promise<Tenant | null> {
   const tenantId = h.get("x-tenant-id");
   if (!tenantId) return null;
 
-  const row = db
+  const row = await db
     .select()
     .from(schema.tenants)
     .where(eq(schema.tenants.id, tenantId))
@@ -57,7 +57,7 @@ export async function requireTenantId(): Promise<string> {
  * Resolve tenant by slug or custom domain (used by middleware).
  * This runs raw SQL since middleware runs before Drizzle proxy is ready.
  */
-export function resolveTenantByHost(host: string): { id: string; slug: string } | null {
+export async function resolveTenantByHost(host: string): Promise<{ id: string; slug: string } | null> {
   // Strip port if present
   const hostname = host.split(":")[0];
 
@@ -71,7 +71,7 @@ export function resolveTenantByHost(host: string): { id: string; slug: string } 
       const sub = hostname.replace(`.${domain}`, "");
       if (systemHosts.includes(sub)) return null; // system subdomain, not a tenant
       // Look up tenant by slug
-      const row = db
+      const row = await db
         .select({ id: schema.tenants.id, slug: schema.tenants.slug })
         .from(schema.tenants)
         .where(eq(schema.tenants.slug, sub))
@@ -83,7 +83,7 @@ export function resolveTenantByHost(host: string): { id: string; slug: string } 
   }
 
   // Check for custom domain
-  const row = db
+  const row = await db
     .select({ id: schema.tenants.id, slug: schema.tenants.slug })
     .from(schema.tenants)
     .where(eq(schema.tenants.customDomain, hostname))
@@ -101,23 +101,23 @@ export function hasFeature(tenant: Tenant, feature: string): boolean {
 /**
  * Check if tenant can add more locations (within maxLocations limit).
  */
-export function canAddLocation(tenantId: string, maxLocations: number): boolean {
-  const count = db
+export async function canAddLocation(tenantId: string, maxLocations: number): Promise<boolean> {
+  const count = (await db
     .select({ id: schema.locations.id })
     .from(schema.locations)
     .where(eq(schema.locations.tenantId, tenantId))
-    .all().length;
+    .all()).length;
   return count < maxLocations;
 }
 
 /**
  * Check if tenant can add more users/ARLs (within maxUsers limit).
  */
-export function canAddUser(tenantId: string, maxUsers: number): boolean {
-  const count = db
+export async function canAddUser(tenantId: string, maxUsers: number): Promise<boolean> {
+  const count = (await db
     .select({ id: schema.arls.id })
     .from(schema.arls)
     .where(eq(schema.arls.tenantId, tenantId))
-    .all().length;
+    .all()).length;
   return count < maxUsers;
 }

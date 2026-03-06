@@ -9,7 +9,7 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     // Get the latest updatedAt from tasks table
-    const latest = db
+    const latest = await db
       .select({ updatedAt: schema.tasks.updatedAt })
       .from(schema.tasks)
       .orderBy(desc(schema.tasks.updatedAt))
@@ -17,7 +17,7 @@ export async function GET() {
       .get();
 
     // Also get latest completion timestamp
-    const latestCompletion = db
+    const latestCompletion = await db
       .select({ completedAt: schema.taskCompletions.completedAt })
       .from(schema.taskCompletions)
       .orderBy(desc(schema.taskCompletions.completedAt))

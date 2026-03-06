@@ -27,7 +27,7 @@ export async function PUT(
     }
 
     // Check if user is admin of this group
-    const userMember = db
+    const userMember = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -54,7 +54,7 @@ export async function PUT(
       const memberType = memberTypes[i];
 
       // Check if member already exists
-      const existingMember = db
+      const existingMember = await db
         .select()
         .from(schema.conversationMembers)
         .where(
@@ -69,7 +69,7 @@ export async function PUT(
       if (existingMember) {
         // If they left before, re-add them
         if (existingMember.leftAt) {
-          db.update(schema.conversationMembers)
+          await db.update(schema.conversationMembers)
             .set({
               leftAt: null,
               joinedAt: new Date().toISOString(),
@@ -81,7 +81,7 @@ export async function PUT(
       } else {
         // Add new member
         // ARLs are always admins, locations are members
-        db.insert(schema.conversationMembers)
+        await db.insert(schema.conversationMembers)
           .values({
             id: uuidv4(),
             conversationId,
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 
     // Check if user is admin
-    const userMember = db
+    const userMember = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -161,7 +161,7 @@ export async function DELETE(
     }
 
     // Get conversation to check creator
-    const conversation = db
+    const conversation = await db
       .select()
       .from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId))
@@ -180,7 +180,7 @@ export async function DELETE(
     }
 
     // Find and remove member
-    const memberToRemove = db
+    const memberToRemove = await db
       .select()
       .from(schema.conversationMembers)
       .where(
@@ -201,7 +201,7 @@ export async function DELETE(
     }
 
     // Mark as left
-    db.update(schema.conversationMembers)
+    await db.update(schema.conversationMembers)
       .set({ leftAt: new Date().toISOString() })
       .where(eq(schema.conversationMembers.id, memberToRemove.id))
       .run();

@@ -4,9 +4,9 @@ import { getAuthSession } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 
-function ensureTable() {
+async function ensureTable() {
   try {
-    sqlite.exec(`
+    await sqlite.execute(`
       CREATE TABLE IF NOT EXISTS streak_freezes (
         id TEXT PRIMARY KEY,
         location_id TEXT NOT NULL,
@@ -25,9 +25,9 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    ensureTable();
+    await ensureTable();
 
-    const freezes = sqlite
+    const freezes = await sqlite
       .prepare("SELECT * FROM streak_freezes WHERE location_id = ? ORDER BY freeze_date DESC")
       .all(session.id) as any[];
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    ensureTable();
+    await ensureTable();
 
     const body = await req.json().catch(() => ({}));
     const { date } = body;
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Check monthly limit
     const thisMonth = freezeDate.slice(0, 7);
-    const usedThisMonth = sqlite
+    const usedThisMonth = await sqlite
       .prepare("SELECT COUNT(*) as count FROM streak_freezes WHERE location_id = ? AND freeze_date LIKE ?")
       .get(session.id, `${thisMonth}%`) as any;
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if already frozen
-    const existing = sqlite
+    const existing = await sqlite
       .prepare("SELECT id FROM streak_freezes WHERE location_id = ? AND freeze_date = ?")
       .get(session.id, freezeDate);
 
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nowStr = now.toISOString();
-    sqlite
+    await sqlite
       .prepare("INSERT INTO streak_freezes (id, location_id, freeze_date, created_at) VALUES (?, ?, ?, ?)")
       .run(uuid(), session.id, freezeDate, nowStr);
 

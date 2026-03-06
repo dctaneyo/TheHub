@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
     const { taskId, notes, completedDate: requestedDate, localDate } = parsed.data;
 
-    const task = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
+    const task = await db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       bonusPoints,
     };
 
-    db.insert(schema.taskCompletions).values(completion).run();
+    await db.insert(schema.taskCompletions).values(completion).run();
 
     // Broadcast instant update via WebSocket
     broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name, session.tenantId);
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create in-app notifications for all ARLs
-    const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
+    const allArls = await db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
     await createNotificationBulk(
       allArls.map(arl => arl.id),
       {

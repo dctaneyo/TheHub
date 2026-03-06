@@ -100,8 +100,8 @@ export async function GET(req: Request) {
     }
 
     const locationId = session.id;
-    const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
-    const allCompletions = db
+    const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
+    const allCompletions = await db
       .select()
       .from(schema.taskCompletions)
       .where(eq(schema.taskCompletions.locationId, locationId))
@@ -116,8 +116,8 @@ export async function GET(req: Request) {
     let frozenDates = new Set<string>();
     try {
       const { sqlite } = await import("@/lib/db");
-      sqlite.exec(`CREATE TABLE IF NOT EXISTS streak_freezes (id TEXT PRIMARY KEY, location_id TEXT NOT NULL, freeze_date TEXT NOT NULL, created_at TEXT NOT NULL)`);
-      const freezes = sqlite.prepare("SELECT freeze_date FROM streak_freezes WHERE location_id = ?").all(locationId) as any[];
+      await sqlite.execute(`CREATE TABLE IF NOT EXISTS streak_freezes (id TEXT PRIMARY KEY, location_id TEXT NOT NULL, freeze_date TEXT NOT NULL, created_at TEXT NOT NULL)`);
+      const freezes = await sqlite.prepare("SELECT freeze_date FROM streak_freezes WHERE location_id = ?").all(locationId) as any[];
       frozenDates = new Set(freezes.map((f) => f.freeze_date));
     } catch {}
 

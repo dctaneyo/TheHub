@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const code = meetingCode.toUpperCase().trim();
 
     // First check the scheduled_meetings DB table
-    const meeting = sqlite.prepare(
+    const meeting = await sqlite.prepare(
       "SELECT * FROM scheduled_meetings WHERE meeting_code = ? AND is_active = 1"
     ).get(code) as any;
 

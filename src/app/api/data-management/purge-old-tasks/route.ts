@@ -18,7 +18,7 @@ export async function POST() {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     const cutoffDate = ninetyDaysAgo.toISOString().split("T")[0];
 
-    const result = sqlite.prepare(
+    const result = await sqlite.prepare(
       "DELETE FROM task_completions WHERE completed_date < ?"
     ).run(cutoffDate);
 

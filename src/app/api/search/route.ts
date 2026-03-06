@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     // Search tasks
     if (type === "all" || type === "tasks") {
       try {
-        const tasks = sqlite.prepare(`
+        const tasks = await sqlite.prepare(`
           SELECT id, title, type, priority, due_time as dueTime
           FROM tasks
           WHERE tenant_id = ? AND (title LIKE ? OR type LIKE ?)
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     // Search messages
     if (type === "all" || type === "messages") {
       try {
-        const messages = sqlite.prepare(`
+        const messages = await sqlite.prepare(`
           SELECT m.id, m.content, m.sender_name as senderName, m.created_at as createdAt,
                  c.name as conversationName
           FROM messages m
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     // Search forms
     if (type === "all" || type === "forms") {
       try {
-        const forms = sqlite.prepare(`
+        const forms = await sqlite.prepare(`
           SELECT id, title as name, category, description
           FROM forms
           WHERE tenant_id = ? AND (title LIKE ? OR category LIKE ? OR description LIKE ?)
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
     // Search locations
     if ((type === "all" || type === "locations") && session.userType === "arl") {
       try {
-        const locations = sqlite.prepare(`
+        const locations = await sqlite.prepare(`
           SELECT id, name, store_number as storeNumber
           FROM locations
           WHERE tenant_id = ? AND (name LIKE ? OR store_number LIKE ?)

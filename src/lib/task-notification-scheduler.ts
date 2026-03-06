@@ -106,8 +106,8 @@ function isTaskDueToday(task: any, todayDate: string): boolean {
 /**
  * Check if a task is already completed for a location today
  */
-function isTaskCompleted(taskId: string, locationId: string, todayDate: string): boolean {
-  const completion = db.select()
+async function isTaskCompleted(taskId: string, locationId: string, todayDate: string): Promise<boolean> {
+  const completion = await db.select()
     .from(schema.taskCompletions)
     .where(
       and(
@@ -126,7 +126,7 @@ function isTaskCompleted(taskId: string, locationId: string, todayDate: string):
 async function fireDueSoon(taskId: string, taskTitle: string, dueTime: string, taskPriority: string, locationId: string, locationName: string) {
   const todayDate = getTodayDate();
   // Re-check completion at fire time (task may have been completed since timer was set)
-  if (isTaskCompleted(taskId, locationId, todayDate)) return;
+  if (await isTaskCompleted(taskId, locationId, todayDate)) return;
 
   await createNotification({
     userId: locationId,
@@ -149,7 +149,7 @@ async function fireDueSoon(taskId: string, taskTitle: string, dueTime: string, t
  */
 async function fireOverdue(taskId: string, taskTitle: string, dueTime: string, locationId: string, locationName: string) {
   const todayDate = getTodayDate();
-  if (isTaskCompleted(taskId, locationId, todayDate)) return;
+  if (await isTaskCompleted(taskId, locationId, todayDate)) return;
 
   // Notify the location
   await createNotification({
@@ -165,7 +165,7 @@ async function fireOverdue(taskId: string, taskTitle: string, dueTime: string, l
   });
 
   // Notify all ARLs
-  const allArls = db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
+  const allArls = await db.select().from(schema.arls).where(eq(schema.arls.isActive, true)).all();
   if (allArls.length > 0) {
     await createNotificationBulk(
       allArls.map((a) => a.id),
@@ -199,16 +199,16 @@ function clearAllTimers() {
  * Schedule timers for all of today's tasks across all active locations.
  * This is the core function — it computes exact milliseconds and sets setTimeout.
  */
-function scheduleAllForToday() {
+async function scheduleAllForToday() {
   clearAllTimers();
 
   const now = Date.now();
   const todayDate = getTodayDate();
 
-  const locations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
+  const locations = await db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
 
   // Get all non-hidden tasks
-  const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
+  const allTasks = await db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
 
   let dueSoonCount = 0;
   let overdueCount = 0;
@@ -289,8 +289,8 @@ function scheduleMidnightRollover() {
  * Public: Refresh timers after task CRUD operations.
  * Call this from API routes when tasks are created, updated, or deleted.
  */
-export function refreshTaskTimers() {
-  scheduleAllForToday();
+export async function refreshTaskTimers() {
+  await scheduleAllForToday();
 }
 
 /**
@@ -298,8 +298,8 @@ export function refreshTaskTimers() {
  * Sets up precise timers for all of today's remaining tasks
  * and schedules midnight rollover for the next day.
  */
-export function startTaskNotificationScheduler() {
+export async function startTaskNotificationScheduler() {
   console.log("🔔 Task notification scheduler started (exact-second precision)");
-  scheduleAllForToday();
+  await scheduleAllForToday();
   scheduleMidnightRollover();
 }

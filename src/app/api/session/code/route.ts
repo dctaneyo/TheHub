@@ -15,7 +15,7 @@ export async function GET() {
     const myCode = session.sessionCode ?? null;
 
     // Return only ONLINE sessions for this user so the popdown only shows active ones
-    const onlineSessions = db
+    const onlineSessions = await db
       .select({
         sessionCode: schema.sessions.sessionCode,
         isOnline: schema.sessions.isOnline,

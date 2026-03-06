@@ -63,23 +63,23 @@ export async function POST(req: NextRequest) {
       createdAt: now,
     };
 
-    db.insert(schema.messages).values(message).run();
+    await db.insert(schema.messages).values(message).run();
 
     // Un-hide the conversation for any member who had soft-deleted it
-    const conv = db.select().from(schema.conversations)
+    const conv = await db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId)).get();
     if (conv) {
       const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
       const updatedDeletedBy = deletedBy.filter((id) => id === session.id);
       if (updatedDeletedBy.length !== deletedBy.length) {
-        db.update(schema.conversations)
+        await db.update(schema.conversations)
           .set({ deletedBy: JSON.stringify(updatedDeletedBy) })
           .where(eq(schema.conversations.id, conversationId)).run();
       }
     }
 
     // Update conversation last message
-    db.update(schema.conversations)
+    await db.update(schema.conversations)
       .set({ lastMessageAt: now, lastMessagePreview: "🎤 Voice message" })
       .where(eq(schema.conversations.id, conversationId)).run();
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } else if (conv.type === "global") {
-          const allArls = db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
+          const allArls = await db.select().from(schema.arls).where(and(eq(schema.arls.isActive, true), eq(schema.arls.tenantId, session.tenantId))).all();
           for (const arl of allArls) {
             if (arl.id !== session.id) {
               await sendPushToARL(arl.id, {
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
             }
           }
         } else if (conv.type === "group") {
-          const members = db.select().from(schema.conversationMembers)
+          const members = await db.select().from(schema.conversationMembers)
             .where(eq(schema.conversationMembers.conversationId, conversationId)).all();
           const arlMemberIds = members
             .filter((m) => m.memberType === "arl" && m.memberId !== session.id)

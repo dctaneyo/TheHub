@@ -14,7 +14,7 @@ export async function GET() {
     if (denied) return denied;
 
     // Most active locations by task completions
-    const topLocations = sqlite.prepare(`
+    const topLocations = await sqlite.prepare(`
       SELECT 
         l.id,
         l.name,
@@ -29,7 +29,7 @@ export async function GET() {
     `).all();
 
     // Message activity by user type
-    const messageActivity = sqlite.prepare(`
+    const messageActivity = await sqlite.prepare(`
       SELECT 
         sender_type,
         COUNT(*) as count,
@@ -41,7 +41,7 @@ export async function GET() {
     `).all();
 
     // Peak usage hours
-    const peakHours = sqlite.prepare(`
+    const peakHours = await sqlite.prepare(`
       SELECT 
         CAST(strftime('%H', created_at) AS INTEGER) as hour,
         COUNT(*) as activity_count
@@ -53,7 +53,7 @@ export async function GET() {
     `).all();
 
     // Task completion trends (last 30 days)
-    const completionTrends = sqlite.prepare(`
+    const completionTrends = await sqlite.prepare(`
       SELECT 
         completed_date,
         COUNT(*) as completions,
@@ -65,7 +65,7 @@ export async function GET() {
     `).all();
 
     // Most completed tasks
-    const topTasks = sqlite.prepare(`
+    const topTasks = await sqlite.prepare(`
       SELECT 
         t.id,
         t.title,
@@ -81,7 +81,7 @@ export async function GET() {
     // Session statistics
     let sessionStats = { total: 0, online: 0, locations: 0, arls: 0 };
     try {
-      const stats = sqlite.prepare(`
+      const stats = await sqlite.prepare(`
         SELECT 
           COUNT(*) as total,
           SUM(CASE WHEN is_online = 1 THEN 1 ELSE 0 END) as online,
@@ -93,7 +93,7 @@ export async function GET() {
     } catch {}
 
     // Conversation activity
-    const conversationStats = sqlite.prepare(`
+    const conversationStats = await sqlite.prepare(`
       SELECT 
         type,
         COUNT(*) as count

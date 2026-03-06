@@ -127,14 +127,6 @@ export async function getNotifications(
 ) {
   const { limit = 50, offset = 0, unreadOnly = false, type, priority } = options;
 
-  let query = db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, userId))
-    .orderBy(desc(notifications.createdAt))
-    .limit(limit)
-    .offset(offset);
-
   // Apply filters
   const conditions = [eq(notifications.userId, userId)];
   if (unreadOnly) {
@@ -147,17 +139,16 @@ export async function getNotifications(
     conditions.push(eq(notifications.priority, priority));
   }
 
-  if (conditions.length > 1) {
-    query = db
-      .select()
-      .from(notifications)
-      .where(and(...conditions))
-      .orderBy(desc(notifications.createdAt))
-      .limit(limit)
-      .offset(offset);
-  }
+  const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
-  const results = await query;
+  const results = await db
+    .select()
+    .from(notifications)
+    .where(whereClause)
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit)
+    .offset(offset);
+
   return results;
 }
 

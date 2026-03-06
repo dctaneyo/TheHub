@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     leaderboardQuery += ` GROUP BY tc.location_id ORDER BY totalPoints DESC LIMIT 20`;
 
-    const pointsLeaderboard = sqlite.prepare(leaderboardQuery).all(...leaderParams);
+    const pointsLeaderboard = await sqlite.prepare(leaderboardQuery).all(...leaderParams);
 
     // Achievement unlock trends (if table exists)
     let achievementTrends: any[] = [];
@@ -70,9 +70,9 @@ export async function GET(req: NextRequest) {
 
       trendQuery += ` GROUP BY DATE(unlocked_at) ORDER BY date DESC`;
 
-      achievementTrends = sqlite.prepare(trendQuery).all(...trendParams);
+      achievementTrends = await sqlite.prepare(trendQuery).all(...trendParams);
 
-      popularAchievements = sqlite.prepare(`
+      popularAchievements = await sqlite.prepare(`
         SELECT 
           achievement_id as achievementId,
           COUNT(*) as unlockCount,
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
         ORDER BY unlockCount DESC
       `).all();
 
-      locationAchievements = sqlite.prepare(`
+      locationAchievements = await sqlite.prepare(`
         SELECT 
           location_id as locationId,
           COUNT(*) as totalAchievements,

@@ -16,7 +16,7 @@ import {
 import { getIO } from "../socket-server";
 
 // ── Force-end a meeting (reusable by multiple triggers) ──
-export function forceEndMeeting(meetingId: string, reason: string) {
+export async function forceEndMeeting(meetingId: string, reason: string) {
   const io = getIO();
   if (!io) return;
   const meeting = activeMeetings.get(meetingId);
@@ -33,12 +33,12 @@ export function forceEndMeeting(meetingId: string, reason: string) {
         const recordId = analytics.participantRecords.get(sid);
         if (recordId) {
           const pDuration = Math.round((Date.now() - participant.joinedAt) / 1000);
-          db.update(schema.meetingParticipants)
+          await db.update(schema.meetingParticipants)
             .set({ leftAt: new Date().toISOString(), duration: pDuration })
             .where(eq(schema.meetingParticipants.id, recordId)).run();
         }
       }
-      db.update(schema.meetingAnalytics).set({
+      await db.update(schema.meetingAnalytics).set({
         endedAt: new Date().toISOString(),
         duration,
         totalMessages: analytics.messageCount,
@@ -112,7 +112,7 @@ function broadcastMeetingState(io: SocketIOServer, meeting: ActiveMeeting) {
  */
 export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user: AuthPayload | null) {
   // ── Create meeting (ARL only) ──
-  socket.on("meeting:create", (data: { meetingId: string; title: string; password?: string; meetingCode?: string }) => {
+  socket.on("meeting:create", async (data: { meetingId: string; title: string; password?: string; meetingCode?: string }) => {
     if (!user || user.userType !== "arl") return;
 
     const existingMeeting = activeMeetings.get(data.meetingId);
@@ -138,7 +138,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
 
     const analyticsId = crypto.randomUUID();
     try {
-      db.insert(schema.meetingAnalytics).values({
+      await db.insert(schema.meetingAnalytics).values({
         id: analyticsId, meetingId: data.meetingId, title: data.title,
         hostId: user.id, hostName: user.name,
         totalParticipants: 1, totalArls: 1, peakParticipants: 1,
@@ -162,7 +162,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
   });
 
   // ── Join meeting ──
-  socket.on("meeting:join", (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean; livekitIdentity?: string }) => {
+  socket.on("meeting:join", async (data: { meetingId: string; hasVideo: boolean; hasAudio: boolean; livekitIdentity?: string }) => {
     if (!user) return;
     const meeting = activeMeetings.get(data.meetingId);
     if (!meeting) { socket.emit("meeting:error", { error: "Meeting not found" }); return; }
@@ -262,16 +262,16 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
         const currentCount = meeting.participants.size;
         if (currentCount > analytics.peakParticipants) analytics.peakParticipants = currentCount;
         try {
-          db.insert(schema.meetingParticipants).values({
+          await db.insert(schema.meetingParticipants).values({
             id: participantRecordId, meetingId: data.meetingId,
             participantId: user.id, participantName: user.name,
             participantType: user.userType as any, role: myParticipant.role,
             hadVideo: data.hasVideo, hadAudio: data.hasAudio,
           }).run();
-          const arlCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'arl'))).all().length;
-          const locCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'location'))).all().length;
-          const guestCount = db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'guest'))).all().length;
-          db.update(schema.meetingAnalytics).set({
+          const arlCount = (await db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'arl'))).all()).length;
+          const locCount = (await db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'location'))).all()).length;
+          const guestCount = (await db.select().from(schema.meetingParticipants).where(and(eq(schema.meetingParticipants.meetingId, data.meetingId), eq(schema.meetingParticipants.participantType, 'guest'))).all()).length;
+          await db.update(schema.meetingAnalytics).set({
             totalParticipants: meeting.participants.size,
             peakParticipants: analytics.peakParticipants,
             totalArls: arlCount, totalLocations: locCount, totalGuests: guestCount,
@@ -282,7 +282,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
   });
 
   // ── Leave meeting ──
-  socket.on("meeting:leave", (data: { meetingId: string }) => {
+  socket.on("meeting:leave", async (data: { meetingId: string }) => {
     if (!user) return;
     const meeting = activeMeetings.get(data.meetingId);
     if (!meeting) return;
@@ -297,7 +297,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
       if (recordId) {
         const duration = Math.round((Date.now() - leavingParticipant.joinedAt) / 1000);
         try {
-          db.update(schema.meetingParticipants)
+          await db.update(schema.meetingParticipants)
             .set({ leftAt: new Date().toISOString(), duration })
             .where(eq(schema.meetingParticipants.id, recordId)).run();
         } catch (e) { console.error('Analytics leave error:', e); }
@@ -397,7 +397,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
   });
 
   // ── Raise/lower hand ──
-  socket.on("meeting:raise-hand", (data: { meetingId: string }) => {
+  socket.on("meeting:raise-hand", async (data: { meetingId: string }) => {
     if (!user) return;
     const meeting = activeMeetings.get(data.meetingId);
     if (!meeting) return;
@@ -410,8 +410,8 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
       const recordId = analytics.participantRecords.get(socket.id);
       if (recordId) {
         try {
-          const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
-          if (rec) db.update(schema.meetingParticipants).set({ handRaiseCount: (rec.handRaiseCount || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          const rec = await db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+          if (rec) await db.update(schema.meetingParticipants).set({ handRaiseCount: (rec.handRaiseCount || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
         } catch (e) { /* ignore */ }
       }
     }
@@ -535,7 +535,7 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
   });
 
   // ── Chat, reactions, Q&A ──
-  socket.on("meeting:chat", (data: { meetingId: string; content: string }) => {
+  socket.on("meeting:chat", async (data: { meetingId: string; content: string }) => {
     if (!user) return;
     const msg = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -548,15 +548,15 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
       const recordId = analytics.participantRecords.get(socket.id);
       if (recordId) {
         try {
-          const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
-          if (rec) db.update(schema.meetingParticipants).set({ messagesSent: (rec.messagesSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          const rec = await db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+          if (rec) await db.update(schema.meetingParticipants).set({ messagesSent: (rec.messagesSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
         } catch (e) { /* ignore */ }
       }
     }
     io.to(`meeting:${data.meetingId}`).emit("meeting:chat-message", msg);
   });
 
-  socket.on("meeting:reaction", (data: { meetingId: string; emoji: string }) => {
+  socket.on("meeting:reaction", async (data: { meetingId: string; emoji: string }) => {
     if (!user) return;
     const analytics = meetingAnalytics.get(data.meetingId);
     if (analytics) {
@@ -564,15 +564,15 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
       const recordId = analytics.participantRecords.get(socket.id);
       if (recordId) {
         try {
-          const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
-          if (rec) db.update(schema.meetingParticipants).set({ reactionsSent: (rec.reactionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          const rec = await db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+          if (rec) await db.update(schema.meetingParticipants).set({ reactionsSent: (rec.reactionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
         } catch (e) { /* ignore */ }
       }
     }
     io.to(`meeting:${data.meetingId}`).emit("meeting:reaction", { emoji: data.emoji, senderName: user.name });
   });
 
-  socket.on("meeting:question", (data: { meetingId: string; question: string }) => {
+  socket.on("meeting:question", async (data: { meetingId: string; question: string }) => {
     if (!user) return;
     const q = {
       id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -584,8 +584,8 @@ export function registerMeetingHandlers(io: SocketIOServer, socket: Socket, user
       const recordId = analytics.participantRecords.get(socket.id);
       if (recordId) {
         try {
-          const rec = db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
-          if (rec) db.update(schema.meetingParticipants).set({ questionsSent: (rec.questionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
+          const rec = await db.select().from(schema.meetingParticipants).where(eq(schema.meetingParticipants.id, recordId)).get();
+          if (rec) await db.update(schema.meetingParticipants).set({ questionsSent: (rec.questionsSent || 0) + 1 }).where(eq(schema.meetingParticipants.id, recordId)).run();
         } catch (e) { /* ignore */ }
       }
     }
@@ -634,7 +634,7 @@ export function handleMeetingDisconnect(io: SocketIOServer, socket: Socket, user
       const existing = disconnectTimers.get(timerKey);
       if (existing) clearTimeout(existing);
 
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         disconnectTimers.delete(timerKey);
         if (meeting.participants.has(socket.id)) {
           meeting.participants.delete(socket.id);
@@ -647,7 +647,7 @@ export function handleMeetingDisconnect(io: SocketIOServer, socket: Socket, user
             if (analytics) {
               const duration = Math.round((Date.now() - meeting.createdAt) / 1000);
               try {
-                db.update(schema.meetingAnalytics).set({
+                await db.update(schema.meetingAnalytics).set({
                   endedAt: new Date().toISOString(), duration,
                   totalMessages: analytics.messageCount, totalQuestions: analytics.questionCount,
                   totalReactions: analytics.reactionCount, totalHandRaises: analytics.handRaiseCount,

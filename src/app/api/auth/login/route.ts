@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const tenantId = req.headers.get("x-tenant-id") || "kazi";
 
     // Try to find as location first (scoped to tenant)
-    const location = db
+    const location = await db
       .select()
       .from(schema.locations)
       .where(and(eq(schema.locations.userId, userId), eq(schema.locations.tenantId, tenantId)))
@@ -72,13 +72,13 @@ export async function POST(req: NextRequest) {
       const expiresAt = getTokenExpiry();
 
       // Mark any existing sessions for this user offline before creating new one
-      db.update(schema.sessions)
+      await db.update(schema.sessions)
         .set({ isOnline: false })
         .where(eq(schema.sessions.userId, location.id))
         .run();
 
       // Create session
-      db.insert(schema.sessions).values({
+      await db.insert(schema.sessions).values({
         id: uuid(),
         sessionCode,
         userType: "location",
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Try as ARL (scoped to tenant)
-    const arl = db
+    const arl = await db
       .select()
       .from(schema.arls)
       .where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, tenantId)))
@@ -161,13 +161,13 @@ export async function POST(req: NextRequest) {
       const expiresAt = getTokenExpiry();
 
       // Mark any existing sessions for this user offline before creating new one
-      db.update(schema.sessions)
+      await db.update(schema.sessions)
         .set({ isOnline: false })
         .where(eq(schema.sessions.userId, arl.id))
         .run();
 
       // Create session
-      db.insert(schema.sessions).values({
+      await db.insert(schema.sessions).values({
         id: uuid(),
         sessionCode,
         userType: "arl",

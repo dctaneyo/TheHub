@@ -17,7 +17,7 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const forms = db.select().from(schema.forms).where(eq(schema.forms.tenantId, session.tenantId)).orderBy(schema.forms.createdAt).all();
+    const forms = await db.select().from(schema.forms).where(eq(schema.forms.tenantId, session.tenantId)).orderBy(schema.forms.createdAt).all();
     return NextResponse.json({ forms });
   } catch (error) {
     console.error("Get forms error:", error);
@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
       uploadedBy: session.id,
       createdAt: now,
     };
-    db.insert(schema.forms).values(form).run();
+    await db.insert(schema.forms).values(form).run();
 
     // Create real-time notification for all active locations
-    const allLocations = db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all();
+    const allLocations = await db.select().from(schema.locations).where(and(eq(schema.locations.isActive, true), eq(schema.locations.tenantId, session.tenantId))).all();
     await createNotificationBulk(
       allLocations.map(loc => loc.id),
       {
@@ -122,7 +122,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { id } = parsed.data;
-    db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();
+    await db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete form error:", error);
