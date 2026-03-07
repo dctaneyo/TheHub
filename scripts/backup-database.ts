@@ -2,6 +2,10 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import Database from 'better-sqlite3';
+import { createGzip } from 'zlib';
+import { createReadStream, createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
 
 const execAsync = promisify(exec);
 
@@ -39,8 +43,10 @@ async function createBackup(type: 'daily' | 'weekly' | 'monthly' = 'daily') {
       return;
     }
 
-    // Create backup using SQLite .backup command
-    await execAsync(`sqlite3 "${DB_PATH}" ".backup '${backupPath}'"`);
+    // Create backup using better-sqlite3's backup API (no sqlite3 CLI needed)
+    const sourceDb = new Database(DB_PATH, { readonly: true });
+    await sourceDb.backup(backupPath);
+    sourceDb.close();
 
     // Get backup file size
     const stats = await fs.stat(backupPath);
@@ -48,10 +54,15 @@ async function createBackup(type: 'daily' | 'weekly' | 'monthly' = 'daily') {
 
     console.log(`✅ Backup created: ${backupName} (${sizeMB} MB)`);
 
-    // Compress backup
+    // Compress backup using Node.js zlib (no gzip CLI needed)
     console.log('🗜️  Compressing backup...');
-    await execAsync(`gzip "${backupPath}"`);
     const compressedPath = `${backupPath}.gz`;
+    await pipeline(
+      createReadStream(backupPath),
+      createGzip(),
+      createWriteStream(compressedPath)
+    );
+    await fs.unlink(backupPath); // Remove uncompressed file
     const compressedStats = await fs.stat(compressedPath);
     const compressedSizeMB = (compressedStats.size / (1024 * 1024)).toFixed(2);
     console.log(`✅ Backup compressed: ${backupName}.gz (${compressedSizeMB} MB)`);
@@ -153,20 +164,25 @@ async function restoreBackup(backupFile: string) {
     // Create a safety backup of current database
     const safetyBackup = `${DB_PATH}.before-restore-${Date.now()}`;
     console.log(`💾 Creating safety backup: ${path.basename(safetyBackup)}`);
-    await execAsync(`cp "${DB_PATH}" "${safetyBackup}"`);
+    await fs.copyFile(DB_PATH, safetyBackup);
 
     // Decompress if needed
     let sourceFile = backupPath;
     if (backupFile.endsWith('.gz')) {
       console.log('🗜️  Decompressing backup...');
+      const { createGunzip } = await import('zlib');
       const decompressed = backupPath.replace('.gz', '');
-      await execAsync(`gunzip -c "${backupPath}" > "${decompressed}"`);
+      await pipeline(
+        createReadStream(backupPath),
+        createGunzip(),
+        createWriteStream(decompressed)
+      );
       sourceFile = decompressed;
     }
 
     // Restore database
     console.log('🔄 Restoring database...');
-    await execAsync(`cp "${sourceFile}" "${DB_PATH}"`);
+    await fs.copyFile(sourceFile, DB_PATH);
 
     // Cleanup decompressed file if we created it
     if (sourceFile !== backupPath) {
