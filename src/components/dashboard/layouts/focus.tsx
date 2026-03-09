@@ -227,48 +227,58 @@ export function FocusLayout({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               className={cn(
-                "relative rounded-2xl border-2 overflow-hidden shadow-xl",
+                "relative rounded-2xl overflow-hidden",
                 heroTask.isOverdue
-                  ? "border-red-400 dark:border-red-600 bg-gradient-to-r from-red-50 via-white to-red-50 dark:from-red-950/40 dark:via-slate-900 dark:to-red-950/40"
+                  ? "bg-gradient-to-br from-red-600 via-red-500 to-rose-600 shadow-2xl shadow-red-500/30"
                   : heroTask.isDueSoon
-                    ? "border-amber-400 dark:border-amber-600 bg-gradient-to-r from-amber-50 via-white to-amber-50 dark:from-amber-950/30 dark:via-slate-900 dark:to-amber-950/30"
-                    : "border-slate-200 dark:border-slate-700 bg-gradient-to-r from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-900"
+                    ? "bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-2xl shadow-amber-500/30"
+                    : "bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 shadow-2xl shadow-slate-900/40"
               )}
             >
-              {/* Top accent bar */}
+              {/* Decorative glow circle */}
               <div className={cn(
-                "h-1",
-                heroTask.isOverdue ? "bg-red-500" : heroTask.isDueSoon ? "bg-amber-500" : "bg-[var(--hub-red)]"
+                "absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-20 blur-2xl",
+                heroTask.isOverdue ? "bg-red-300" : heroTask.isDueSoon ? "bg-amber-300" : "bg-white"
               )} />
 
-              <div className="px-6 py-5 flex items-center justify-between gap-6">
+              <div className="relative px-6 py-5 flex items-center justify-between gap-6">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <span className={cn(
                       "text-[11px] font-bold uppercase tracking-widest",
-                      heroTask.isOverdue ? "text-red-500" : heroTask.isDueSoon ? "text-amber-500" : "text-[var(--hub-red)]"
+                      heroTask.isOverdue || heroTask.isDueSoon ? "text-white/70" : "text-slate-400"
                     )}>
                       {heroTask.isOverdue ? "Overdue" : heroTask.isDueSoon ? "Due soon" : "Up next"}
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-slate-400">{formatTime12(heroTask.dueTime)}</span>
+                    <span className={cn(
+                      "text-[11px] font-mono font-bold",
+                      heroTask.isOverdue || heroTask.isDueSoon ? "text-white/60" : "text-slate-500"
+                    )}>{formatTime12(heroTask.dueTime)}</span>
                     {heroTask.isOverdue && (
-                      <span className="bg-red-500 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Overdue</span>
+                      <motion.span
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="bg-white/20 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm"
+                      >Overdue</motion.span>
                     )}
                     {heroTask.isDueSoon && !heroTask.isOverdue && (
-                      <span className="bg-amber-500 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Due Soon</span>
+                      <span className="bg-white/20 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm">Due Soon</span>
                     )}
                   </div>
-                  <h1 className="text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">{heroTask.title}</h1>
+                  <h1 className="text-3xl font-black text-white leading-tight tracking-tight">{heroTask.title}</h1>
                   {heroTask.description && (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 max-w-2xl">{heroTask.description}</p>
+                    <p className={cn(
+                      "text-sm mt-1.5 line-clamp-2 max-w-2xl",
+                      heroTask.isOverdue || heroTask.isDueSoon ? "text-white/60" : "text-slate-400"
+                    )}>{heroTask.description}</p>
                   )}
                   <div className="flex items-center gap-5 mt-3">
-                    <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <span className={cn("flex items-center gap-1.5 text-xs", heroTask.isOverdue || heroTask.isDueSoon ? "text-white/50" : "text-slate-500")}>
                       {(() => { const Icon = typeIcons[heroTask.type] || Clock; return <Icon className="h-4 w-4" />; })()}
                       <span className="capitalize font-medium">{heroTask.type}</span>
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-slate-400 capitalize font-medium">{heroTask.priority}</span>
-                    <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                    <span className={cn("flex items-center gap-1 text-xs capitalize font-medium", heroTask.isOverdue || heroTask.isDueSoon ? "text-white/50" : "text-slate-500")}>{heroTask.priority}</span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-amber-300">
                       <Sparkles className="h-4 w-4" /> {heroTask.points} pts
                     </span>
                   </div>
@@ -278,7 +288,12 @@ export function FocusLayout({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onComplete(heroTask.id)}
-                  className="shrink-0 flex items-center gap-2.5 rounded-2xl bg-[var(--hub-red)] px-8 py-4 text-lg font-black text-white shadow-xl shadow-red-300/20 dark:shadow-red-950/40 hover:brightness-110 transition-all"
+                  className={cn(
+                    "shrink-0 flex items-center gap-2.5 rounded-2xl px-8 py-4 text-lg font-black shadow-xl transition-all",
+                    heroTask.isOverdue || heroTask.isDueSoon
+                      ? "bg-white text-slate-900 shadow-white/10 hover:bg-white/90"
+                      : "bg-[var(--hub-red)] text-white shadow-red-500/20 hover:brightness-110"
+                  )}
                 >
                   <CheckCircle2 className="h-6 w-6" />
                   Complete
