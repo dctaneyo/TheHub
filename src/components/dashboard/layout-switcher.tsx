@@ -8,10 +8,10 @@ import { useLayout, LAYOUT_OPTIONS, type DashboardLayout } from "@/lib/layout-co
 
 const layoutPreviews: Record<DashboardLayout, string> = {
   classic: "┃ ▐ ████ ▌ ┃",
-  "command-center": "┃▐ ═══ ████ ▌┃",
-  focus: "┃   ████   ┃",
-  grid: "┃ ▪▪▪ ████ ▪▪▪ ┃",
-  "split-hero": "┃ ████ ▐▌ ┃",
+  bento: "┃ ▪▫ ██ ▫▪ ┃",
+  nightshift: "┃ ◠◡ ▓▓▓ ┃",
+  zen: "┃    ◉    ┃",
+  momentum: "┃ ≋ ◉ ≋ ┃",
 };
 
 export function LayoutSwitcher() {

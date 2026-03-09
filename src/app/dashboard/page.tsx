@@ -36,10 +36,10 @@ import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
 import { useLayout } from "@/lib/layout-context";
-import { CommandCenterLayout } from "@/components/dashboard/layouts/command-center";
-import { FocusModeLayout } from "@/components/dashboard/layouts/focus-mode";
-import { DashboardGridLayout } from "@/components/dashboard/layouts/dashboard-grid";
-import { SplitHeroLayout } from "@/components/dashboard/layouts/split-hero";
+import { BentoLayout } from "@/components/dashboard/layouts/bento";
+import { NightshiftLayout } from "@/components/dashboard/layouts/nightshift";
+import { ZenLayout } from "@/components/dashboard/layouts/zen";
+import { MomentumLayout } from "@/components/dashboard/layouts/momentum";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -671,8 +671,8 @@ export default function DashboardPage() {
         </>
       )}
 
-      {layout === "command-center" && (
-        <CommandCenterLayout
+      {layout === "bento" && (
+        <BentoLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}
@@ -687,8 +687,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {layout === "focus" && (
-        <FocusModeLayout
+      {layout === "nightshift" && (
+        <NightshiftLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}
@@ -703,8 +703,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {layout === "grid" && (
-        <DashboardGridLayout
+      {layout === "zen" && (
+        <ZenLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}
@@ -719,8 +719,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {layout === "split-hero" && (
-        <SplitHeroLayout
+      {layout === "momentum" && (
+        <MomentumLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}

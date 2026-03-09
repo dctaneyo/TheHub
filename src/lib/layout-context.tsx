@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DashboardLayout = "classic" | "command-center" | "focus" | "grid" | "split-hero";
+export type DashboardLayout = "classic" | "bento" | "nightshift" | "zen" | "momentum";
 
 export const LAYOUT_OPTIONS: { id: DashboardLayout; name: string; description: string }[] = [
   { id: "classic", name: "Classic", description: "Original 3-column layout" },
-  { id: "command-center", name: "Command Center", description: "Hero stats strip with quick-access dock" },
-  { id: "focus", name: "Focus Mode", description: "Task-centric single column" },
-  { id: "grid", name: "Dashboard Grid", description: "Card-based modular grid" },
-  { id: "split-hero", name: "Split Hero", description: "Two-panel action + status view" },
+  { id: "bento", name: "Bento", description: "Apple-style grid with glassmorphism" },
+  { id: "nightshift", name: "Nightshift", description: "Dark HUD with glowing arcs" },
+  { id: "zen", name: "Zen", description: "One task at a time, full focus" },
+  { id: "momentum", name: "Momentum", description: "Time-of-day gradients, centered flow" },
 ];
 
 interface LayoutContextType {
