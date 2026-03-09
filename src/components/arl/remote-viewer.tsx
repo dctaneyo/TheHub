@@ -14,6 +14,7 @@ import {
   WifiOff,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import type { DOMSnapshot, CapturedElement, UserEvent } from "@/lib/socket-handlers/types";
 
 interface RemoteTarget {
@@ -32,6 +33,7 @@ interface RemoteViewerProps {
 
 export function RemoteViewer({ userRole }: RemoteViewerProps) {
   const { socket } = useSocket();
+  const { user } = useAuth();
   const [targets, setTargets] = useState<RemoteTarget[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -76,14 +78,16 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
                   role: arl.role,
                 }))
             : [];
-          setTargets([...locs, ...arls]);
+          // Filter out self — admin/ARL shouldn't see themselves as a target
+          const allTargets = [...locs, ...arls].filter(t => t.id !== user?.id);
+          setTargets(allTargets);
         }
       } catch {}
     };
     fetchTargets();
     const interval = setInterval(fetchTargets, 15000);
     return () => clearInterval(interval);
-  }, [userRole]);
+  }, [userRole, user?.id]);
 
   // Update online status from presence events — add/remove targets in real time
   useEffect(() => {

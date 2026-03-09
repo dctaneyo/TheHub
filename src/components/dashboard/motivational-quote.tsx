@@ -18,17 +18,17 @@ export function MotivationalQuote() {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-slate-200 bg-gradient-to-br from-purple-50 to-blue-50 p-4 shadow-sm"
+      className="rounded-2xl border border-border bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/40 dark:to-blue-950/40 p-4 shadow-sm"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100">
-          <Sparkles className="h-4 w-4 text-purple-600" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/50">
+          <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-700 leading-relaxed">
-            "{quote.text}"
+          <p className="text-sm font-medium text-foreground leading-relaxed">
+            &ldquo;{quote.text}&rdquo;
           </p>
-          <p className="mt-1 text-xs text-slate-500">— {quote.author}</p>
+          <p className="mt-1 text-xs text-muted-foreground">— {quote.author}</p>
         </div>
       </div>
     </motion.div>

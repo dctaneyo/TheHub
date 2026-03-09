@@ -210,28 +210,31 @@ function captureElements(): CapturedElement[] {
 
 async function captureScreenshot(): Promise<string | undefined> {
   try {
-    // Dynamic import avoids SSR/bundling issues
-    const { default: html2canvas } = await import("html2canvas");
+    const { toJpeg } = await import("html-to-image");
 
-    // Race against a timeout — if html2canvas hangs, give up
-    const canvas = await Promise.race([
-      html2canvas(document.body, {
-        useCORS: true,
-        allowTaint: true,
-        scale: window.devicePixelRatio > 1 ? 0.35 : 0.5,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-        imageTimeout: 2000,
-        removeContainer: true,
+    const scale = window.devicePixelRatio > 1 ? 0.35 : 0.5;
+    const dataUrl = await Promise.race([
+      toJpeg(document.documentElement, {
+        quality: 0.55,
+        width: Math.round(window.innerWidth * scale),
+        height: Math.round(window.innerHeight * scale),
+        canvasWidth: Math.round(window.innerWidth * scale),
+        canvasHeight: Math.round(window.innerHeight * scale),
+        pixelRatio: 1,
+        skipAutoScale: true,
+        cacheBust: true,
+        filter: (node: HTMLElement) => {
+          // Skip the remote-view border overlay itself to avoid recursion
+          if (node?.dataset?.remoteViewOverlay === "true") return false;
+          return true;
+        },
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("html2canvas timeout")), 4000)
+        setTimeout(() => reject(new Error("screenshot timeout")), 5000)
       ),
     ]);
 
-    return canvas.toDataURL("image/jpeg", 0.5);
+    return dataUrl;
   } catch (err) {
     console.warn("Screenshot capture failed:", err);
     return undefined;
