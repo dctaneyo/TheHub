@@ -469,7 +469,8 @@ function ActiveRemoteView({
   const [scale, setScale] = useState(1);
   const outerRef = useRef<HTMLDivElement>(null);
 
-  // Calculate scale to fit the remote viewport inside the viewer container
+  // Calculate scale to fit the remote viewport inside the viewer container.
+  // No cap at 1 — allow upscaling so it fills available space (zoom to fit).
   useEffect(() => {
     const calculateScale = () => {
       if (!outerRef.current) return;
@@ -478,12 +479,12 @@ function ActiveRemoteView({
       if (containerW === 0 || containerH === 0) return;
       const scaleX = containerW / snapshot.viewport.width;
       const scaleY = containerH / snapshot.viewport.height;
-      setScale(Math.min(scaleX, scaleY, 1));
+      setScale(Math.min(scaleX, scaleY));
     };
     calculateScale();
     window.addEventListener("resize", calculateScale);
     return () => window.removeEventListener("resize", calculateScale);
-  }, [snapshot.viewport.width, snapshot.viewport.height]);
+  }, [snapshot.viewport.width, snapshot.viewport.height, isFullscreen]);
 
   const scaledW = snapshot.viewport.width * scale;
   const scaledH = snapshot.viewport.height * scale;

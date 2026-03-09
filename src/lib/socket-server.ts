@@ -63,6 +63,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     pingInterval: 25000,
     pingTimeout: 20000,
     transports: ["websocket", "polling"],
+    maxHttpBufferSize: 5e6, // 5MB — needed for remote view screenshots
   });
   _g.__hubSocketIO = io;
 

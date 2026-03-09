@@ -2,7 +2,7 @@
 
 import type { Socket } from "socket.io-client";
 import type { CapturedElement, DOMSnapshot, RemoteAction } from "./socket-handlers/types";
-import html2canvas from "html2canvas";
+// html2canvas imported dynamically to avoid SSR/bundling issues
 
 /**
  * Remote DOM Capture & Action Executor for kiosk locations.
@@ -208,25 +208,38 @@ function captureElements(): CapturedElement[] {
   return elements;
 }
 
-export async function captureDOMSnapshot(includeScreenshot = true): Promise<DOMSnapshot> {
-  let screenshot: string | undefined;
+async function captureScreenshot(): Promise<string | undefined> {
+  try {
+    // Dynamic import avoids SSR/bundling issues
+    const { default: html2canvas } = await import("html2canvas");
 
-  if (includeScreenshot) {
-    try {
-      const canvas = await html2canvas(document.documentElement, {
+    // Race against a timeout — if html2canvas hangs, give up
+    const canvas = await Promise.race([
+      html2canvas(document.body, {
         useCORS: true,
         allowTaint: true,
-        scale: 0.5, // Half resolution for bandwidth (still looks good)
+        scale: window.devicePixelRatio > 1 ? 0.35 : 0.5,
         logging: false,
-        backgroundColor: null,
+        backgroundColor: "#ffffff",
         windowWidth: window.innerWidth,
         windowHeight: window.innerHeight,
-      });
-      screenshot = canvas.toDataURL("image/jpeg", 0.6);
-    } catch (err) {
-      console.warn("Screenshot capture failed, sending element-only snapshot:", err);
-    }
+        imageTimeout: 2000,
+        removeContainer: true,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("html2canvas timeout")), 4000)
+      ),
+    ]);
+
+    return canvas.toDataURL("image/jpeg", 0.5);
+  } catch (err) {
+    console.warn("Screenshot capture failed:", err);
+    return undefined;
   }
+}
+
+export async function captureDOMSnapshot(includeScreenshot = true): Promise<DOMSnapshot> {
+  const screenshot = includeScreenshot ? await captureScreenshot() : undefined;
 
   return {
     url: window.location.href,

@@ -55,6 +55,7 @@ export default function DashboardPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [mobilePanelOpen, setMobilePanelOpen] = useState<"left" | "right" | null>(null);
   const [mobileView, setMobileView] = useState<string>("tasks");
+  const [remoteViewActive, setRemoteViewActive] = useState(false);
 
   // Persist screensaver toggle to localStorage
   useEffect(() => {
@@ -230,8 +231,8 @@ export default function DashboardPage() {
   const [showMeetingNotification, setShowMeetingNotification] = useState(false);
   const playConfettiSound = useConfettiSound();
 
-  // Disable screensaver while in a meeting
-  const idle = idleBase && !activeStream;
+  // Disable screensaver while in a meeting or during remote view
+  const idle = idleBase && !activeStream && !remoteViewActive;
 
   const localTimeParams = () => {
     const now = new Date();
@@ -638,8 +639,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Live Activity Ticker */}
-      <LiveTicker currentLocationId={user?.id} />
+      {/* Live Activity Ticker — hidden during remote view to reduce capture noise */}
+      {!remoteViewActive && <LiveTicker currentLocationId={user?.id} />}
 
       {/* Celebrations */}
       <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />
@@ -694,8 +695,8 @@ export default function DashboardPage() {
       {/* Emergency Broadcast Overlay */}
       <EmergencyOverlay />
 
-      {/* High-Five Animation */}
-      <HighFiveAnimation />
+      {/* High-Five Animation — disabled during remote view */}
+      {!remoteViewActive && <HighFiveAnimation />}
 
       {/* Meeting Join Notification */}
       <AnimatePresence>
@@ -755,8 +756,8 @@ export default function DashboardPage() {
         currentUserId={user?.id}
       />
 
-      {/* Remote View Banner (consent + active session indicator) */}
-      <RemoteViewBanner />
+      {/* Remote View Banner (auto-start + active session indicator) */}
+      <RemoteViewBanner onSessionChange={setRemoteViewActive} />
     </div>
   );
 }

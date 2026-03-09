@@ -20,6 +20,8 @@ export function registerRemoteViewHandlers(
   if (!user) return;
 
   // ── ARL: Request remote view of a location ──
+  // ARLs/Admins do NOT need permission — session is auto-accepted.
+  // The location client receives "remote-view:start" and begins streaming.
   socket.on("remote-view:request", (data: { locationId: string }) => {
     if (user.userType !== "arl") return;
 
@@ -27,34 +29,43 @@ export function registerRemoteViewHandlers(
     const session: RemoteViewSession = {
       sessionId,
       locationId: data.locationId,
-      locationName: "", // filled when location accepts
+      locationName: "",
       arlId: user.id,
       arlName: user.name,
       arlSocketId: socket.id,
-      locationSocketId: "", // filled when location accepts
-      status: "pending",
+      locationSocketId: "",
+      status: "active", // auto-accepted
       controlEnabled: false,
       startedAt: Date.now(),
     };
     remoteViewSessions.set(sessionId, session);
 
-    // Send request to the target location
+    // Join the ARL to the session room
+    const roomName = `remote-view:${sessionId}`;
+    socket.join(roomName);
+
+    // Tell the location to start streaming (auto-accept, no consent needed)
     const tp = (socket as any)._tenantPrefix;
-    if (tp) io.to(`${tp}:location:${data.locationId}`).emit("remote-view:request", {
+    if (tp) io.to(`${tp}:location:${data.locationId}`).emit("remote-view:start", {
       sessionId,
       arlId: user.id,
       arlName: user.name,
     });
-    io.to(`location:${data.locationId}`).emit("remote-view:request", {
+    io.to(`location:${data.locationId}`).emit("remote-view:start", {
       sessionId,
       arlId: user.id,
       arlName: user.name,
     });
 
-    // Notify ARL that request was sent
+    // Notify ARL that session is now active (skip pending state)
     socket.emit("remote-view:requested", { sessionId, locationId: data.locationId });
+    socket.emit("remote-view:accepted", {
+      sessionId,
+      locationId: data.locationId,
+      locationName: data.locationId, // will be updated once location starts streaming
+    });
 
-    console.log(`🖥️ Remote view requested: ${user.name} → location ${data.locationId}`);
+    console.log(`🖥️ Remote view auto-accepted: ${user.name} → location ${data.locationId}`);
   });
 
   // ── Location: Accept remote view request ──
@@ -117,6 +128,14 @@ export function registerRemoteViewHandlers(
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
+    // First snapshot — fill in location details and join room
+    if (!session.locationSocketId) {
+      session.locationSocketId = socket.id;
+      session.locationName = user.name;
+      const roomName = `remote-view:${data.sessionId}`;
+      socket.join(roomName);
+    }
+
     // Forward snapshot to ARL only (not back to location)
     const arlSocket = io.sockets.sockets.get(session.arlSocketId);
     if (arlSocket) {
@@ -133,6 +152,12 @@ export function registerRemoteViewHandlers(
 
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
+
+    if (!session.locationSocketId) {
+      session.locationSocketId = socket.id;
+      session.locationName = user.name;
+      socket.join(`remote-view:${data.sessionId}`);
+    }
 
     const arlSocket = io.sockets.sockets.get(session.arlSocketId);
     if (arlSocket) {
@@ -234,6 +259,13 @@ export function registerRemoteViewHandlers(
 
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
+
+    // Fill in location socket on first cursor event too
+    if (!session.locationSocketId) {
+      session.locationSocketId = socket.id;
+      session.locationName = user.name;
+      socket.join(`remote-view:${data.sessionId}`);
+    }
 
     const arlSocket = io.sockets.sockets.get(session.arlSocketId);
     if (arlSocket) {
