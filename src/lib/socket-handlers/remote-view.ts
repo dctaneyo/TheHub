@@ -66,6 +66,7 @@ export function registerRemoteViewHandlers(
         const targetSocket = io.sockets.sockets.get(latestSession.socketId);
         if (targetSocket) {
           targetSocket.emit("remote-view:start", startPayload);
+          targetSocket.join(roomName); // Join location to room so it receives ended events
           session.locationSocketId = latestSession.socketId;
           targeted = true;
         }
@@ -239,18 +240,20 @@ export function registerRemoteViewHandlers(
 
     session.status = "ended";
 
-    const roomName = `remote-view:${data.sessionId}`;
-    io.to(roomName).emit("remote-view:ended", {
+    const endPayload = {
       sessionId: data.sessionId,
       endedBy: user.name,
       endedByType: user.userType,
-    });
+    };
 
-    // Clean up room memberships
+    const roomName = `remote-view:${data.sessionId}`;
+    io.to(roomName).emit("remote-view:ended", endPayload);
+
+    // Also emit directly to both sockets as a fallback
     const arlSocket = io.sockets.sockets.get(session.arlSocketId);
     const locSocket = io.sockets.sockets.get(session.locationSocketId);
-    if (arlSocket) arlSocket.leave(roomName);
-    if (locSocket) locSocket.leave(roomName);
+    if (arlSocket) { arlSocket.emit("remote-view:ended", endPayload); arlSocket.leave(roomName); }
+    if (locSocket) { locSocket.emit("remote-view:ended", endPayload); locSocket.leave(roomName); }
 
     remoteViewSessions.delete(data.sessionId);
 
@@ -316,13 +319,21 @@ export function handleRemoteViewDisconnect(
 
     if (isArl || isLoc) {
       session.status = "ended";
-      const roomName = `remote-view:${sessionId}`;
-      io.to(roomName).emit("remote-view:ended", {
+      const endPayload = {
         sessionId,
         endedBy: user.name,
         endedByType: user.userType,
         reason: "disconnect",
-      });
+      };
+      const roomName = `remote-view:${sessionId}`;
+      io.to(roomName).emit("remote-view:ended", endPayload);
+
+      // Also emit directly to both sockets as a fallback
+      const arlSock = io.sockets.sockets.get(session.arlSocketId);
+      const locSock = io.sockets.sockets.get(session.locationSocketId);
+      if (arlSock) { arlSock.emit("remote-view:ended", endPayload); arlSock.leave(roomName); }
+      if (locSock) { locSock.emit("remote-view:ended", endPayload); locSock.leave(roomName); }
+
       remoteViewSessions.delete(sessionId);
     }
   }

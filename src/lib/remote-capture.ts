@@ -370,6 +370,8 @@ export class RemoteCaptureManager {
   private snapshotInterval: ReturnType<typeof setInterval> | null = null;
   private cursorTracker: ((e: MouseEvent | TouchEvent) => void) | null = null;
   private eventTracker: ((e: Event) => void) | null = null;
+  private actionHandler: ((data: any) => void) | null = null;
+  private endedHandler: ((data: any) => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
 
@@ -440,20 +442,22 @@ export class RemoteCaptureManager {
     document.addEventListener("click", this.eventTracker, { capture: true });
     document.addEventListener("input", this.eventTracker, { capture: true });
 
-    // Listen for remote actions
-    this.socket.on("remote-view:action", (data: { sessionId: string; action: RemoteAction; arlName: string }) => {
+    // Listen for remote actions (store reference for clean removal)
+    this.actionHandler = (data: { sessionId: string; action: RemoteAction; arlName: string }) => {
       if (data.sessionId !== this.sessionId) return;
       const success = executeRemoteAction(data.action);
       // Send updated screenshot after action
       setTimeout(() => this.sendSnapshot(true), 400);
       console.log(`🖥️ Remote action ${data.action.type} by ${data.arlName}: ${success ? "✅" : "❌"}`);
-    });
+    };
+    this.socket.on("remote-view:action", this.actionHandler);
 
-    // Listen for session end
-    this.socket.on("remote-view:ended", (data: { sessionId: string }) => {
+    // Listen for session end (store reference for clean removal)
+    this.endedHandler = (data: { sessionId: string }) => {
       if (data.sessionId !== this.sessionId) return;
       this.stop();
-    });
+    };
+    this.socket.on("remote-view:ended", this.endedHandler);
 
     console.log(`🖥️ Remote capture started for session ${this.sessionId}`);
   }
@@ -479,8 +483,14 @@ export class RemoteCaptureManager {
       this.eventTracker = null;
     }
 
-    this.socket.off("remote-view:action");
-    this.socket.off("remote-view:ended");
+    if (this.actionHandler) {
+      this.socket.off("remote-view:action", this.actionHandler);
+      this.actionHandler = null;
+    }
+    if (this.endedHandler) {
+      this.socket.off("remote-view:ended", this.endedHandler);
+      this.endedHandler = null;
+    }
 
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
