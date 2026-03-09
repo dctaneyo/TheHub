@@ -494,13 +494,17 @@ function ActiveRemoteView({
   const scaledH = snapshot.viewport.height * scale;
 
   return (
-    <div className="flex gap-4 flex-1 min-h-0">
+    <div className={cn(
+      "flex gap-4 flex-1 min-h-0",
+      isFullscreen && "gap-0"
+    )}>
       {/* Main viewer */}
       <div
         ref={containerRef}
         className={cn(
           "flex-1 flex flex-col min-h-0 rounded-2xl border border-border bg-neutral-900 overflow-hidden",
-          controlEnabled && "ring-2 ring-amber-400/50"
+          controlEnabled && "ring-2 ring-amber-400/50",
+          isFullscreen && "rounded-none border-none"
         )}
       >
         {/* Status bar */}
@@ -647,7 +651,7 @@ function ActiveRemoteView({
 
       {/* Side panel */}
       {!isFullscreen && (
-        <div className="w-[260px] shrink-0 flex flex-col gap-3">
+        <div className="w-[260px] shrink-0">
           {/* Session info */}
           <div className="rounded-2xl border border-border bg-card p-4">
             <h3 className="text-sm font-bold text-foreground mb-2">Session Info</h3>
@@ -677,71 +681,6 @@ function ActiveRemoteView({
                   {controlEnabled ? "Remote Control" : "View Only"}
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Interactive elements */}
-          <div className="rounded-2xl border border-border bg-card p-4 flex-1 min-h-0 flex flex-col">
-            <h3 className="text-sm font-bold text-foreground mb-2">
-              Interactive ({snapshot.elements.filter(e => e.interactive).length})
-            </h3>
-            <div className="flex-1 overflow-y-auto space-y-1">
-              {snapshot.elements
-                .filter(e => e.interactive)
-                .slice(0, 30)
-                .map((el, i) => (
-                  <button
-                    key={`${el.selector}-${i}`}
-                    disabled={!controlEnabled}
-                    onClick={() => {
-                      if (!controlEnabled || !socket || !sessionId) return;
-                      socket.emit("remote-view:action", {
-                        sessionId,
-                        action: { type: "click", selector: el.selector },
-                      });
-                    }}
-                    className={cn(
-                      "w-full text-left rounded-lg px-2 py-1.5 text-[10px] transition-colors",
-                      controlEnabled
-                        ? "hover:bg-indigo-50 dark:hover:bg-indigo-950 cursor-pointer"
-                        : "cursor-default"
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="shrink-0 rounded bg-muted px-1 py-0.5 font-mono text-[8px] text-muted-foreground uppercase">
-                        {el.tag}
-                      </span>
-                      <span className="truncate text-foreground font-medium">
-                        {el.text || el.value || el.placeholder || el.id || "—"}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-            </div>
-          </div>
-
-          {/* User activity feed */}
-          <div className="rounded-2xl border border-border bg-card p-4 max-h-[200px] flex flex-col">
-            <h3 className="text-sm font-bold text-foreground mb-2">Live Activity</h3>
-            <div className="flex-1 overflow-y-auto space-y-1">
-              {userEvents.length === 0 && (
-                <p className="text-[10px] text-muted-foreground py-2">No activity yet</p>
-              )}
-              {userEvents.map((evt, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-[10px]">
-                  <span className={cn(
-                    "shrink-0 rounded px-1 py-0.5 font-mono uppercase",
-                    evt.type === "click" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400" :
-                    evt.type === "input" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
-                    "bg-muted text-muted-foreground"
-                  )}>
-                    {evt.type}
-                  </span>
-                  <span className="truncate text-muted-foreground">
-                    {evt.selector ? evt.selector.split(" > ").pop() : `(${evt.coords?.x}, ${evt.coords?.y})`}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
