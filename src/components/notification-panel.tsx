@@ -83,7 +83,7 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
   if (notifications.length === 0) return null;
 
   return (
-    <div ref={parentRef} className="max-h-[400px] overflow-y-auto">
+    <div ref={parentRef} className="max-h-[600px] overflow-y-auto">
       <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
         {virtualizer.getVirtualItems().map((vRow) => {
           const notification = notifications[vRow.index];
@@ -313,7 +313,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
         </div>
 
         {/* Notifications list */}
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className="max-h-[750px] overflow-y-auto">
           {/* Task notifications section */}
           {taskNotifications.length > 0 && (
             <div className="border-b border-border">

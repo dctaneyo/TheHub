@@ -248,7 +248,7 @@ export function FocusLayout({
                       "text-[11px] font-bold uppercase tracking-widest",
                       heroTask.isOverdue || heroTask.isDueSoon ? "text-white/70" : "text-slate-400"
                     )}>
-                      {heroTask.isOverdue ? "Overdue" : heroTask.isDueSoon ? "Due soon" : "Up next"}
+                      {heroTask.isOverdue ? "Overdue" : heroTask.isDueSoon ? "Due soon" : "Due at"}
                     </span>
                     <span className={cn(
                       "text-[11px] font-mono font-bold",
@@ -296,7 +296,7 @@ export function FocusLayout({
                   )}
                 >
                   <CheckCircle2 className="h-6 w-6" />
-                  Complete
+                  Done
                 </motion.button>
               </div>
             </motion.div>
