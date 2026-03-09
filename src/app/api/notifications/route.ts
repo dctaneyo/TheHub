@@ -5,6 +5,7 @@ import {
   getNotifications,
   getNotificationCounts,
   markAllNotificationsRead,
+  deleteAllNotifications,
 } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest) {
       await markAllNotificationsRead(session.id);
       const counts = await getNotificationCounts(session.id);
       return NextResponse.json({ success: true, counts });
+    }
+
+    if (action === "dismiss_all") {
+      await deleteAllNotifications(session.id);
+      return NextResponse.json({ success: true, counts: { total: 0, unread: 0, urgent: 0 } });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

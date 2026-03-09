@@ -227,6 +227,13 @@ export async function deleteNotification(notificationId: string): Promise<void> 
 }
 
 /**
+ * Delete all notifications for a user
+ */
+export async function deleteAllNotifications(userId: string): Promise<void> {
+  await db.delete(notifications).where(eq(notifications.userId, userId));
+}
+
+/**
  * Delete old read notifications (cleanup job)
  */
 export async function deleteOldNotifications(daysOld: number = 30): Promise<void> {

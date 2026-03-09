@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Trash2, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock } from "@/lib/icons";
+import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -65,10 +65,9 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   default: Bell,
 };
 
-function NotifVirtualList({ notifications, onMarkAsRead, onDelete, onClose, getTimeAgo }: {
+function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
   notifications: Notification[];
-  onMarkAsRead: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDismiss: (id: string) => void;
   onClose: () => void;
   getTimeAgo: (ts: string) => string;
 }) {
@@ -131,7 +130,7 @@ function NotifVirtualList({ notifications, onMarkAsRead, onDelete, onClose, getT
                         <a
                           href={notification.actionUrl}
                           onClick={() => {
-                            onMarkAsRead(notification.id);
+                            onDismiss(notification.id);
                             onClose();
                           }}
                           className="text-[10px] font-medium text-[var(--hub-red)] hover:underline"
@@ -142,24 +141,13 @@ function NotifVirtualList({ notifications, onMarkAsRead, onDelete, onClose, getT
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!notification.isRead && (
-                      <button
-                        onClick={() => onMarkAsRead(notification.id)}
-                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title="Dismiss"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => onDelete(notification.id)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => onDismiss(notification.id)}
+                    className="flex shrink-0 h-6 w-6 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-muted hover:text-foreground transition-opacity"
+                    title="Dismiss"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -211,19 +199,6 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await fetch(`/api/notifications/${id}`, { method: "POST" });
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n))
-      );
-      fetchNotifications(); // Refresh to update counts
-    } catch (error) {
-      console.error("Failed to mark notification as read:", error);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/notifications/${id}`, { method: "DELETE" });
@@ -235,20 +210,23 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
     }
   };
 
-  const handleMarkAllRead = async () => {
+  const handleDismissAll = async () => {
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "mark_all_read" }),
+        body: JSON.stringify({ action: "dismiss_all" }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications([]);
+        onCountsUpdate(data.counts);
+      }
 
-      // Also dismiss task notifications when "Read All" is clicked
+      // Also dismiss task notifications
       onDismissAllTasks?.();
-
-      fetchNotifications();
     } catch (error) {
-      console.error("Failed to mark all as read:", error);
+      console.error("Failed to dismiss all notifications:", error);
     }
   };
 
@@ -292,11 +270,11 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={handleMarkAllRead}
+              onClick={handleDismissAll}
               className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               title="Dismiss all"
             >
-              <Check className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Dismiss All</span>
             </button>
             <button
@@ -389,8 +367,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
 
           <NotifVirtualList
             notifications={notifications}
-            onMarkAsRead={handleMarkAsRead}
-            onDelete={handleDelete}
+            onDismiss={handleDelete}
             onClose={onClose}
             getTimeAgo={getTimeAgo}
           />
