@@ -33,6 +33,7 @@ import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-m
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
+import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -753,6 +754,9 @@ export default function DashboardPage() {
         onUnreadChange={setChatUnread}
         currentUserId={user?.id}
       />
+
+      {/* Remote View Banner (consent + active session indicator) */}
+      <RemoteViewBanner />
     </div>
   );
 }

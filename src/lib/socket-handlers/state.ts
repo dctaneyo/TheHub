@@ -1,4 +1,4 @@
-import type { ActiveMeeting, MeetingAnalyticsData, ForceAction } from "./types";
+import type { ActiveMeeting, MeetingAnalyticsData, ForceAction, RemoteViewSession } from "./types";
 
 /**
  * Global singleton state stored on globalThis so it survives HMR and
@@ -42,6 +42,12 @@ if (!_g.__hubPendingForceActions) {
   _g.__hubPendingForceActions = new Map<string, ForceAction>();
 }
 export const pendingForceActions: Map<string, ForceAction> = _g.__hubPendingForceActions;
+
+// ── Active remote view sessions ──
+if (!_g.__hubRemoteViewSessions) {
+  _g.__hubRemoteViewSessions = new Map<string, RemoteViewSession>();
+}
+export const remoteViewSessions: Map<string, RemoteViewSession> = _g.__hubRemoteViewSessions;
 
 // ── Constants ──
 export const HOST_LEFT_AUTO_END_MS = 10 * 60 * 1000; // 10 minutes

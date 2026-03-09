@@ -50,6 +50,64 @@ export interface ForceAction {
   redirectTo?: string;
 }
 
+// ── Remote view types ──
+
+export interface CapturedElement {
+  id: string;
+  tag: string;
+  selector: string;
+  text: string;
+  rect: { x: number; y: number; width: number; height: number };
+  interactive: boolean;
+  type?: string; // input type
+  value?: string; // input value
+  checked?: boolean;
+  placeholder?: string;
+  classes: string;
+  href?: string;
+  disabled?: boolean;
+}
+
+export interface DOMSnapshot {
+  url: string;
+  title: string;
+  viewport: { width: number; height: number };
+  scroll: { x: number; y: number };
+  elements: CapturedElement[];
+  activeElementSelector: string | null;
+  timestamp: number;
+}
+
+export interface RemoteViewSession {
+  sessionId: string;
+  locationId: string;
+  locationName: string;
+  arlId: string;
+  arlName: string;
+  arlSocketId: string;
+  locationSocketId: string;
+  status: "pending" | "active" | "ended";
+  controlEnabled: boolean;
+  startedAt: number;
+}
+
+export interface RemoteAction {
+  type: "click" | "input" | "scroll" | "navigate" | "keyboard";
+  selector?: string;
+  value?: string;
+  coords?: { x: number; y: number };
+  key?: string;
+  scrollDelta?: { x: number; y: number };
+}
+
+export interface UserEvent {
+  type: "touch" | "click" | "scroll" | "input" | "navigate";
+  selector?: string;
+  coords?: { x: number; y: number };
+  value?: string;
+  timestamp: number;
+}
+
 // ── Handler registration signature ──
 // Each module exports a function with this shape to register socket event handlers
 

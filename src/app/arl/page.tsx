@@ -71,12 +71,13 @@ import { GlobalSearch } from "@/components/global-search";
 import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
 import { OverviewDashboard } from "@/components/arl/overview-dashboard";
+import { RemoteViewer } from "@/components/arl/remote-viewer";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
 import { PageIndicator } from "@/components/arl/page-indicator";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "data-management" | "broadcast" | "meetings" | "analytics";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "remote-view" | "data-management" | "broadcast" | "meetings" | "analytics";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -130,7 +131,7 @@ export default function ArlPage() {
   // Restore active view from sessionStorage after mount (prevents hydration mismatch)
   useEffect(() => {
     const saved = sessionStorage.getItem("arl-active-view") as ArlView | null;
-    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","data-management","broadcast","meetings","analytics"].includes(saved)) {
+    if (saved && ["overview","messages","tasks","calendar","locations","forms","emergency","users","leaderboard","remote-login","remote-view","data-management","broadcast","meetings","analytics"].includes(saved)) {
       setActiveView(saved);
     }
     setMounted(true);
@@ -719,6 +720,7 @@ export default function ArlPage() {
                 {activeView === "users" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><UserManagement /></div>}
                 {activeView === "leaderboard" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><Leaderboard /></div>}
                 {activeView === "remote-login" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><RemoteLogin /></div>}
+                {activeView === "remote-view" && <div className="flex flex-col flex-1 min-h-0 overscroll-contain p-4"><RemoteViewer /></div>}
                 {activeView === "data-management" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><DataManagement /></div>}
                 {activeView === "analytics" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><AnalyticsDashboard /></div>}
                 {activeView === "meetings" && (

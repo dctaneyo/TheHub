@@ -15,6 +15,7 @@ import type { ForceAction } from "./socket-handlers/types";
 import { registerMeetingHandlers, handleMeetingDisconnect, findActiveMeetingByCode as _findActiveMeetingByCode } from "./socket-handlers/meetings";
 import { scheduleTaskNotifications, cancelTaskTimers } from "./socket-handlers/tasks";
 import { registerTestHandlers } from "./socket-handlers/tests";
+import { registerRemoteViewHandlers, handleRemoteViewDisconnect } from "./socket-handlers/remote-view";
 
 function readBuildId(): string {
   try {
@@ -297,9 +298,10 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // ── Register modular handlers (meetings, tests) ──
+    // ── Register modular handlers (meetings, tests, remote-view) ──
     registerMeetingHandlers(io, socket, user);
     registerTestHandlers(io, socket, user);
+    registerRemoteViewHandlers(io, socket, user);
 
     // ── Disconnect ──
     socket.on("disconnect", () => {
@@ -342,6 +344,9 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
         // Meeting disconnect cleanup (grace period)
         handleMeetingDisconnect(io, socket, user);
+
+        // Remote view disconnect cleanup
+        handleRemoteViewDisconnect(io, socket, user);
 
         console.log(`🔌 ${user.userType} disconnected: ${user.name} (${socket.id})`);
       }
