@@ -66,13 +66,64 @@ function isVisible(el: Element): boolean {
   return true;
 }
 
+function getDirectText(el: Element): string {
+  let text = "";
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent || "";
+    }
+  }
+  return text.trim();
+}
+
+function captureComputedStyles(el: Element) {
+  const cs = window.getComputedStyle(el);
+  return {
+    bgColor: cs.backgroundColor,
+    color: cs.color,
+    fontSize: cs.fontSize,
+    fontWeight: cs.fontWeight,
+    borderRadius: cs.borderRadius,
+    border: cs.border !== "none" ? cs.borderWidth + " " + cs.borderStyle + " " + cs.borderColor : "none",
+    opacity: cs.opacity,
+    overflow: cs.overflow,
+    display: cs.display,
+    textAlign: cs.textAlign,
+    boxShadow: cs.boxShadow !== "none" ? cs.boxShadow : "none",
+  };
+}
+
+function hasVisibleBg(bgColor: string): boolean {
+  if (!bgColor || bgColor === "transparent" || bgColor === "rgba(0, 0, 0, 0)") return false;
+  return true;
+}
+
 function captureElements(): CapturedElement[] {
   const elements: CapturedElement[] = [];
-  const allElements = document.querySelectorAll(
-    "button, a, input, textarea, select, [role='button'], [tabindex], [onclick], h1, h2, h3, h4, p, span, div, img, label, li"
+  const capturedRects = new Set<string>();
+
+  // Walk the DOM tree in document order so we capture parent containers first
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode(node) {
+        const el = node as Element;
+        const tag = el.tagName.toLowerCase();
+        // Skip script, style, meta elements
+        if (["script", "style", "noscript", "meta", "link", "br", "hr"].includes(tag)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    }
   );
 
-  for (const el of allElements) {
+  let node: Element | null = walker.currentNode as Element;
+  while (node) {
+    const el = node;
+    node = walker.nextNode() as Element | null;
+
     if (!isVisible(el)) continue;
 
     const rect = el.getBoundingClientRect();
@@ -80,29 +131,43 @@ function captureElements(): CapturedElement[] {
     if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
     if (rect.right < 0 || rect.left > window.innerWidth) continue;
     // Skip very small elements
-    if (rect.width < 4 && rect.height < 4) continue;
+    if (rect.width < 2 && rect.height < 2) continue;
 
     const tag = el.tagName.toLowerCase();
     const interactive = isInteractive(el);
+    const cs = window.getComputedStyle(el);
+    const hasBg = hasVisibleBg(cs.backgroundColor);
+    const hasBorder = cs.borderStyle !== "none" && cs.borderWidth !== "0px";
+    const hasBoxShadow = cs.boxShadow !== "none";
+    const directText = getDirectText(el);
+    const isContainer = el.children.length > 0;
 
-    // For non-interactive elements, only capture if they have visible text
-    if (!interactive && !["h1", "h2", "h3", "h4", "img"].includes(tag)) {
-      // Only capture divs/spans that are leaf text nodes or significant containers
-      if (["div", "span", "p", "li", "label"].includes(tag)) {
-        const text = el.textContent?.trim() || "";
-        if (!text || text.length > 200) continue;
-        // Skip if this element has interactive children (avoid duplication)
-        if (el.querySelector("button, a, input, textarea, select, [role='button']")) continue;
-      } else {
-        continue;
-      }
+    // Decide whether this element is worth capturing:
+    // 1. Always capture interactive elements
+    // 2. Capture elements with visible background/border (visual containers)
+    // 3. Capture headings and images
+    // 4. Capture leaf text nodes (elements with direct text content and no child elements)
+    // 5. Skip generic wrapper divs that have no visual significance
+    const isLeafText = directText.length > 0 && !isContainer;
+    const isVisualContainer = hasBg || hasBorder || hasBoxShadow;
+    const isHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag);
+    const isMedia = ["img", "video", "canvas", "svg"].includes(tag);
+
+    if (!interactive && !isVisualContainer && !isHeading && !isMedia && !isLeafText) {
+      // Skip invisible wrapper elements
+      continue;
     }
+
+    // Deduplicate elements at the exact same rect (common with nested wrappers)
+    const rectKey = `${Math.round(rect.x)},${Math.round(rect.y)},${Math.round(rect.width)},${Math.round(rect.height)}`;
+    if (capturedRects.has(rectKey) && !interactive) continue;
+    capturedRects.add(rectKey);
 
     const captured: CapturedElement = {
       id: el.id || "",
       tag,
       selector: getUniqueSelector(el),
-      text: (el.textContent?.trim() || "").slice(0, 100),
+      text: (isLeafText ? directText : (el.textContent?.trim() || "")).slice(0, 100),
       rect: {
         x: Math.round(rect.x),
         y: Math.round(rect.y),
@@ -112,6 +177,9 @@ function captureElements(): CapturedElement[] {
       interactive,
       classes: (typeof el.className === "string" ? el.className : "").slice(0, 200),
       disabled: (el as HTMLButtonElement).disabled || false,
+      styles: captureComputedStyles(el),
+      children: el.children.length,
+      zIndex: parseInt(cs.zIndex) || 0,
     };
 
     if (tag === "input" || tag === "textarea") {
@@ -131,10 +199,12 @@ function captureElements(): CapturedElement[] {
     }
 
     elements.push(captured);
+
+    // Cap at 500 elements for performance
+    if (elements.length >= 500) break;
   }
 
-  // Limit to 300 elements max for performance
-  return elements.slice(0, 300);
+  return elements;
 }
 
 export function captureDOMSnapshot(): DOMSnapshot {

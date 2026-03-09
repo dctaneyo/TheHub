@@ -66,6 +66,21 @@ export interface CapturedElement {
   classes: string;
   href?: string;
   disabled?: boolean;
+  styles?: {
+    bgColor: string;
+    color: string;
+    fontSize: string;
+    fontWeight: string;
+    borderRadius: string;
+    border: string;
+    opacity: string;
+    overflow: string;
+    display: string;
+    textAlign: string;
+    boxShadow: string;
+  };
+  children?: number; // count of child elements
+  zIndex?: number;
 }
 
 export interface DOMSnapshot {

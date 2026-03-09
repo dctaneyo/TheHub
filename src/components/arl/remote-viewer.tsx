@@ -377,244 +377,23 @@ export function RemoteViewer() {
 
       {/* Active view */}
       {sessionStatus === "active" && snapshot && (
-        <div className="flex gap-4 flex-1 min-h-0">
-          {/* Main viewer */}
-          <div
-            ref={containerRef}
-            className={cn(
-              "flex-1 flex flex-col min-h-0 rounded-2xl border border-border bg-black/5 dark:bg-white/5 overflow-hidden",
-              controlEnabled && "cursor-crosshair"
-            )}
-          >
-            {/* Status bar */}
-            <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-medium text-foreground">{snapshot.title}</span>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                <span>{snapshot.viewport.width}×{snapshot.viewport.height}</span>
-                <span>Scroll: {snapshot.scroll.y}px</span>
-                <span>{snapshot.elements.length} elements</span>
-              </div>
-            </div>
-
-            {/* DOM reconstruction */}
-            <div
-              ref={viewerRef}
-              onClick={handleViewerClick}
-              onWheel={handleViewerScroll}
-              onMouseMove={handleViewerMouseMove}
-              onMouseLeave={() => setHoveredElement(null)}
-              className="relative flex-1 overflow-hidden"
-              style={{
-                aspectRatio: `${snapshot.viewport.width} / ${snapshot.viewport.height}`,
-              }}
-            >
-              {/* Background grid */}
-              <div className="absolute inset-0 bg-white dark:bg-slate-900" />
-
-              {/* Render captured elements */}
-              <svg
-                viewBox={`0 0 ${snapshot.viewport.width} ${snapshot.viewport.height}`}
-                className="absolute inset-0 w-full h-full"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                {snapshot.elements.map((el, i) => {
-                  const isHovered = hoveredElement?.selector === el.selector;
-                  const isInput = ["input", "textarea", "select"].includes(el.tag);
-                  const isButton = el.tag === "button" || el.tag === "a" || el.classes?.includes("btn");
-                  const isHeading = ["h1", "h2", "h3", "h4"].includes(el.tag);
-
-                  let fill = "transparent";
-                  let stroke = "transparent";
-                  let strokeWidth = 0;
-
-                  if (el.interactive) {
-                    if (isButton) {
-                      fill = isHovered && controlEnabled ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.06)";
-                      stroke = isHovered && controlEnabled ? "rgba(99,102,241,0.7)" : "rgba(99,102,241,0.25)";
-                      strokeWidth = isHovered ? 2 : 1;
-                    } else if (isInput) {
-                      fill = "rgba(59,130,246,0.05)";
-                      stroke = "rgba(59,130,246,0.3)";
-                      strokeWidth = 1;
-                    } else {
-                      fill = isHovered && controlEnabled ? "rgba(99,102,241,0.1)" : "transparent";
-                      stroke = isHovered && controlEnabled ? "rgba(99,102,241,0.5)" : "transparent";
-                      strokeWidth = isHovered ? 1 : 0;
-                    }
-                  }
-
-                  return (
-                    <g key={`${el.selector}-${i}`}>
-                      <rect
-                        x={el.rect.x}
-                        y={el.rect.y}
-                        width={el.rect.width}
-                        height={el.rect.height}
-                        fill={fill}
-                        stroke={stroke}
-                        strokeWidth={strokeWidth}
-                        rx={el.interactive ? 4 : 0}
-                      />
-                      {/* Text labels */}
-                      {el.text && el.rect.width > 20 && el.rect.height > 10 && (
-                        <text
-                          x={el.rect.x + (isInput ? 8 : el.rect.width / 2)}
-                          y={el.rect.y + el.rect.height / 2}
-                          textAnchor={isInput ? "start" : "middle"}
-                          dominantBaseline="central"
-                          fontSize={isHeading ? 14 : isButton ? 11 : 10}
-                          fontWeight={isHeading || isButton ? "bold" : "normal"}
-                          fill={isButton ? "rgb(79,70,229)" : isHeading ? "rgb(15,23,42)" : "rgb(100,116,139)"}
-                          opacity={0.9}
-                          clipPath={`inset(0 0 0 0)`}
-                        >
-                          {el.text.length > 40 ? el.text.slice(0, 40) + "…" : el.text}
-                        </text>
-                      )}
-                      {/* Input value display */}
-                      {isInput && el.value && (
-                        <text
-                          x={el.rect.x + 8}
-                          y={el.rect.y + el.rect.height / 2}
-                          dominantBaseline="central"
-                          fontSize={11}
-                          fill="rgb(51,65,85)"
-                        >
-                          {el.value.length > 30 ? el.value.slice(0, 30) + "…" : el.value}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-
-                {/* Remote cursor (location user's cursor) */}
-                {cursorPos && (
-                  <g>
-                    <circle
-                      cx={cursorPos.x}
-                      cy={cursorPos.y}
-                      r={8}
-                      fill="rgba(239,68,68,0.3)"
-                      stroke="rgba(239,68,68,0.8)"
-                      strokeWidth={2}
-                    />
-                    <circle
-                      cx={cursorPos.x}
-                      cy={cursorPos.y}
-                      r={3}
-                      fill="rgb(239,68,68)"
-                    />
-                  </g>
-                )}
-              </svg>
-            </div>
-          </div>
-
-          {/* Side panel */}
-          {!isFullscreen && (
-            <div className="w-[260px] shrink-0 flex flex-col gap-3">
-              {/* Session info */}
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="text-sm font-bold text-foreground mb-2">Session Info</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Location</span>
-                    <span className="font-medium text-foreground">{selectedLocation?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">URL</span>
-                    <span className="font-medium text-foreground truncate max-w-[140px]">
-                      {snapshot.url.replace(/https?:\/\/[^/]+/, "")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Viewport</span>
-                    <span className="font-medium text-foreground">
-                      {snapshot.viewport.width}×{snapshot.viewport.height}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Mode</span>
-                    <span className={cn(
-                      "font-medium",
-                      controlEnabled ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
-                    )}>
-                      {controlEnabled ? "Remote Control" : "View Only"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Interactive elements */}
-              <div className="rounded-2xl border border-border bg-card p-4 flex-1 min-h-0 flex flex-col">
-                <h3 className="text-sm font-bold text-foreground mb-2">
-                  Interactive Elements ({snapshot.elements.filter(e => e.interactive).length})
-                </h3>
-                <div className="flex-1 overflow-y-auto space-y-1">
-                  {snapshot.elements
-                    .filter(e => e.interactive)
-                    .slice(0, 30)
-                    .map((el, i) => (
-                      <button
-                        key={`${el.selector}-${i}`}
-                        disabled={!controlEnabled}
-                        onClick={() => {
-                          if (!controlEnabled || !socket || !sessionId) return;
-                          socket.emit("remote-view:action", {
-                            sessionId,
-                            action: { type: "click", selector: el.selector },
-                          });
-                        }}
-                        className={cn(
-                          "w-full text-left rounded-lg px-2 py-1.5 text-[10px] transition-colors",
-                          controlEnabled
-                            ? "hover:bg-indigo-50 dark:hover:bg-indigo-950 cursor-pointer"
-                            : "cursor-default"
-                        )}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="shrink-0 rounded bg-muted px-1 py-0.5 font-mono text-[8px] text-muted-foreground uppercase">
-                            {el.tag}
-                          </span>
-                          <span className="truncate text-foreground font-medium">
-                            {el.text || el.value || el.placeholder || el.id || "—"}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* User activity feed */}
-              <div className="rounded-2xl border border-border bg-card p-4 max-h-[200px] flex flex-col">
-                <h3 className="text-sm font-bold text-foreground mb-2">Live Activity</h3>
-                <div className="flex-1 overflow-y-auto space-y-1">
-                  {userEvents.length === 0 && (
-                    <p className="text-[10px] text-muted-foreground py-2">No activity yet</p>
-                  )}
-                  {userEvents.map((evt, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-[10px]">
-                      <span className={cn(
-                        "shrink-0 rounded px-1 py-0.5 font-mono uppercase",
-                        evt.type === "click" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400" :
-                        evt.type === "input" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
-                        "bg-muted text-muted-foreground"
-                      )}>
-                        {evt.type}
-                      </span>
-                      <span className="truncate text-muted-foreground">
-                        {evt.selector ? evt.selector.split(" > ").pop() : `(${evt.coords?.x}, ${evt.coords?.y})`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <ActiveRemoteView
+          snapshot={snapshot}
+          controlEnabled={controlEnabled}
+          cursorPos={cursorPos}
+          userEvents={userEvents}
+          hoveredElement={hoveredElement}
+          isFullscreen={isFullscreen}
+          selectedLocation={selectedLocation}
+          sessionId={sessionId}
+          socket={socket}
+          viewerRef={viewerRef}
+          containerRef={containerRef}
+          onViewerClick={handleViewerClick}
+          onViewerScroll={handleViewerScroll}
+          onViewerMouseMove={handleViewerMouseMove}
+          onHoverClear={() => setHoveredElement(null)}
+        />
       )}
 
       {/* Ended state */}
@@ -624,6 +403,410 @@ export function RemoteViewer() {
             <X className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">Session ended</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── HTML-based remote view renderer ──
+
+interface ActiveRemoteViewProps {
+  snapshot: DOMSnapshot;
+  controlEnabled: boolean;
+  cursorPos: { x: number; y: number } | null;
+  userEvents: UserEvent[];
+  hoveredElement: CapturedElement | null;
+  isFullscreen: boolean;
+  selectedLocation: OnlineLocation | undefined;
+  sessionId: string | null;
+  socket: any;
+  viewerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onViewerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onViewerScroll: (e: React.WheelEvent<HTMLDivElement>) => void;
+  onViewerMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onHoverClear: () => void;
+}
+
+function ActiveRemoteView({
+  snapshot,
+  controlEnabled,
+  cursorPos,
+  userEvents,
+  hoveredElement,
+  isFullscreen,
+  selectedLocation,
+  sessionId,
+  socket,
+  viewerRef,
+  containerRef,
+  onViewerClick,
+  onViewerScroll,
+  onViewerMouseMove,
+  onHoverClear,
+}: ActiveRemoteViewProps) {
+  const [scale, setScale] = useState(1);
+  const outerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate scale to fit the remote viewport inside the viewer container
+  useEffect(() => {
+    const calculateScale = () => {
+      if (!outerRef.current) return;
+      const containerW = outerRef.current.clientWidth;
+      const containerH = outerRef.current.clientHeight;
+      if (containerW === 0 || containerH === 0) return;
+      const scaleX = containerW / snapshot.viewport.width;
+      const scaleY = containerH / snapshot.viewport.height;
+      setScale(Math.min(scaleX, scaleY, 1));
+    };
+    calculateScale();
+    window.addEventListener("resize", calculateScale);
+    return () => window.removeEventListener("resize", calculateScale);
+  }, [snapshot.viewport.width, snapshot.viewport.height]);
+
+  const scaledW = snapshot.viewport.width * scale;
+  const scaledH = snapshot.viewport.height * scale;
+
+  return (
+    <div className="flex gap-4 flex-1 min-h-0">
+      {/* Main viewer */}
+      <div
+        ref={containerRef}
+        className={cn(
+          "flex-1 flex flex-col min-h-0 rounded-2xl border border-border bg-neutral-900 overflow-hidden",
+          controlEnabled && "ring-2 ring-amber-400/50"
+        )}
+      >
+        {/* Status bar */}
+        <div className="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-medium text-neutral-200 truncate max-w-[300px]">{snapshot.title}</span>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] text-neutral-400">
+            <span>{snapshot.viewport.width}×{snapshot.viewport.height}</span>
+            <span>{snapshot.elements.length} el</span>
+            {controlEnabled && (
+              <span className="text-amber-400 font-semibold">CONTROL</span>
+            )}
+          </div>
+        </div>
+
+        {/* Scaled viewport */}
+        <div
+          ref={outerRef}
+          className="relative flex-1 overflow-hidden flex items-center justify-center bg-neutral-950"
+        >
+          <div
+            ref={viewerRef}
+            onClick={onViewerClick}
+            onWheel={onViewerScroll}
+            onMouseMove={onViewerMouseMove}
+            onMouseLeave={onHoverClear}
+            className={cn("relative overflow-hidden", controlEnabled && "cursor-crosshair")}
+            style={{
+              width: scaledW,
+              height: scaledH,
+            }}
+          >
+            {/* Inner container at native resolution, scaled down */}
+            <div
+              style={{
+                width: snapshot.viewport.width,
+                height: snapshot.viewport.height,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                position: "relative",
+                background: "#fff",
+              }}
+            >
+              {/* Render each captured element as an absolutely positioned HTML div */}
+              {snapshot.elements.map((el, i) => (
+                <RenderedElement
+                  key={`${el.selector}-${i}`}
+                  el={el}
+                  isHovered={hoveredElement?.selector === el.selector}
+                  controlEnabled={controlEnabled}
+                />
+              ))}
+
+              {/* Remote cursor overlay */}
+              {cursorPos && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: cursorPos.x - 12,
+                    top: cursorPos.y - 12,
+                    width: 24,
+                    height: 24,
+                    zIndex: 99999,
+                    pointerEvents: "none",
+                  }}
+                >
+                  {/* Outer ring */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      border: "2px solid rgba(239, 68, 68, 0.8)",
+                      background: "rgba(239, 68, 68, 0.15)",
+                    }}
+                  />
+                  {/* Inner dot */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 8,
+                      top: 8,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "rgb(239, 68, 68)",
+                      boxShadow: "0 0 6px rgba(239, 68, 68, 0.6)",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Side panel */}
+      {!isFullscreen && (
+        <div className="w-[260px] shrink-0 flex flex-col gap-3">
+          {/* Session info */}
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <h3 className="text-sm font-bold text-foreground mb-2">Session Info</h3>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Location</span>
+                <span className="font-medium text-foreground">{selectedLocation?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">URL</span>
+                <span className="font-medium text-foreground truncate max-w-[140px]">
+                  {snapshot.url.replace(/https?:\/\/[^/]+/, "")}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Viewport</span>
+                <span className="font-medium text-foreground">
+                  {snapshot.viewport.width}×{snapshot.viewport.height}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Mode</span>
+                <span className={cn(
+                  "font-medium",
+                  controlEnabled ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                )}>
+                  {controlEnabled ? "Remote Control" : "View Only"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive elements */}
+          <div className="rounded-2xl border border-border bg-card p-4 flex-1 min-h-0 flex flex-col">
+            <h3 className="text-sm font-bold text-foreground mb-2">
+              Interactive ({snapshot.elements.filter(e => e.interactive).length})
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {snapshot.elements
+                .filter(e => e.interactive)
+                .slice(0, 30)
+                .map((el, i) => (
+                  <button
+                    key={`${el.selector}-${i}`}
+                    disabled={!controlEnabled}
+                    onClick={() => {
+                      if (!controlEnabled || !socket || !sessionId) return;
+                      socket.emit("remote-view:action", {
+                        sessionId,
+                        action: { type: "click", selector: el.selector },
+                      });
+                    }}
+                    className={cn(
+                      "w-full text-left rounded-lg px-2 py-1.5 text-[10px] transition-colors",
+                      controlEnabled
+                        ? "hover:bg-indigo-50 dark:hover:bg-indigo-950 cursor-pointer"
+                        : "cursor-default"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="shrink-0 rounded bg-muted px-1 py-0.5 font-mono text-[8px] text-muted-foreground uppercase">
+                        {el.tag}
+                      </span>
+                      <span className="truncate text-foreground font-medium">
+                        {el.text || el.value || el.placeholder || el.id || "—"}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          {/* User activity feed */}
+          <div className="rounded-2xl border border-border bg-card p-4 max-h-[200px] flex flex-col">
+            <h3 className="text-sm font-bold text-foreground mb-2">Live Activity</h3>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {userEvents.length === 0 && (
+                <p className="text-[10px] text-muted-foreground py-2">No activity yet</p>
+              )}
+              {userEvents.map((evt, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                  <span className={cn(
+                    "shrink-0 rounded px-1 py-0.5 font-mono uppercase",
+                    evt.type === "click" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400" :
+                    evt.type === "input" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
+                    "bg-muted text-muted-foreground"
+                  )}>
+                    {evt.type}
+                  </span>
+                  <span className="truncate text-muted-foreground">
+                    {evt.selector ? evt.selector.split(" > ").pop() : `(${evt.coords?.x}, ${evt.coords?.y})`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Individual element renderer ──
+
+function RenderedElement({
+  el,
+  isHovered,
+  controlEnabled,
+}: {
+  el: CapturedElement;
+  isHovered: boolean;
+  controlEnabled: boolean;
+}) {
+  const s = el.styles;
+  const isInput = ["input", "textarea", "select"].includes(el.tag);
+  const isButton = el.tag === "button" || el.tag === "a" || (el.classes?.includes("btn"));
+  const isHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(el.tag);
+  const isMedia = ["img", "video", "canvas", "svg"].includes(el.tag);
+  const isLeaf = (el.children ?? 0) === 0;
+  const hasBg = s && s.bgColor !== "rgba(0, 0, 0, 0)" && s.bgColor !== "transparent";
+
+  // Build inline styles from captured computed styles
+  const style: React.CSSProperties = {
+    position: "absolute",
+    left: el.rect.x,
+    top: el.rect.y,
+    width: el.rect.width,
+    height: el.rect.height,
+    overflow: "hidden",
+    pointerEvents: "none",
+    boxSizing: "border-box",
+  };
+
+  if (s) {
+    if (hasBg) {
+      style.backgroundColor = s.bgColor;
+    }
+    if (s.borderRadius && s.borderRadius !== "0px") {
+      style.borderRadius = s.borderRadius;
+    }
+    if (s.border && s.border !== "none") {
+      style.border = s.border;
+    }
+    if (s.boxShadow && s.boxShadow !== "none") {
+      style.boxShadow = s.boxShadow;
+    }
+    if (s.opacity && s.opacity !== "1") {
+      style.opacity = parseFloat(s.opacity);
+    }
+  }
+
+  // Control mode hover highlight
+  if (el.interactive && isHovered && controlEnabled) {
+    style.outline = "2px solid rgba(99, 102, 241, 0.8)";
+    style.outlineOffset = "1px";
+    style.zIndex = 9990;
+  }
+
+  // Text styling
+  const textStyle: React.CSSProperties = {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 4px",
+    boxSizing: "border-box",
+    lineHeight: 1.3,
+  };
+
+  if (s) {
+    textStyle.color = s.color;
+    textStyle.fontSize = s.fontSize;
+    textStyle.fontWeight = s.fontWeight;
+    if (s.textAlign) {
+      textStyle.textAlign = s.textAlign as any;
+      if (s.textAlign === "center") textStyle.justifyContent = "center";
+      else if (s.textAlign === "right") textStyle.justifyContent = "flex-end";
+    }
+  }
+
+  // For media elements, show a placeholder
+  if (isMedia) {
+    return (
+      <div style={style}>
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "linear-gradient(135deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#94a3b8",
+            fontSize: 10,
+            borderRadius: s?.borderRadius || 0,
+          }}
+        >
+          {el.tag === "img" ? "IMG" : el.tag.toUpperCase()}
+        </div>
+      </div>
+    );
+  }
+
+  // For containers with background but no direct text, just render the box
+  if (!isLeaf && !el.text && hasBg) {
+    return <div style={style} />;
+  }
+
+  // For containers with background, render box (children render themselves)
+  if (!isLeaf && hasBg) {
+    return <div style={style} />;
+  }
+
+  // Elements with text content
+  const displayText = isInput
+    ? (el.value || el.placeholder || "")
+    : el.text;
+
+  if (!displayText && !hasBg && !el.interactive) {
+    return null;
+  }
+
+  return (
+    <div style={style}>
+      {displayText && (
+        <div style={textStyle}>
+          {displayText}
         </div>
       )}
     </div>
