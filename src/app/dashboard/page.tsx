@@ -32,8 +32,14 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
+import { useLayout } from "@/lib/layout-context";
+import { CommandCenterLayout } from "@/components/dashboard/layouts/command-center";
+import { FocusModeLayout } from "@/components/dashboard/layouts/focus-mode";
+import { DashboardGridLayout } from "@/components/dashboard/layouts/dashboard-grid";
+import { SplitHeroLayout } from "@/components/dashboard/layouts/split-hero";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -213,6 +219,7 @@ export default function DashboardPage() {
   // Settings and mobile menu state/effects are now inside DashboardHeader + DashboardSettings
 
   const { user, logout } = useAuth();
+  const { layout } = useLayout();
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
   const [currentTime, setCurrentTime] = useState("");
@@ -524,120 +531,209 @@ export default function DashboardPage() {
       {/* Animated Background */}
       <AnimatedBackground variant="subtle" />
 
-      {/* Top Bar — extracted to DashboardHeader + DashboardSettings */}
-      <DashboardHeader
-        user={user}
-        displayTime={displayTime}
-        allTasks={allTasks}
-        currentTime={currentTime}
-        soundEnabled={soundEnabled}
-        onToggleSound={toggleSound}
-        screensaverEnabled={screensaverEnabled}
-        onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
-        onShowScreensaver={() => setForceIdle(true)}
-        chatOpen={chatOpen}
-        onToggleChat={() => setChatOpen((v) => !v)}
-        chatUnread={chatUnread}
-        onOpenForms={() => setFormsOpen(true)}
-        onOpenCalendar={() => setCalOpen(true)}
-        onLogout={logout}
-      />
+      {/* Header — Classic uses full DashboardHeader, others use MinimalHeader */}
+      {layout === "classic" ? (
+        <DashboardHeader
+          user={user}
+          displayTime={displayTime}
+          allTasks={allTasks}
+          currentTime={currentTime}
+          soundEnabled={soundEnabled}
+          onToggleSound={toggleSound}
+          screensaverEnabled={screensaverEnabled}
+          onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
+          onShowScreensaver={() => setForceIdle(true)}
+          chatOpen={chatOpen}
+          onToggleChat={() => setChatOpen((v) => !v)}
+          chatUnread={chatUnread}
+          onOpenForms={() => setFormsOpen(true)}
+          onOpenCalendar={() => setCalOpen(true)}
+          onLogout={logout}
+        />
+      ) : (
+        <MinimalHeader
+          user={user}
+          displayTime={displayTime}
+          allTasks={allTasks}
+          currentTime={currentTime}
+          soundEnabled={soundEnabled}
+          onToggleSound={toggleSound}
+          screensaverEnabled={screensaverEnabled}
+          onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
+          onShowScreensaver={() => setForceIdle(true)}
+          chatOpen={chatOpen}
+          onToggleChat={() => setChatOpen((v) => !v)}
+          chatUnread={chatUnread}
+          onOpenForms={() => setFormsOpen(true)}
+          onOpenCalendar={() => setCalOpen(true)}
+          onLogout={logout}
+        />
+      )}
 
-      {/* Mobile Panel Toggle Buttons */}
-      <div className="md:hidden flex gap-2 px-4 py-2 border-b border-border bg-card">
-        <button
-          onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-            mobilePanelOpen === "left" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
-          )}
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          Completed/Missed
-        </button>
-        <button
-          onClick={() => setMobilePanelOpen(mobilePanelOpen === "right" ? null : "right")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-            mobilePanelOpen === "right" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
-          )}
-        >
-          <CalendarDays className="h-4 w-4" />
-          Upcoming
-        </button>
-      </div>
+      {/* Main Content — layout-specific */}
+      {layout === "classic" && (
+        <>
+          {/* Mobile Panel Toggle Buttons */}
+          <div className="md:hidden flex gap-2 px-4 py-2 border-b border-border bg-card">
+            <button
+              onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                mobilePanelOpen === "left" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
+              )}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Completed/Missed
+            </button>
+            <button
+              onClick={() => setMobilePanelOpen(mobilePanelOpen === "right" ? null : "right")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                mobilePanelOpen === "right" ? "bg-[var(--hub-red)] text-white" : "bg-muted text-muted-foreground"
+              )}
+            >
+              <CalendarDays className="h-4 w-4" />
+              Upcoming
+            </button>
+          </div>
 
-      {/* Main Content - 3 column layout, no scrolling */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Column - Completed/Missed + Points */}
-        <div className={cn(
-          "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
-          "md:block",
-          mobilePanelOpen === "left" ? "block absolute inset-0 z-[999] w-full" : "hidden"
-        )}>
-          {/* Mobile close button */}
-          {mobilePanelOpen === "left" && (
-            <div className="md:hidden sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
-              <button
-                onClick={() => setMobilePanelOpen(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          {/* Main Content - 3 column layout, no scrolling */}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Left Column - Completed/Missed + Points */}
+            <div className={cn(
+              "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
+              "md:block",
+              mobilePanelOpen === "left" ? "block absolute inset-0 z-[999] w-full" : "hidden"
+            )}>
+              {/* Mobile close button */}
+              {mobilePanelOpen === "left" && (
+                <div className="md:hidden sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
+                  <button
+                    onClick={() => setMobilePanelOpen(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <div className="p-4">
+                <CompletedMissed
+                  completedToday={completedTasks}
+                  missedYesterday={data?.missedYesterday || []}
+                  pointsToday={data?.pointsToday || 0}
+                  totalToday={data?.totalToday || 0}
+                />
+              </div>
             </div>
-          )}
-          <div className="p-4">
-            <CompletedMissed
-              completedToday={completedTasks}
-              missedYesterday={data?.missedYesterday || []}
-              pointsToday={data?.pointsToday || 0}
-              totalToday={data?.totalToday || 0}
-            />
-          </div>
-        </div>
 
-        {/* Center Column - Main Timeline */}
-        <div className={cn(
-          "flex-1 flex flex-col overflow-hidden",
-          mobilePanelOpen ? "hidden md:flex" : "flex"
-        )}>
-          <div className="shrink-0 px-5 pt-5">
-            <SeasonalTheme showFloating={false} />
-          </div>
-          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
-            {currentTime && (
-              <Timeline
-                tasks={allTasks}
-                onComplete={handleCompleteTask}
-                onUncomplete={handleUncompleteTask}
-                currentTime={currentTime}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Mini Calendar + Leaderboard tabs */}
-        <div className={cn(
-          "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
-          "lg:flex lg:flex-col",
-          mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden"
-        )}>
-          {/* Mobile close button */}
-          {mobilePanelOpen === "right" && (
-            <div className="md:hidden sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
-              <button
-                onClick={() => setMobilePanelOpen(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            {/* Center Column - Main Timeline */}
+            <div className={cn(
+              "flex-1 flex flex-col overflow-hidden",
+              mobilePanelOpen ? "hidden md:flex" : "flex"
+            )}>
+              <div className="shrink-0 px-5 pt-5">
+                <SeasonalTheme showFloating={false} />
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+                {currentTime && (
+                  <Timeline
+                    tasks={allTasks}
+                    onComplete={handleCompleteTask}
+                    onUncomplete={handleUncompleteTask}
+                    currentTime={currentTime}
+                  />
+                )}
+              </div>
             </div>
-          )}
-          <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
-        </div>
-      </div>
+
+            {/* Right Column - Mini Calendar + Leaderboard tabs */}
+            <div className={cn(
+              "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
+              "lg:flex lg:flex-col",
+              mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden"
+            )}>
+              {/* Mobile close button */}
+              {mobilePanelOpen === "right" && (
+                <div className="md:hidden sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+                  <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
+                  <button
+                    onClick={() => setMobilePanelOpen(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {layout === "command-center" && (
+        <CommandCenterLayout
+          allTasks={allTasks}
+          completedTasks={completedTasks}
+          missedYesterday={data?.missedYesterday || []}
+          pointsToday={data?.pointsToday || 0}
+          totalToday={data?.totalToday || 0}
+          currentTime={currentTime}
+          upcomingTasks={upcomingTasks}
+          currentLocationId={user?.id}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+          onEarlyComplete={handleEarlyComplete}
+        />
+      )}
+
+      {layout === "focus" && (
+        <FocusModeLayout
+          allTasks={allTasks}
+          completedTasks={completedTasks}
+          missedYesterday={data?.missedYesterday || []}
+          pointsToday={data?.pointsToday || 0}
+          totalToday={data?.totalToday || 0}
+          currentTime={currentTime}
+          upcomingTasks={upcomingTasks}
+          currentLocationId={user?.id}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+          onEarlyComplete={handleEarlyComplete}
+        />
+      )}
+
+      {layout === "grid" && (
+        <DashboardGridLayout
+          allTasks={allTasks}
+          completedTasks={completedTasks}
+          missedYesterday={data?.missedYesterday || []}
+          pointsToday={data?.pointsToday || 0}
+          totalToday={data?.totalToday || 0}
+          currentTime={currentTime}
+          upcomingTasks={upcomingTasks}
+          currentLocationId={user?.id}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+          onEarlyComplete={handleEarlyComplete}
+        />
+      )}
+
+      {layout === "split-hero" && (
+        <SplitHeroLayout
+          allTasks={allTasks}
+          completedTasks={completedTasks}
+          missedYesterday={data?.missedYesterday || []}
+          pointsToday={data?.pointsToday || 0}
+          totalToday={data?.totalToday || 0}
+          currentTime={currentTime}
+          upcomingTasks={upcomingTasks}
+          currentLocationId={user?.id}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+          onEarlyComplete={handleEarlyComplete}
+        />
+      )}
 
       {/* Live Activity Ticker — hidden during remote view to reduce capture noise */}
       {!remoteViewActive && <LiveTicker currentLocationId={user?.id} />}

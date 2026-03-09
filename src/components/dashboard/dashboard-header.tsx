@@ -16,6 +16,7 @@ import { ConnectionStatus } from "@/components/connection-status";
 import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { NotificationBell } from "@/components/notification-bell";
 import { DashboardSettings } from "@/components/dashboard/dashboard-settings";
+import { LayoutSwitcher } from "@/components/dashboard/layout-switcher";
 import { type TaskItem } from "@/components/dashboard/timeline";
 
 interface DashboardHeaderProps {
@@ -239,6 +240,8 @@ export function DashboardHeader({
             onShowScreensaver={onShowScreensaver}
           />
         </div>
+
+        <LayoutSwitcher />
 
         <button
           onClick={onLogout}

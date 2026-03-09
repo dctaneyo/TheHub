@@ -104,6 +104,7 @@ import {
   SpinnerGap,
   SprayBottle,
   Square as PhSquare,
+  SquaresFour,
   Star as PhStar,
   Storefront,
   Sun as PhSun,
@@ -278,4 +279,5 @@ export const WifiOff = duotone(WifiSlash, "WifiOff");
 export const X = duotone(PhX, "X");
 export const XCircle = duotone(PhXCircle, "XCircle");
 export const XIcon = duotone(PhX, "XIcon");
+export const LayoutGrid = duotone(SquaresFour, "LayoutGrid");
 export const Zap = duotone(Lightning, "Zap");
