@@ -19,7 +19,7 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
     onSessionChange?.(activeSession !== null);
   }, [activeSession, onSessionChange]);
 
-  // Listen for remote view events
+  // Listen for remote view events (stable — no activeSession dependency)
   useEffect(() => {
     if (!socket) return;
 
@@ -48,14 +48,13 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
       );
     };
 
-    const onEnded = (data: { sessionId: string; endedBy: string; endedByType: string; reason?: string }) => {
-      if (activeSession?.sessionId === data.sessionId) {
-        if (captureManagerRef.current) {
-          captureManagerRef.current.stop();
-          captureManagerRef.current = null;
-        }
-        setActiveSession(null);
+    // Always clean up on ended — no stale closure issue
+    const onEnded = () => {
+      if (captureManagerRef.current) {
+        captureManagerRef.current.stop();
+        captureManagerRef.current = null;
       }
+      setActiveSession(null);
     };
 
     socket.on("remote-view:start", onStart);
@@ -67,7 +66,7 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
       socket.off("remote-view:control-toggled", onControlToggled);
       socket.off("remote-view:ended", onEnded);
     };
-  }, [socket, activeSession]);
+  }, [socket]);
 
   // End active session (location can still disconnect)
   const endSession = useCallback(() => {

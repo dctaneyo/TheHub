@@ -216,8 +216,8 @@ async function captureScreenshot(): Promise<string | undefined> {
     const dataUrl = await Promise.race([
       toJpeg(document.documentElement, {
         quality: 0.55,
-        width: Math.round(window.innerWidth * scale),
-        height: Math.round(window.innerHeight * scale),
+        width: window.innerWidth,
+        height: window.innerHeight,
         canvasWidth: Math.round(window.innerWidth * scale),
         canvasHeight: Math.round(window.innerHeight * scale),
         pixelRatio: 1,
