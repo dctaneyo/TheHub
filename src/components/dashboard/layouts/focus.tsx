@@ -12,8 +12,10 @@ import {
   AlertTriangle,
   ClipboardList,
   SprayCan,
+  Undo2,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import type { DashboardLayoutProps } from "./layout-props";
@@ -103,6 +105,7 @@ export function FocusLayout({
   pointsToday,
   totalToday,
   currentTime,
+  displayTime,
   upcomingTasks,
   currentLocationId,
   onComplete,
@@ -161,10 +164,17 @@ export function FocusLayout({
             ) : (
               <div className="space-y-1">
                 {completedTasks.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5">
+                  <div key={t.id} className="flex items-center gap-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5 group">
                     <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
                     <span className="flex-1 text-[10px] text-slate-500 line-through truncate">{t.title}</span>
-                    <span className="text-[8px] text-slate-400 shrink-0">{formatTime12(t.dueTime)}</span>
+                    <span className="text-[8px] text-slate-400 shrink-0 group-hover:hidden">{formatTime12(t.dueTime)}</span>
+                    <button
+                      onClick={() => onUncomplete(t.id)}
+                      className="hidden group-hover:flex items-center gap-0.5 text-[8px] font-bold text-amber-500 hover:text-amber-600 transition-colors shrink-0"
+                      title="Undo completion"
+                    >
+                      <Undo2 className="h-2.5 w-2.5" /> Undo
+                    </button>
                   </div>
                 ))}
               </div>
@@ -199,8 +209,18 @@ export function FocusLayout({
 
       {/* ═══ MAIN AREA: flex column fills viewport height ═══ */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* ── Prominent Clock ── */}
+        <div className="shrink-0 px-5 pt-3 pb-1 flex items-baseline gap-3">
+          <p className="text-4xl font-black tabular-nums tracking-tight text-slate-900 dark:text-white leading-none">
+            {displayTime || currentTime}
+          </p>
+          <p className="text-sm font-medium text-slate-400 leading-none">
+            {format(new Date(), "EEEE, MMMM d")}
+          </p>
+        </div>
+
         {/* ── Hero Card: Extremely Prominent ── */}
-        <div className="shrink-0 px-5 pt-4 pb-3">
+        <div className="shrink-0 px-5 pt-2 pb-3">
           {heroTask ? (
             <motion.div
               key={heroTask.id}

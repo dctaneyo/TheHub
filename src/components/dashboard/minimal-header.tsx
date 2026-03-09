@@ -12,7 +12,7 @@ import { ConnectionStatus } from "@/components/connection-status";
 import { NotificationBell } from "@/components/notification-bell";
 import { DashboardSettings } from "@/components/dashboard/dashboard-settings";
 import { type TaskItem } from "@/components/dashboard/timeline";
-import { LayoutSwitcher } from "./layout-switcher";
+import { GamificationHub } from "@/components/dashboard/gamification-hub";
 
 interface MinimalHeaderProps {
   user: { id?: string; name?: string; storeNumber?: string } | null;
@@ -120,6 +120,8 @@ export function MinimalHeader({
           locationId={user?.id}
         />
 
+        <GamificationHub locationId={user?.id} />
+
         <div className="hidden sm:block">
           <DashboardSettings
             soundEnabled={soundEnabled}
@@ -129,8 +131,6 @@ export function MinimalHeader({
             onShowScreensaver={onShowScreensaver}
           />
         </div>
-
-        <LayoutSwitcher />
 
         <button
           onClick={onLogout}

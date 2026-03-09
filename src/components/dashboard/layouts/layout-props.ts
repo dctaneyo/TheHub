@@ -8,6 +8,7 @@ export interface DashboardLayoutProps {
   pointsToday: number;
   totalToday: number;
   currentTime: string;
+  displayTime?: string;
   upcomingTasks: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete?: boolean; isCompleted?: boolean }>>;
   currentLocationId?: string;
 

@@ -36,10 +36,6 @@ import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
 import { useLayout } from "@/lib/layout-context";
-import { BentoLayout } from "@/components/dashboard/layouts/bento";
-import { NightshiftLayout } from "@/components/dashboard/layouts/nightshift";
-import { ZenLayout } from "@/components/dashboard/layouts/zen";
-import { MomentumLayout } from "@/components/dashboard/layouts/momentum";
 import { FocusLayout } from "@/components/dashboard/layouts/focus";
 
 interface TasksResponse {
@@ -253,9 +249,23 @@ export default function DashboardPage() {
   // Timestamp of last completion — suppresses socket-triggered fetchTasks
   // for 3s after a completion to prevent the optimistic update being overwritten.
   const completingRef = useRef(0);
+  // Debounce ref — prevents rapid re-fetches during socket reconnects
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef(0);
 
   const fetchTasks = useCallback(async () => {
     if (Date.now() - completingRef.current < 3000) return;
+    // Debounce: skip if we fetched less than 2s ago, schedule a delayed fetch instead
+    if (Date.now() - lastFetchRef.current < 2000) {
+      if (!fetchDebounceRef.current) {
+        fetchDebounceRef.current = setTimeout(() => {
+          fetchDebounceRef.current = null;
+          fetchTasks();
+        }, 2000);
+      }
+      return;
+    }
+    lastFetchRef.current = Date.now();
     try {
       const [todayRes, upcomingRes] = await Promise.all([
         fetch(`/api/tasks/today?${localTimeParams()}`),
@@ -672,70 +682,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {layout === "bento" && (
-        <BentoLayout
-          allTasks={allTasks}
-          completedTasks={completedTasks}
-          missedYesterday={data?.missedYesterday || []}
-          pointsToday={data?.pointsToday || 0}
-          totalToday={data?.totalToday || 0}
-          currentTime={currentTime}
-          upcomingTasks={upcomingTasks}
-          currentLocationId={user?.id}
-          onComplete={handleCompleteTask}
-          onUncomplete={handleUncompleteTask}
-          onEarlyComplete={handleEarlyComplete}
-        />
-      )}
-
-      {layout === "nightshift" && (
-        <NightshiftLayout
-          allTasks={allTasks}
-          completedTasks={completedTasks}
-          missedYesterday={data?.missedYesterday || []}
-          pointsToday={data?.pointsToday || 0}
-          totalToday={data?.totalToday || 0}
-          currentTime={currentTime}
-          upcomingTasks={upcomingTasks}
-          currentLocationId={user?.id}
-          onComplete={handleCompleteTask}
-          onUncomplete={handleUncompleteTask}
-          onEarlyComplete={handleEarlyComplete}
-        />
-      )}
-
-      {layout === "zen" && (
-        <ZenLayout
-          allTasks={allTasks}
-          completedTasks={completedTasks}
-          missedYesterday={data?.missedYesterday || []}
-          pointsToday={data?.pointsToday || 0}
-          totalToday={data?.totalToday || 0}
-          currentTime={currentTime}
-          upcomingTasks={upcomingTasks}
-          currentLocationId={user?.id}
-          onComplete={handleCompleteTask}
-          onUncomplete={handleUncompleteTask}
-          onEarlyComplete={handleEarlyComplete}
-        />
-      )}
-
-      {layout === "momentum" && (
-        <MomentumLayout
-          allTasks={allTasks}
-          completedTasks={completedTasks}
-          missedYesterday={data?.missedYesterday || []}
-          pointsToday={data?.pointsToday || 0}
-          totalToday={data?.totalToday || 0}
-          currentTime={currentTime}
-          upcomingTasks={upcomingTasks}
-          currentLocationId={user?.id}
-          onComplete={handleCompleteTask}
-          onUncomplete={handleUncompleteTask}
-          onEarlyComplete={handleEarlyComplete}
-        />
-      )}
-
       {layout === "focus" && (
         <FocusLayout
           allTasks={allTasks}
@@ -744,6 +690,7 @@ export default function DashboardPage() {
           pointsToday={data?.pointsToday || 0}
           totalToday={data?.totalToday || 0}
           currentTime={currentTime}
+          displayTime={displayTime}
           upcomingTasks={upcomingTasks}
           currentLocationId={user?.id}
           onComplete={handleCompleteTask}

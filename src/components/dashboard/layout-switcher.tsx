@@ -8,10 +8,6 @@ import { useLayout, LAYOUT_OPTIONS, type DashboardLayout } from "@/lib/layout-co
 
 const layoutPreviews: Record<DashboardLayout, string> = {
   classic: "┃ ▐ ████ ▌ ┃",
-  bento: "┃ ▪▫ ██ ▫▪ ┃",
-  nightshift: "┃ ◠◡ ▓▓▓ ┃",
-  zen: "┃    ◉    ┃",
-  momentum: "┃ ≋ ◉ ≋ ┃",
   focus: "┃ ▌ ■ ▪▪ ┃",
 };
 

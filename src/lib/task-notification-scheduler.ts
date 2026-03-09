@@ -43,13 +43,11 @@ function getTodayDate(): string {
 }
 
 /**
- * Convert a "HH:mm" time string to a Date object in Hawaii time for today
+ * Convert a "HH:mm" time string to minutes since midnight
  */
-function timeToDate(dateStr: string, timeStr: string): Date {
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  const d = hawaiiNow();
-  d.setHours(hours, minutes, 0, 0);
-  return d;
+function timeToMinutes(timeStr: string): number {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
 }
 
 /**
@@ -202,8 +200,12 @@ function clearAllTimers() {
 function scheduleAllForToday() {
   clearAllTimers();
 
-  const now = Date.now();
   const todayDate = getTodayDate();
+  // Use Hawaii hours/minutes/seconds for delay math — avoids epoch mismatch
+  // (hawaiiNow()'s internal epoch is wrong on UTC servers, but its h/m/s are correct)
+  const hiNow = hawaiiNow();
+  const nowMinutes = hiNow.getHours() * 60 + hiNow.getMinutes();
+  const nowSeconds = hiNow.getSeconds();
 
   const locations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
 
@@ -222,12 +224,11 @@ function scheduleAllForToday() {
     for (const task of locationTasks) {
       if (!isTaskDueToday(task, todayDate)) continue;
 
-      const dueDate = timeToDate(todayDate, task.dueTime);
-      const dueMs = dueDate.getTime();
+      const taskMinutes = timeToMinutes(task.dueTime);
 
       // "Due soon" fires 30 minutes before due time
-      const dueSoonMs = dueMs - DUE_SOON_MINUTES * 60 * 1000;
-      const dueSoonDelay = dueSoonMs - now;
+      const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
+      const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
       if (dueSoonDelay > 0) {
         const key = `${location.id}:${task.id}:due-soon`;
@@ -243,7 +244,7 @@ function scheduleAllForToday() {
       }
 
       // "Overdue" fires exactly at due time
-      const overdueDelay = dueMs - now;
+      const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
       if (overdueDelay > 0) {
         const key = `${location.id}:${task.id}:overdue`;
@@ -269,12 +270,11 @@ function scheduleAllForToday() {
 function scheduleMidnightRollover() {
   if (_midnightTimer) clearTimeout(_midnightTimer);
 
-  const now = hawaiiNow();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 1, 0); // 00:00:01 Hawaii time
-
-  const delay = tomorrow.getTime() - now.getTime();
+  // Compute delay using Hawaii h/m/s only (avoids epoch mismatch on UTC servers)
+  const hiNow = hawaiiNow();
+  const nowTotalSecs = hiNow.getHours() * 3600 + hiNow.getMinutes() * 60 + hiNow.getSeconds();
+  const midnightSecs = 24 * 3600 + 1; // 00:00:01 next day
+  const delay = (midnightSecs - nowTotalSecs) * 1000;
 
   _midnightTimer = setTimeout(() => {
     console.log("🌅 Midnight rollover — recalculating task timers for new day");

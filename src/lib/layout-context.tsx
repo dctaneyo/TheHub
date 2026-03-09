@@ -2,14 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DashboardLayout = "classic" | "bento" | "nightshift" | "zen" | "momentum" | "focus";
+export type DashboardLayout = "classic" | "focus";
 
 export const LAYOUT_OPTIONS: { id: DashboardLayout; name: string; description: string }[] = [
   { id: "classic", name: "Classic", description: "Original 3-column layout" },
-  { id: "bento", name: "Bento", description: "Apple-style grid with glassmorphism" },
-  { id: "nightshift", name: "Nightshift", description: "Dark HUD with glowing arcs" },
-  { id: "zen", name: "Zen", description: "One task at a time, full focus" },
-  { id: "momentum", name: "Momentum", description: "Time-of-day gradients, centered flow" },
   { id: "focus", name: "Focus", description: "Hero task card, up-next grid, collapsible sidebar" },
 ];
 

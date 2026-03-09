@@ -198,7 +198,7 @@ export function CalendarModal({ onClose, locationId }: { onClose: () => void; lo
             </div>
             <div className="flex flex-col md:flex-1 overflow-hidden">
               {weeks.map((week, wi) => (
-                <div key={wi} className="grid grid-cols-7 border-b border-slate-100 last:border-0" style={{minHeight: 48}}>
+                <div key={wi} className="grid grid-cols-7 border-b border-slate-100 last:border-0 md:flex-1" style={{minHeight: 48}}>
                   {week.map((date) => {
                     const dayTasks = getTasksForDate(date);
                     const isSelected = selectedDate && isSameDay(date, selectedDate);

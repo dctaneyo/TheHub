@@ -2,9 +2,10 @@
 
 import { useRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings, Volume2, VolumeX, Monitor, MonitorOff, Play, Sun, Moon } from "@/lib/icons";
+import { Settings, Volume2, VolumeX, Monitor, MonitorOff, Play, Sun, Moon, LayoutGrid } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 
 interface DashboardSettingsProps {
   soundEnabled: boolean;
@@ -21,6 +22,7 @@ export function DashboardSettings({
   onToggleScreensaver,
   onShowScreensaver,
 }: DashboardSettingsProps) {
+  const { layout, setLayout } = useLayout();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -140,6 +142,30 @@ export function DashboardSettings({
                 </div>
                 <ThemeToggle />
               </div>
+
+              {/* Layout selector */}
+              <div className="border-t border-border mx-2 my-1" />
+              <div className="px-3 pt-1.5 pb-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Layout</p>
+                <div className="flex gap-1.5">
+                  {LAYOUT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setLayout(opt.id)}
+                      className={cn(
+                        "flex-1 rounded-lg px-2.5 py-2 text-center transition-colors border",
+                        layout === opt.id
+                          ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                          : "border-border hover:bg-muted text-foreground"
+                      )}
+                    >
+                      <LayoutGrid className={cn("h-3.5 w-3.5 mx-auto mb-0.5", layout === opt.id && "text-[var(--hub-red)]")} />
+                      <p className="text-[10px] font-bold">{opt.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-border mx-2 my-1" />
 
               {/* Manual invoke */}
               <button
