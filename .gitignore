@@ -20,6 +20,10 @@
 # production
 /build
 
+# arena - keep local configuration
+/.arena/
+/build
+
 # misc
 .DS_Store
 *.pem
