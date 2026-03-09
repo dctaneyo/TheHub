@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import {
   LogOut,
   MessageCircle,
@@ -66,20 +65,13 @@ export function MinimalHeader({
         </div>
       </div>
 
-      {/* Center: Time */}
-      <div className="flex-1 flex justify-center">
-        <div className="text-center">
-          <p className="text-lg font-black tabular-nums tracking-tight text-foreground leading-none">
-            {displayTime}
-          </p>
-          <p className="text-[9px] font-medium text-muted-foreground leading-none mt-0.5">
-            {format(new Date(), "EEE, MMM d")}
-          </p>
-        </div>
-      </div>
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0">
+        <GamificationHub locationId={user?.id} />
+
         <div className="hidden sm:block">
           <ConnectionStatus />
         </div>
@@ -120,17 +112,13 @@ export function MinimalHeader({
           locationId={user?.id}
         />
 
-        <GamificationHub locationId={user?.id} />
-
-        <div className="hidden sm:block">
-          <DashboardSettings
-            soundEnabled={soundEnabled}
-            onToggleSound={onToggleSound}
-            screensaverEnabled={screensaverEnabled}
-            onToggleScreensaver={onToggleScreensaver}
-            onShowScreensaver={onShowScreensaver}
-          />
-        </div>
+        <DashboardSettings
+          soundEnabled={soundEnabled}
+          onToggleSound={onToggleSound}
+          screensaverEnabled={screensaverEnabled}
+          onToggleScreensaver={onToggleScreensaver}
+          onShowScreensaver={onShowScreensaver}
+        />
 
         <button
           onClick={onLogout}

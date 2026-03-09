@@ -55,12 +55,12 @@ export function DashboardSettings({
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
-          open ? "bg-muted text-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+          "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+          open ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )}
         title="Settings"
       >
-        <Settings className="h-[18px] w-[18px]" />
+        <Settings className="h-4 w-4" />
       </button>
 
       <AnimatePresence>

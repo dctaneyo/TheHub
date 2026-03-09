@@ -332,7 +332,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
         <button
           onClick={() => setOpen(!open)}
           className={cn(
-            "relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
+            "relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
             totalActive > 0
               ? "bg-red-50 dark:bg-red-950/50 text-[var(--hub-red)]"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -342,7 +342,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
           )}
           aria-label="Notifications"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4" />
           <AnimatePresence>
             {totalActive > 0 && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}

@@ -210,11 +210,11 @@ export function FocusLayout({
       {/* ═══ MAIN AREA: flex column fills viewport height ═══ */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* ── Prominent Clock ── */}
-        <div className="shrink-0 px-5 pt-3 pb-1 flex items-baseline gap-3">
-          <p className="text-4xl font-black tabular-nums tracking-tight text-slate-900 dark:text-white leading-none">
+        <div className="shrink-0 px-5 pt-4 pb-2 flex flex-col items-center">
+          <p className="text-6xl font-extralight tabular-nums tracking-tight text-slate-800 dark:text-slate-100 leading-none">
             {displayTime || currentTime}
           </p>
-          <p className="text-sm font-medium text-slate-400 leading-none">
+          <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500 mt-1.5">
             {format(new Date(), "EEEE, MMMM d")}
           </p>
         </div>

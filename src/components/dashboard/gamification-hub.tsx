@@ -253,36 +253,17 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className={cn(
-            "flex items-center gap-2 rounded-2xl border px-3 py-1.5 transition-all",
+            "flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-all",
             isOpen
-              ? "border-purple-300 bg-purple-50/80 dark:border-purple-700 dark:bg-purple-950/40"
-              : "border-border bg-card hover:border-purple-200 dark:hover:border-purple-800"
+              ? "border border-purple-300 bg-purple-50/80 dark:border-purple-700 dark:bg-purple-950/40"
+              : "bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50"
           )}
         >
           {/* Level ring */}
-          <div className="relative h-9 w-9 shrink-0">
-            <svg className="h-9 w-9 -rotate-90" viewBox="0 0 36 36">
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                className="text-muted/40"
-              />
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke="url(#levelGradient)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-1000"
-              />
+          <div className="relative h-6 w-6 shrink-0">
+            <svg className="h-6 w-6 -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted/40" />
+              <circle cx="18" cy="18" r="16" fill="none" stroke="url(#levelGradient)" strokeWidth="3" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-1000" />
               <defs>
                 <linearGradient id="levelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#8b5cf6" />
@@ -291,26 +272,26 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
               </defs>
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-black text-purple-600 dark:text-purple-400">
+              <span className="text-[9px] font-black text-purple-600 dark:text-purple-400">
                 {level.level}
               </span>
             </div>
           </div>
 
           {/* Stats row */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {/* Streak */}
-            <div className="flex items-center gap-1">
-              <Flame className={cn("h-3.5 w-3.5", streakColor)} />
-              <span className={cn("text-sm font-bold tabular-nums", streakColor)}>
+            <div className="flex items-center gap-0.5">
+              <Flame className={cn("h-3 w-3", streakColor)} />
+              <span className={cn("text-xs font-bold tabular-nums", streakColor)}>
                 {streak.current}
               </span>
             </div>
 
             {/* XP */}
-            <div className="flex items-center gap-1">
-              <Zap className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400">
+            <div className="flex items-center gap-0.5">
+              <Zap className="h-3 w-3 text-amber-500" />
+              <span className="text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
                 {stats.totalXP >= 1000
                   ? `${(stats.totalXP / 1000).toFixed(1)}k`
                   : stats.totalXP}
@@ -319,9 +300,9 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
 
             {/* Rank */}
             {leaderboardRank && (
-              <div className="flex items-center gap-1">
-                <Trophy className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-0.5">
+                <Trophy className="h-3 w-3 text-emerald-500" />
+                <span className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                   #{leaderboardRank.rank}
                 </span>
               </div>
