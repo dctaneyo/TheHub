@@ -12,6 +12,7 @@ const layoutPreviews: Record<DashboardLayout, string> = {
   nightshift: "┃ ◠◡ ▓▓▓ ┃",
   zen: "┃    ◉    ┃",
   momentum: "┃ ≋ ◉ ≋ ┃",
+  focus: "┃ ▌ ■ ▪▪ ┃",
 };
 
 export function LayoutSwitcher() {

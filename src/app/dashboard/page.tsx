@@ -40,6 +40,7 @@ import { BentoLayout } from "@/components/dashboard/layouts/bento";
 import { NightshiftLayout } from "@/components/dashboard/layouts/nightshift";
 import { ZenLayout } from "@/components/dashboard/layouts/zen";
 import { MomentumLayout } from "@/components/dashboard/layouts/momentum";
+import { FocusLayout } from "@/components/dashboard/layouts/focus";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -721,6 +722,22 @@ export default function DashboardPage() {
 
       {layout === "momentum" && (
         <MomentumLayout
+          allTasks={allTasks}
+          completedTasks={completedTasks}
+          missedYesterday={data?.missedYesterday || []}
+          pointsToday={data?.pointsToday || 0}
+          totalToday={data?.totalToday || 0}
+          currentTime={currentTime}
+          upcomingTasks={upcomingTasks}
+          currentLocationId={user?.id}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+          onEarlyComplete={handleEarlyComplete}
+        />
+      )}
+
+      {layout === "focus" && (
+        <FocusLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}
