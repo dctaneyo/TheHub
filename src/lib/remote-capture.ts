@@ -215,7 +215,7 @@ async function captureScreenshot(): Promise<string | undefined> {
     const scale = window.devicePixelRatio > 1 ? 0.7 : 0.85;
     const dataUrl = await Promise.race([
       toJpeg(document.documentElement, {
-        quality: 0.7,
+        quality: 0.85,
         width: window.innerWidth,
         height: window.innerHeight,
         canvasWidth: Math.round(window.innerWidth * scale),
@@ -392,11 +392,11 @@ export class RemoteCaptureManager {
       this.sendSnapshot(true);
     }, 3000);
 
-    // Track cursor/touch position (throttled to ~15fps)
+    // Track cursor/touch position (throttled to ~30fps)
     let lastCursorTime = 0;
     this.cursorTracker = (e: MouseEvent | TouchEvent) => {
       const now = Date.now();
-      if (now - lastCursorTime < 66) return; // ~15fps
+      if (now - lastCursorTime < 33) return; // ~30fps
       lastCursorTime = now;
 
       let x: number, y: number;
