@@ -521,15 +521,63 @@ function ActiveRemoteView({
                 background: "#fff",
               }}
             >
-              {/* Render each captured element as an absolutely positioned HTML div */}
-              {snapshot.elements.map((el, i) => (
-                <RenderedElement
-                  key={`${el.selector}-${i}`}
-                  el={el}
-                  isHovered={hoveredElement?.selector === el.selector}
-                  controlEnabled={controlEnabled}
+              {/* Screenshot layer — pixel-perfect view of what the user sees */}
+              {snapshot.screenshot ? (
+                <img
+                  src={snapshot.screenshot}
+                  alt="Remote screen"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    pointerEvents: "none",
+                    imageRendering: "auto",
+                  }}
+                  draggable={false}
                 />
-              ))}
+              ) : (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b",
+                    fontSize: 14,
+                    background: "#f1f5f9",
+                  }}
+                >
+                  Waiting for screenshot...
+                </div>
+              )}
+
+              {/* Invisible interactive element overlay for click targeting */}
+              {controlEnabled && snapshot.elements
+                .filter(el => el.interactive)
+                .map((el, i) => {
+                  const isHov = hoveredElement?.selector === el.selector;
+                  return (
+                    <div
+                      key={`target-${el.selector}-${i}`}
+                      style={{
+                        position: "absolute",
+                        left: el.rect.x,
+                        top: el.rect.y,
+                        width: el.rect.width,
+                        height: el.rect.height,
+                        pointerEvents: "none",
+                        border: isHov ? "2px solid rgba(99, 102, 241, 0.8)" : "1px solid transparent",
+                        borderRadius: el.styles?.borderRadius || 4,
+                        background: isHov ? "rgba(99, 102, 241, 0.12)" : "transparent",
+                        zIndex: 10,
+                        transition: "border 0.1s, background 0.1s",
+                      }}
+                    />
+                  );
+                })}
 
               {/* Remote cursor overlay */}
               {cursorPos && (
@@ -544,7 +592,6 @@ function ActiveRemoteView({
                     pointerEvents: "none",
                   }}
                 >
-                  {/* Outer ring */}
                   <div
                     style={{
                       position: "absolute",
@@ -554,7 +601,6 @@ function ActiveRemoteView({
                       background: "rgba(239, 68, 68, 0.15)",
                     }}
                   />
-                  {/* Inner dot */}
                   <div
                     style={{
                       position: "absolute",
@@ -679,136 +725,3 @@ function ActiveRemoteView({
   );
 }
 
-// ── Individual element renderer ──
-
-function RenderedElement({
-  el,
-  isHovered,
-  controlEnabled,
-}: {
-  el: CapturedElement;
-  isHovered: boolean;
-  controlEnabled: boolean;
-}) {
-  const s = el.styles;
-  const isInput = ["input", "textarea", "select"].includes(el.tag);
-  const isButton = el.tag === "button" || el.tag === "a" || (el.classes?.includes("btn"));
-  const isHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(el.tag);
-  const isMedia = ["img", "video", "canvas", "svg"].includes(el.tag);
-  const isLeaf = (el.children ?? 0) === 0;
-  const hasBg = s && s.bgColor !== "rgba(0, 0, 0, 0)" && s.bgColor !== "transparent";
-
-  // Build inline styles from captured computed styles
-  const style: React.CSSProperties = {
-    position: "absolute",
-    left: el.rect.x,
-    top: el.rect.y,
-    width: el.rect.width,
-    height: el.rect.height,
-    overflow: "hidden",
-    pointerEvents: "none",
-    boxSizing: "border-box",
-  };
-
-  if (s) {
-    if (hasBg) {
-      style.backgroundColor = s.bgColor;
-    }
-    if (s.borderRadius && s.borderRadius !== "0px") {
-      style.borderRadius = s.borderRadius;
-    }
-    if (s.border && s.border !== "none") {
-      style.border = s.border;
-    }
-    if (s.boxShadow && s.boxShadow !== "none") {
-      style.boxShadow = s.boxShadow;
-    }
-    if (s.opacity && s.opacity !== "1") {
-      style.opacity = parseFloat(s.opacity);
-    }
-  }
-
-  // Control mode hover highlight
-  if (el.interactive && isHovered && controlEnabled) {
-    style.outline = "2px solid rgba(99, 102, 241, 0.8)";
-    style.outlineOffset = "1px";
-    style.zIndex = 9990;
-  }
-
-  // Text styling
-  const textStyle: React.CSSProperties = {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    padding: "0 4px",
-    boxSizing: "border-box",
-    lineHeight: 1.3,
-  };
-
-  if (s) {
-    textStyle.color = s.color;
-    textStyle.fontSize = s.fontSize;
-    textStyle.fontWeight = s.fontWeight;
-    if (s.textAlign) {
-      textStyle.textAlign = s.textAlign as any;
-      if (s.textAlign === "center") textStyle.justifyContent = "center";
-      else if (s.textAlign === "right") textStyle.justifyContent = "flex-end";
-    }
-  }
-
-  // For media elements, show a placeholder
-  if (isMedia) {
-    return (
-      <div style={style}>
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(135deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#94a3b8",
-            fontSize: 10,
-            borderRadius: s?.borderRadius || 0,
-          }}
-        >
-          {el.tag === "img" ? "IMG" : el.tag.toUpperCase()}
-        </div>
-      </div>
-    );
-  }
-
-  // For containers with background but no direct text, just render the box
-  if (!isLeaf && !el.text && hasBg) {
-    return <div style={style} />;
-  }
-
-  // For containers with background, render box (children render themselves)
-  if (!isLeaf && hasBg) {
-    return <div style={style} />;
-  }
-
-  // Elements with text content
-  const displayText = isInput
-    ? (el.value || el.placeholder || "")
-    : el.text;
-
-  if (!displayText && !hasBg && !el.interactive) {
-    return null;
-  }
-
-  return (
-    <div style={style}>
-      {displayText && (
-        <div style={textStyle}>
-          {displayText}
-        </div>
-      )}
-    </div>
-  );
-}

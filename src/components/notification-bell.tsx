@@ -101,18 +101,23 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     } catch {}
   }, [storageKey]);
 
-  // Clean up dismissed for completed/removed tasks
+  // Clean up dismissed entries only for tasks that are confirmed completed,
+  // so the notification can re-fire if the task is un-completed later.
+  // Conservative: keep dismissed IDs we can't match to avoid purge-and-refire bugs.
   useEffect(() => {
     if (tasks.length === 0) return;
-    const currentTaskIds = new Set(tasks.map((t) => t.id));
+    const completedIds = new Set(tasks.filter((t) => t.isCompleted).map((t) => t.id));
+    if (completedIds.size === 0) return;
     const arr = Array.from(notifiedRef.current);
     let changed = false;
     const filtered = arr.filter((id) => {
-      const taskId = id.replace(/^(due|overdue)-/, "").replace(/-[^-]+$/, "");
-      const task = tasks.find((t) => t.id === taskId);
-      if (task && !task.isCompleted && currentTaskIds.has(taskId)) return true;
-      changed = true;
-      return false;
+      // Find which task this dismissed ID belongs to by checking if the ID contains the task ID
+      const matchedTask = tasks.find((t) => id.includes(t.id));
+      if (matchedTask && matchedTask.isCompleted) {
+        changed = true;
+        return false; // Remove dismissed entry for completed tasks
+      }
+      return true; // Keep all others (including unmatched — be conservative)
     });
     if (changed) {
       notifiedRef.current = new Set(filtered);

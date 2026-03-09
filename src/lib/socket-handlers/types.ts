@@ -91,6 +91,7 @@ export interface DOMSnapshot {
   elements: CapturedElement[];
   activeElementSelector: string | null;
   timestamp: number;
+  screenshot?: string; // base64 JPEG data URL from html2canvas
 }
 
 export interface RemoteViewSession {

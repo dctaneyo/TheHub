@@ -2,6 +2,7 @@
 
 import type { Socket } from "socket.io-client";
 import type { CapturedElement, DOMSnapshot, RemoteAction } from "./socket-handlers/types";
+import html2canvas from "html2canvas";
 
 /**
  * Remote DOM Capture & Action Executor for kiosk locations.
@@ -207,7 +208,26 @@ function captureElements(): CapturedElement[] {
   return elements;
 }
 
-export function captureDOMSnapshot(): DOMSnapshot {
+export async function captureDOMSnapshot(includeScreenshot = true): Promise<DOMSnapshot> {
+  let screenshot: string | undefined;
+
+  if (includeScreenshot) {
+    try {
+      const canvas = await html2canvas(document.documentElement, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 0.5, // Half resolution for bandwidth (still looks good)
+        logging: false,
+        backgroundColor: null,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+      });
+      screenshot = canvas.toDataURL("image/jpeg", 0.6);
+    } catch (err) {
+      console.warn("Screenshot capture failed, sending element-only snapshot:", err);
+    }
+  }
+
   return {
     url: window.location.href,
     title: document.title,
@@ -224,6 +244,7 @@ export function captureDOMSnapshot(): DOMSnapshot {
       ? getUniqueSelector(document.activeElement)
       : null,
     timestamp: Date.now(),
+    screenshot,
   };
 }
 
@@ -325,6 +346,7 @@ export class RemoteCaptureManager {
   private cursorTracker: ((e: MouseEvent | TouchEvent) => void) | null = null;
   private eventTracker: ((e: Event) => void) | null = null;
   private isActive = false;
+  private isCapturing = false; // Prevent overlapping captures
 
   constructor(socket: Socket, sessionId: string) {
     this.socket = socket;
@@ -335,13 +357,13 @@ export class RemoteCaptureManager {
     if (this.isActive) return;
     this.isActive = true;
 
-    // Send initial snapshot immediately
-    this.sendSnapshot();
+    // Send initial screenshot snapshot immediately
+    this.sendSnapshot(true);
 
-    // Send snapshots every 2 seconds (adaptive)
+    // Send full screenshot snapshots every 3 seconds
     this.snapshotInterval = setInterval(() => {
-      this.sendSnapshot();
-    }, 2000);
+      this.sendSnapshot(true);
+    }, 3000);
 
     // Track cursor/touch position (throttled to ~15fps)
     let lastCursorTime = 0;
@@ -387,8 +409,8 @@ export class RemoteCaptureManager {
         },
       });
 
-      // Send an immediate snapshot after click/input for responsiveness
-      setTimeout(() => this.sendSnapshot(), 100);
+      // Send a screenshot snapshot shortly after interaction for responsiveness
+      setTimeout(() => this.sendSnapshot(true), 300);
     };
     document.addEventListener("click", this.eventTracker, { capture: true });
     document.addEventListener("input", this.eventTracker, { capture: true });
@@ -397,8 +419,8 @@ export class RemoteCaptureManager {
     this.socket.on("remote-view:action", (data: { sessionId: string; action: RemoteAction; arlName: string }) => {
       if (data.sessionId !== this.sessionId) return;
       const success = executeRemoteAction(data.action);
-      // Send updated snapshot after action
-      setTimeout(() => this.sendSnapshot(), 200);
+      // Send updated screenshot after action
+      setTimeout(() => this.sendSnapshot(true), 400);
       console.log(`🖥️ Remote action ${data.action.type} by ${data.arlName}: ${success ? "✅" : "❌"}`);
     });
 
@@ -438,16 +460,21 @@ export class RemoteCaptureManager {
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
 
-  private sendSnapshot() {
-    if (!this.isActive) return;
+  private async sendSnapshot(includeScreenshot = true) {
+    if (!this.isActive || this.isCapturing) return;
+    this.isCapturing = true;
     try {
-      const snapshot = captureDOMSnapshot();
-      this.socket.emit("remote-view:snapshot", {
-        sessionId: this.sessionId,
-        snapshot,
-      });
+      const snapshot = await captureDOMSnapshot(includeScreenshot);
+      if (this.isActive) {
+        this.socket.emit("remote-view:snapshot", {
+          sessionId: this.sessionId,
+          snapshot,
+        });
+      }
     } catch (err) {
       console.error("Remote snapshot error:", err);
+    } finally {
+      this.isCapturing = false;
     }
   }
 }
