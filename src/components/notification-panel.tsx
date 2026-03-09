@@ -147,7 +147,7 @@ function NotifVirtualList({ notifications, onMarkAsRead, onDelete, onClose, getT
                       <button
                         onClick={() => onMarkAsRead(notification.id)}
                         className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title="Mark as read"
+                        title="Dismiss"
                       >
                         <Check className="h-3.5 w-3.5" />
                       </button>
@@ -294,10 +294,10 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
             <button
               onClick={handleMarkAllRead}
               className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              title="Mark all as read"
+              title="Dismiss all"
             >
               <Check className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">All</span>
+              <span className="hidden sm:inline">Dismiss All</span>
             </button>
             <button
               onClick={onClose}
@@ -339,13 +339,8 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           {/* Task notifications section */}
           {taskNotifications.length > 0 && (
             <div className="border-b border-border">
-              <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
+              <div className="flex items-center px-4 py-2 bg-muted/30">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Task Alerts</span>
-                {onDismissAllTasks && (
-                  <button onClick={onDismissAllTasks} className="text-[10px] font-medium text-muted-foreground hover:text-foreground">
-                    Dismiss all
-                  </button>
-                )}
               </div>
               {taskNotifications.map((tn) => (
                 <div key={tn.id} className={cn(
