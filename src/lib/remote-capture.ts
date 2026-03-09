@@ -212,10 +212,10 @@ async function captureScreenshot(): Promise<string | undefined> {
   try {
     const { toJpeg } = await import("html-to-image");
 
-    const scale = window.devicePixelRatio > 1 ? 0.35 : 0.5;
+    const scale = window.devicePixelRatio > 1 ? 0.7 : 0.85;
     const dataUrl = await Promise.race([
       toJpeg(document.documentElement, {
-        quality: 0.55,
+        quality: 0.7,
         width: window.innerWidth,
         height: window.innerHeight,
         canvasWidth: Math.round(window.innerWidth * scale),
@@ -270,19 +270,28 @@ export function executeRemoteAction(action: RemoteAction): boolean {
   try {
     switch (action.type) {
       case "click": {
-        if (action.selector) {
-          const el = document.querySelector(action.selector);
-          if (el) {
-            (el as HTMLElement).click();
-            return true;
-          }
-        }
+        let target: Element | null = null;
         if (action.coords) {
-          const el = document.elementFromPoint(action.coords.x, action.coords.y);
-          if (el) {
-            (el as HTMLElement).click();
-            return true;
-          }
+          target = document.elementFromPoint(action.coords.x, action.coords.y);
+        }
+        if (!target && action.selector) {
+          target = document.querySelector(action.selector);
+        }
+        if (target) {
+          const htmlEl = target as HTMLElement;
+          const cx = action.coords?.x ?? 0;
+          const cy = action.coords?.y ?? 0;
+          const opts: PointerEventInit & MouseEventInit = {
+            bubbles: true, cancelable: true, composed: true,
+            clientX: cx, clientY: cy, pointerId: 1, pointerType: "mouse",
+            button: 0, buttons: 1,
+          };
+          htmlEl.dispatchEvent(new PointerEvent("pointerdown", opts));
+          htmlEl.dispatchEvent(new MouseEvent("mousedown", opts));
+          htmlEl.dispatchEvent(new PointerEvent("pointerup", { ...opts, buttons: 0 }));
+          htmlEl.dispatchEvent(new MouseEvent("mouseup", { ...opts, buttons: 0 }));
+          htmlEl.dispatchEvent(new MouseEvent("click", { ...opts, buttons: 0 }));
+          return true;
         }
         return false;
       }
