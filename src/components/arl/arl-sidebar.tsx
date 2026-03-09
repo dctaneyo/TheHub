@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote-login" | "remote-view" | "data-management" | "broadcast" | "meetings" | "analytics";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics";
 
 // Map additional sidebar views to the permissions that govern whether the ARL
 // should see them at all. Views not listed here are always visible.
@@ -41,8 +41,7 @@ export const navItems = [
   { id: "meetings" as const, label: "Meetings", icon: Video },
   { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
   { id: "users" as const, label: "Users", icon: Users },
-  { id: "remote-login" as const, label: "Remote Login", icon: Monitor },
-  { id: "remote-view" as const, label: "Remote View", icon: Eye },
+  { id: "remote" as const, label: "Remote", icon: Monitor },
   { id: "data-management" as const, label: "Data Management", icon: Database },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
 ];

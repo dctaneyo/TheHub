@@ -175,15 +175,15 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCode((v) => !v)}
-            className="flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-2 cursor-pointer hover:bg-emerald-100 transition-colors"
+            className="flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-3.5 py-2 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
           >
             <div className="relative">
-              <Wifi className="h-4 w-4 text-emerald-600" />
-              <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-emerald-50 bg-emerald-500" />
+              <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-emerald-50 dark:border-emerald-950 bg-emerald-500" />
             </div>
-            <span className="text-xs font-semibold text-emerald-700">Connected</span>
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Connected</span>
             {sessionCode && (
-              <span className="ml-0.5 font-mono text-xs font-bold text-emerald-600 tracking-wider">
+              <span className="ml-0.5 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
                 #{sessionCode}
               </span>
             )}
@@ -199,14 +199,14 @@ export function ConnectionStatus() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex items-center gap-2 rounded-full bg-red-50 px-3.5 py-2"
+            className="flex items-center gap-2 rounded-full bg-red-50 dark:bg-red-950/50 px-3.5 py-2"
           >
             {isReconnecting ? (
               <RefreshCw className="h-4 w-4 animate-spin text-red-500" />
             ) : (
               <WifiOff className="h-4 w-4 text-red-500" />
             )}
-            <span className="text-xs font-semibold text-red-600">
+            <span className="text-xs font-semibold text-red-600 dark:text-red-400">
               {isReconnecting ? "Reconnecting..." : "Offline"}
             </span>
           </motion.div>
@@ -220,40 +220,40 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed z-[2000] w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+            className="fixed z-[2000] w-64 rounded-xl border border-border bg-card p-3 shadow-lg"
             style={dropdownPos ? { top: dropdownPos.top, right: dropdownPos.right } : {}}
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Active Sessions ({sessions.length})
               </p>
               {multiSession && (
-                <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5">
+                <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5">
                   <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
-                  <span className="text-[9px] font-bold text-amber-600">Multiple active</span>
+                  <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">Multiple active</span>
                 </div>
               )}
             </div>
 
             <div className="space-y-1.5">
               {sessions.length === 0 && (
-                <p className="text-xs text-slate-400">No active sessions</p>
+                <p className="text-xs text-muted-foreground">No active sessions</p>
               )}
               {sessions.map((s) => (
                 <div
                   key={s.id}
-                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${s.isCurrent ? "bg-emerald-50" : "bg-slate-50"}`}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${s.isCurrent ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted/50"}`}
                 >
-                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${s.isCurrent ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"}`}>
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${s.isCurrent ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
                     <DeviceIcon type={s.deviceType} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <Hash className="h-2.5 w-2.5 text-slate-400 shrink-0" />
-                      <span className="font-mono text-xs font-bold tracking-widest text-slate-800">{s.code}</span>
-                      {s.isCurrent && <span className="text-[9px] font-semibold text-emerald-600">(this)</span>}
+                      <Hash className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                      <span className="font-mono text-xs font-bold tracking-widest text-foreground">{s.code}</span>
+                      {s.isCurrent && <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">(this)</span>}
                     </div>
-                    <p className="text-[9px] text-slate-400 truncate">
+                    <p className="text-[9px] text-muted-foreground truncate">
                       {s.deviceType ?? "unknown"} · {formatDistanceToNow(new Date(s.lastSeen), { addSuffix: true })}
                     </p>
                   </div>

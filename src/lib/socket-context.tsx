@@ -165,7 +165,7 @@ function UpdateSplash({ visible }: { visible: boolean }) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8]"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950"
         >
           {/* Pulsing ring */}
           <div className="relative flex items-center justify-center mb-8">
@@ -180,7 +180,7 @@ function UpdateSplash({ visible }: { visible: boolean }) {
             ))}
             {/* Hub logo */}
             <motion.div
-              className="relative z-10 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--hub-red)] shadow-2xl shadow-red-300"
+              className="relative z-10 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--hub-red)] shadow-2xl shadow-red-300 dark:shadow-red-900/50"
               animate={{ scale: [1, 1.08, 1] }}
               transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
             >
@@ -195,21 +195,21 @@ function UpdateSplash({ visible }: { visible: boolean }) {
             transition={{ delay: 0.3, duration: 0.4 }}
             className="text-center px-8"
           >
-            <p className="text-2xl font-black text-slate-800 mb-1">App Updated!</p>
-            <p className="text-sm font-medium text-slate-500 mb-6">Loading the latest build. Please wait…</p>
+            <p className="text-2xl font-black text-foreground mb-1">App Updated!</p>
+            <p className="text-sm font-medium text-muted-foreground mb-6">Loading the latest build. Please wait…</p>
 
             {/* Skeleton bars */}
             <div className="w-64 space-y-2.5">
               {["w-full", "w-4/5", "w-3/5"].map((w, i) => (
                 <motion.div
                   key={i}
-                  className={`${w} h-3 rounded-full bg-slate-200 overflow-hidden mx-auto`}
+                  className={`${w} h-3 rounded-full bg-muted overflow-hidden mx-auto`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 + i * 0.1 }}
                 >
                   <motion.div
-                    className="h-full bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200"
+                    className="h-full bg-gradient-to-r from-muted via-muted-foreground/20 to-muted"
                     animate={{ x: ["-100%", "100%"] }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
                   />

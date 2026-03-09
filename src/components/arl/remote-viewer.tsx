@@ -16,17 +16,23 @@ import {
 import { cn } from "@/lib/utils";
 import type { DOMSnapshot, CapturedElement, UserEvent } from "@/lib/socket-handlers/types";
 
-interface OnlineLocation {
+interface RemoteTarget {
   id: string;
   name: string;
-  storeNumber: string;
+  storeNumber?: string;
   isOnline: boolean;
   currentPage?: string;
+  userKind: "location" | "arl";
+  role?: string;
 }
 
-export function RemoteViewer() {
+interface RemoteViewerProps {
+  userRole?: string; // "admin" | "arl" | etc
+}
+
+export function RemoteViewer({ userRole }: RemoteViewerProps) {
   const { socket } = useSocket();
-  const [locations, setLocations] = useState<OnlineLocation[]>([]);
+  const [targets, setTargets] = useState<RemoteTarget[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"idle" | "pending" | "active" | "ended">("idle");
@@ -40,39 +46,58 @@ export function RemoteViewer() {
   const viewerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch online locations
+  // Fetch online targets (locations + ARLs for admins)
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchTargets = async () => {
       try {
         const res = await fetch("/api/locations");
         if (res.ok) {
           const data = await res.json();
-          setLocations(
-            (data.locations || []).map((loc: any) => ({
+          const locs: RemoteTarget[] = (data.locations || [])
+            .filter((l: any) => l.isOnline)
+            .map((loc: any) => ({
               id: loc.id,
               name: loc.name,
               storeNumber: loc.storeNumber,
-              isOnline: loc.isOnline || false,
+              isOnline: true,
               currentPage: loc.currentPage,
-            }))
-          );
+              userKind: "location" as const,
+            }));
+          // Admins can also control ARLs
+          const arls: RemoteTarget[] = userRole === "admin"
+            ? (data.arls || [])
+                .filter((a: any) => a.isOnline)
+                .map((arl: any) => ({
+                  id: arl.id,
+                  name: arl.name,
+                  isOnline: true,
+                  currentPage: arl.currentPage,
+                  userKind: "arl" as const,
+                  role: arl.role,
+                }))
+            : [];
+          setTargets([...locs, ...arls]);
         }
       } catch {}
     };
-    fetchLocations();
-    const interval = setInterval(fetchLocations, 15000);
+    fetchTargets();
+    const interval = setInterval(fetchTargets, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userRole]);
 
-  // Update online status from presence events
+  // Update online status from presence events — add/remove targets in real time
   useEffect(() => {
     if (!socket) return;
-    const handler = (data: { userId: string; isOnline: boolean }) => {
-      setLocations(prev =>
-        prev.map(loc =>
-          loc.id === data.userId ? { ...loc, isOnline: data.isOnline } : loc
-        )
-      );
+    const handler = (data: { userId: string; isOnline: boolean; userType?: string }) => {
+      setTargets(prev => {
+        if (data.isOnline) {
+          // Already in list? update it. Otherwise it'll appear on next poll.
+          return prev.map(t => t.id === data.userId ? { ...t, isOnline: true } : t);
+        } else {
+          // Remove offline targets
+          return prev.filter(t => t.id !== data.userId);
+        }
+      });
     };
     socket.on("presence:update", handler);
     return () => { socket.off("presence:update", handler); };
@@ -128,6 +153,7 @@ export function RemoteViewer() {
         setSnapshot(null);
         setCursorPos(null);
         setControlEnabled(false);
+        setIsFullscreen(false);
         setTimeout(() => setSessionStatus("idle"), 2000);
       }
     };
@@ -171,6 +197,7 @@ export function RemoteViewer() {
     setSnapshot(null);
     setCursorPos(null);
     setControlEnabled(false);
+    setIsFullscreen(false);
     setTimeout(() => setSessionStatus("idle"), 1000);
   }, [socket, sessionId]);
 
@@ -243,8 +270,7 @@ export function RemoteViewer() {
     setHoveredElement(hovered || null);
   }, [snapshot]);
 
-  const selectedLocation = locations.find(l => l.id === selectedLocationId);
-  const onlineLocations = locations.filter(l => l.isOnline);
+  const selectedTarget = targets.find(l => l.id === selectedLocationId);
 
   return (
     <div className={cn(
@@ -261,8 +287,8 @@ export function RemoteViewer() {
             <h2 className="text-lg font-bold text-foreground">Remote View</h2>
             <p className="text-xs text-muted-foreground">
               {sessionStatus === "active"
-                ? `Viewing: ${selectedLocation?.name || "Location"}`
-                : `${onlineLocations.length} location${onlineLocations.length !== 1 ? "s" : ""} online`}
+                ? `Viewing: ${selectedTarget?.name || "Target"}`
+                : `${targets.length} target${targets.length !== 1 ? "s" : ""} online`}
             </p>
           </div>
         </div>
@@ -299,49 +325,43 @@ export function RemoteViewer() {
         </div>
       </div>
 
-      {/* Idle state — location picker */}
+      {/* Idle state — target picker (online only) */}
       {sessionStatus === "idle" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {locations.map(loc => (
+          {targets.map(t => (
             <button
-              key={loc.id}
-              disabled={!loc.isOnline}
-              onClick={() => requestRemoteView(loc.id)}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all",
-                loc.isOnline
-                  ? "border-border bg-card hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-800 cursor-pointer"
-                  : "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
-              )}
+              key={t.id}
+              onClick={() => requestRemoteView(t.id)}
+              className="flex items-center gap-3 rounded-2xl border border-border bg-card hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-800 cursor-pointer p-4 text-left transition-all"
             >
-              <div className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                loc.isOnline ? "bg-emerald-100 dark:bg-emerald-950" : "bg-muted"
-              )}>
-                {loc.isOnline
-                  ? <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  : <WifiOff className="h-5 w-5 text-muted-foreground" />}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950">
+                <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{loc.name}</p>
-                <p className="text-xs text-muted-foreground">Store #{loc.storeNumber}</p>
-                {loc.isOnline && loc.currentPage && (
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-foreground truncate">{t.name}</p>
+                  {t.userKind === "arl" && (
+                    <span className="shrink-0 rounded-full bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 text-[9px] font-bold text-purple-700 dark:text-purple-300 uppercase">ARL</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t.userKind === "location" && t.storeNumber ? `Store #${t.storeNumber}` : t.userKind === "arl" ? (t.role || "ARL") : ""}
+                </p>
+                {t.currentPage && (
                   <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5">
-                    Currently on: {loc.currentPage}
+                    Currently on: {t.currentPage}
                   </p>
                 )}
               </div>
-              {loc.isOnline && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950">
-                  <Eye className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                </div>
-              )}
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950">
+                <Eye className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
             </button>
           ))}
-          {locations.length === 0 && (
+          {targets.length === 0 && (
             <div className="col-span-full py-12 text-center">
               <Monitor className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No locations found</p>
+              <p className="text-sm text-muted-foreground">No online targets found</p>
             </div>
           )}
         </div>
@@ -357,7 +377,7 @@ export function RemoteViewer() {
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">Requesting Access...</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Waiting for {selectedLocation?.name || "location"} to accept
+              Waiting for {selectedTarget?.name || "target"} to accept
             </p>
           </div>
           <button
@@ -384,7 +404,7 @@ export function RemoteViewer() {
           userEvents={userEvents}
           hoveredElement={hoveredElement}
           isFullscreen={isFullscreen}
-          selectedLocation={selectedLocation}
+          selectedTarget={selectedTarget}
           sessionId={sessionId}
           socket={socket}
           viewerRef={viewerRef}
@@ -418,7 +438,7 @@ interface ActiveRemoteViewProps {
   userEvents: UserEvent[];
   hoveredElement: CapturedElement | null;
   isFullscreen: boolean;
-  selectedLocation: OnlineLocation | undefined;
+  selectedTarget: RemoteTarget | undefined;
   sessionId: string | null;
   socket: any;
   viewerRef: React.RefObject<HTMLDivElement | null>;
@@ -436,7 +456,7 @@ function ActiveRemoteView({
   userEvents,
   hoveredElement,
   isFullscreen,
-  selectedLocation,
+  selectedTarget,
   sessionId,
   socket,
   viewerRef,
@@ -629,7 +649,7 @@ function ActiveRemoteView({
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Location</span>
-                <span className="font-medium text-foreground">{selectedLocation?.name}</span>
+                <span className="font-medium text-foreground">{selectedTarget?.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">URL</span>
