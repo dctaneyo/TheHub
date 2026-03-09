@@ -8,9 +8,6 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  ClipboardList,
-  SprayCan,
-  Star,
   Flame,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -18,9 +15,22 @@ import { Timeline } from "@/components/dashboard/timeline";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
-import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
-import type { TaskItem } from "@/components/dashboard/timeline";
 import type { DashboardLayoutProps } from "./layout-props";
+
+/*
+ * BENTO — Asymmetric CSS grid (Apple keynote style)
+ *
+ * Grid template (6 cols × 3 rows):
+ *   Row 1 (auto):  [progress ×2] [points] [status] [quote ×2]
+ *   Row 2 (1fr):   [timeline ×4]                    [upcoming ×2]
+ *   Row 3 (1fr):   [completed ×2] [missed] [leader] [upcoming ×2]
+ *
+ * The timeline is the biggest card (4 cols, 1 row).
+ * Upcoming is tall (2 cols, 2 rows).
+ * Stats are small. Completed is wide. Missed & leaderboard are square.
+ */
+
+const card = "rounded-3xl bg-white/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/50 shadow-sm backdrop-blur-sm overflow-hidden";
 
 export function BentoLayout({
   allTasks,
@@ -35,135 +45,81 @@ export function BentoLayout({
   onUncomplete,
   onEarlyComplete,
 }: DashboardLayoutProps) {
-  const completionRate = totalToday > 0 ? Math.round((completedTasks.length / totalToday) * 100) : 0;
-  const circumference = 2 * Math.PI * 38;
-  const strokeDash = (completionRate / 100) * circumference;
+  const pct = totalToday > 0 ? Math.round((completedTasks.length / totalToday) * 100) : 0;
+  const circ = 2 * Math.PI * 40;
+  const dash = (pct / 100) * circ;
   const overdueCount = allTasks.filter((t) => !t.isCompleted && t.isOverdue).length;
   const dueSoonCount = allTasks.filter((t) => !t.isCompleted && t.isDueSoon && !t.isOverdue).length;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Top Stat Strip — fixed, never scrolls */}
-      <div className="shrink-0 px-4 pt-3 pb-2">
-        <div className="flex items-center gap-3">
-          {/* Progress Ring */}
-          <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[var(--hub-red)] via-rose-600 to-pink-700 px-4 py-2.5 text-white shadow-lg shadow-red-200/30 dark:shadow-red-950/30 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_60%)]" />
-            <div className="relative h-14 w-14 shrink-0">
-              <svg className="h-14 w-14 -rotate-90" viewBox="0 0 84 84">
-                <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
-                <motion.circle cx="42" cy="42" r="38" fill="none" strokeWidth="5" strokeLinecap="round" stroke="white"
-                  initial={{ strokeDasharray: `0 ${circumference}` }}
-                  animate={{ strokeDasharray: `${strokeDash} ${circumference - strokeDash}` }}
-                  transition={{ duration: 1 }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-black">{completionRate}%</span>
-              </div>
-            </div>
-            <div className="relative z-10">
-              <p className="text-base font-bold">{completedTasks.length}/{totalToday}</p>
-              <p className="text-[9px] text-white/60 uppercase tracking-wider">Tasks Done</p>
-            </div>
+    <div className="flex-1 overflow-hidden bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3">
+      <div
+        className="h-full gap-3"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(6, 1fr)",
+          gridTemplateRows: "auto 1fr 1fr",
+          gridTemplateAreas: `
+            "progress progress points status quote quote"
+            "timeline timeline timeline timeline upcoming upcoming"
+            "completed completed missed leader upcoming upcoming"
+          `,
+        }}
+      >
+        {/* ── Progress Ring (hero) ── */}
+        <motion.div
+          style={{ gridArea: "progress" }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl bg-gradient-to-br from-[var(--hub-red)] via-rose-600 to-pink-700 p-4 text-white shadow-lg shadow-red-200/30 dark:shadow-red-950/30 relative overflow-hidden flex items-center gap-4"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.15),transparent_60%)]" />
+          <div className="relative h-16 w-16 shrink-0">
+            <svg className="h-16 w-16 -rotate-90" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="40" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
+              <motion.circle cx="44" cy="44" r="40" fill="none" strokeWidth="5" strokeLinecap="round" stroke="white"
+                initial={{ strokeDasharray: `0 ${circ}` }}
+                animate={{ strokeDasharray: `${dash} ${circ - dash}` }}
+                transition={{ duration: 1 }}
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-xl font-black">{pct}%</span>
           </div>
-
-          {/* Points */}
-          <div className="rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 px-4 py-2.5 shadow-sm backdrop-blur-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-                <Trophy className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Points</p>
-                <motion.p key={pointsToday} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className="text-2xl font-black text-slate-900 dark:text-white">{pointsToday}</motion.p>
-              </div>
-            </div>
+          <div className="relative z-10">
+            <p className="text-lg font-bold">{completedTasks.length}/{totalToday} tasks</p>
+            <p className="text-[10px] text-white/60 uppercase tracking-wider">
+              {pct === 100 ? "All done!" : "Today\u2019s progress"}
+            </p>
           </div>
+        </motion.div>
 
-          {/* Status */}
-          <div className={cn(
-            "rounded-2xl border px-4 py-2.5 shadow-sm backdrop-blur-sm",
-            overdueCount > 0 ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/40" : dueSoonCount > 0 ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40" : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/50"
-          )}>
-            <div className="flex items-center gap-2.5">
-              <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl",
-                overdueCount > 0 ? "bg-red-100 dark:bg-red-900/40" : dueSoonCount > 0 ? "bg-amber-100 dark:bg-amber-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"
-              )}>
-                {overdueCount > 0 ? <AlertTriangle className="h-5 w-5 text-red-500" /> : dueSoonCount > 0 ? <Clock className="h-5 w-5 text-amber-500" /> : <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
-              </div>
-              <div>
-                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Status</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  {overdueCount > 0 ? `${overdueCount} overdue` : dueSoonCount > 0 ? `${dueSoonCount} due soon` : completionRate === 100 ? "All clear!" : "On track"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Seasonal + Quote */}
-          <div className="hidden lg:flex flex-1 items-center justify-end gap-3">
-            <SeasonalTheme showFloating={false} />
-            <div className="max-w-[220px]">
-              <MotivationalQuote />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main 3-Column Body — fills remaining viewport */}
-      <div className="flex flex-1 overflow-hidden gap-3 px-4 pb-3">
-        {/* Left: Completed + Missed */}
-        <div className="w-[260px] shrink-0 flex flex-col gap-3 overflow-hidden">
-          {/* Completed */}
-          <div className="flex-1 min-h-0 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
-              <div className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-              </div>
-              <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Completed</span>
-              <span className="ml-auto text-[10px] text-slate-400 font-medium">{completedTasks.length}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
-              {completedTasks.length === 0 ? (
-                <p className="text-[10px] text-slate-400 text-center py-4">Nothing yet — you got this!</p>
-              ) : (
-                completedTasks.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                    <span className="flex-1 text-[10px] text-slate-500 line-through truncate">{task.title}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Missed */}
-          <div className="shrink-0 rounded-2xl bg-white dark:bg-slate-800/80 border border-red-100 dark:border-red-900/30 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-4 pt-3 pb-2">
-              <div className="h-5 w-5 rounded-md bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                <XCircle className="h-3 w-3 text-red-400" />
-              </div>
-              <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Missed</span>
-              <span className="ml-auto text-[10px] text-red-400 font-medium">{missedYesterday.length}</span>
-            </div>
-            <div className="max-h-[120px] overflow-y-auto px-3 pb-3 space-y-1">
-              {missedYesterday.length === 0 ? (
-                <p className="text-[10px] text-emerald-500 text-center py-2">None — great job!</p>
-              ) : (
-                missedYesterday.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 rounded-xl bg-red-50/60 dark:bg-red-950/20 px-2.5 py-1.5">
-                    <XCircle className="h-3 w-3 text-red-300 shrink-0" />
-                    <span className="flex-1 text-[10px] text-slate-500 truncate">{task.title}</span>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* ── Points ── */}
+        <div style={{ gridArea: "points" }} className={cn(card, "flex items-center justify-center p-4")}>
+          <div className="text-center">
+            <Trophy className="h-6 w-6 text-amber-500 mx-auto mb-1" />
+            <motion.p key={pointsToday} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className="text-2xl font-black text-slate-900 dark:text-white">{pointsToday}</motion.p>
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Points</p>
           </div>
         </div>
 
-        {/* Center: Timeline */}
-        <div className="flex-1 min-w-0 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col">
+        {/* ── Status ── */}
+        <div style={{ gridArea: "status" }} className={cn(card, "flex items-center justify-center p-4", overdueCount > 0 && "border-red-200 dark:border-red-800/40")}>
+          <div className="text-center">
+            {overdueCount > 0 ? <AlertTriangle className="h-6 w-6 text-red-500 mx-auto mb-1" /> : dueSoonCount > 0 ? <Clock className="h-6 w-6 text-amber-500 mx-auto mb-1" /> : <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto mb-1" />}
+            <p className="text-sm font-bold text-slate-900 dark:text-white">
+              {overdueCount > 0 ? `${overdueCount} overdue` : dueSoonCount > 0 ? `${dueSoonCount} due soon` : pct === 100 ? "All clear" : "On track"}
+            </p>
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Status</p>
+          </div>
+        </div>
+
+        {/* ── Quote ── */}
+        <div style={{ gridArea: "quote" }} className={cn(card, "flex items-center px-5 py-3")}>
+          <MotivationalQuote />
+        </div>
+
+        {/* ── Timeline (biggest card) ── */}
+        <div style={{ gridArea: "timeline" }} className={cn(card, "flex flex-col")}>
           <div className="flex-1 overflow-y-auto px-4 py-3">
             {currentTime && (
               <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
@@ -171,32 +127,67 @@ export function BentoLayout({
           </div>
         </div>
 
-        {/* Right: Upcoming + Leaderboard */}
-        <div className="w-[280px] shrink-0 flex flex-col gap-3 overflow-hidden hidden lg:flex">
-          {/* Upcoming */}
-          <div className="flex-1 min-h-0 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
-              <div className="h-5 w-5 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                <Clock className="h-3 w-3 text-blue-500" />
-              </div>
-              <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Upcoming</span>
-            </div>
-            <div className="flex-1 overflow-y-auto px-3 pb-3">
-              <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
-            </div>
+        {/* ── Upcoming (tall card, spans 2 rows) ── */}
+        <div style={{ gridArea: "upcoming" }} className={cn(card, "flex flex-col")}>
+          <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
+            <Clock className="h-4 w-4 text-blue-500" />
+            <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Upcoming</span>
           </div>
+          <div className="flex-1 overflow-y-auto px-3 pb-3">
+            <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
+          </div>
+        </div>
 
-          {/* Leaderboard */}
-          <div className="shrink-0 max-h-[220px] rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
-              <div className="h-5 w-5 rounded-md bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <Trophy className="h-3 w-3 text-amber-500" />
-              </div>
-              <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Leaderboard</span>
-            </div>
-            <div className="flex-1 overflow-y-auto px-3 pb-3">
-              <Leaderboard currentLocationId={currentLocationId} compact />
-            </div>
+        {/* ── Completed (wide) ── */}
+        <div style={{ gridArea: "completed" }} className={cn(card, "flex flex-col")}>
+          <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Completed</span>
+            <span className="ml-auto text-[10px] text-slate-400 font-medium">{completedTasks.length}</span>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+            {completedTasks.length === 0 ? (
+              <p className="text-[10px] text-slate-400 text-center py-3">Nothing yet</p>
+            ) : (
+              completedTasks.map((t) => (
+                <div key={t.id} className="flex items-center gap-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                  <span className="flex-1 text-[10px] text-slate-500 line-through truncate">{t.title}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Missed ── */}
+        <div style={{ gridArea: "missed" }} className={cn(card, "flex flex-col", missedYesterday.length > 0 && "border-red-200/60 dark:border-red-800/30")}>
+          <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
+            <XCircle className="h-4 w-4 text-red-400" />
+            <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Missed</span>
+            <span className="ml-auto text-[10px] text-red-400 font-medium">{missedYesterday.length}</span>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+            {missedYesterday.length === 0 ? (
+              <p className="text-[10px] text-emerald-500 text-center py-3">None!</p>
+            ) : (
+              missedYesterday.map((t) => (
+                <div key={t.id} className="flex items-center gap-2 rounded-lg bg-red-50/60 dark:bg-red-950/20 px-2.5 py-1">
+                  <XCircle className="h-3 w-3 text-red-300 shrink-0" />
+                  <span className="flex-1 text-[10px] text-slate-500 truncate">{t.title}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Leaderboard ── */}
+        <div style={{ gridArea: "leader" }} className={cn(card, "flex flex-col")}>
+          <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            <span className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Ranks</span>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 pb-3">
+            <Leaderboard currentLocationId={currentLocationId} compact />
           </div>
         </div>
       </div>
