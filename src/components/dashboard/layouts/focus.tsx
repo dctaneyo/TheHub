@@ -15,6 +15,8 @@ import {
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
+import { MiniCalendar } from "@/components/dashboard/mini-calendar";
+import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import type { DashboardLayoutProps } from "./layout-props";
 
 /*
@@ -190,9 +192,9 @@ export function FocusLayout({
         </div>
       </div>
 
-      {/* ═══ MAIN AREA: Scrollable focus column ═══ */}
+      {/* ═══ MAIN AREA: Scrollable focus column — full width ═══ */}
       <div className="flex-1 min-w-0 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 py-5 space-y-6">
+        <div className="px-5 py-4 space-y-4">
 
           {/* ── Hero Card: Current/Next Task ── */}
           {heroTask ? (
@@ -201,7 +203,7 @@ export function FocusLayout({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               className={cn(
-                "relative rounded-3xl border-2 p-6 shadow-lg overflow-hidden",
+                "relative rounded-2xl border-2 px-5 py-4 shadow-lg overflow-hidden",
                 heroTask.isOverdue
                   ? "border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 to-white dark:from-red-950/30 dark:to-slate-900"
                   : heroTask.isDueSoon
@@ -216,26 +218,26 @@ export function FocusLayout({
                 <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl">Due Soon</div>
               )}
 
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <p className={cn(
-                    "text-xs font-semibold uppercase tracking-wider mb-1",
+                    "text-[10px] font-semibold uppercase tracking-wider mb-0.5",
                     heroTask.isOverdue ? "text-red-500" : heroTask.isDueSoon ? "text-amber-500" : "text-slate-400"
                   )}>
                     {heroTask.isOverdue ? "Overdue" : heroTask.isDueSoon ? "Due soon" : "Up next"} · {formatTime12(heroTask.dueTime)}
                   </p>
-                  <h1 className="text-3xl font-black text-slate-900 dark:text-white leading-tight mb-2">{heroTask.title}</h1>
+                  <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{heroTask.title}</h1>
                   {heroTask.description && (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{heroTask.description}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{heroTask.description}</p>
                   )}
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      {(() => { const Icon = typeIcons[heroTask.type] || Clock; return <Icon className="h-3.5 w-3.5" />; })()}
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                      {(() => { const Icon = typeIcons[heroTask.type] || Clock; return <Icon className="h-3 w-3" />; })()}
                       <span className="capitalize">{heroTask.type}</span>
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-slate-400 capitalize">{heroTask.priority}</span>
-                    <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
-                      <Sparkles className="h-3.5 w-3.5" /> {heroTask.points} pts
+                    <span className="flex items-center gap-1 text-[10px] text-slate-400 capitalize">{heroTask.priority}</span>
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-amber-500">
+                      <Sparkles className="h-3 w-3" /> {heroTask.points} pts
                     </span>
                   </div>
                 </div>
@@ -244,7 +246,7 @@ export function FocusLayout({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onComplete(heroTask.id)}
-                  className="shrink-0 flex items-center gap-2 rounded-2xl bg-[var(--hub-red)] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-red-200/30 dark:shadow-red-950/30 hover:brightness-110 transition-all"
+                  className="shrink-0 flex items-center gap-2 rounded-2xl bg-[var(--hub-red)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-200/30 dark:shadow-red-950/30 hover:brightness-110 transition-all"
                 >
                   <CheckCircle2 className="h-5 w-5" />
                   Complete
@@ -255,10 +257,10 @@ export function FocusLayout({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="rounded-3xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-8 text-center"
+              className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-6 text-center"
             >
-              <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-1">All Clear!</h2>
+              <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
+              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">All Clear!</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">Every task is done. {pointsToday} points earned today.</p>
             </motion.div>
           )}
@@ -266,7 +268,7 @@ export function FocusLayout({
           {/* ── Up Next: Card Grid ── */}
           {upNextTasks.length > 0 && (
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Up Next</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Up Next</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {upNextTasks.map((task, i) => {
                   const Icon = typeIcons[task.type] || Clock;
@@ -277,7 +279,7 @@ export function FocusLayout({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       className={cn(
-                        "rounded-2xl border bg-white dark:bg-slate-900 p-4 shadow-sm border-l-4 flex flex-col gap-2",
+                        "rounded-2xl border bg-white dark:bg-slate-900 p-3.5 shadow-sm border-l-4 flex flex-col gap-1.5",
                         priorityBorder[task.priority] || "border-l-slate-300",
                         task.isOverdue && "border-red-200 dark:border-red-800/40",
                         task.isDueSoon && !task.isOverdue && "border-amber-200 dark:border-amber-800/40"
@@ -295,6 +297,9 @@ export function FocusLayout({
                         </span>
                       </div>
                       <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">{task.title}</p>
+                      {task.description && (
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug line-clamp-2">{task.description}</p>
+                      )}
                       <div className="flex items-center justify-between mt-auto pt-1">
                         <span className="flex items-center gap-1 text-[9px] text-slate-400 capitalize">
                           <Icon className="h-3 w-3" /> {task.type}
@@ -318,7 +323,7 @@ export function FocusLayout({
           {/* ── Later Tasks: Compact List ── */}
           {laterTasks.length > 0 && (
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Later</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Later</h3>
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
                 {laterTasks.map((task) => {
                   const Icon = typeIcons[task.type] || Clock;
@@ -350,6 +355,22 @@ export function FocusLayout({
               </div>
             </div>
           )}
+
+          {/* ── Upcoming Days + Quote ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <Clock className="h-3.5 w-3.5 text-blue-500" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Upcoming Days</span>
+              </div>
+              <div className="px-3 py-2">
+                <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center">
+              <MotivationalQuote />
+            </div>
+          </div>
         </div>
       </div>
     </div>
