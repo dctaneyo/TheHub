@@ -419,10 +419,17 @@ export default function ArlPage() {
     };
   }, [socket, fetchUnread, playMessageChime]);
 
+  // Lightweight toast for notification status messages
+  const [notifToast, setNotifToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const showNotifToast = (msg: string, type: "success" | "error" = "success") => {
+    setNotifToast({ msg, type });
+    setTimeout(() => setNotifToast(null), 4000);
+  };
+
   // Request notification permission and subscribe to push
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
-      alert("This browser doesn't support notifications");
+      showNotifToast("This browser doesn't support notifications", "error");
       return;
     }
 
@@ -438,7 +445,7 @@ export default function ArlPage() {
           const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
           if (!vapidKey) {
             console.error("VAPID public key not configured");
-            alert("Push notifications not configured. Contact your admin.");
+            showNotifToast("Push notifications not configured. Contact your admin.", "error");
             return;
           }
           const subscription = await registration.pushManager.subscribe({
@@ -455,14 +462,14 @@ export default function ArlPage() {
             body: JSON.stringify(subscription),
           });
 
-          alert("Notifications enabled! You'll receive alerts for new messages.");
+          showNotifToast("Notifications enabled! You'll receive alerts for new messages.");
         } catch (err) {
           console.error("Push subscription failed:", err);
-          alert("Failed to enable push notifications. Check console for details.");
+          showNotifToast("Failed to enable push notifications.", "error");
         }
       }
     } else {
-      alert("Notification permission denied. You won't receive message alerts.");
+      showNotifToast("Notification permission denied. You won't receive message alerts.", "error");
     }
   };
 
@@ -830,6 +837,25 @@ export default function ArlPage() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Notification permission toast */}
+      <AnimatePresence>
+        {notifToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            className={cn(
+              "fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] rounded-2xl border px-5 py-3 shadow-xl text-sm font-medium",
+              notifToast.type === "success"
+                ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                : "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300"
+            )}
+          >
+            {notifToast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Broadcast Notification Popup for other ARLs */}
       <AnimatePresence>

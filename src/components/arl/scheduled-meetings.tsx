@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Trash2, Copy, Check, Clock, Calendar,
@@ -134,12 +135,21 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this scheduled meeting?")) return;
-    try {
-      await fetch(`/api/meetings?id=${id}`, { method: "DELETE" });
-      fetchMeetings();
-    } catch {}
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handleDelete = (id: string) => {
+    showConfirm({
+      title: "Delete Meeting",
+      description: "Are you sure you want to delete this scheduled meeting?",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await fetch(`/api/meetings?id=${id}`, { method: "DELETE" });
+          fetchMeetings();
+        } catch {}
+      },
+    });
   };
 
   const handleToggleActive = async (id: string, currentActive: number) => {
@@ -462,6 +472,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           })}
         </div>
       )}
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

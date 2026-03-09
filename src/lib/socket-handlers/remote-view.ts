@@ -2,6 +2,8 @@ import type { Server as SocketIOServer, Socket } from "socket.io";
 import type { AuthPayload } from "../auth";
 import type { RemoteViewSession, DOMSnapshot, RemoteAction, UserEvent } from "./types";
 import { remoteViewSessions } from "./state";
+import { db, schema } from "../db";
+import { eq, and, desc } from "drizzle-orm";
 
 /**
  * Register remote view/control socket event handlers.
@@ -44,18 +46,38 @@ export function registerRemoteViewHandlers(
     const roomName = `remote-view:${sessionId}`;
     socket.join(roomName);
 
-    // Tell the location to start streaming (auto-accept, no consent needed)
-    const tp = (socket as any)._tenantPrefix;
-    if (tp) io.to(`${tp}:location:${data.locationId}`).emit("remote-view:start", {
-      sessionId,
-      arlId: user.id,
-      arlName: user.name,
-    });
-    io.to(`location:${data.locationId}`).emit("remote-view:start", {
-      sessionId,
-      arlId: user.id,
-      arlName: user.name,
-    });
+    // Find the most recently active socket for this location.
+    // If a location has multiple sessions (tabs/kiosks), only target one.
+    const startPayload = { sessionId, arlId: user.id, arlName: user.name };
+    let targeted = false;
+    try {
+      const latestSession = db.select()
+        .from(schema.sessions)
+        .where(and(
+          eq(schema.sessions.userId, data.locationId),
+          eq(schema.sessions.userType, "location"),
+          eq(schema.sessions.isOnline, true)
+        ))
+        .orderBy(desc(schema.sessions.lastSeen))
+        .limit(1)
+        .get();
+
+      if (latestSession?.socketId) {
+        const targetSocket = io.sockets.sockets.get(latestSession.socketId);
+        if (targetSocket) {
+          targetSocket.emit("remote-view:start", startPayload);
+          session.locationSocketId = latestSession.socketId;
+          targeted = true;
+        }
+      }
+    } catch {}
+
+    // Fallback: broadcast to all sockets in the location room
+    if (!targeted) {
+      const tp = (socket as any)._tenantPrefix;
+      if (tp) io.to(`${tp}:location:${data.locationId}`).emit("remote-view:start", startPayload);
+      io.to(`location:${data.locationId}`).emit("remote-view:start", startPayload);
+    }
 
     // Notify ARL that session is now active (skip pending state)
     socket.emit("remote-view:requested", { sessionId, locationId: data.locationId });

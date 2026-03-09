@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Plus, Pencil, Trash2, Eye, Users, Store,
@@ -175,18 +176,27 @@ export default function AdminPortal() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this tenant? This cannot be undone.")) return;
-    try {
-      await fetch("/api/admin/tenants", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      fetchTenants();
-    } catch (err) {
-      console.error("Delete tenant error:", err);
-    }
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handleDelete = (id: string) => {
+    showConfirm({
+      title: "Delete Tenant",
+      description: "Are you sure you want to delete this tenant? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await fetch("/api/admin/tenants", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          fetchTenants();
+        } catch (err) {
+          console.error("Delete tenant error:", err);
+        }
+      },
+    });
   };
 
   const toggleFeature = (feature: string) => {
@@ -550,6 +560,7 @@ export default function AdminPortal() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

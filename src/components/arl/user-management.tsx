@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
@@ -260,17 +261,26 @@ export function UserManagement() {
     } catch {}
   };
 
-  const handlePermanentDelete = async (item: ArlUser | Location) => {
-    if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
-    try {
-      const endpoint = tab === "arls" ? "/api/arls" : "/api/locations";
-      await fetch(endpoint, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id }),
-      });
-      await fetchData();
-    } catch {}
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handlePermanentDelete = (item: ArlUser | Location) => {
+    showConfirm({
+      title: "Delete Permanently",
+      description: `Permanently delete ${item.name}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const endpoint = tab === "arls" ? "/api/arls" : "/api/locations";
+          await fetch(endpoint, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: item.id }),
+          });
+          await fetchData();
+        } catch {}
+      },
+    });
   };
 
   if (loading) {
@@ -714,6 +724,7 @@ export function UserManagement() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

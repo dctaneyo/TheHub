@@ -43,6 +43,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
   }, [initialTitle]);
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [inMeeting, setInMeeting] = useState(false);
+  const [titleError, setTitleError] = useState(false);
 
   const { socket } = useSocket();
 
@@ -54,9 +55,10 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
 
   const startMeeting = () => {
     if (!title.trim()) {
-      alert("Please enter a meeting title");
+      setTitleError(true);
       return;
     }
+    setTitleError(false);
 
     const id = `scheduled-${meetingCode}`;
     setMeetingId(id);
@@ -125,9 +127,9 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Title</label>
             <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
               placeholder="e.g. Weekly Team Huddle, Training Session..."
-              className="text-base"
+              className={`text-base ${titleError ? "border-red-500 ring-red-500/20 ring-2" : ""}`}
               onKeyDown={(e) => { if (e.key === "Enter") startMeeting(); }}
             />
           </div>

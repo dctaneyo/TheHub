@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { useAuth } from "@/lib/auth-context";
 import {
   Dialog,
@@ -210,52 +211,61 @@ export function GroupInfoModal({
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberType: string) => {
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handleRemoveMember = (memberId: string, memberType: string) => {
     if (!isAdmin) return;
 
-    if (!confirm("Remove this member from the group?")) return;
-
-    setIsLoading(true);
-    try {
-      const res = await fetch(
-        `/api/messages/groups/${conversationId}/members?memberId=${memberId}&memberType=${memberType}`,
-        { method: "DELETE" }
-      );
-
-      if (res.ok) {
-        await fetchGroupInfo();
-        onUpdate?.();
-      }
-    } catch (error) {
-      console.error("Failed to remove member:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    showConfirm({
+      title: "Remove Member",
+      description: "Remove this member from the group?",
+      confirmLabel: "Remove",
+      variant: "danger",
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch(
+            `/api/messages/groups/${conversationId}/members?memberId=${memberId}&memberType=${memberType}`,
+            { method: "DELETE" }
+          );
+          if (res.ok) {
+            await fetchGroupInfo();
+            onUpdate?.();
+          }
+        } catch (error) {
+          console.error("Failed to remove member:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
-  const handleLeaveGroup = async () => {
-    // Warn creator that leaving will delete the group
-    const confirmMessage = isCreator
-      ? "⚠️ WARNING: You are the group creator. Leaving this group will DELETE it permanently for all members. Are you sure?"
-      : "Are you sure you want to leave this group?";
-    
-    if (!confirm(confirmMessage)) return;
-
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/messages/groups/${conversationId}/leave`, {
-        method: "POST",
-      });
-
-      if (res.ok) {
-        onClose();
-        onUpdate?.();
-      }
-    } catch (error) {
-      console.error("Failed to leave group:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLeaveGroup = () => {
+    showConfirm({
+      title: isCreator ? "Delete Group" : "Leave Group",
+      description: isCreator
+        ? "You are the group creator. Leaving this group will DELETE it permanently for all members. Are you sure?"
+        : "Are you sure you want to leave this group?",
+      confirmLabel: isCreator ? "Delete Group" : "Leave",
+      variant: "danger",
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch(`/api/messages/groups/${conversationId}/leave`, {
+            method: "POST",
+          });
+          if (res.ok) {
+            onClose();
+            onUpdate?.();
+          }
+        } catch (error) {
+          console.error("Failed to leave group:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
   if (!groupInfo) {
@@ -263,6 +273,7 @@ export function GroupInfoModal({
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -518,5 +529,7 @@ export function GroupInfoModal({
         </ScrollArea>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog {...dialog} />
+    </>
   );
 }

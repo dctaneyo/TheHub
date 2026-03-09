@@ -137,7 +137,7 @@ export function MeetingAnalyticsDashboard() {
       await fetchAnalytics();
     } catch {
       console.error("Failed to delete analytics");
-      alert("Failed to delete meeting data. Please try again.");
+      setShowDeleteConfirm(false);
     } finally {
       setDeleting(false);
     }

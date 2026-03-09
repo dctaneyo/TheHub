@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload,
@@ -125,12 +126,21 @@ export function FormsRepository() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this form?")) return;
-    try {
-      await fetch("/api/forms", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-      setForms((prev) => prev.filter((f) => f.id !== id));
-    } catch {}
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handleDelete = (id: string) => {
+    showConfirm({
+      title: "Delete Form",
+      description: "Are you sure you want to delete this form?",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await fetch("/api/forms", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+          setForms((prev) => prev.filter((f) => f.id !== id));
+        } catch {}
+      },
+    });
   };
 
   const fetchRecipients = useCallback(async () => {
@@ -396,6 +406,7 @@ export function FormsRepository() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

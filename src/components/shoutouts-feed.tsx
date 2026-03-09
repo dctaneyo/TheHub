@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import { Megaphone, Heart, ThumbsUp, Star, Sparkles, Trash2 } from "@/lib/icons";
@@ -21,6 +22,7 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
   const { socket } = useSocket();
   const { user } = useAuth();
   const isArl = user?.userType === "arl";
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
 
   const fetchShoutouts = useCallback(async () => {
     try {
@@ -101,10 +103,15 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
         <div className="flex items-center gap-2">
           {isArl && shoutouts.length > 0 && (
             <button
-              onClick={async () => {
-                if (!confirm("Clear all shoutouts? This cannot be undone.")) return;
-                try { await fetch("/api/shoutouts", { method: "DELETE" }); } catch {}
-              }}
+              onClick={() => showConfirm({
+                title: "Clear Shoutouts",
+                description: "Clear all shoutouts? This cannot be undone.",
+                confirmLabel: "Clear All",
+                variant: "danger",
+                onConfirm: async () => {
+                  try { await fetch("/api/shoutouts", { method: "DELETE" }); } catch {}
+                },
+              })}
               className="p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
               title="Clear all shoutouts"
             >
@@ -187,6 +194,7 @@ export function ShoutoutsFeed({ locationId }: { locationId?: string }) {
           </motion.div>
         ))}
       </AnimatePresence>
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }
