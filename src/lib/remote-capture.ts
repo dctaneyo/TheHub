@@ -367,30 +367,42 @@ export function executeRemoteAction(action: RemoteAction): boolean {
 export class RemoteCaptureManager {
   private socket: Socket;
   private sessionId: string;
+  private mirrorMode: boolean;
   private snapshotInterval: ReturnType<typeof setInterval> | null = null;
   private cursorTracker: ((e: MouseEvent | TouchEvent) => void) | null = null;
   private eventTracker: ((e: Event) => void) | null = null;
+  private scrollTracker: (() => void) | null = null;
   private actionHandler: ((data: any) => void) | null = null;
   private endedHandler: ((data: any) => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
 
-  constructor(socket: Socket, sessionId: string) {
+  /**
+   * @param mirrorMode - When true, skips screenshot/DOM capture and only streams
+   *   cursor, clicks, scroll, and device info. The ARL loads the actual app natively.
+   */
+  constructor(socket: Socket, sessionId: string, mirrorMode = false) {
     this.socket = socket;
     this.sessionId = sessionId;
+    this.mirrorMode = mirrorMode;
   }
 
   start() {
     if (this.isActive) return;
     this.isActive = true;
 
-    // Send initial screenshot snapshot immediately
-    this.sendSnapshot(true);
-
-    // Send full screenshot snapshots every 3 seconds
-    this.snapshotInterval = setInterval(() => {
+    // In mirror mode, send device info immediately so ARL knows the viewport
+    if (this.mirrorMode) {
+      this.sendDeviceInfo();
+    } else {
+      // Legacy mode: send initial screenshot snapshot immediately
       this.sendSnapshot(true);
-    }, 3000);
+
+      // Send full screenshot snapshots every 3 seconds
+      this.snapshotInterval = setInterval(() => {
+        this.sendSnapshot(true);
+      }, 3000);
+    }
 
     // Track cursor/touch position (throttled to ~30fps)
     let lastCursorTime = 0;
@@ -424,30 +436,64 @@ export class RemoteCaptureManager {
       const target = e.target as HTMLElement;
       if (!target) return;
 
-      this.socket.emit("remote-view:user-event", {
-        sessionId: this.sessionId,
-        event: {
-          type: e.type as any,
-          selector: getUniqueSelector(target),
-          coords: (e as MouseEvent).clientX
-            ? { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY }
-            : undefined,
-          timestamp: Date.now(),
-        },
-      });
+      // In mirror mode, send click coordinates for ripple visualization
+      if (this.mirrorMode && e.type === "click") {
+        const me = e as MouseEvent;
+        this.socket.emit("mirror:click", {
+          sessionId: this.sessionId,
+          x: Math.round(me.clientX),
+          y: Math.round(me.clientY),
+        });
+        return;
+      }
 
-      // Send a screenshot snapshot shortly after interaction for responsiveness
-      setTimeout(() => this.sendSnapshot(true), 300);
+      // Legacy mode: send full user event data
+      if (!this.mirrorMode) {
+        this.socket.emit("remote-view:user-event", {
+          sessionId: this.sessionId,
+          event: {
+            type: e.type as any,
+            selector: getUniqueSelector(target),
+            coords: (e as MouseEvent).clientX
+              ? { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY }
+              : undefined,
+            timestamp: Date.now(),
+          },
+        });
+
+        // Send a screenshot snapshot shortly after interaction for responsiveness
+        setTimeout(() => this.sendSnapshot(true), 300);
+      }
     };
     document.addEventListener("click", this.eventTracker, { capture: true });
-    document.addEventListener("input", this.eventTracker, { capture: true });
+    if (!this.mirrorMode) {
+      document.addEventListener("input", this.eventTracker, { capture: true });
+    }
+
+    // Mirror mode: track scroll position
+    if (this.mirrorMode) {
+      let lastScrollTime = 0;
+      this.scrollTracker = () => {
+        const now = Date.now();
+        if (now - lastScrollTime < 100) return; // throttle to ~10fps
+        lastScrollTime = now;
+        this.socket.volatile.emit("mirror:scroll", {
+          sessionId: this.sessionId,
+          x: Math.round(window.scrollX),
+          y: Math.round(window.scrollY),
+        });
+      };
+      window.addEventListener("scroll", this.scrollTracker, { passive: true });
+    }
 
     // Listen for remote actions (store reference for clean removal)
     this.actionHandler = (data: { sessionId: string; action: RemoteAction; arlName: string }) => {
       if (data.sessionId !== this.sessionId) return;
       const success = executeRemoteAction(data.action);
-      // Send updated screenshot after action
-      setTimeout(() => this.sendSnapshot(true), 400);
+      // In legacy mode, send updated screenshot after action
+      if (!this.mirrorMode) {
+        setTimeout(() => this.sendSnapshot(true), 400);
+      }
       console.log(`🖥️ Remote action ${data.action.type} by ${data.arlName}: ${success ? "✅" : "❌"}`);
     };
     this.socket.on("remote-view:action", this.actionHandler);
@@ -459,7 +505,7 @@ export class RemoteCaptureManager {
     };
     this.socket.on("remote-view:ended", this.endedHandler);
 
-    console.log(`🖥️ Remote capture started for session ${this.sessionId}`);
+    console.log(`🖥️ Remote capture started for session ${this.sessionId} (mirror: ${this.mirrorMode})`);
   }
 
   stop() {
@@ -483,6 +529,11 @@ export class RemoteCaptureManager {
       this.eventTracker = null;
     }
 
+    if (this.scrollTracker) {
+      window.removeEventListener("scroll", this.scrollTracker);
+      this.scrollTracker = null;
+    }
+
     if (this.actionHandler) {
       this.socket.off("remote-view:action", this.actionHandler);
       this.actionHandler = null;
@@ -495,8 +546,20 @@ export class RemoteCaptureManager {
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
 
+  private sendDeviceInfo() {
+    this.socket.emit("mirror:device-info", {
+      sessionId: this.sessionId,
+      device: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768,
+        userAgent: navigator.userAgent,
+      },
+    });
+  }
+
   private async sendSnapshot(includeScreenshot = true) {
-    if (!this.isActive || this.isCapturing) return;
+    if (!this.isActive || this.isCapturing || this.mirrorMode) return;
     this.isCapturing = true;
     try {
       const snapshot = await captureDOMSnapshot(includeScreenshot);

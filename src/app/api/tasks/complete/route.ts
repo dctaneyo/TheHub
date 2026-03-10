@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, getEffectiveLocationIdFromBody } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -13,7 +13,9 @@ import { validate, completeTaskSchema } from "@/lib/validations";
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session || session.userType !== "location") {
+    if (!session) return unauthorized();
+    // Allow locations directly, and ARLs in mirror/control mode
+    if (session.userType !== "location" && session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
@@ -23,6 +25,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { taskId, notes, completedDate: requestedDate, localDate } = parsed.data;
+
+    // In mirror mode, ARL acts on behalf of a location
+    const effectiveLocationId = getEffectiveLocationIdFromBody(session, body);
 
     const task = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!task) {
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
     const completion = {
       id: uuid(),
       taskId,
-      locationId: session.id,
+      locationId: effectiveLocationId,
       completedAt: new Date().toISOString(),
       completedDate: targetDate,
       notes: notes || null,
@@ -57,8 +62,11 @@ export async function POST(req: NextRequest) {
     db.insert(schema.taskCompletions).values(completion).run();
 
     // Broadcast instant update via WebSocket
-    broadcastTaskCompleted(session.id, taskId, task.title, task.points + bonusPoints, session.name, session.tenantId);
-    broadcastLeaderboardUpdate(session.id, session.tenantId);
+    // Use the effective location for broadcasts (target location in mirror mode)
+    const broadcastLocationId = effectiveLocationId;
+    const broadcastLocationName = session.userType === "arl" ? (body.mirrorLocationName as string || session.name) : session.name;
+    broadcastTaskCompleted(broadcastLocationId, taskId, task.title, task.points + bonusPoints, broadcastLocationName, session.tenantId);
+    broadcastLeaderboardUpdate(broadcastLocationId, session.tenantId);
 
     // Push notification to all ARLs about the task completion
     const pointsTotal = task.points + bonusPoints;
@@ -82,8 +90,8 @@ export async function POST(req: NextRequest) {
         priority: "normal",
         metadata: {
           taskId,
-          locationId: session.id,
-          locationName: session.name,
+          locationId: effectiveLocationId,
+          locationName: broadcastLocationName,
           points: pointsTotal,
         },
       }

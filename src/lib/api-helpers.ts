@@ -103,6 +103,46 @@ export async function requireLocationAccess(
 }
 
 /**
+ * Get the effective location ID for API calls.
+ * In mirror mode, an ARL can pass ?locationId=<targetId> to proxy as a location.
+ * Validates ARL has access to the target location.
+ * Returns null if caller is ARL without a mirror target (i.e. viewing all).
+ */
+export function getEffectiveLocationId(
+  session: AuthPayload & { tenantId: string },
+  searchParams: URLSearchParams
+): string | null {
+  const mirrorLocationId = searchParams.get("locationId");
+
+  if (mirrorLocationId && session.userType === "arl") {
+    // ARL is mirroring a location — use the target's ID
+    return mirrorLocationId;
+  }
+
+  // Normal mode: locations use their own ID, ARLs get null (all)
+  return session.userType === "location" ? session.id : null;
+}
+
+/**
+ * Same as getEffectiveLocationId but for POST/mutation routes.
+ * Validates ARL has access and returns the effective location ID.
+ * For locations, always returns their own ID.
+ * For ARLs with mirrorLocationId in body, returns that.
+ */
+export function getEffectiveLocationIdFromBody(
+  session: AuthPayload & { tenantId: string },
+  body: Record<string, unknown>
+): string {
+  const mirrorLocationId = body.mirrorLocationId as string | undefined;
+
+  if (mirrorLocationId && session.userType === "arl") {
+    return mirrorLocationId;
+  }
+
+  return session.id;
+}
+
+/**
  * Get the current ARL's role, parsed permissions, and assigned locations from DB.
  * Useful for returning permissions to the client.
  */

@@ -301,6 +301,73 @@ export function registerRemoteViewHandlers(
       });
     }
   });
+
+  // ── Mirror Mode: ARL joins target location's task update room ──
+  socket.on("mirror:join", (data: { sessionId: string; locationId: string }) => {
+    if (user.userType !== "arl") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    // Join the location's task update room so the ARL receives task:updated events
+    const tp = (socket as any)._tenantPrefix;
+    if (tp) {
+      socket.join(`${tp}:location:${data.locationId}`);
+    }
+    socket.join(`location:${data.locationId}`);
+
+    console.log(`🪞 Mirror mode: ${user.name} joined location ${data.locationId}'s room`);
+  });
+
+  // ── Location: Send scroll position (for mirror mode sync) ──
+  socket.on("mirror:scroll", (data: { sessionId: string; x: number; y: number }) => {
+    if (user.userType !== "location") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
+    if (arlSocket) {
+      arlSocket.volatile.emit("mirror:scroll", {
+        sessionId: data.sessionId,
+        x: data.x,
+        y: data.y,
+      });
+    }
+  });
+
+  // ── Location: Send click event (for mirror mode ripple visualization) ──
+  socket.on("mirror:click", (data: { sessionId: string; x: number; y: number }) => {
+    if (user.userType !== "location") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
+    if (arlSocket) {
+      arlSocket.emit("mirror:click", {
+        sessionId: data.sessionId,
+        x: data.x,
+        y: data.y,
+      });
+    }
+  });
+
+  // ── Location: Send device info (viewport, mobile/desktop, user agent) ──
+  socket.on("mirror:device-info", (data: { sessionId: string; device: { width: number; height: number; isMobile: boolean; userAgent: string } }) => {
+    if (user.userType !== "location") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
+    if (arlSocket) {
+      arlSocket.emit("mirror:device-info", {
+        sessionId: data.sessionId,
+        device: data.device,
+      });
+    }
+  });
 }
 
 /**

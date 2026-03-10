@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import {
@@ -37,6 +37,10 @@ import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
 import { useLayout } from "@/lib/layout-context";
 import { FocusLayout } from "@/components/dashboard/layouts/focus";
+import { useSearchParams } from "next/navigation";
+import { MirrorProvider, useMirror } from "@/lib/mirror-context";
+import { CursorOverlay } from "@/components/remote/cursor-overlay";
+import { MirrorToolbar } from "@/components/remote/mirror-toolbar";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -46,7 +50,31 @@ interface TasksResponse {
   pointsToday: number;
 }
 
-export default function DashboardPage() {
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <MirrorProvider>
+        <DashboardPage />
+      </MirrorProvider>
+    </Suspense>
+  );
+}
+
+function DashboardPage() {
+  // ── Mirror mode detection ──
+  const searchParams = useSearchParams();
+  const mirrorLocationId = searchParams.get("mirror");
+  const mirrorSessionId = searchParams.get("session");
+  const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
+  const { isMirroring, startMirror, endMirror } = useMirror();
+
+  // Initialize mirror session on mount if URL params are present
+  useEffect(() => {
+    if (mirrorLocationId && mirrorSessionId && !isMirroring) {
+      startMirror(mirrorLocationId, mirrorLocationName, mirrorSessionId);
+    }
+  }, [mirrorLocationId, mirrorSessionId, mirrorLocationName, isMirroring, startMirror]);
+
   const [screensaverEnabled, setScreensaverEnabled] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("hub-screensaver-enabled");
@@ -235,15 +263,18 @@ export default function DashboardPage() {
   const [showMeetingNotification, setShowMeetingNotification] = useState(false);
   const playConfettiSound = useConfettiSound();
 
-  // Disable screensaver while in a meeting or during remote view
-  const idle = idleBase && !activeStream && !remoteViewActive;
+  // Disable screensaver while in a meeting, during remote view, or in mirror mode
+  const idle = idleBase && !activeStream && !remoteViewActive && !isMirroring;
 
   const localTimeParams = () => {
     const now = new Date();
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const localDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
-    return `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`;
+    let params = `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`;
+    // In mirror mode, scope API calls to the target location
+    if (mirrorLocationId) params += `&locationId=${mirrorLocationId}`;
+    return params;
   };
 
   // Timestamp of last completion — suppresses socket-triggered fetchTasks
@@ -417,7 +448,11 @@ export default function DashboardPage() {
       const res = await fetch("/api/tasks/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId, completedDate: dateStr }),
+        body: JSON.stringify({
+          taskId,
+          completedDate: dateStr,
+          ...(mirrorLocationId ? { mirrorLocationId, mirrorLocationName } : {}),
+        }),
       });
       if (res.ok) {
         const result = await res.json();
@@ -445,7 +480,11 @@ export default function DashboardPage() {
       await fetch("/api/tasks/uncomplete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId, localDate }),
+        body: JSON.stringify({
+          taskId,
+          localDate,
+          ...(mirrorLocationId ? { mirrorLocationId } : {}),
+        }),
       });
       // Reset the completion lock so fetchTasks isn't suppressed
       completingRef.current = 0;
@@ -482,7 +521,11 @@ export default function DashboardPage() {
       const res = await fetch("/api/tasks/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId, localDate }),
+        body: JSON.stringify({
+          taskId,
+          localDate,
+          ...(mirrorLocationId ? { mirrorLocationId, mirrorLocationName } : {}),
+        }),
       });
 
       if (res.ok) {
@@ -534,8 +577,15 @@ export default function DashboardPage() {
   const completedTasks = data?.tasks.filter((t) => t.isCompleted) || [];
   const allTasks = data?.tasks || [];
 
+  // In mirror mode, use the target location ID for location-specific components
+  const effectiveLocationId = mirrorLocationId || user?.id;
+
   return (
     <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)] relative">
+      {/* Mirror mode UI */}
+      {isMirroring && <MirrorToolbar />}
+      {isMirroring && <CursorOverlay />}
+
       {/* Offline indicator with sync status */}
       <OfflineIndicator />
 
@@ -676,7 +726,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               )}
-              <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={user?.id} />
+              <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={effectiveLocationId} />
             </div>
           </div>
         </>
@@ -692,7 +742,7 @@ export default function DashboardPage() {
           currentTime={currentTime}
           displayTime={displayTime}
           upcomingTasks={upcomingTasks}
-          currentLocationId={user?.id}
+          currentLocationId={effectiveLocationId}
           onComplete={handleCompleteTask}
           onUncomplete={handleUncompleteTask}
           onEarlyComplete={handleEarlyComplete}
@@ -700,7 +750,7 @@ export default function DashboardPage() {
       )}
 
       {/* Live Activity Ticker — hidden during remote view to reduce capture noise */}
-      {!remoteViewActive && <LiveTicker currentLocationId={user?.id} />}
+      {!remoteViewActive && !isMirroring && <LiveTicker currentLocationId={effectiveLocationId} />}
 
       {/* Celebrations */}
       <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />
@@ -755,8 +805,8 @@ export default function DashboardPage() {
       {/* Emergency Broadcast Overlay */}
       <EmergencyOverlay />
 
-      {/* High-Five Animation — disabled during remote view */}
-      {!remoteViewActive && <HighFiveAnimation />}
+      {/* High-Five Animation — disabled during remote view and mirror mode */}
+      {!remoteViewActive && !isMirroring && <HighFiveAnimation />}
 
       {/* Meeting Join Notification */}
       <AnimatePresence>
@@ -816,8 +866,8 @@ export default function DashboardPage() {
         currentUserId={user?.id}
       />
 
-      {/* Remote View Banner (auto-start + active session indicator) */}
-      <RemoteViewBanner onSessionChange={setRemoteViewActive} />
+      {/* Remote View Banner (auto-start + active session indicator) — skip in mirror mode */}
+      {!isMirroring && <RemoteViewBanner onSessionChange={setRemoteViewActive} />}
     </div>
   );
 }

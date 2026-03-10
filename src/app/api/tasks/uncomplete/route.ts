@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, getEffectiveLocationIdFromBody } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { broadcastTaskUpdate, broadcastTaskUncompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
@@ -10,7 +10,8 @@ import { validate, uncompleteTaskSchema } from "@/lib/validations";
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session || session.userType !== "location") {
+    if (!session) return unauthorized();
+    if (session.userType !== "location" && session.userType !== "arl") {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
     }
     const { taskId, completedDate: requestedDate, localDate } = parsed.data;
 
+    const effectiveLocationId = getEffectiveLocationIdFromBody(session, body);
     const targetDate = requestedDate || localDate || new Date().toISOString().split("T")[0];
 
     const completion = db
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
       .where(
         and(
           eq(schema.taskCompletions.taskId, taskId),
-          eq(schema.taskCompletions.locationId, session.id),
+          eq(schema.taskCompletions.locationId, effectiveLocationId),
           eq(schema.taskCompletions.completedDate, targetDate)
         )
       )
@@ -43,9 +45,9 @@ export async function POST(req: NextRequest) {
       .where(eq(schema.taskCompletions.id, completion.id))
       .run();
 
-    broadcastTaskUpdate(session.id, session.tenantId);
-    broadcastTaskUncompleted(session.id, taskId, session.tenantId);
-    broadcastLeaderboardUpdate(session.id, session.tenantId);
+    broadcastTaskUpdate(effectiveLocationId, session.tenantId);
+    broadcastTaskUncompleted(effectiveLocationId, taskId, session.tenantId);
+    broadcastLeaderboardUpdate(effectiveLocationId, session.tenantId);
     refreshTaskTimers();
 
     return NextResponse.json({ success: true, pointsRevoked: completion.pointsEarned });

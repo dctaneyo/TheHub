@@ -399,24 +399,14 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
         </div>
       )}
 
-      {/* Active view */}
-      {sessionStatus === "active" && snapshot && (
-        <ActiveRemoteView
-          snapshot={snapshot}
-          controlEnabled={controlEnabled}
-          cursorPos={cursorPos}
-          userEvents={userEvents}
-          hoveredElement={hoveredElement}
-          isFullscreen={isFullscreen}
+      {/* Active view — Mirror Mode */}
+      {sessionStatus === "active" && (
+        <MirrorModePanel
           selectedTarget={selectedTarget}
           sessionId={sessionId}
-          socket={socket}
-          viewerRef={viewerRef}
-          containerRef={containerRef}
-          onViewerClick={handleViewerClick}
-          onViewerScroll={handleViewerScroll}
-          onViewerMouseMove={handleViewerMouseMove}
-          onHoverClear={() => setHoveredElement(null)}
+          controlEnabled={controlEnabled}
+          onToggleControl={toggleControl}
+          onEndSession={endSession}
         />
       )}
 
@@ -433,7 +423,104 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
   );
 }
 
-// ── HTML-based remote view renderer ──
+// ── Mirror Mode Panel ──
+
+interface MirrorModePanelProps {
+  selectedTarget: RemoteTarget | undefined;
+  sessionId: string | null;
+  controlEnabled: boolean;
+  onToggleControl: () => void;
+  onEndSession: () => void;
+}
+
+function MirrorModePanel({ selectedTarget, sessionId, controlEnabled, onToggleControl, onEndSession }: MirrorModePanelProps) {
+  const [mirrorOpened, setMirrorOpened] = useState(false);
+
+  const openMirrorDashboard = useCallback(() => {
+    if (!selectedTarget || !sessionId) return;
+    const params = new URLSearchParams({
+      mirror: selectedTarget.id,
+      session: sessionId,
+      locationName: selectedTarget.name,
+    });
+    window.open(`/dashboard?${params.toString()}`, "_blank");
+    setMirrorOpened(true);
+  }, [selectedTarget, sessionId]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-12 gap-6">
+      {/* Status card */}
+      <div className="w-full max-w-md rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-card p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950">
+            <Monitor className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="text-lg font-bold text-foreground">Mirror Session Active</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Connected to {selectedTarget?.name || "target"}
+              {selectedTarget?.storeNumber ? ` (Store #${selectedTarget.storeNumber})` : ""}
+            </p>
+          </div>
+        </div>
+
+        {/* Mirror mode explanation */}
+        <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 p-4 mb-6">
+          <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+            <strong>Mirror Mode</strong> opens the dashboard as if you were the target location.
+            You&apos;ll see their exact tasks, data, and real-time cursor movements — with perfect fidelity
+            and zero bandwidth overhead from screenshots.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-3">
+          {!mirrorOpened ? (
+            <button
+              onClick={openMirrorDashboard}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 text-sm transition-colors shadow-lg shadow-indigo-500/20"
+            >
+              <Eye className="h-4 w-4" />
+              Open Mirrored Dashboard
+            </button>
+          ) : (
+            <div className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-semibold py-3 px-4 text-sm">
+              <Wifi className="h-4 w-4" />
+              Mirror dashboard opened in new tab
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={onToggleControl}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                controlEnabled
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              {controlEnabled ? <Hand className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {controlEnabled ? "Control On" : "View Only"}
+            </button>
+            <button
+              onClick={onEndSession}
+              className="flex items-center justify-center gap-2 rounded-xl bg-red-100 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              End
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── HTML-based remote view renderer (legacy — kept for fallback) ──
 
 interface ActiveRemoteViewProps {
   snapshot: DOMSnapshot;

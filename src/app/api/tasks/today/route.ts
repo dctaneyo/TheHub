@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, getEffectiveLocationId } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 
@@ -23,7 +23,8 @@ export async function GET(req: Request) {
     const dayOfWeek = localDay || ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
 
     // Get all tasks for this location (or all locations if locationId is null)
-    const locationId = session.userType === "location" ? session.id : null;
+    // In mirror mode, an ARL can pass ?locationId=<targetId> to view a specific location's tasks
+    const locationId = getEffectiveLocationId(session, searchParams);
 
     const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
 

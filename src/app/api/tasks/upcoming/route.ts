@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession, unauthorized, getEffectiveLocationId } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { addDays, format } from "date-fns";
@@ -10,12 +10,12 @@ export async function GET(req: Request) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    const locationId = session.userType === "location" ? session.id : null;
+    const { searchParams } = new URL(req.url);
+    const locationId = getEffectiveLocationId(session, searchParams);
     const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     const allCompletions = locationId
       ? db.select().from(schema.taskCompletions).where(eq(schema.taskCompletions.locationId, locationId)).all()
       : [];
-    const { searchParams } = new URL(req.url);
     const localDate = searchParams.get("localDate");
     const today = localDate ? new Date(`${localDate}T12:00:00`) : new Date();
 

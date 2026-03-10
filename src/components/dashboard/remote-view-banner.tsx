@@ -28,8 +28,8 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
       // If already in a session, ignore
       if (captureManagerRef.current) return;
 
-      // Start capture immediately
-      const manager = new RemoteCaptureManager(socket, data.sessionId);
+      // Start capture in mirror mode (lightweight: cursor/click/scroll only, no screenshots)
+      const manager = new RemoteCaptureManager(socket, data.sessionId, true);
       manager.start();
       captureManagerRef.current = manager;
 
