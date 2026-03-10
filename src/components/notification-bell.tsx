@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { NotificationPanel } from "./notification-panel";
 import { useSocket } from "@/lib/socket-context";
+import { useMirror } from "@/lib/mirror-context";
 import { type TaskItem } from "@/components/dashboard/timeline";
 
 interface TaskNotification {
@@ -43,9 +44,11 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const [open, setOpen] = useState(false);
   const [dbCounts, setDbCounts] = useState({ total: 0, unread: 0, urgent: 0 });
   const { socket } = useSocket();
+  const { isMirroring, sessionId: mirrorSessionId, targetLocationId } = useMirror();
 
-  // ── DB notification counts ──
+  // ── DB notification counts (skip in mirror mode — would show ARL's notifications) ──
   const fetchCounts = useCallback(async () => {
+    if (isMirroring) return;
     try {
       const res = await fetch("/api/notifications?limit=1");
       if (res.ok) {
@@ -53,12 +56,12 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
         setDbCounts({ total: data.total, unread: data.unread, urgent: data.urgent });
       }
     } catch {}
-  }, []);
+  }, [isMirroring]);
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || isMirroring) return;
     const handleNew = (data: { count: { total: number; unread: number; urgent: number } }) => {
       setDbCounts(data.count);
     };
@@ -71,7 +74,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
       socket.off("notification:read", handleRead);
       socket.off("notification:deleted", handleRead);
     };
-  }, [socket, fetchCounts]);
+  }, [socket, fetchCounts, isMirroring]);
 
   const handleCountsUpdate = useCallback((c: { total: number; unread: number; urgent: number }) => {
     setDbCounts(c);
@@ -149,9 +152,16 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     try {
       const todayStr = new Date().toISOString().split("T")[0];
       localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, ids: Array.from(notifiedRef.current) }));
-      if (socket) socket.emit("notification:dismiss", { notificationIds: ids, locationId });
+      if (socket) {
+        if (isMirroring && mirrorSessionId && targetLocationId) {
+          // In mirror mode, use the mirror dismiss route so server relays to target location
+          socket.emit("mirror:dismiss-notifications", { sessionId: mirrorSessionId, notificationIds: ids, locationId: targetLocationId });
+        } else {
+          socket.emit("notification:dismiss", { notificationIds: ids, locationId });
+        }
+      }
     } catch {}
-  }, [socket, storageKey, locationId]);
+  }, [socket, storageKey, locationId, isMirroring, mirrorSessionId, targetLocationId]);
 
   const playTaskSound = useCallback(() => {
     if (!soundEnabled) return;

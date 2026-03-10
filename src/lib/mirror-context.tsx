@@ -17,6 +17,7 @@ export interface MirrorViewState {
   calendarOpen: boolean;
   layout: string;
   mobileView: string;
+  accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean };
 }
 
 interface MirrorState {
@@ -36,6 +37,7 @@ interface MirrorContextValue extends MirrorState {
   endMirror: () => void;
   toggleControl: () => void;
   setTargetDevice: (device: TargetDeviceInfo) => void;
+  sendViewChange: (viewState: Partial<MirrorViewState>) => void;
 }
 
 const MirrorContext = createContext<MirrorContextValue | null>(null);
@@ -92,6 +94,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       remoteScroll: null,
       viewState: null,
     });
+    // Close the mirror browser tab
+    try { window.close(); } catch {}
   }, [socket]);
 
   const toggleControl = useCallback(() => {
@@ -152,6 +156,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
         remoteScroll: null,
         viewState: null,
       });
+      // Close the mirror browser tab
+      try { window.close(); } catch {}
     };
 
     const onViewChange = (data: { sessionId: string; viewState: MirrorViewState }) => {
@@ -181,8 +187,17 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [socket]);
 
+  // Send view state changes from mirror (ARL) → target (location)
+  const sendViewChange = useCallback((viewState: Partial<MirrorViewState>) => {
+    if (!socket || !sessionIdRef.current) return;
+    socket.emit("mirror:view-change", {
+      sessionId: sessionIdRef.current,
+      viewState,
+    });
+  }, [socket]);
+
   return (
-    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, setTargetDevice }}>
+    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, setTargetDevice, sendViewChange }}>
       {children}
     </MirrorContext.Provider>
   );
@@ -206,6 +221,7 @@ export function useMirror() {
       endMirror: () => {},
       toggleControl: () => {},
       setTargetDevice: () => {},
+      sendViewChange: () => {},
     } as MirrorContextValue;
   }
   return ctx;

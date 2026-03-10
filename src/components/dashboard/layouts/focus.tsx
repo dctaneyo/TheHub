@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import type { DashboardLayoutProps } from "./layout-props";
+import { useMirror } from "@/lib/mirror-context";
 
 /*
  * FOCUS MODE — 2-column layout (original 3-col with right column removed)
@@ -54,20 +55,23 @@ const priorityBorder: Record<string, string> = {
   low: "border-l-slate-300 dark:border-l-slate-600",
 };
 
-function Accordion({ title, icon: Icon, iconColor, count, defaultOpen, maxHeight = 200, children }: {
+function Accordion({ title, icon: Icon, iconColor, count, defaultOpen, controlledOpen, onToggle, maxHeight = 200, children }: {
   title: string;
   icon: React.ElementType;
   iconColor: string;
   count?: number;
   defaultOpen?: boolean;
+  controlledOpen?: boolean;
+  onToggle?: (open: boolean) => void;
   maxHeight?: number;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen ?? false);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen ?? false);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
   return (
     <div className="border-b border-slate-200/60 dark:border-slate-700/40 last:border-b-0">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => { const next = !isOpen; setInternalOpen(next); onToggle?.(next); }}
         className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
       >
         <Icon className={cn("h-3.5 w-3.5 shrink-0", iconColor)} />
@@ -75,12 +79,12 @@ function Accordion({ title, icon: Icon, iconColor, count, defaultOpen, maxHeight
         {count !== undefined && (
           <span className="text-[10px] font-mono text-slate-400">{count}</span>
         )}
-        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <ChevronDown className="h-3 w-3 text-slate-400" />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
-        {open && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -115,6 +119,38 @@ export function FocusLayout({
   const pct = totalToday > 0 ? Math.round((completedTasks.length / totalToday) * 100) : 0;
   const circ = 2 * Math.PI * 34;
   const dash = (pct / 100) * circ;
+
+  // ── Accordion state sync for mirror mode ──
+  const { isMirroring, viewState: mirrorViewState, sendViewChange } = useMirror();
+  const [accCompleted, setAccCompleted] = useState(true);
+  const [accMissed, setAccMissed] = useState(false);
+  const [accLeaderboard, setAccLeaderboard] = useState(false);
+  const accSyncRef = useRef(false);
+
+  // Sync accordion state FROM mirror context (target → mirror)
+  useEffect(() => {
+    if (!mirrorViewState?.accordions) return;
+    accSyncRef.current = true;
+    const a = mirrorViewState.accordions;
+    if (a.completed !== undefined) setAccCompleted(a.completed);
+    if (a.missed !== undefined) setAccMissed(a.missed);
+    if (a.leaderboard !== undefined) setAccLeaderboard(a.leaderboard);
+    requestAnimationFrame(() => { accSyncRef.current = false; });
+  }, [mirrorViewState?.accordions]);
+
+  // Broadcast accordion changes
+  useEffect(() => {
+    if (accSyncRef.current) return;
+    const acc = { completed: accCompleted, missed: accMissed, leaderboard: accLeaderboard };
+    // Mirror side: send directly via mirror context
+    if (isMirroring) {
+      sendViewChange({ accordions: acc });
+    }
+    // Target side: dispatch custom event for dashboard to relay via capture manager
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mirror:accordion-change", { detail: acc }));
+    }
+  }, [accCompleted, accMissed, accLeaderboard, sendViewChange, isMirroring]);
 
   const incompleteTasks = useMemo(
     () => allTasks.filter((t) => !t.isCompleted).sort((a, b) => a.dueTime.localeCompare(b.dueTime)),
@@ -158,7 +194,7 @@ export function FocusLayout({
 
         {/* Accordions */}
         <div className="flex-1 overflow-y-auto">
-          <Accordion title="Completed" icon={CheckCircle2} iconColor="text-emerald-500" count={completedTasks.length} defaultOpen={true}>
+          <Accordion title="Completed" icon={CheckCircle2} iconColor="text-emerald-500" count={completedTasks.length} defaultOpen={true} controlledOpen={accCompleted} onToggle={setAccCompleted}>
             {completedTasks.length === 0 ? (
               <p className="text-[10px] text-slate-400 text-center py-3">Nothing yet — get started!</p>
             ) : (
@@ -181,7 +217,7 @@ export function FocusLayout({
             )}
           </Accordion>
 
-          <Accordion title="Missed Yesterday" icon={XCircle} iconColor="text-red-400" count={missedYesterday.length}>
+          <Accordion title="Missed Yesterday" icon={XCircle} iconColor="text-red-400" count={missedYesterday.length} controlledOpen={accMissed} onToggle={setAccMissed}>
             {missedYesterday.length === 0 ? (
               <p className="text-[10px] text-emerald-500 text-center py-3">None — great job!</p>
             ) : (
@@ -196,7 +232,7 @@ export function FocusLayout({
             )}
           </Accordion>
 
-          <Accordion title="Leaderboard" icon={Trophy} iconColor="text-amber-500" maxHeight={350}>
+          <Accordion title="Leaderboard" icon={Trophy} iconColor="text-amber-500" maxHeight={350} controlledOpen={accLeaderboard} onToggle={setAccLeaderboard}>
             <Leaderboard currentLocationId={currentLocationId} compact />
           </Accordion>
         </div>

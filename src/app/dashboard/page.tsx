@@ -67,7 +67,7 @@ function DashboardPage() {
   const mirrorLocationId = searchParams.get("mirror");
   const mirrorSessionId = searchParams.get("session");
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
-  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState } = useMirror();
+  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange } = useMirror();
 
   // Initialize mirror session on mount if URL params are present
   useEffect(() => {
@@ -266,15 +266,39 @@ function DashboardPage() {
   const playConfettiSound = useConfettiSound();
 
   // ── Mirror mode: sync view state from target ──
+  const mirrorSyncingRef = useRef(false);
   useEffect(() => {
     if (!isMirroring || !mirrorViewState) return;
+    mirrorSyncingRef.current = true;
     setChatOpen(mirrorViewState.chatOpen);
     setFormsOpen(mirrorViewState.formsOpen);
     setCalOpen(mirrorViewState.calendarOpen);
     if (mirrorViewState.layout) {
       setLayout(mirrorViewState.layout as any);
     }
+    // Reset flag after React processes the batch
+    requestAnimationFrame(() => { mirrorSyncingRef.current = false; });
   }, [isMirroring, mirrorViewState, setLayout]);
+
+  // ── Mirror mode: send ARL's local view changes back to target ──
+  useEffect(() => {
+    if (!isMirroring || mirrorSyncingRef.current) return;
+    sendViewChange({ chatOpen, formsOpen, calendarOpen: calOpen, layout });
+  }, [isMirroring, chatOpen, formsOpen, calOpen, layout, sendViewChange]);
+
+  // ── Target mode: listen for reverse view changes from ARL (mirror → target) ──
+  const { socket: viewSyncSocket } = useSocket();
+  useEffect(() => {
+    if (isMirroring || !remoteViewActive || !viewSyncSocket) return;
+    const onReverseView = (data: { sessionId: string; viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string } }) => {
+      if (data.viewState.chatOpen !== undefined) setChatOpen(data.viewState.chatOpen);
+      if (data.viewState.formsOpen !== undefined) setFormsOpen(data.viewState.formsOpen);
+      if (data.viewState.calendarOpen !== undefined) setCalOpen(data.viewState.calendarOpen);
+      if (data.viewState.layout) setLayout(data.viewState.layout as any);
+    };
+    viewSyncSocket.on("mirror:view-change", onReverseView);
+    return () => { viewSyncSocket.off("mirror:view-change", onReverseView); };
+  }, [isMirroring, remoteViewActive, viewSyncSocket, setLayout]);
 
   // Disable screensaver while in a meeting, during remote view, or in mirror mode
   const idle = idleBase && !activeStream && !remoteViewActive && !isMirroring;
@@ -467,6 +491,19 @@ function DashboardPage() {
       mobileView,
     });
   }, [chatOpen, calOpen, formsOpen, layout, mobileView, remoteViewActive]);
+
+  // Relay accordion state changes from FocusLayout to mirror via capture manager
+  useEffect(() => {
+    if (!remoteViewActive) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (captureManagerRef.current && detail) {
+        captureManagerRef.current.broadcastViewState({ accordions: detail });
+      }
+    };
+    window.addEventListener("mirror:accordion-change", handler);
+    return () => window.removeEventListener("mirror:accordion-change", handler);
+  }, [remoteViewActive]);
 
   const handleEarlyComplete = async (taskId: string, dateStr: string) => {
     try {

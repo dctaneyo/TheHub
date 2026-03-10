@@ -373,18 +373,42 @@ export function registerRemoteViewHandlers(
     });
   });
 
-  // ── Location: Send view state changes (chat/forms/calendar open, layout) ──
+  // ── Bidirectional view state changes (chat/forms/calendar open, layout) ──
   socket.on("mirror:view-change", (data: { sessionId: string; viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string } }) => {
-    if (user.userType !== "location") return;
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    if (user.userType === "location") {
+      // Location → ARL: emit to session room
+      socket.to(`remote-view:${data.sessionId}`).emit("mirror:view-change", {
+        sessionId: data.sessionId,
+        viewState: data.viewState,
+      });
+    } else if (user.userType === "arl") {
+      // ARL → Location: emit directly to location socket
+      if (session.locationSocketId) {
+        const locSocket = io.sockets.sockets.get(session.locationSocketId);
+        if (locSocket) {
+          locSocket.emit("mirror:view-change", {
+            sessionId: data.sessionId,
+            viewState: data.viewState,
+          });
+        }
+      }
+    }
+  });
+
+  // ── Mirror mode: ARL dismisses notifications on behalf of location ──
+  socket.on("mirror:dismiss-notifications", (data: { sessionId: string; notificationIds: string[]; locationId: string }) => {
+    if (user.userType !== "arl") return;
 
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
-    // Emit to session room
-    socket.to(`remote-view:${data.sessionId}`).emit("mirror:view-change", {
-      sessionId: data.sessionId,
-      viewState: data.viewState,
-    });
+    // Broadcast dismiss to the location's room so the target receives it
+    const tp = (socket as any)._tenantPrefix;
+    if (tp) socket.to(`${tp}:location:${data.locationId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
+    socket.to(`location:${data.locationId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
   });
 }
 

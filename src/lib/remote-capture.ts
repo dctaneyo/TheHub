@@ -575,7 +575,7 @@ export class RemoteCaptureManager {
   }
 
   /** Broadcast current view state to mirror dashboard (call from React when views change) */
-  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string }) {
+  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string; accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean } }) {
     if (!this.isActive || !this.mirrorMode) return;
     this.socket.emit("mirror:view-change", {
       sessionId: this.sessionId,
