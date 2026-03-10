@@ -170,7 +170,11 @@ export function middleware(request: NextRequest) {
   }
 
   if (payload.userType === "arl" && pathname === "/dashboard") {
-    return NextResponse.redirect(new URL("/arl", request.url));
+    // Allow ARLs to access /dashboard in mirror mode (with ?mirror= param)
+    const hasMirrorParam = request.nextUrl.searchParams.has("mirror");
+    if (!hasMirrorParam) {
+      return NextResponse.redirect(new URL("/arl", request.url));
+    }
   }
 
   // Redirect root to appropriate page

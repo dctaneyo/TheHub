@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, X, AlertTriangle, Clock } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -332,65 +333,71 @@ export function NotificationSystem({ tasks, currentTime, soundEnabled, onToggleS
     );
   }, [tasks]);
 
+  // Portal target for fullscreen overlay — escapes header's CSS containing block
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+
   return (
     <>
-      <div className="relative" ref={bellRef}>
-        {/* ── FULLSCREEN OVERDUE OVERLAY ── */}
-      <AnimatePresence>
-        {overdueNotifications.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9998] flex items-center justify-center"
-            style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
-          >
+      {/* ── FULLSCREEN OVERDUE OVERLAY (portalled to body) ── */}
+      {portalTarget && createPortal(
+        <AnimatePresence>
+          {overdueNotifications.length > 0 && (
             <motion.div
-              animate={{ boxShadow: ["0 0 0 0 rgba(220,38,38,0.7)", "0 0 0 20px rgba(220,38,38,0)", "0 0 0 0 rgba(220,38,38,0)"] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-full max-w-lg mx-4 rounded-3xl bg-card overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9998] flex items-center justify-center"
+              style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
             >
-              {/* Red header */}
-              <div className="bg-[var(--hub-red)] px-6 py-5 flex items-center gap-3">
-                <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
-                  <AlertTriangle className="h-8 w-8 text-white" />
-                </motion.div>
-                <div>
-                  <h2 className="text-xl font-black text-white tracking-wide">OVERDUE TASKS</h2>
-                  <p className="text-[11px] text-red-100 mt-0.5">{overdueNotifications.length} task{overdueNotifications.length > 1 ? "s" : ""} past due</p>
-                </div>
-              </div>
-
-              {/* Task list */}
-              <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">
-                {overdueNotifications.map((notif) => (
-                  <div key={notif.id} className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-950/50 p-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900">
-                      <Clock className="h-4 w-4 text-red-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground">{notif.title}</p>
-                      <p className="text-xs text-red-500">Due at {formatTime12(notif.dueTime)}</p>
-                    </div>
+              <motion.div
+                animate={{ boxShadow: ["0 0 0 0 rgba(220,38,38,0.7)", "0 0 0 20px rgba(220,38,38,0)", "0 0 0 0 rgba(220,38,38,0)"] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-full max-w-lg mx-4 rounded-3xl bg-card overflow-hidden"
+              >
+                {/* Red header */}
+                <div className="bg-[var(--hub-red)] px-6 py-5 flex items-center gap-3">
+                  <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
+                    <AlertTriangle className="h-8 w-8 text-white" />
+                  </motion.div>
+                  <div>
+                    <h2 className="text-xl font-black text-white tracking-wide">OVERDUE TASKS</h2>
+                    <p className="text-[11px] text-red-100 mt-0.5">{overdueNotifications.length} task{overdueNotifications.length > 1 ? "s" : ""} past due</p>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* Dismiss button */}
-              <div className="px-6 pb-6">
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleDismissOverdue}
-                  className="w-full rounded-2xl border-2 border-border py-4 text-base font-bold text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  Acknowledge &amp; Dismiss
-                </motion.button>
-              </div>
+                {/* Task list */}
+                <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">
+                  {overdueNotifications.map((notif) => (
+                    <div key={notif.id} className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-950/50 p-4">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900">
+                        <Clock className="h-4 w-4 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground">{notif.title}</p>
+                        <p className="text-xs text-red-500">Due at {formatTime12(notif.dueTime)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dismiss button */}
+                <div className="px-6 pb-6">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleDismissOverdue}
+                    className="w-full rounded-2xl border-2 border-border py-4 text-base font-bold text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    Acknowledge &amp; Dismiss
+                  </motion.button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        portalTarget
+      )}
 
+      <div className="relative" ref={bellRef}>
       {/* Notification bell with count */}
       <button
         onClick={() => setShowPanel(!showPanel)}
