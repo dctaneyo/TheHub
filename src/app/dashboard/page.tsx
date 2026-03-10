@@ -680,6 +680,9 @@ function DashboardPage() {
     return { tw, th, scale };
   })();
 
+  // In mirror mode, determine if target is mobile for layout decisions
+  const targetIsMobile = isMirroring && targetDevice ? targetDevice.isMobile : false;
+
   const dashboardContent = (
     <div className={cn("flex flex-col overflow-hidden bg-[var(--background)] relative", mirrorScale ? "w-full h-full" : "h-dvh w-screen")}>
 
@@ -732,7 +735,8 @@ function DashboardPage() {
       {layout === "classic" && (
         <>
           {/* Mobile Panel Toggle Buttons */}
-          <div className="md:hidden flex gap-2 px-4 py-2 border-b border-border bg-card">
+          {targetIsMobile && (
+            <div className="flex gap-2 px-4 py-2 border-b border-border bg-card">
             <button
               onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
               className={cn(
@@ -753,19 +757,19 @@ function DashboardPage() {
               <CalendarDays className="h-4 w-4" />
               Upcoming
             </button>
-          </div>
+            </div>
+          )}
 
           {/* Main Content - 3 column layout, no scrolling */}
           <div className="flex flex-1 overflow-hidden relative">
             {/* Left Column - Completed/Missed + Points */}
             <div className={cn(
               "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
-              "md:block",
-              mobilePanelOpen === "left" ? "block absolute inset-0 z-[999] w-full" : "hidden"
+              targetIsMobile ? (mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full block" : "hidden") : "block"
             )}>
               {/* Mobile close button */}
-              {mobilePanelOpen === "left" && (
-                <div className="md:hidden sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+              {mobilePanelOpen === "left" && targetIsMobile && (
+                <div className="sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
@@ -788,7 +792,7 @@ function DashboardPage() {
             {/* Center Column - Main Timeline */}
             <div className={cn(
               "flex-1 flex flex-col overflow-hidden",
-              mobilePanelOpen ? "hidden md:flex" : "flex"
+              targetIsMobile && mobilePanelOpen ? "hidden" : "flex"
             )}>
               <div className="shrink-0 px-5 pt-5">
                 <SeasonalTheme showFloating={false} />
@@ -808,12 +812,11 @@ function DashboardPage() {
             {/* Right Column - Mini Calendar + Leaderboard tabs */}
             <div className={cn(
               "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
-              "lg:flex lg:flex-col",
-              mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden"
+              targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col"
             )}>
               {/* Mobile close button */}
-              {mobilePanelOpen === "right" && (
-                <div className="md:hidden sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+              {mobilePanelOpen === "right" && targetIsMobile && (
+                <div className="sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
                   <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
@@ -843,6 +846,7 @@ function DashboardPage() {
           onComplete={handleCompleteTask}
           onUncomplete={handleUncompleteTask}
           onEarlyComplete={handleEarlyComplete}
+          targetIsMobile={targetIsMobile}
         />
       )}
 

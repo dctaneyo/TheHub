@@ -12,6 +12,9 @@ export interface DashboardLayoutProps {
   upcomingTasks: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete?: boolean; isCompleted?: boolean }>>;
   currentLocationId?: string;
 
+  // Layout state
+  targetIsMobile?: boolean;
+
   // Handlers
   onComplete: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
