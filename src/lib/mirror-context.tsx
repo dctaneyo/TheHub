@@ -28,6 +28,7 @@ interface MirrorState {
   targetLocationName: string | null;
   sessionId: string | null;
   controlEnabled: boolean;
+  cursorVisible: boolean;
   targetDevice: TargetDeviceInfo | null;
   remoteCursor: { x: number; y: number } | null;
   remoteScroll: { x: number; y: number } | null;
@@ -38,6 +39,7 @@ interface MirrorContextValue extends MirrorState {
   startMirror: (locationId: string, locationName: string, sessionId: string) => void;
   endMirror: () => void;
   toggleControl: () => void;
+  toggleCursorVisible: () => void;
   setTargetDevice: (device: TargetDeviceInfo) => void;
   sendViewChange: (viewState: Partial<MirrorViewState>) => void;
 }
@@ -52,6 +54,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     targetLocationName: null,
     sessionId: null,
     controlEnabled: false,
+    cursorVisible: false,
     targetDevice: null,
     remoteCursor: null,
     remoteScroll: null,
@@ -59,6 +62,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
   });
 
   const sessionIdRef = useRef<string | null>(null);
+  const cursorVisibleRef = useRef(false);
 
   const startMirror = useCallback((locationId: string, locationName: string, sessionId: string) => {
     sessionIdRef.current = sessionId;
@@ -68,11 +72,13 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       targetLocationName: locationName,
       sessionId,
       controlEnabled: false,
+      cursorVisible: false,
       targetDevice: null,
       remoteCursor: null,
       remoteScroll: null,
       viewState: null,
     });
+    cursorVisibleRef.current = false;
 
     // Join the target location's socket room for real-time task updates
     if (socket) {
@@ -85,12 +91,14 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       socket.emit("remote-view:end", { sessionId: sessionIdRef.current });
     }
     sessionIdRef.current = null;
+    cursorVisibleRef.current = false;
     setState({
       isMirroring: false,
       targetLocationId: null,
       targetLocationName: null,
       sessionId: null,
       controlEnabled: false,
+      cursorVisible: false,
       targetDevice: null,
       remoteCursor: null,
       remoteScroll: null,
@@ -98,6 +106,17 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     });
     // Close the mirror browser tab
     try { window.close(); } catch {}
+  }, [socket]);
+
+  const toggleCursorVisible = useCallback(() => {
+    if (!socket || !sessionIdRef.current) return;
+    const newVal = !cursorVisibleRef.current;
+    cursorVisibleRef.current = newVal;
+    setState(prev => ({ ...prev, cursorVisible: newVal }));
+    socket.emit("mirror:arl-cursor-toggle", {
+      sessionId: sessionIdRef.current,
+      visible: newVal,
+    });
   }, [socket]);
 
   const toggleControl = useCallback(() => {
@@ -147,12 +166,14 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     const onEnded = (data: { sessionId: string }) => {
       if (data.sessionId !== sessionIdRef.current) return;
       sessionIdRef.current = null;
+      cursorVisibleRef.current = false;
       setState({
         isMirroring: false,
         targetLocationId: null,
         targetLocationName: null,
         sessionId: null,
         controlEnabled: false,
+        cursorVisible: false,
         targetDevice: null,
         remoteCursor: null,
         remoteScroll: null,
@@ -189,6 +210,25 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [socket]);
 
+  // Track ARL mouse position and emit to target when cursor visible
+  useEffect(() => {
+    if (!socket) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!cursorVisibleRef.current || !sessionIdRef.current) return;
+      // Send normalised percentages so it maps to any viewport size
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      socket.volatile.emit("mirror:arl-cursor", {
+        sessionId: sessionIdRef.current,
+        x,
+        y,
+        visible: true,
+      });
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    return () => window.removeEventListener("mousemove", onMouseMove);
+  }, [socket]);
+
   // Send view state changes from mirror (ARL) → target (location)
   const sendViewChange = useCallback((viewState: Partial<MirrorViewState>) => {
     if (!socket || !sessionIdRef.current) return;
@@ -199,7 +239,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
   }, [socket]);
 
   return (
-    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, setTargetDevice, sendViewChange }}>
+    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, toggleCursorVisible, setTargetDevice, sendViewChange }}>
       {children}
     </MirrorContext.Provider>
   );
@@ -219,9 +259,11 @@ export function useMirror() {
       remoteCursor: null,
       remoteScroll: null,
       viewState: null,
+      cursorVisible: false,
       startMirror: () => {},
       endMirror: () => {},
       toggleControl: () => {},
+      toggleCursorVisible: () => {},
       setTargetDevice: () => {},
       sendViewChange: () => {},
     } as MirrorContextValue;

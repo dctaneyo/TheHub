@@ -46,6 +46,7 @@ interface NotificationPanelProps {
   taskNotifications?: TaskNotification[];
   onDismissTask?: (id: string) => void;
   onDismissAllTasks?: () => void;
+  isMirroring?: boolean;
 }
 
 const priorityColors = {
@@ -158,13 +159,19 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
   );
 }
 
-export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotifications = [], onDismissTask, onDismissAllTasks }: NotificationPanelProps) {
+export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotifications = [], onDismissTask, onDismissAllTasks, isMirroring = false }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(false);
   const prevOpenRef = useRef(false);
 
   const fetchNotifications = useCallback(async () => {
+    // In mirror mode, skip DB fetch — would return ARL's notifications, not target's
+    if (isMirroring) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const unreadParam = filter === "unread" ? "&unread_only=true" : "";
@@ -183,7 +190,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
     } finally {
       setLoading(false);
     }
-  }, [filter, onCountsUpdate]);
+  }, [filter, onCountsUpdate, isMirroring]);
 
   // Only fetch when panel opens or filter changes — not on every render
   useEffect(() => {

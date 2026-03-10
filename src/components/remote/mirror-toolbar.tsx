@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMirror } from "@/lib/mirror-context";
-import { Eye, Hand, X, Monitor, Minimize2, Maximize2 } from "@/lib/icons";
+import { Eye, Hand, X, Monitor, Minimize2, Maximize2, Target } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 export function MirrorToolbar() {
@@ -11,9 +11,11 @@ export function MirrorToolbar() {
     isMirroring,
     targetLocationName,
     controlEnabled,
+    cursorVisible,
     targetDevice,
     endMirror,
     toggleControl,
+    toggleCursorVisible,
   } = useMirror();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -167,6 +169,21 @@ export function MirrorToolbar() {
             >
               {controlEnabled ? <Hand className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               {controlEnabled ? "Control On" : "View Only"}
+            </button>
+
+            {/* Cursor visibility toggle */}
+            <button
+              onClick={toggleCursorVisible}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
+                cursorVisible
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-800"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+              title={cursorVisible ? "Hide cursor on target" : "Show cursor on target"}
+            >
+              <Target className="h-3.5 w-3.5" />
+              {cursorVisible ? "Cursor On" : "Cursor Off"}
             </button>
 
             {/* Collapse */}

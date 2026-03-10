@@ -35,6 +35,7 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
+import { ArlCursorOverlay } from "@/components/dashboard/arl-cursor-overlay";
 import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import { useLayout } from "@/lib/layout-context";
 import { FocusLayout } from "@/components/dashboard/layouts/focus";
@@ -955,6 +956,7 @@ function DashboardPage() {
 
       {/* Remote View Banner (auto-start + active session indicator) — skip in mirror mode */}
       {!isMirroring && <RemoteViewBanner onSessionChange={setRemoteViewActive} onCaptureManagerChange={(m) => { captureManagerRef.current = m; }} />}
+      <ArlCursorOverlay remoteViewActive={remoteViewActive} />
     </div>
   );
 }
