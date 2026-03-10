@@ -181,7 +181,7 @@ export function FocusLayout({
   return (
     <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* ═══ LEFT SIDEBAR: Collapsible Accordions + Sticky Quote (hidden on mobile) ═══ */}
-      <div className={cn("w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col overflow-hidden", targetIsMobile ? "hidden" : "flex")}>
+      <div className={cn("w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col overflow-hidden", targetIsMobile !== undefined ? (targetIsMobile ? "hidden" : "flex") : "hidden md:flex")}>
         {/* Progress stats */}
         <div className="shrink-0 p-4 border-b border-slate-200/60 dark:border-slate-700/40">
           <div className="flex items-center gap-3">
@@ -263,8 +263,8 @@ export function FocusLayout({
       {/* ═══ MAIN AREA: flex column fills viewport height ═══ */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* ── Mobile: Inline progress + accordions ── */}
-        {targetIsMobile && (
-          <div className="shrink-0">
+        {(targetIsMobile !== undefined ? targetIsMobile : true) && (
+          <div className={cn("shrink-0", targetIsMobile !== undefined ? "" : "md:hidden")}>
           <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/40 bg-white dark:bg-slate-900">
             <div className="relative h-10 w-10 shrink-0">
               <svg className="h-10 w-10 -rotate-90" viewBox="0 0 76 76">
@@ -333,8 +333,8 @@ export function FocusLayout({
         )}
 
         {/* ── Prominent Clock (desktop only) ── */}
-        {!targetIsMobile && (
-          <div className="flex shrink-0 px-5 pt-4 pb-2 flex-col items-center">
+        {(targetIsMobile !== undefined ? !targetIsMobile : true) && (
+          <div className={cn("flex shrink-0 px-5 pt-4 pb-2 flex-col items-center", targetIsMobile !== undefined ? "" : "hidden md:flex")}>
           <p className="text-6xl font-extralight tabular-nums tracking-tight text-slate-800 dark:text-slate-100 leading-none">
             {displayTime || currentTime}
           </p>

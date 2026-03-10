@@ -683,6 +683,9 @@ function DashboardPage() {
   // In mirror mode, determine if target is mobile for layout decisions
   const targetIsMobile = isMirroring && targetDevice ? targetDevice.isMobile : false;
 
+  // For layout decisions: use targetIsMobile when mirroring, otherwise let responsive classes handle it
+  const useTargetMobile = isMirroring;
+
   const dashboardContent = (
     <div className={cn("flex flex-col overflow-hidden bg-[var(--background)] relative", mirrorScale ? "w-full h-full" : "h-dvh w-screen")}>
 
@@ -735,8 +738,8 @@ function DashboardPage() {
       {layout === "classic" && (
         <>
           {/* Mobile Panel Toggle Buttons */}
-          {targetIsMobile && (
-            <div className="flex gap-2 px-4 py-2 border-b border-border bg-card">
+          {(useTargetMobile ? targetIsMobile : true) && (
+            <div className={cn("flex gap-2 px-4 py-2 border-b border-border bg-card", useTargetMobile ? "" : "md:hidden")}>
             <button
               onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
               className={cn(
@@ -765,11 +768,12 @@ function DashboardPage() {
             {/* Left Column - Completed/Missed + Points */}
             <div className={cn(
               "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
-              targetIsMobile ? (mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full block" : "hidden") : "block"
+              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full block" : "hidden") : "block") : "md:block",
+              !useTargetMobile && mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full md:relative md:w-[280px] md:border-r md:border-border" : ""
             )}>
               {/* Mobile close button */}
-              {mobilePanelOpen === "left" && targetIsMobile && (
-                <div className="sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+              {mobilePanelOpen === "left" && (useTargetMobile ? targetIsMobile : true) && (
+                <div className={cn("sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between", useTargetMobile ? "" : "md:hidden")}>
                   <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
@@ -792,7 +796,7 @@ function DashboardPage() {
             {/* Center Column - Main Timeline */}
             <div className={cn(
               "flex-1 flex flex-col overflow-hidden",
-              targetIsMobile && mobilePanelOpen ? "hidden" : "flex"
+              useTargetMobile ? (targetIsMobile && mobilePanelOpen ? "hidden" : "flex") : (mobilePanelOpen ? "hidden md:flex" : "flex")
             )}>
               <div className="shrink-0 px-5 pt-5">
                 <SeasonalTheme showFloating={false} />
@@ -812,11 +816,12 @@ function DashboardPage() {
             {/* Right Column - Mini Calendar + Leaderboard tabs */}
             <div className={cn(
               "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
-              targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col"
+              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col") : "lg:flex lg:flex-col",
+              !useTargetMobile && mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full lg:relative lg:w-[300px] lg:border-l lg:border-border" : ""
             )}>
               {/* Mobile close button */}
-              {mobilePanelOpen === "right" && targetIsMobile && (
-                <div className="sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+              {mobilePanelOpen === "right" && (useTargetMobile ? targetIsMobile : true) && (
+                <div className={cn("sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0", useTargetMobile ? "" : "md:hidden")}>
                   <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
@@ -846,7 +851,7 @@ function DashboardPage() {
           onComplete={handleCompleteTask}
           onUncomplete={handleUncompleteTask}
           onEarlyComplete={handleEarlyComplete}
-          targetIsMobile={targetIsMobile}
+          targetIsMobile={useTargetMobile ? targetIsMobile : undefined}
         />
       )}
 
