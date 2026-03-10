@@ -36,13 +36,11 @@ export function MirrorToolbar() {
   }, [collapsed]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    // Don't start drag on buttons
+    // Don't start drag on interactive elements
     if ((e.target as HTMLElement).closest("button")) return;
-    e.preventDefault();
     hasDraggedRef.current = false;
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: position.x, origY: position.y };
     setDragging(true);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }, [position]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -60,9 +58,14 @@ export function MirrorToolbar() {
   }, []);
 
   const onPointerUp = useCallback(() => {
+    const wasDrag = hasDraggedRef.current;
     dragRef.current = null;
     setDragging(false);
-  }, []);
+    // If collapsed and it was a tap (not a drag), expand
+    if (collapsed && !wasDrag) {
+      setCollapsed(false);
+    }
+  }, [collapsed]);
 
   if (!isMirroring) return null;
 
@@ -77,7 +80,7 @@ export function MirrorToolbar() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       className={cn(
-        "fixed z-[9998] select-none touch-none transition-opacity duration-300",
+        "fixed z-[9998] select-none transition-opacity duration-300",
         dragging && "cursor-grabbing",
         !dragging && "cursor-grab",
         collapsed ? "opacity-60 hover:opacity-90" : "opacity-100"

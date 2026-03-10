@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   LogOut,
   MessageCircle,
   CalendarDays,
   FileText,
+  LayoutGrid,
+  X,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -12,6 +15,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { DashboardSettings } from "@/components/dashboard/dashboard-settings";
 import { type TaskItem } from "@/components/dashboard/timeline";
 import { GamificationHub } from "@/components/dashboard/gamification-hub";
+import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 
 interface MinimalHeaderProps {
   user: { id?: string; name?: string; storeNumber?: string } | null;
@@ -48,13 +52,59 @@ export function MinimalHeader({
   onOpenCalendar,
   onLogout,
 }: MinimalHeaderProps) {
+  const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
+  const { layout, setLayout } = useLayout();
+
   return (
     <header className="sticky top-0 flex h-12 shrink-0 items-center border-b border-border bg-card/80 backdrop-blur-md px-4 z-[100]">
       {/* Left: Logo + Store */}
-      <div className="flex items-center gap-2 shrink-0">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--hub-red)] shadow-sm">
+      <div className="flex items-center gap-2 shrink-0 relative">
+        <button
+          onClick={() => setLayoutDropdownOpen(!layoutDropdownOpen)}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--hub-red)] shadow-sm hover:brightness-110 transition-colors"
+          title="Change layout"
+        >
           <span className="text-xs font-black text-white">H</span>
-        </div>
+        </button>
+
+        {/* Layout Dropdown */}
+        {layoutDropdownOpen && (
+          <div className="absolute top-full left-0 mt-1 w-56 rounded-lg border border-border bg-card shadow-lg overflow-hidden z-[200]">
+            <div className="p-2 border-b border-border">
+              <p className="text-xs font-bold text-foreground">Dashboard Layout</p>
+            </div>
+            {LAYOUT_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => {
+                  setLayout(option.id);
+                  setLayoutDropdownOpen(false);
+                }}
+                className={cn(
+                  "w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-muted transition-colors",
+                  layout === option.id && "bg-muted"
+                )}
+              >
+                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{option.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{option.description}</p>
+                </div>
+                {layout === option.id && (
+                  <div className="h-2 w-2 rounded-full bg-[var(--hub-red)]" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Click outside to close */}
+        {layoutDropdownOpen && (
+          <div
+            className="fixed inset-0 z-[199]"
+            onClick={() => setLayoutDropdownOpen(false)}
+          />
+        )}
         <div className="hidden md:block">
           <p className="text-xs font-bold text-foreground leading-none">
             {user?.name}

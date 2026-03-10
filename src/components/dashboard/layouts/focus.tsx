@@ -179,8 +179,8 @@ export function FocusLayout({
 
   return (
     <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* ═══ LEFT SIDEBAR: Collapsible Accordions + Sticky Quote ═══ */}
-      <div className="w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col overflow-hidden">
+      {/* ═══ LEFT SIDEBAR: Collapsible Accordions + Sticky Quote (hidden on mobile) ═══ */}
+      <div className="hidden md:flex w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col overflow-hidden">
         {/* Progress stats */}
         <div className="shrink-0 p-4 border-b border-slate-200/60 dark:border-slate-700/40">
           <div className="flex items-center gap-3">
@@ -261,8 +261,76 @@ export function FocusLayout({
 
       {/* ═══ MAIN AREA: flex column fills viewport height ═══ */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        {/* ── Prominent Clock ── */}
-        <div className="shrink-0 px-5 pt-4 pb-2 flex flex-col items-center">
+        {/* ── Mobile: Inline progress + accordions ── */}
+        <div className="md:hidden shrink-0">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/40 bg-white dark:bg-slate-900">
+            <div className="relative h-10 w-10 shrink-0">
+              <svg className="h-10 w-10 -rotate-90" viewBox="0 0 76 76">
+                <circle cx="38" cy="38" r="34" fill="none" stroke="currentColor" strokeWidth="5" className="text-slate-200 dark:text-slate-700" />
+                <motion.circle cx="38" cy="38" r="34" fill="none" strokeWidth="5" strokeLinecap="round"
+                  className={pct === 100 ? "text-emerald-500" : "text-[var(--hub-red)]"}
+                  initial={{ strokeDasharray: `0 ${circ}` }}
+                  animate={{ strokeDasharray: `${dash} ${circ - dash}` }}
+                  transition={{ duration: 0.8 }}
+                  stroke="currentColor"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-800 dark:text-white">{pct}%</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-slate-900 dark:text-white">{completedTasks.length}/{totalToday} tasks</p>
+              <div className="flex items-center gap-1">
+                <Trophy className="h-3 w-3 text-amber-500" />
+                <span className="text-[10px] font-bold text-slate-500">{pointsToday} pts</span>
+              </div>
+            </div>
+            <p className="text-2xl font-extralight tabular-nums text-slate-800 dark:text-slate-100 shrink-0">
+              {displayTime || currentTime}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-700/40">
+            <Accordion title="Completed" icon={CheckCircle2} iconColor="text-emerald-500" count={completedTasks.length} defaultOpen={false} controlledOpen={accCompleted} onToggle={setAccCompleted}>
+              {completedTasks.length === 0 ? (
+                <p className="text-[10px] text-slate-400 text-center py-3">Nothing yet — get started!</p>
+              ) : (
+                <div className="space-y-1">
+                  {completedTasks.map((t) => (
+                    <div key={t.id} className="flex items-center gap-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5 group">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                      <span className="flex-1 text-[10px] text-slate-500 line-through truncate">{t.title}</span>
+                      <button
+                        onClick={() => onUncomplete(t.id)}
+                        className="hidden group-hover:flex items-center gap-0.5 text-[8px] font-bold text-amber-500 hover:text-amber-600 transition-colors shrink-0"
+                      >
+                        <Undo2 className="h-2.5 w-2.5" /> Undo
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Accordion>
+            <Accordion title="Missed Yesterday" icon={XCircle} iconColor="text-red-400" count={missedYesterday.length} controlledOpen={accMissed} onToggle={setAccMissed}>
+              {missedYesterday.length === 0 ? (
+                <p className="text-[10px] text-emerald-500 text-center py-3">None — great job!</p>
+              ) : (
+                <div className="space-y-1">
+                  {missedYesterday.map((t) => (
+                    <div key={t.id} className="flex items-center gap-2 rounded-lg bg-red-50/60 dark:bg-red-950/20 px-2.5 py-1.5">
+                      <XCircle className="h-3 w-3 text-red-300 shrink-0" />
+                      <span className="flex-1 text-[10px] text-slate-500 truncate">{t.title}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Accordion>
+            <Accordion title="Leaderboard" icon={Trophy} iconColor="text-amber-500" maxHeight={250} controlledOpen={accLeaderboard} onToggle={setAccLeaderboard}>
+              <Leaderboard currentLocationId={currentLocationId} compact />
+            </Accordion>
+          </div>
+        </div>
+
+        {/* ── Prominent Clock (desktop only) ── */}
+        <div className="hidden md:flex shrink-0 px-5 pt-4 pb-2 flex-col items-center">
           <p className="text-6xl font-extralight tabular-nums tracking-tight text-slate-800 dark:text-slate-100 leading-none">
             {displayTime || currentTime}
           </p>
@@ -293,7 +361,7 @@ export function FocusLayout({
                 heroTask.isOverdue ? "bg-red-300" : heroTask.isDueSoon ? "bg-amber-300" : "bg-white"
               )} />
 
-              <div className="relative px-6 py-5 flex items-center justify-between gap-6">
+              <div className="relative px-4 py-4 md:px-6 md:py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <span className={cn(
@@ -317,10 +385,10 @@ export function FocusLayout({
                       <span className="bg-white/20 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm">Due Soon</span>
                     )}
                   </div>
-                  <h1 className="text-3xl font-black text-white leading-tight tracking-tight">{heroTask.title}</h1>
+                  <h1 className="text-xl md:text-3xl font-black text-white leading-tight tracking-tight">{heroTask.title}</h1>
                   {heroTask.description && (
                     <p className={cn(
-                      "text-sm mt-1.5 line-clamp-2 max-w-2xl",
+                      "text-xs md:text-sm mt-1.5 line-clamp-2 max-w-2xl",
                       heroTask.isOverdue || heroTask.isDueSoon ? "text-white/60" : "text-slate-400"
                     )}>{heroTask.description}</p>
                   )}
@@ -341,7 +409,7 @@ export function FocusLayout({
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onComplete(heroTask.id)}
                   className={cn(
-                    "shrink-0 flex items-center gap-2.5 rounded-2xl px-8 py-4 text-lg font-black shadow-xl transition-all",
+                    "shrink-0 flex items-center justify-center gap-2.5 rounded-2xl px-8 py-3 md:py-4 text-base md:text-lg font-black shadow-xl transition-all w-full md:w-auto",
                     heroTask.isOverdue || heroTask.isDueSoon
                       ? "bg-white text-slate-900 shadow-white/10 hover:bg-white/90"
                       : "bg-[var(--hub-red)] text-white shadow-red-500/20 hover:brightness-110"

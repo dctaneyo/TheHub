@@ -68,7 +68,7 @@ function DashboardPage() {
   const mirrorLocationId = searchParams.get("mirror");
   const mirrorSessionId = searchParams.get("session");
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
-  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange } = useMirror();
+  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange, targetDevice } = useMirror();
 
   // Initialize mirror session on mount if URL params are present
   useEffect(() => {
@@ -668,11 +668,20 @@ function DashboardPage() {
   // In mirror mode, use the target location ID for location-specific components
   const effectiveLocationId = mirrorLocationId || user?.id;
 
-  return (
-    <div className="flex h-dvh w-screen flex-col overflow-hidden bg-[var(--background)] relative">
-      {/* Mirror mode UI */}
-      {isMirroring && <MirrorToolbar />}
-      {isMirroring && <CursorOverlay />}
+  // ── Mirror viewport scaling: render at target's exact dimensions ──
+  const mirrorScale = (() => {
+    if (!isMirroring || !targetDevice) return null;
+    const tw = targetDevice.width;
+    const th = targetDevice.height;
+    if (!tw || !th) return null;
+    const aw = typeof window !== "undefined" ? window.innerWidth : tw;
+    const ah = typeof window !== "undefined" ? window.innerHeight : th;
+    const scale = Math.min(aw / tw, ah / th);
+    return { tw, th, scale };
+  })();
+
+  const dashboardContent = (
+    <div className={cn("flex flex-col overflow-hidden bg-[var(--background)] relative", mirrorScale ? "w-full h-full" : "h-dvh w-screen")}>
 
       {/* Offline indicator with sync status */}
       <OfflineIndicator />
@@ -959,6 +968,42 @@ function DashboardPage() {
       <ArlCursorOverlay remoteViewActive={remoteViewActive} />
     </div>
   );
+
+  if (mirrorScale) {
+    return (
+      <>
+        {/* Mirror mode UI — rendered outside the scaled container so they stay normal size */}
+        <MirrorToolbar />
+        <CursorOverlay />
+        <div className="h-dvh w-screen overflow-hidden bg-black flex items-start justify-center">
+          <div
+            style={{
+              width: mirrorScale.tw,
+              height: mirrorScale.th,
+              transform: `scale(${mirrorScale.scale})`,
+              transformOrigin: "top center",
+            }}
+            className="shrink-0 relative"
+          >
+            {dashboardContent}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Not using viewport scaling (either not mirroring, or device info not yet received)
+  if (isMirroring) {
+    return (
+      <>
+        <MirrorToolbar />
+        <CursorOverlay />
+        {dashboardContent}
+      </>
+    );
+  }
+
+  return dashboardContent;
 }
 
 function RightPanel({

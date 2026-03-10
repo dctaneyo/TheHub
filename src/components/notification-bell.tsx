@@ -120,10 +120,17 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Location-scoped localStorage key to prevent cross-location dismiss collisions
-  const storageKey = locationId ? `dismissed-notifications-${locationId}` : "dismissed-notifications";
+  // In mirror mode, scope to the TARGET location so we don't load ARL's own dismissals
+  const effectiveLocationId = isMirroring ? targetLocationId : locationId;
+  const storageKey = effectiveLocationId ? `dismissed-notifications-${effectiveLocationId}` : "dismissed-notifications";
 
   // Load dismissed from localStorage — clear stale dismissals from a previous day
+  // In mirror mode, start with a clean slate so target's undismissed overdue tasks show correctly
   useEffect(() => {
+    if (isMirroring) {
+      notifiedRef.current = new Set();
+      return;
+    }
     try {
       const todayStr = new Date().toISOString().split("T")[0];
       const stored = localStorage.getItem(storageKey);
@@ -137,7 +144,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
         }
       }
     } catch {}
-  }, [storageKey]);
+  }, [storageKey, isMirroring]);
 
   // Clean up dismissed entries only for tasks that are confirmed completed,
   // so the notification can re-fire if the task is un-completed later.
@@ -290,7 +297,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   }, [soundEnabled]);
 
   useEffect(() => {
-    if (overdueNotifs.length > 0) {
+    if (overdueNotifs.length > 0 && !isMirroring) {
       playOverdueAlarm();
       overdueAlarmRef.current = setInterval(playOverdueAlarm, 5000);
     } else if (overdueAlarmRef.current) {

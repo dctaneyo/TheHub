@@ -375,6 +375,7 @@ export class RemoteCaptureManager {
   private actionHandler: ((data: any) => void) | null = null;
   private endedHandler: ((data: any) => void) | null = null;
   private deviceInfoRequestHandler: ((data: any) => void) | null = null;
+  private resizeHandler: (() => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
 
@@ -513,6 +514,14 @@ export class RemoteCaptureManager {
         this.sendDeviceInfo();
       };
       this.socket.on("mirror:request-device-info", this.deviceInfoRequestHandler);
+
+      // Re-send device info on window resize so mirror viewport stays in sync
+      let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+      this.resizeHandler = () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => this.sendDeviceInfo(), 300);
+      };
+      window.addEventListener("resize", this.resizeHandler);
     }
 
     console.log(`🖥️ Remote capture started for session ${this.sessionId} (mirror: ${this.mirrorMode})`);
@@ -555,6 +564,10 @@ export class RemoteCaptureManager {
     if (this.deviceInfoRequestHandler) {
       this.socket.off("mirror:request-device-info", this.deviceInfoRequestHandler);
       this.deviceInfoRequestHandler = null;
+    }
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+      this.resizeHandler = null;
     }
 
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
