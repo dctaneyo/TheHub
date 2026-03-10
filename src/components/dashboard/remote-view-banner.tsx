@@ -7,9 +7,10 @@ import { Eye, Hand } from "@/lib/icons";
 
 interface RemoteViewBannerProps {
   onSessionChange?: (active: boolean) => void;
+  onCaptureManagerChange?: (manager: RemoteCaptureManager | null) => void;
 }
 
-export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
+export function RemoteViewBanner({ onSessionChange, onCaptureManagerChange }: RemoteViewBannerProps) {
   const { socket } = useSocket();
   const [activeSession, setActiveSession] = useState<{ sessionId: string; arlName: string; controlEnabled: boolean } | null>(null);
   const captureManagerRef = useRef<RemoteCaptureManager | null>(null);
@@ -32,6 +33,7 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
       const manager = new RemoteCaptureManager(socket, data.sessionId, true);
       manager.start();
       captureManagerRef.current = manager;
+      onCaptureManagerChange?.(manager);
 
       setActiveSession({
         sessionId: data.sessionId,
@@ -54,6 +56,7 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
         captureManagerRef.current.stop();
         captureManagerRef.current = null;
       }
+      onCaptureManagerChange?.(null);
       setActiveSession(null);
     };
 
@@ -78,9 +81,10 @@ export function RemoteViewBanner({ onSessionChange }: RemoteViewBannerProps) {
       captureManagerRef.current.stop();
       captureManagerRef.current = null;
     }
+    onCaptureManagerChange?.(null);
 
     setActiveSession(null);
-  }, [socket, activeSession]);
+  }, [socket, activeSession, onCaptureManagerChange]);
 
   // Clean up on unmount
   useEffect(() => {

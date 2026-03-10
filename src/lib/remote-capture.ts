@@ -374,6 +374,7 @@ export class RemoteCaptureManager {
   private scrollTracker: (() => void) | null = null;
   private actionHandler: ((data: any) => void) | null = null;
   private endedHandler: ((data: any) => void) | null = null;
+  private deviceInfoRequestHandler: ((data: any) => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
 
@@ -505,6 +506,15 @@ export class RemoteCaptureManager {
     };
     this.socket.on("remote-view:ended", this.endedHandler);
 
+    // Mirror mode: listen for device info re-request (when new mirror tab joins)
+    if (this.mirrorMode) {
+      this.deviceInfoRequestHandler = (data: { sessionId: string }) => {
+        if (data.sessionId !== this.sessionId) return;
+        this.sendDeviceInfo();
+      };
+      this.socket.on("mirror:request-device-info", this.deviceInfoRequestHandler);
+    }
+
     console.log(`🖥️ Remote capture started for session ${this.sessionId} (mirror: ${this.mirrorMode})`);
   }
 
@@ -542,11 +552,16 @@ export class RemoteCaptureManager {
       this.socket.off("remote-view:ended", this.endedHandler);
       this.endedHandler = null;
     }
+    if (this.deviceInfoRequestHandler) {
+      this.socket.off("mirror:request-device-info", this.deviceInfoRequestHandler);
+      this.deviceInfoRequestHandler = null;
+    }
 
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
 
   private sendDeviceInfo() {
+    const layout = typeof localStorage !== "undefined" ? localStorage.getItem("hub-dashboard-layout") || "classic" : "classic";
     this.socket.emit("mirror:device-info", {
       sessionId: this.sessionId,
       device: {
@@ -554,8 +569,22 @@ export class RemoteCaptureManager {
         height: window.innerHeight,
         isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768,
         userAgent: navigator.userAgent,
+        layout,
       },
     });
+  }
+
+  /** Broadcast current view state to mirror dashboard (call from React when views change) */
+  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string }) {
+    if (!this.isActive || !this.mirrorMode) return;
+    this.socket.emit("mirror:view-change", {
+      sessionId: this.sessionId,
+      viewState,
+    });
+  }
+
+  getSessionId() {
+    return this.sessionId;
   }
 
   private async sendSnapshot(includeScreenshot = true) {

@@ -8,6 +8,15 @@ export interface TargetDeviceInfo {
   height: number;
   isMobile: boolean;
   userAgent: string;
+  layout?: string;
+}
+
+export interface MirrorViewState {
+  chatOpen: boolean;
+  formsOpen: boolean;
+  calendarOpen: boolean;
+  layout: string;
+  mobileView: string;
 }
 
 interface MirrorState {
@@ -19,6 +28,7 @@ interface MirrorState {
   targetDevice: TargetDeviceInfo | null;
   remoteCursor: { x: number; y: number } | null;
   remoteScroll: { x: number; y: number } | null;
+  viewState: MirrorViewState | null;
 }
 
 interface MirrorContextValue extends MirrorState {
@@ -41,6 +51,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     targetDevice: null,
     remoteCursor: null,
     remoteScroll: null,
+    viewState: null,
   });
 
   const sessionIdRef = useRef<string | null>(null);
@@ -56,6 +67,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       targetDevice: null,
       remoteCursor: null,
       remoteScroll: null,
+      viewState: null,
     });
 
     // Join the target location's socket room for real-time task updates
@@ -78,6 +90,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       targetDevice: null,
       remoteCursor: null,
       remoteScroll: null,
+      viewState: null,
     });
   }, [socket]);
 
@@ -111,7 +124,18 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
 
     const onDevice = (data: { sessionId: string; device: TargetDeviceInfo }) => {
       if (data.sessionId !== sessionIdRef.current) return;
-      setState(prev => ({ ...prev, targetDevice: data.device }));
+      setState(prev => ({
+        ...prev,
+        targetDevice: data.device,
+        // Use target's layout from device info if we don't have view state yet
+        viewState: prev.viewState ? prev.viewState : (data.device.layout ? {
+          chatOpen: false,
+          formsOpen: false,
+          calendarOpen: false,
+          layout: data.device.layout,
+          mobileView: "tasks",
+        } : prev.viewState),
+      }));
     };
 
     const onEnded = (data: { sessionId: string }) => {
@@ -126,7 +150,13 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
         targetDevice: null,
         remoteCursor: null,
         remoteScroll: null,
+        viewState: null,
       });
+    };
+
+    const onViewChange = (data: { sessionId: string; viewState: MirrorViewState }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      setState(prev => ({ ...prev, viewState: data.viewState }));
     };
 
     const onControlToggled = (data: { sessionId: string; enabled: boolean }) => {
@@ -139,6 +169,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     socket.on("mirror:device-info", onDevice);
     socket.on("remote-view:ended", onEnded);
     socket.on("remote-view:control-toggled", onControlToggled);
+    socket.on("mirror:view-change", onViewChange);
 
     return () => {
       socket.off("remote-view:cursor", onCursor);
@@ -146,6 +177,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       socket.off("mirror:device-info", onDevice);
       socket.off("remote-view:ended", onEnded);
       socket.off("remote-view:control-toggled", onControlToggled);
+      socket.off("mirror:view-change", onViewChange);
     };
   }, [socket]);
 
@@ -169,6 +201,7 @@ export function useMirror() {
       targetDevice: null,
       remoteCursor: null,
       remoteScroll: null,
+      viewState: null,
       startMirror: () => {},
       endMirror: () => {},
       toggleControl: () => {},

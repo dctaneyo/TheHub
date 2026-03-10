@@ -35,6 +35,7 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
+import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import { useLayout } from "@/lib/layout-context";
 import { FocusLayout } from "@/components/dashboard/layouts/focus";
 import { useSearchParams } from "next/navigation";
@@ -66,7 +67,7 @@ function DashboardPage() {
   const mirrorLocationId = searchParams.get("mirror");
   const mirrorSessionId = searchParams.get("session");
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
-  const { isMirroring, startMirror, endMirror } = useMirror();
+  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState } = useMirror();
 
   // Initialize mirror session on mount if URL params are present
   useEffect(() => {
@@ -87,6 +88,7 @@ function DashboardPage() {
   const [mobilePanelOpen, setMobilePanelOpen] = useState<"left" | "right" | null>(null);
   const [mobileView, setMobileView] = useState<string>("tasks");
   const [remoteViewActive, setRemoteViewActive] = useState(false);
+  const captureManagerRef = useRef<RemoteCaptureManager | null>(null);
 
   // Persist screensaver toggle to localStorage
   useEffect(() => {
@@ -244,7 +246,7 @@ function DashboardPage() {
   // Settings and mobile menu state/effects are now inside DashboardHeader + DashboardSettings
 
   const { user, logout } = useAuth();
-  const { layout } = useLayout();
+  const { layout, setLayout } = useLayout();
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
   const [currentTime, setCurrentTime] = useState("");
@@ -262,6 +264,17 @@ function DashboardPage() {
   const [pendingMeeting, setPendingMeeting] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
   const [showMeetingNotification, setShowMeetingNotification] = useState(false);
   const playConfettiSound = useConfettiSound();
+
+  // ── Mirror mode: sync view state from target ──
+  useEffect(() => {
+    if (!isMirroring || !mirrorViewState) return;
+    setChatOpen(mirrorViewState.chatOpen);
+    setFormsOpen(mirrorViewState.formsOpen);
+    setCalOpen(mirrorViewState.calendarOpen);
+    if (mirrorViewState.layout) {
+      setLayout(mirrorViewState.layout as any);
+    }
+  }, [isMirroring, mirrorViewState, setLayout]);
 
   // Disable screensaver while in a meeting, during remote view, or in mirror mode
   const idle = idleBase && !activeStream && !remoteViewActive && !isMirroring;
@@ -442,6 +455,18 @@ function DashboardPage() {
     const page = chatOpen ? "Chat" : calOpen ? "Calendar" : formsOpen ? "Forms" : "Dashboard";
     updateActivity(page);
   }, [chatOpen, calOpen, formsOpen, updateActivity]);
+
+  // Broadcast view state to mirror dashboard when being remote-viewed
+  useEffect(() => {
+    if (!remoteViewActive || !captureManagerRef.current) return;
+    captureManagerRef.current.broadcastViewState({
+      chatOpen,
+      formsOpen,
+      calendarOpen: calOpen,
+      layout,
+      mobileView,
+    });
+  }, [chatOpen, calOpen, formsOpen, layout, mobileView, remoteViewActive]);
 
   const handleEarlyComplete = async (taskId: string, dateStr: string) => {
     try {
@@ -867,7 +892,7 @@ function DashboardPage() {
       />
 
       {/* Remote View Banner (auto-start + active session indicator) — skip in mirror mode */}
-      {!isMirroring && <RemoteViewBanner onSessionChange={setRemoteViewActive} />}
+      {!isMirroring && <RemoteViewBanner onSessionChange={setRemoteViewActive} onCaptureManagerChange={(m) => { captureManagerRef.current = m; }} />}
     </div>
   );
 }

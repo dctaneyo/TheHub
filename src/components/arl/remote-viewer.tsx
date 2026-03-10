@@ -37,6 +37,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
   const [targets, setTargets] = useState<RemoteTarget[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"idle" | "pending" | "active" | "ended">("idle");
   const [snapshot, setSnapshot] = useState<DOMSnapshot | null>(null);
   const [controlEnabled, setControlEnabled] = useState(false);
@@ -113,6 +114,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
 
     const onRequested = (data: { sessionId: string; locationId: string }) => {
       setSessionId(data.sessionId);
+      sessionIdRef.current = data.sessionId;
       setSessionStatus("pending");
     };
 
@@ -151,9 +153,10 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
     };
 
     const onEnded = (data: { sessionId: string; endedBy: string; reason?: string }) => {
-      if (data.sessionId === sessionId) {
+      if (data.sessionId === sessionIdRef.current) {
         setSessionStatus("ended");
         setSessionId(null);
+        sessionIdRef.current = null;
         setSnapshot(null);
         setCursorPos(null);
         setControlEnabled(false);
@@ -194,16 +197,17 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
 
   // End session
   const endSession = useCallback(() => {
-    if (!socket || !sessionId) return;
-    socket.emit("remote-view:end", { sessionId });
+    if (!socket || !sessionIdRef.current) return;
+    socket.emit("remote-view:end", { sessionId: sessionIdRef.current });
     setSessionStatus("ended");
     setSessionId(null);
+    sessionIdRef.current = null;
     setSnapshot(null);
     setCursorPos(null);
     setControlEnabled(false);
     setIsFullscreen(false);
     setTimeout(() => setSessionStatus("idle"), 1000);
-  }, [socket, sessionId]);
+  }, [socket]);
 
   // Toggle control
   const toggleControl = useCallback(() => {

@@ -292,14 +292,12 @@ export function registerRemoteViewHandlers(
       socket.join(`remote-view:${data.sessionId}`);
     }
 
-    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
-    if (arlSocket) {
-      arlSocket.volatile.emit("remote-view:cursor", {
-        sessionId: data.sessionId,
-        x: data.x,
-        y: data.y,
-      });
-    }
+    // Emit to session room so all ARL sockets (original + mirror tabs) receive it
+    socket.to(`remote-view:${data.sessionId}`).volatile.emit("remote-view:cursor", {
+      sessionId: data.sessionId,
+      x: data.x,
+      y: data.y,
+    });
   });
 
   // ── Mirror Mode: ARL joins target location's task update room ──
@@ -309,6 +307,10 @@ export function registerRemoteViewHandlers(
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
+    // Join the session room so mirror tab receives cursor/click/scroll/device/ended events
+    const sessionRoom = `remote-view:${data.sessionId}`;
+    socket.join(sessionRoom);
+
     // Join the location's task update room so the ARL receives task:updated events
     const tp = (socket as any)._tenantPrefix;
     if (tp) {
@@ -316,7 +318,15 @@ export function registerRemoteViewHandlers(
     }
     socket.join(`location:${data.locationId}`);
 
-    console.log(`🪞 Mirror mode: ${user.name} joined location ${data.locationId}'s room`);
+    // Re-send device info to the newly joined mirror tab if location is already streaming
+    if (session.locationSocketId) {
+      const locSocket = io.sockets.sockets.get(session.locationSocketId);
+      if (locSocket) {
+        locSocket.emit("mirror:request-device-info", { sessionId: data.sessionId });
+      }
+    }
+
+    console.log(`🪞 Mirror mode: ${user.name} joined session ${data.sessionId} + location ${data.locationId}'s room`);
   });
 
   // ── Location: Send scroll position (for mirror mode sync) ──
@@ -326,14 +336,12 @@ export function registerRemoteViewHandlers(
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
-    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
-    if (arlSocket) {
-      arlSocket.volatile.emit("mirror:scroll", {
-        sessionId: data.sessionId,
-        x: data.x,
-        y: data.y,
-      });
-    }
+    // Emit to session room so all ARL sockets (original + mirror tabs) receive it
+    socket.to(`remote-view:${data.sessionId}`).volatile.emit("mirror:scroll", {
+      sessionId: data.sessionId,
+      x: data.x,
+      y: data.y,
+    });
   });
 
   // ── Location: Send click event (for mirror mode ripple visualization) ──
@@ -343,30 +351,40 @@ export function registerRemoteViewHandlers(
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
-    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
-    if (arlSocket) {
-      arlSocket.emit("mirror:click", {
-        sessionId: data.sessionId,
-        x: data.x,
-        y: data.y,
-      });
-    }
+    // Emit to session room
+    socket.to(`remote-view:${data.sessionId}`).emit("mirror:click", {
+      sessionId: data.sessionId,
+      x: data.x,
+      y: data.y,
+    });
   });
 
-  // ── Location: Send device info (viewport, mobile/desktop, user agent) ──
-  socket.on("mirror:device-info", (data: { sessionId: string; device: { width: number; height: number; isMobile: boolean; userAgent: string } }) => {
+  // ── Location: Send device info (viewport, mobile/desktop, user agent, layout) ──
+  socket.on("mirror:device-info", (data: { sessionId: string; device: { width: number; height: number; isMobile: boolean; userAgent: string; layout?: string } }) => {
     if (user.userType !== "location") return;
 
     const session = remoteViewSessions.get(data.sessionId);
     if (!session || session.status !== "active") return;
 
-    const arlSocket = io.sockets.sockets.get(session.arlSocketId);
-    if (arlSocket) {
-      arlSocket.emit("mirror:device-info", {
-        sessionId: data.sessionId,
-        device: data.device,
-      });
-    }
+    // Emit to session room
+    socket.to(`remote-view:${data.sessionId}`).emit("mirror:device-info", {
+      sessionId: data.sessionId,
+      device: data.device,
+    });
+  });
+
+  // ── Location: Send view state changes (chat/forms/calendar open, layout) ──
+  socket.on("mirror:view-change", (data: { sessionId: string; viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string } }) => {
+    if (user.userType !== "location") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    // Emit to session room
+    socket.to(`remote-view:${data.sessionId}`).emit("mirror:view-change", {
+      sessionId: data.sessionId,
+      viewState: data.viewState,
+    });
   });
 }
 
