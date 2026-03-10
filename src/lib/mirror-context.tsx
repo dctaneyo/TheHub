@@ -18,6 +18,8 @@ export interface MirrorViewState {
   layout: string;
   mobileView: string;
   accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean };
+  notificationsOpen?: boolean;
+  settingsOpen?: boolean;
 }
 
 interface MirrorState {

@@ -44,7 +44,41 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   const [open, setOpen] = useState(false);
   const [dbCounts, setDbCounts] = useState({ total: 0, unread: 0, urgent: 0 });
   const { socket } = useSocket();
-  const { isMirroring, sessionId: mirrorSessionId, targetLocationId } = useMirror();
+  const { isMirroring, sessionId: mirrorSessionId, targetLocationId, viewState: mirrorViewState, sendViewChange } = useMirror();
+  const panelSyncRef = useRef(false);
+
+  // Sync notification panel open/close FROM mirror context (mirror side: target → mirror)
+  useEffect(() => {
+    if (!isMirroring || mirrorViewState?.notificationsOpen === undefined) return;
+    panelSyncRef.current = true;
+    setOpen(mirrorViewState.notificationsOpen);
+    requestAnimationFrame(() => { panelSyncRef.current = false; });
+  }, [isMirroring, mirrorViewState?.notificationsOpen]);
+
+  // Sync notification panel open/close FROM ARL (target side: mirror → target via DOM event)
+  useEffect(() => {
+    if (isMirroring) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.notificationsOpen !== undefined) {
+        panelSyncRef.current = true;
+        setOpen(detail.notificationsOpen);
+        requestAnimationFrame(() => { panelSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, [isMirroring]);
+
+  // Broadcast notification panel open/close changes
+  useEffect(() => {
+    if (panelSyncRef.current) return;
+    if (isMirroring) {
+      sendViewChange({ notificationsOpen: open });
+    } else if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { notificationsOpen: open } }));
+    }
+  }, [open, isMirroring, sendViewChange]);
 
   // ── DB notification counts (skip in mirror mode — would show ARL's notifications) ──
   const fetchCounts = useCallback(async () => {

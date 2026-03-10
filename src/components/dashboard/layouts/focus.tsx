@@ -127,7 +127,7 @@ export function FocusLayout({
   const [accLeaderboard, setAccLeaderboard] = useState(false);
   const accSyncRef = useRef(false);
 
-  // Sync accordion state FROM mirror context (target → mirror)
+  // Sync accordion state FROM mirror context (mirror side: target → mirror)
   useEffect(() => {
     if (!mirrorViewState?.accordions) return;
     accSyncRef.current = true;
@@ -137,6 +137,22 @@ export function FocusLayout({
     if (a.leaderboard !== undefined) setAccLeaderboard(a.leaderboard);
     requestAnimationFrame(() => { accSyncRef.current = false; });
   }, [mirrorViewState?.accordions]);
+
+  // Sync accordion state FROM ARL (target side: mirror → target via DOM event)
+  useEffect(() => {
+    if (isMirroring) return; // only on target side
+    const handler = (e: Event) => {
+      const a = (e as CustomEvent).detail;
+      if (!a) return;
+      accSyncRef.current = true;
+      if (a.completed !== undefined) setAccCompleted(a.completed);
+      if (a.missed !== undefined) setAccMissed(a.missed);
+      if (a.leaderboard !== undefined) setAccLeaderboard(a.leaderboard);
+      requestAnimationFrame(() => { accSyncRef.current = false; });
+    };
+    window.addEventListener("mirror:accordion-sync", handler);
+    return () => window.removeEventListener("mirror:accordion-sync", handler);
+  }, [isMirroring]);
 
   // Broadcast accordion changes
   useEffect(() => {

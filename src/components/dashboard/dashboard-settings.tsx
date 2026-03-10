@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, Volume2, VolumeX, Monitor, MonitorOff, Play, Sun, Moon, LayoutGrid } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
+import { useMirror } from "@/lib/mirror-context";
 
 interface DashboardSettingsProps {
   soundEnabled: boolean;
@@ -23,9 +24,44 @@ export function DashboardSettings({
   onShowScreensaver,
 }: DashboardSettingsProps) {
   const { layout, setLayout } = useLayout();
+  const { isMirroring, viewState: mirrorViewState, sendViewChange } = useMirror();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const panelSyncRef = useRef(false);
+
+  // Sync settings panel open/close FROM mirror context (mirror side: target → mirror)
+  useEffect(() => {
+    if (!isMirroring || mirrorViewState?.settingsOpen === undefined) return;
+    panelSyncRef.current = true;
+    setOpen(mirrorViewState.settingsOpen);
+    requestAnimationFrame(() => { panelSyncRef.current = false; });
+  }, [isMirroring, mirrorViewState?.settingsOpen]);
+
+  // Sync settings panel open/close FROM ARL (target side: mirror → target via DOM event)
+  useEffect(() => {
+    if (isMirroring) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.settingsOpen !== undefined) {
+        panelSyncRef.current = true;
+        setOpen(detail.settingsOpen);
+        requestAnimationFrame(() => { panelSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, [isMirroring]);
+
+  // Broadcast settings panel open/close changes
+  useEffect(() => {
+    if (panelSyncRef.current) return;
+    if (isMirroring) {
+      sendViewChange({ settingsOpen: open });
+    } else if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { settingsOpen: open } }));
+    }
+  }, [open, isMirroring, sendViewChange]);
 
   // Close on outside click
   useEffect(() => {

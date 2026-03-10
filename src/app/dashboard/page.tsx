@@ -290,11 +290,23 @@ function DashboardPage() {
   const { socket: viewSyncSocket } = useSocket();
   useEffect(() => {
     if (isMirroring || !remoteViewActive || !viewSyncSocket) return;
-    const onReverseView = (data: { sessionId: string; viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string } }) => {
-      if (data.viewState.chatOpen !== undefined) setChatOpen(data.viewState.chatOpen);
-      if (data.viewState.formsOpen !== undefined) setFormsOpen(data.viewState.formsOpen);
-      if (data.viewState.calendarOpen !== undefined) setCalOpen(data.viewState.calendarOpen);
-      if (data.viewState.layout) setLayout(data.viewState.layout as any);
+    const onReverseView = (data: { sessionId: string; viewState: Record<string, unknown> }) => {
+      const vs = data.viewState;
+      if (vs.chatOpen !== undefined) setChatOpen(vs.chatOpen as boolean);
+      if (vs.formsOpen !== undefined) setFormsOpen(vs.formsOpen as boolean);
+      if (vs.calendarOpen !== undefined) setCalOpen(vs.calendarOpen as boolean);
+      if (vs.layout) setLayout(vs.layout as string as any);
+      // Relay accordion state to FocusLayout via DOM event
+      if (vs.accordions) {
+        window.dispatchEvent(new CustomEvent("mirror:accordion-sync", { detail: vs.accordions }));
+      }
+      // Relay panel open/close to NotificationBell / DashboardSettings via DOM events
+      if (vs.notificationsOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { notificationsOpen: vs.notificationsOpen } }));
+      }
+      if (vs.settingsOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { settingsOpen: vs.settingsOpen } }));
+      }
     };
     viewSyncSocket.on("mirror:view-change", onReverseView);
     return () => { viewSyncSocket.off("mirror:view-change", onReverseView); };
@@ -503,6 +515,19 @@ function DashboardPage() {
     };
     window.addEventListener("mirror:accordion-change", handler);
     return () => window.removeEventListener("mirror:accordion-change", handler);
+  }, [remoteViewActive]);
+
+  // Relay notification/settings panel open/close from child components to mirror via capture manager
+  useEffect(() => {
+    if (!remoteViewActive) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (captureManagerRef.current && detail) {
+        captureManagerRef.current.broadcastViewState(detail);
+      }
+    };
+    window.addEventListener("mirror:panel-change", handler);
+    return () => window.removeEventListener("mirror:panel-change", handler);
   }, [remoteViewActive]);
 
   const handleEarlyComplete = async (taskId: string, dateStr: string) => {
