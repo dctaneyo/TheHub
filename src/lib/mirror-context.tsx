@@ -29,6 +29,9 @@ export interface MirrorViewState {
   mobilePanelOpen?: "left" | "right" | null;
   idle?: boolean;
   theme?: string;
+  // Chat thread sync fields
+  chatThreadId?: string | null;
+  chatThreadName?: string | null;
 }
 
 interface MirrorState {

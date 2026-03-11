@@ -383,6 +383,8 @@ function DashboardPage() {
   const [confettiPoints, setConfettiPoints] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [chatThreadId, setChatThreadId] = useState<string | null>(null);
+  const [chatThreadName, setChatThreadName] = useState<string | null>(null);
   const [calOpen, setCalOpen] = useState(false);
   const [formsOpen, setFormsOpen] = useState(false);
   const [showCoinRain, setShowCoinRain] = useState(false);
@@ -400,6 +402,8 @@ function DashboardPage() {
     if (!isMirroring || !mirrorViewState) return;
     mirrorSyncingRef.current = true;
     setChatOpen(mirrorViewState.chatOpen);
+    if (mirrorViewState.chatThreadId !== undefined) setChatThreadId(mirrorViewState.chatThreadId ?? null);
+    if (mirrorViewState.chatThreadName !== undefined) setChatThreadName(mirrorViewState.chatThreadName ?? null);
     setFormsOpen(mirrorViewState.formsOpen);
     setCalOpen(mirrorViewState.calendarOpen);
     if (mirrorViewState.layout) {
@@ -458,8 +462,8 @@ function DashboardPage() {
   // ── Mirror mode: send ARL's local view changes back to target ──
   useEffect(() => {
     if (!isMirroring || mirrorSyncingRef.current) return;
-    sendViewChange({ chatOpen, formsOpen, calendarOpen: calOpen, layout: effectiveLayout });
-  }, [isMirroring, chatOpen, formsOpen, calOpen, effectiveLayout, sendViewChange]);
+    sendViewChange({ chatOpen, formsOpen, calendarOpen: calOpen, layout: effectiveLayout, chatThreadId, chatThreadName });
+  }, [isMirroring, chatOpen, chatThreadId, chatThreadName, formsOpen, calOpen, effectiveLayout, sendViewChange]);
 
   // ── Target mode: listen for reverse view changes from ARL (mirror → target) ──
   const { socket: viewSyncSocket } = useSocket();
@@ -468,6 +472,8 @@ function DashboardPage() {
     const onReverseView = (data: { sessionId: string; viewState: Record<string, unknown> }) => {
       const vs = data.viewState;
       if (vs.chatOpen !== undefined) setChatOpen(vs.chatOpen as boolean);
+      if (vs.chatThreadId !== undefined) setChatThreadId(vs.chatThreadId as string | null);
+      if (vs.chatThreadName !== undefined) setChatThreadName(vs.chatThreadName as string | null);
       if (vs.formsOpen !== undefined) setFormsOpen(vs.formsOpen as boolean);
       if (vs.calendarOpen !== undefined) setCalOpen(vs.calendarOpen as boolean);
       if (vs.layout) setLayout(vs.layout as string as any);
@@ -692,6 +698,8 @@ function DashboardPage() {
     if (!remoteViewActive || !captureManagerRef.current) return;
     captureManagerRef.current.broadcastViewState({
       chatOpen,
+      chatThreadId,
+      chatThreadName,
       formsOpen,
       calendarOpen: calOpen,
       layout,
@@ -701,7 +709,7 @@ function DashboardPage() {
       idle,
       theme: currentTheme,
     });
-  }, [chatOpen, calOpen, formsOpen, layout, mobileView, soundEnabled, mobilePanelOpen, idle, currentTheme, remoteViewActive]);
+  }, [chatOpen, chatThreadId, chatThreadName, calOpen, formsOpen, layout, mobileView, soundEnabled, mobilePanelOpen, idle, currentTheme, remoteViewActive]);
 
   // Relay accordion state changes from FocusLayout to mirror via capture manager
   useEffect(() => {
@@ -1021,18 +1029,19 @@ function DashboardPage() {
   // ── Target side: receive scroll from ARL mirror and apply it ──
   useEffect(() => {
     if (isMirroring || !remoteViewActive || !scrollSocket) return;
+    const applyScrollToContainer = (container: Element, scrollData: { x: number; y: number; maxY?: number }) => {
+      if (scrollData.maxY && scrollData.maxY > 0) {
+        const ratio = scrollData.y / scrollData.maxY;
+        container.scrollTop = ratio * (container.scrollHeight - container.clientHeight);
+      } else {
+        container.scrollTop = scrollData.y;
+      }
+      container.scrollLeft = scrollData.x;
+    };
     const onArlScroll = (data: { sessionId: string; x: number; y: number; maxY?: number }) => {
       const el = document.querySelector('[data-scroll-sync="main"]');
       if (el) {
-        if (data.maxY && data.maxY > 0) {
-          const ratio = data.y / data.maxY;
-          el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
-        } else {
-          el.scrollTop = data.y;
-        }
-        el.scrollLeft = data.x;
-      } else {
-        window.scrollTo(data.x, data.y);
+        applyScrollToContainer(el, data);
       }
     };
     scrollSocket.on("mirror:scroll-from-arl", onArlScroll);
@@ -1304,6 +1313,8 @@ function DashboardPage() {
         unreadCount={chatUnread}
         onUnreadChange={setChatUnread}
         currentUserId={user?.id}
+        chatThreadId={chatThreadId}
+        chatThreadName={chatThreadName}
       />
 
       {/* Remote View Banner (auto-start + active session indicator) — skip in mirror mode */}

@@ -33,6 +33,7 @@ import { Shake } from "@/components/ui/shake";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
+import { useMirror } from "@/lib/mirror-context";
 import { Emoji } from "@/components/ui/emoji";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
@@ -89,11 +90,29 @@ interface RestaurantChatProps {
   unreadCount: number;
   onUnreadChange: (count: number) => void;
   currentUserId?: string;
+  chatThreadId?: string | null;
+  chatThreadName?: string | null;
 }
 
-export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, currentUserId }: RestaurantChatProps) {
+export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, currentUserId, chatThreadId, chatThreadName }: RestaurantChatProps) {
+  const { sendViewChange } = useMirror();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
+
+  // Sync chat thread when the mirror prop changes (not on conversations list updates)
+  const prevChatThreadIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevChatThreadIdRef.current;
+    if (prev === chatThreadId) return;
+    prevChatThreadIdRef.current = chatThreadId;
+    if (chatThreadId && conversations.length > 0) {
+      const convo = conversations.find((c: Conversation) => c.id === chatThreadId);
+      if (convo) setActiveConvo(convo);
+    } else if (chatThreadId === null && prev !== undefined) {
+      // prev was a real thread ID (or null from a prior sync), now cleared
+      setActiveConvo(null);
+    }
+  }, [chatThreadId, conversations]);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [showAllMessages, setShowAllMessages] = useState(false);
@@ -447,7 +466,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
             <div className="flex items-center gap-2">
               {(activeConvo || showNewChat) ? (
                 <button
-                  onClick={() => { setActiveConvo(null); setShowNewChat(false); setParticipantSearch(""); }}
+                  onClick={() => { 
+                    setActiveConvo(null); 
+                    setShowNewChat(false); 
+                    setParticipantSearch("");
+                    // Emit view change for mirror sync - back to conversation list
+                    sendViewChange({ chatOpen: true, chatThreadId: null, chatThreadName: null });
+                  }}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -676,7 +701,11 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
   }).map((convo) => (
                   <div key={convo.id} className="group relative">
                     <button
-                      onClick={() => setActiveConvo(convo)}
+                      onClick={() => {
+                        setActiveConvo(convo);
+                        // Emit view change for mirror sync
+                        sendViewChange({ chatOpen: true, chatThreadId: convo.id, chatThreadName: convo.name });
+                      }}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
                         convo.unreadCount > 0 ? "bg-red-50 dark:bg-red-950/40" : "hover:bg-muted/50"
