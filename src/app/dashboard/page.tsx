@@ -768,7 +768,7 @@ function DashboardPage() {
             {/* Left Column - Completed/Missed + Points */}
             <div className={cn(
               "w-[280px] shrink-0 border-r border-border bg-card overflow-y-auto",
-              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full block" : "hidden") : "block") : "md:block",
+              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full block" : "hidden") : "block") : "hidden md:block",
               !useTargetMobile && mobilePanelOpen === "left" ? "absolute inset-0 z-[999] w-full md:relative md:w-[280px] md:border-r md:border-border" : ""
             )}>
               {/* Mobile close button */}

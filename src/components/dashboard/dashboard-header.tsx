@@ -10,6 +10,7 @@ import {
   FileText,
   Volume2,
   VolumeX,
+  LayoutGrid,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -17,6 +18,7 @@ import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { NotificationBell } from "@/components/notification-bell";
 import { DashboardSettings } from "@/components/dashboard/dashboard-settings";
 import { type TaskItem } from "@/components/dashboard/timeline";
+import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 
 interface DashboardHeaderProps {
   user: { id?: string; name?: string; storeNumber?: string } | null;
@@ -54,6 +56,7 @@ export function DashboardHeader({
   onLogout,
 }: DashboardHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { layout, setLayout } = useLayout();
   const [mobileMenuPos, setMobileMenuPos] = useState<{ top: number; left: number } | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +135,33 @@ export function DashboardHeader({
                       <p className="text-xs text-muted-foreground">View schedule</p>
                     </div>
                   </button>
+
+                  <div className="border-t border-border mx-2 my-1" />
+
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Layout</p>
+                    <div className="space-y-1">
+                      {LAYOUT_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            setLayout(option.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={cn(
+                            "w-full px-2 py-1.5 text-left flex items-center gap-2 rounded-lg hover:bg-muted transition-colors",
+                            layout === option.id && "bg-muted"
+                          )}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">{option.name}</span>
+                          {layout === option.id && (
+                            <div className="ml-auto h-2 w-2 rounded-full bg-[var(--hub-red)]" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="px-3 py-2">
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Connection</p>
