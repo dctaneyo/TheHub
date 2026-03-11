@@ -739,7 +739,7 @@ function DashboardPage() {
         <>
           {/* Mobile Panel Toggle Buttons */}
           {(useTargetMobile ? targetIsMobile : true) && (
-            <div className={cn("flex gap-2 px-4 py-2 border-b border-border bg-card", useTargetMobile ? "" : "md:hidden")}>
+            <div className={cn("flex gap-2 px-4 py-2 border-b border-border bg-card", useTargetMobile ? "" : "lg:hidden")}>
             <button
               onClick={() => setMobilePanelOpen(mobilePanelOpen === "left" ? null : "left")}
               className={cn(
@@ -773,7 +773,7 @@ function DashboardPage() {
             )}>
               {/* Mobile close button */}
               {mobilePanelOpen === "left" && (useTargetMobile ? targetIsMobile : true) && (
-                <div className={cn("sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between", useTargetMobile ? "" : "md:hidden")}>
+                <div className={cn("sticky top-0 z-[1000] bg-card border-b border-border px-4 py-3 flex items-center justify-between", useTargetMobile ? "" : "lg:hidden")}>
                   <h3 className="text-sm font-bold text-foreground">Completed & Missed</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
@@ -821,7 +821,7 @@ function DashboardPage() {
             )}>
               {/* Mobile close button */}
               {mobilePanelOpen === "right" && (useTargetMobile ? targetIsMobile : true) && (
-                <div className={cn("sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0", useTargetMobile ? "" : "md:hidden")}>
+                <div className={cn("sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0", useTargetMobile ? "" : "lg:hidden")}>
                   <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
