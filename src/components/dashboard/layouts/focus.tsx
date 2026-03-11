@@ -117,6 +117,7 @@ export function FocusLayout({
   onUncomplete,
   onEarlyComplete,
 }: DashboardLayoutProps) {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const pct = totalToday > 0 ? Math.round((completedTasks.length / totalToday) * 100) : 0;
   const circ = 2 * Math.PI * 34;
   const dash = (pct / 100) * circ;
@@ -179,9 +180,14 @@ export function FocusLayout({
   const laterTasks = incompleteTasks.slice(4);
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* ═══ LEFT SIDEBAR: Collapsible Accordions + Sticky Quote (hidden on mobile) ═══ */}
-      <div className={cn("w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col overflow-hidden", targetIsMobile !== undefined ? (targetIsMobile ? "hidden" : "flex") : "hidden lg:flex")}>
+    <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-slate-950 relative">
+      {/* ═══ LEFT SIDEBAR: Collapsible Accordions + Sticky Quote (hidden on mobile unless toggled) ═══ */}
+      <div className={cn(
+        "w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col overflow-hidden",
+        targetIsMobile !== undefined
+          ? (targetIsMobile ? (mobileSidebarOpen ? "flex absolute inset-0 z-[999]" : "hidden") : "flex")
+          : mobileSidebarOpen ? "flex absolute inset-0 z-[999] lg:relative lg:inset-auto" : "hidden lg:flex"
+      )}>
         {/* Progress stats */}
         <div className="shrink-0 p-4 border-b border-slate-200/60 dark:border-slate-700/40">
           <div className="flex items-center gap-3">
@@ -258,18 +264,33 @@ export function FocusLayout({
         <div className="shrink-0 border-t border-slate-200/60 dark:border-slate-700/40 px-3 py-3">
           <MotivationalQuote />
         </div>
+        
+        {/* Mobile close button */}
+        {mobileSidebarOpen && (
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            className={cn("absolute top-4 right-4 z-[1000] flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700", targetIsMobile !== undefined ? "" : "lg:hidden")}
+          >
+            <XCircle className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* ═══ MAIN AREA: flex column fills viewport height ═══ */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        {/* ── Mobile: Inline progress + accordions ── */}
-        {(targetIsMobile !== undefined ? targetIsMobile : true) && (
-          <div className={cn("shrink-0", targetIsMobile !== undefined ? "" : "lg:hidden")}>
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/40 bg-white dark:bg-slate-900">
-            <div className="relative h-10 w-10 shrink-0">
-              <svg className="h-10 w-10 -rotate-90" viewBox="0 0 76 76">
-                <circle cx="38" cy="38" r="34" fill="none" stroke="currentColor" strokeWidth="5" className="text-slate-200 dark:text-slate-700" />
-                <motion.circle cx="38" cy="38" r="34" fill="none" strokeWidth="5" strokeLinecap="round"
+        {/* ── Mobile: Compact progress bar with sidebar toggle ── */}
+        <div className={cn("shrink-0 flex items-center gap-3 px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/40 bg-white dark:bg-slate-900", targetIsMobile !== undefined ? (targetIsMobile ? "flex" : "hidden") : "flex lg:hidden")}>
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="relative h-8 w-8 shrink-0">
+              <svg className="h-8 w-8 -rotate-90" viewBox="0 0 76 76">
+                <circle cx="38" cy="38" r="34" fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-200 dark:text-slate-700" />
+                <motion.circle cx="38" cy="38" r="34" fill="none" strokeWidth="6" strokeLinecap="round"
                   className={pct === 100 ? "text-emerald-500" : "text-[var(--hub-red)]"}
                   initial={{ strokeDasharray: `0 ${circ}` }}
                   animate={{ strokeDasharray: `${dash} ${circ - dash}` }}
@@ -277,72 +298,30 @@ export function FocusLayout({
                   stroke="currentColor"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-800 dark:text-white">{pct}%</span>
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-slate-800 dark:text-white">{pct}%</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-slate-900 dark:text-white">{completedTasks.length}/{totalToday} tasks</p>
+              <p className="text-xs font-black text-slate-900 dark:text-white">{completedTasks.length}/{totalToday} tasks</p>
               <div className="flex items-center gap-1">
-                <Trophy className="h-3 w-3 text-amber-500" />
-                <span className="text-[10px] font-bold text-slate-500">{pointsToday} pts</span>
+                <Trophy className="h-2.5 w-2.5 text-amber-500" />
+                <span className="text-[9px] font-bold text-slate-500">{pointsToday} pts</span>
               </div>
             </div>
-            <p className="text-2xl font-extralight tabular-nums text-slate-800 dark:text-slate-100 shrink-0">
-              {displayTime || currentTime}
-            </p>
           </div>
-          <div className="bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-700/40">
-            <Accordion title="Completed" icon={CheckCircle2} iconColor="text-emerald-500" count={completedTasks.length} defaultOpen={false} controlledOpen={accCompleted} onToggle={setAccCompleted}>
-              {completedTasks.length === 0 ? (
-                <p className="text-[10px] text-slate-400 text-center py-3">Nothing yet — get started!</p>
-              ) : (
-                <div className="space-y-1">
-                  {completedTasks.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5 group">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                      <span className="flex-1 text-[10px] text-slate-500 line-through truncate">{t.title}</span>
-                      <button
-                        onClick={() => onUncomplete(t.id)}
-                        className="hidden group-hover:flex items-center gap-0.5 text-[8px] font-bold text-amber-500 hover:text-amber-600 transition-colors shrink-0"
-                      >
-                        <Undo2 className="h-2.5 w-2.5" /> Undo
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Accordion>
-            <Accordion title="Missed Yesterday" icon={XCircle} iconColor="text-red-400" count={missedYesterday.length} controlledOpen={accMissed} onToggle={setAccMissed}>
-              {missedYesterday.length === 0 ? (
-                <p className="text-[10px] text-emerald-500 text-center py-3">None — great job!</p>
-              ) : (
-                <div className="space-y-1">
-                  {missedYesterday.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2 rounded-lg bg-red-50/60 dark:bg-red-950/20 px-2.5 py-1.5">
-                      <XCircle className="h-3 w-3 text-red-300 shrink-0" />
-                      <span className="flex-1 text-[10px] text-slate-500 truncate">{t.title}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Accordion>
-            <Accordion title="Leaderboard" icon={Trophy} iconColor="text-amber-500" maxHeight={250} controlledOpen={accLeaderboard} onToggle={setAccLeaderboard}>
-              <Leaderboard currentLocationId={currentLocationId} compact />
-            </Accordion>
-          </div>
+          <p className="text-lg font-extralight tabular-nums text-slate-800 dark:text-slate-100 shrink-0">
+            {displayTime || currentTime}
+          </p>
         </div>
-        )}
 
         {/* ── Prominent Clock (desktop only) ── */}
-        {(targetIsMobile !== undefined ? !targetIsMobile : true) && (
-          <div className={cn("flex shrink-0 px-5 pt-4 pb-2 flex-col items-center", targetIsMobile !== undefined ? "" : "hidden lg:flex")}>
+        <div className={cn("flex shrink-0 px-5 pt-4 pb-2 flex-col items-center", targetIsMobile !== undefined ? (targetIsMobile ? "hidden" : "flex") : "hidden lg:flex")}>
           <p className="text-6xl font-extralight tabular-nums tracking-tight text-slate-800 dark:text-slate-100 leading-none">
             {displayTime || currentTime}
           </p>
           <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500 mt-1.5">
             {format(new Date(), "EEEE, MMMM d")}
           </p>
-          </div>
-        )}
+        </div>
 
         {/* ── Hero Card: Extremely Prominent ── */}
         <div className="shrink-0 px-5 pt-2 pb-3">
