@@ -144,12 +144,12 @@ export function MinimalHeader({
                 </div>
               </div>
 
-              <div className="border-t border-border mx-2 my-1" />
+              <div className="border-t border-border mx-2 my-1 sm:hidden" />
 
-              {/* Forms */}
+              {/* Forms - visible on mobile only */}
               <button
                 onClick={() => { onOpenForms(); setLayoutDropdownOpen(false); }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left sm:hidden"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
                   <FileText className="h-4 w-4" />
@@ -160,10 +160,10 @@ export function MinimalHeader({
                 </div>
               </button>
 
-              {/* Calendar */}
+              {/* Calendar - visible on mobile only */}
               <button
                 onClick={() => { onOpenCalendar(); setLayoutDropdownOpen(false); }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left sm:hidden"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                   <CalendarDays className="h-4 w-4" />
@@ -174,7 +174,7 @@ export function MinimalHeader({
                 </div>
               </button>
 
-              <div className="border-t border-border mx-2 my-1" />
+              <div className="border-t border-border mx-2 my-1 sm:hidden" />
 
               {/* Logout */}
               <button
