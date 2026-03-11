@@ -18,14 +18,35 @@ try {
   // Open database connection
   const db = new Database(dbPath);
   
-  // Create migrations tracking table if it doesn't exist
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS _migrations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
+  // Check if _migrations table exists and what columns it has
+  const tableInfo = db.prepare("PRAGMA table_info(_migrations)").all();
+  const hasNameColumn = tableInfo.some(col => col.name === 'name');
+  
+  if (tableInfo.length === 0) {
+    // Table doesn't exist, create it
+    db.exec(`
+      CREATE TABLE _migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } else if (!hasNameColumn) {
+    // Old schema exists, migrate it
+    console.log('🔄 Migrating _migrations table to new schema...');
+    db.exec(`
+      DROP TABLE IF EXISTS _migrations;
+      CREATE TABLE _migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+    console.log('✅ _migrations table migrated');
+  }
+  
+  // Get list of already applied migrations
+  const appliedMigrations = db.prepare('SELECT name FROM _migrations').all().map(row => row.name);
   
   // Get list of all migration files
   const migrationsDir = path.join(__dirname, '../drizzle');
@@ -38,9 +59,6 @@ try {
     db.close();
     return;
   }
-  
-  // Get list of already applied migrations
-  const appliedMigrations = db.prepare('SELECT name FROM _migrations').all().map(row => row.name);
   
   let migrationsRun = 0;
   
