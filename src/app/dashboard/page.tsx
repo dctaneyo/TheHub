@@ -31,7 +31,6 @@ import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
@@ -695,44 +694,24 @@ function DashboardPage() {
       {/* Animated Background */}
       <AnimatedBackground variant="subtle" />
 
-      {/* Header — Classic uses full DashboardHeader, others use MinimalHeader */}
-      {layout === "classic" ? (
-        <DashboardHeader
-          user={user}
-          displayTime={displayTime}
-          allTasks={allTasks}
-          currentTime={currentTime}
-          soundEnabled={soundEnabled}
-          onToggleSound={toggleSound}
-          screensaverEnabled={screensaverEnabled}
-          onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
-          onShowScreensaver={() => setForceIdle(true)}
-          chatOpen={chatOpen}
-          onToggleChat={() => setChatOpen((v) => !v)}
-          chatUnread={chatUnread}
-          onOpenForms={() => setFormsOpen(true)}
-          onOpenCalendar={() => setCalOpen(true)}
-          onLogout={logout}
-        />
-      ) : (
-        <MinimalHeader
-          user={user}
-          displayTime={displayTime}
-          allTasks={allTasks}
-          currentTime={currentTime}
-          soundEnabled={soundEnabled}
-          onToggleSound={toggleSound}
-          screensaverEnabled={screensaverEnabled}
-          onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
-          onShowScreensaver={() => setForceIdle(true)}
-          chatOpen={chatOpen}
-          onToggleChat={() => setChatOpen((v) => !v)}
-          chatUnread={chatUnread}
-          onOpenForms={() => setFormsOpen(true)}
-          onOpenCalendar={() => setCalOpen(true)}
-          onLogout={logout}
-        />
-      )}
+      {/* Header — All layouts use MinimalHeader */}
+      <MinimalHeader
+        user={user}
+        displayTime={displayTime}
+        allTasks={allTasks}
+        currentTime={currentTime}
+        soundEnabled={soundEnabled}
+        onToggleSound={toggleSound}
+        screensaverEnabled={screensaverEnabled}
+        onToggleScreensaver={() => setScreensaverEnabled((v) => !v)}
+        onShowScreensaver={() => setForceIdle(true)}
+        chatOpen={chatOpen}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        chatUnread={chatUnread}
+        onOpenForms={() => setFormsOpen(true)}
+        onOpenCalendar={() => setCalOpen(true)}
+        onLogout={logout}
+      />
 
       {/* Main Content — layout-specific */}
       {layout === "classic" && (
