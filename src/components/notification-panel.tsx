@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock } from "@/lib/icons";
+import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock, CheckSquareOffset } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -281,7 +281,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
               className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               title="Dismiss all"
             >
-              <X className="h-3.5 w-3.5" />
+              <CheckSquareOffset className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Dismiss All</span>
             </button>
             <button
