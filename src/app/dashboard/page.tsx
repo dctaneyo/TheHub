@@ -1024,7 +1024,7 @@ function DashboardPage() {
     const target = syncEl || window;
     target.addEventListener("scroll", onScroll, { passive: true });
     return () => target.removeEventListener("scroll", onScroll);
-  }, [isMirroring, isEmbed, scrollSocket, mirrorSession]);
+  }, [isMirroring, isEmbed, scrollSocket, mirrorSession, effectiveLayout]);
 
   // ── Target side: receive scroll from ARL mirror and apply it ──
   useEffect(() => {

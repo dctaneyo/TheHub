@@ -492,14 +492,29 @@ export class RemoteCaptureManager {
           maxY: Math.max(maxY, 1),
         });
       };
-      // Attach to container if available, fall back to window
-      const syncEl = document.querySelector('[data-scroll-sync="main"]');
-      if (syncEl) {
-        syncEl.addEventListener("scroll", this.scrollTracker, { passive: true });
-        (this as any)._scrollSyncEl = syncEl;
-      } else {
-        window.addEventListener("scroll", this.scrollTracker, { passive: true });
-      }
+      // Attach to scroll container; retry briefly if not yet rendered
+      const attachScrollListener = () => {
+        if (!this.scrollTracker || !this.isActive) return;
+        const syncEl = document.querySelector('[data-scroll-sync="main"]');
+        if (syncEl) {
+          syncEl.addEventListener("scroll", this.scrollTracker, { passive: true });
+          (this as any)._scrollSyncEl = syncEl;
+        } else {
+          window.addEventListener("scroll", this.scrollTracker, { passive: true });
+          (this as any)._scrollSyncEl = null;
+          // Retry once after DOM settles — the container may not be rendered yet
+          setTimeout(() => {
+            if (!this.scrollTracker || !this.isActive) return;
+            const el = document.querySelector('[data-scroll-sync="main"]');
+            if (el) {
+              window.removeEventListener("scroll", this.scrollTracker!);
+              el.addEventListener("scroll", this.scrollTracker!, { passive: true });
+              (this as any)._scrollSyncEl = el;
+            }
+          }, 500);
+        }
+      };
+      attachScrollListener();
     }
 
     // Listen for remote actions (store reference for clean removal)
@@ -609,9 +624,32 @@ export class RemoteCaptureManager {
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
 
-  /** Update the current layout so sendDeviceInfo reports the correct value */
+  /** Update the current layout so sendDeviceInfo reports the correct value.
+   *  Also re-attach the scroll listener since the scroll container DOM node changes. */
   setLayout(layout: string) {
     this.currentLayout = layout;
+
+    // Re-attach scroll tracker to the new [data-scroll-sync] element
+    if (this.mirrorMode && this.scrollTracker && this.isActive) {
+      const oldEl = (this as any)._scrollSyncEl;
+      if (oldEl) {
+        oldEl.removeEventListener("scroll", this.scrollTracker);
+      } else {
+        window.removeEventListener("scroll", this.scrollTracker);
+      }
+      // Wait a tick for React to render the new layout's DOM
+      setTimeout(() => {
+        if (!this.scrollTracker || !this.isActive) return;
+        const newEl = document.querySelector('[data-scroll-sync="main"]');
+        if (newEl) {
+          newEl.addEventListener("scroll", this.scrollTracker, { passive: true });
+          (this as any)._scrollSyncEl = newEl;
+        } else {
+          window.addEventListener("scroll", this.scrollTracker, { passive: true });
+          (this as any)._scrollSyncEl = null;
+        }
+      }, 100);
+    }
   }
 
   private sendDeviceInfo() {

@@ -330,7 +330,7 @@ export function registerRemoteViewHandlers(
   });
 
   // ── Location: Send scroll position (for mirror mode sync) ──
-  socket.on("mirror:scroll", (data: { sessionId: string; x: number; y: number }) => {
+  socket.on("mirror:scroll", (data: { sessionId: string; x: number; y: number; maxY?: number }) => {
     if (user.userType !== "location") return;
 
     const session = remoteViewSessions.get(data.sessionId);
@@ -341,11 +341,12 @@ export function registerRemoteViewHandlers(
       sessionId: data.sessionId,
       x: data.x,
       y: data.y,
+      maxY: data.maxY,
     });
   });
 
   // ── ARL (mirror iframe): Send scroll position to target ──
-  socket.on("mirror:scroll-from-arl", (data: { sessionId: string; x: number; y: number }) => {
+  socket.on("mirror:scroll-from-arl", (data: { sessionId: string; x: number; y: number; maxY?: number }) => {
     if (user.userType !== "arl") return;
 
     const session = remoteViewSessions.get(data.sessionId);
@@ -358,6 +359,7 @@ export function registerRemoteViewHandlers(
           sessionId: data.sessionId,
           x: data.x,
           y: data.y,
+          maxY: data.maxY,
         });
       }
     }
