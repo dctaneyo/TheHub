@@ -393,8 +393,8 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
             "relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
             totalActive > 0
               ? "bg-red-50 dark:bg-red-950/50 text-[var(--hub-red)]"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            open && "bg-muted text-foreground",
+              : "text-muted-foreground hover:text-foreground",
+            open && "text-foreground",
             hasUrgent && "animate-pulse",
             className
           )}
