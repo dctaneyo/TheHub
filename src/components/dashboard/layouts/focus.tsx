@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight,
   ChevronLeft,
+  CheckCircle2,
+  XCircle,
   Clock,
   Trophy,
   Sparkles,
