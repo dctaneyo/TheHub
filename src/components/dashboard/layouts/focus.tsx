@@ -3,8 +3,8 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2,
-  XCircle,
+  ChevronRight,
+  ChevronLeft,
   Clock,
   Trophy,
   Sparkles,
@@ -271,7 +271,7 @@ export function FocusLayout({
             onClick={() => setMobileSidebarOpen(false)}
             className={cn("absolute top-4 right-4 z-[1000] flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700", targetIsMobile !== undefined ? "" : "lg:hidden")}
           >
-            <XCircle className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -284,7 +284,7 @@ export function FocusLayout({
             onClick={() => setMobileSidebarOpen(true)}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
           >
-            <CheckCircle2 className="h-5 w-5" />
+            <ChevronRight className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="relative h-8 w-8 shrink-0">
