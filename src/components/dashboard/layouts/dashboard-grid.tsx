@@ -42,7 +42,7 @@ export function DashboardGridLayout({
   const strokeDash = (completionRate / 100) * circumference;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div data-scroll-sync="main" className="flex-1 overflow-y-auto">
       <div className="px-4 py-4 space-y-4">
         {/* Top Row: 3 Stat Cards */}
         <div className="grid grid-cols-3 gap-3">

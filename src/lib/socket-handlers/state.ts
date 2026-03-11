@@ -49,7 +49,14 @@ if (!_g.__hubRemoteViewSessions) {
 }
 export const remoteViewSessions: Map<string, RemoteViewSession> = _g.__hubRemoteViewSessions;
 
+// ── Remote view disconnect grace timers ──
+if (!_g.__hubRvDisconnectTimers) {
+  _g.__hubRvDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+}
+export const rvDisconnectTimers: Map<string, ReturnType<typeof setTimeout>> = _g.__hubRvDisconnectTimers;
+
 // ── Constants ──
 export const HOST_LEFT_AUTO_END_MS = 10 * 60 * 1000; // 10 minutes
 export const HOST_LEFT_WARNING_INTERVALS = [5 * 60, 2 * 60, 60, 30, 10]; // seconds remaining
 export const DISCONNECT_GRACE_MS = 20_000; // 20 seconds
+export const RV_DISCONNECT_GRACE_MS = 15_000; // 15 seconds for remote view reconnection

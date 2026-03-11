@@ -120,6 +120,28 @@ export function FocusLayout({
   onEarlyComplete,
 }: DashboardLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const sidebarSyncRef = useRef(false);
+
+  // ── Mirror sync: broadcast sidebar open/close ──
+  useEffect(() => {
+    if (sidebarSyncRef.current) return;
+    window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { sidebarOpen: mobileSidebarOpen } }));
+  }, [mobileSidebarOpen]);
+
+  // ── Mirror sync: receive sidebar state from other side ──
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.sidebarOpen !== undefined) {
+        sidebarSyncRef.current = true;
+        setMobileSidebarOpen(detail.sidebarOpen);
+        requestAnimationFrame(() => { sidebarSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, []);
+
   const pct = totalToday > 0 ? Math.round((completedTasks.length / totalToday) * 100) : 0;
   const circ = 2 * Math.PI * 34;
   const dash = (pct / 100) * circ;
@@ -420,7 +442,7 @@ export function FocusLayout({
         </div>
 
         {/* ── Remaining tasks fill the rest of the viewport ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-4 space-y-4">
+        <div data-scroll-sync="main" className="flex-1 min-h-0 overflow-y-auto px-5 pb-4 space-y-4">
           {/* ── Up Next: Card Grid ── */}
           {upNextTasks.length > 0 && (
             <div>

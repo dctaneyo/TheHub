@@ -40,8 +40,9 @@ interface MirrorState {
   cursorVisible: boolean;
   targetDevice: TargetDeviceInfo | null;
   remoteCursor: { x: number; y: number } | null;
-  remoteScroll: { x: number; y: number } | null;
+  remoteScroll: { x: number; y: number; maxY?: number } | null;
   viewState: MirrorViewState | null;
+  connectionStatus: "connected" | "reconnecting" | "disconnected";
 }
 
 interface MirrorContextValue extends MirrorState {
@@ -69,11 +70,14 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     remoteCursor: null,
     remoteScroll: null,
     viewState: null,
+    connectionStatus: "connected",
   });
 
   const sessionIdRef = useRef<string | null>(null);
   const cursorVisibleRef = useRef(false);
   const disableCursorTrackingRef = useRef(false);
+  const locationIdRef = useRef<string | null>(null);
+  const locationNameRef = useRef<string | null>(null);
 
   const setDisableCursorTracking = useCallback((disabled: boolean) => {
     disableCursorTrackingRef.current = disabled;
@@ -81,6 +85,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
 
   const startMirror = useCallback((locationId: string, locationName: string, sessionId: string) => {
     sessionIdRef.current = sessionId;
+    locationIdRef.current = locationId;
+    locationNameRef.current = locationName;
     setState({
       isMirroring: true,
       targetLocationId: locationId,
@@ -92,6 +98,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       remoteCursor: null,
       remoteScroll: null,
       viewState: null,
+      connectionStatus: "connected",
     });
     cursorVisibleRef.current = false;
 
@@ -106,6 +113,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       socket.emit("remote-view:end", { sessionId: sessionIdRef.current });
     }
     sessionIdRef.current = null;
+    locationIdRef.current = null;
+    locationNameRef.current = null;
     cursorVisibleRef.current = false;
     setState({
       isMirroring: false,
@@ -118,6 +127,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       remoteCursor: null,
       remoteScroll: null,
       viewState: null,
+      connectionStatus: "connected",
     });
     // Close the mirror browser tab
     try { window.close(); } catch {}
@@ -157,9 +167,9 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       setState(prev => ({ ...prev, remoteCursor: { x: data.x, y: data.y } }));
     };
 
-    const onScroll = (data: { sessionId: string; x: number; y: number }) => {
+    const onScroll = (data: { sessionId: string; x: number; y: number; maxY?: number }) => {
       if (data.sessionId !== sessionIdRef.current) return;
-      setState(prev => ({ ...prev, remoteScroll: { x: data.x, y: data.y } }));
+      setState(prev => ({ ...prev, remoteScroll: { x: data.x, y: data.y, maxY: data.maxY } }));
     };
 
     const onDevice = (data: { sessionId: string; device: TargetDeviceInfo }) => {
@@ -181,6 +191,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     const onEnded = (data: { sessionId: string }) => {
       if (data.sessionId !== sessionIdRef.current) return;
       sessionIdRef.current = null;
+      locationIdRef.current = null;
+      locationNameRef.current = null;
       cursorVisibleRef.current = false;
       setState({
         isMirroring: false,
@@ -193,9 +205,23 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
         remoteCursor: null,
         remoteScroll: null,
         viewState: null,
+        connectionStatus: "connected",
       });
       // Close the mirror browser tab
       try { window.close(); } catch {}
+    };
+
+    const onReconnecting = (data: { sessionId: string; disconnectedUserType: string }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      // The other side disconnected — show reconnecting indicator
+      if (data.disconnectedUserType === "location") {
+        setState(prev => ({ ...prev, connectionStatus: "reconnecting" }));
+      }
+    };
+
+    const onReconnected = (data: { sessionId: string; reconnectedUserType: string }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      setState(prev => ({ ...prev, connectionStatus: "connected" }));
     };
 
     const onViewChange = (data: { sessionId: string; viewState: MirrorViewState }) => {
@@ -214,6 +240,8 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
     socket.on("remote-view:ended", onEnded);
     socket.on("remote-view:control-toggled", onControlToggled);
     socket.on("mirror:view-change", onViewChange);
+    socket.on("remote-view:reconnecting", onReconnecting);
+    socket.on("remote-view:reconnected", onReconnected);
 
     return () => {
       socket.off("remote-view:cursor", onCursor);
@@ -222,6 +250,85 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
       socket.off("remote-view:ended", onEnded);
       socket.off("remote-view:control-toggled", onControlToggled);
       socket.off("mirror:view-change", onViewChange);
+      socket.off("remote-view:reconnecting", onReconnecting);
+      socket.off("remote-view:reconnected", onReconnected);
+    };
+  }, [socket]);
+
+  // Auto-rejoin session on socket reconnect
+  useEffect(() => {
+    if (!socket) return;
+    const onSocketReconnect = () => {
+      const sid = sessionIdRef.current;
+      const locId = locationIdRef.current;
+      if (!sid) return;
+      setState(prev => ({ ...prev, connectionStatus: "reconnecting" }));
+      socket.emit("remote-view:rejoin", { sessionId: sid });
+      // Re-join location room for task updates
+      if (locId) socket.emit("mirror:join", { sessionId: sid, locationId: locId });
+    };
+    const onRejoinResult = (data: { sessionId: string; success: boolean; reason?: string }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      if (data.success) {
+        setState(prev => ({ ...prev, connectionStatus: "connected" }));
+      } else {
+        // Session gone — end mirror
+        sessionIdRef.current = null;
+        locationIdRef.current = null;
+        locationNameRef.current = null;
+        cursorVisibleRef.current = false;
+        setState({
+          isMirroring: false, targetLocationId: null, targetLocationName: null,
+          sessionId: null, controlEnabled: false, cursorVisible: false,
+          targetDevice: null, remoteCursor: null, remoteScroll: null,
+          viewState: null, connectionStatus: "disconnected",
+        });
+        try { window.close(); } catch {}
+      }
+    };
+    socket.on("connect", onSocketReconnect);
+    socket.on("remote-view:rejoin-result", onRejoinResult);
+    return () => {
+      socket.off("connect", onSocketReconnect);
+      socket.off("remote-view:rejoin-result", onRejoinResult);
+    };
+  }, [socket]);
+
+  // Heartbeat: periodically verify session is alive
+  useEffect(() => {
+    if (!socket) return;
+    const interval = setInterval(() => {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      socket.emit("remote-view:heartbeat", { sessionId: sid });
+    }, 10_000); // every 10s
+    const onHeartbeatAck = (data: { sessionId: string; alive: boolean; otherConnected?: boolean; otherReconnecting?: boolean }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      if (!data.alive) {
+        // Session no longer exists on server — end mirror
+        sessionIdRef.current = null;
+        locationIdRef.current = null;
+        locationNameRef.current = null;
+        cursorVisibleRef.current = false;
+        setState({
+          isMirroring: false, targetLocationId: null, targetLocationName: null,
+          sessionId: null, controlEnabled: false, cursorVisible: false,
+          targetDevice: null, remoteCursor: null, remoteScroll: null,
+          viewState: null, connectionStatus: "disconnected",
+        });
+        try { window.close(); } catch {}
+        return;
+      }
+      if (data.otherReconnecting) {
+        setState(prev => ({ ...prev, connectionStatus: "reconnecting" }));
+      } else if (data.otherConnected) {
+        setState(prev => prev.connectionStatus === "reconnecting" ? { ...prev, connectionStatus: "connected" } : prev);
+      }
+    };
+    socket.on("remote-view:heartbeat-ack", onHeartbeatAck);
+    return () => {
+      clearInterval(interval);
+      socket.off("remote-view:heartbeat-ack", onHeartbeatAck);
     };
   }, [socket]);
 
@@ -275,6 +382,7 @@ export function useMirror() {
       remoteScroll: null,
       viewState: null,
       cursorVisible: false,
+      connectionStatus: "connected",
       startMirror: () => {},
       endMirror: () => {},
       toggleControl: () => {},

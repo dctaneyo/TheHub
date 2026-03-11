@@ -83,7 +83,7 @@ export function SplitHeroLayout({
         </div>
 
         {/* Task List */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+        <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Today&apos;s Tasks</h2>
           {pendingTasks.length === 0 && completedTasks.length > 0 && (
             <div className="text-center py-8">

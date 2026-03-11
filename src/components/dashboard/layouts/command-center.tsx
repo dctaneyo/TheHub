@@ -147,7 +147,7 @@ export function CommandCenterLayout({
 
         {/* Center — Timeline */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-5 py-4">
             {currentTime && (
               <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
             )}

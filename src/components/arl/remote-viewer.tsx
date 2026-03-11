@@ -46,6 +46,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
   const [hoveredElement, setHoveredElement] = useState<CapturedElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "reconnecting" | "disconnected">("connected");
   const viewerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -161,8 +162,21 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
         setCursorPos(null);
         setControlEnabled(false);
         setIsFullscreen(false);
+        setConnectionStatus("connected");
         setTimeout(() => setSessionStatus("idle"), 2000);
       }
+    };
+
+    const onReconnecting = (data: { sessionId: string; disconnectedUserType: string }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      if (data.disconnectedUserType === "location") {
+        setConnectionStatus("reconnecting");
+      }
+    };
+
+    const onReconnected = (data: { sessionId: string }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      setConnectionStatus("connected");
     };
 
     socket.on("remote-view:requested", onRequested);
@@ -173,6 +187,8 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
     socket.on("remote-view:user-event", onUserEvent);
     socket.on("remote-view:control-toggled", onControlToggled);
     socket.on("remote-view:ended", onEnded);
+    socket.on("remote-view:reconnecting", onReconnecting);
+    socket.on("remote-view:reconnected", onReconnected);
 
     return () => {
       socket.off("remote-view:requested", onRequested);
@@ -183,8 +199,70 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
       socket.off("remote-view:user-event", onUserEvent);
       socket.off("remote-view:control-toggled", onControlToggled);
       socket.off("remote-view:ended", onEnded);
+      socket.off("remote-view:reconnecting", onReconnecting);
+      socket.off("remote-view:reconnected", onReconnected);
     };
   }, [socket, sessionId]);
+
+  // Auto-rejoin session on socket reconnect
+  useEffect(() => {
+    if (!socket) return;
+    const onSocketReconnect = () => {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      setConnectionStatus("reconnecting");
+      socket.emit("remote-view:rejoin", { sessionId: sid });
+    };
+    const onRejoinResult = (data: { sessionId: string; success: boolean }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      if (data.success) {
+        setConnectionStatus("connected");
+      } else {
+        setSessionStatus("ended");
+        setSessionId(null);
+        sessionIdRef.current = null;
+        setConnectionStatus("disconnected");
+        setTimeout(() => setSessionStatus("idle"), 2000);
+      }
+    };
+    socket.on("connect", onSocketReconnect);
+    socket.on("remote-view:rejoin-result", onRejoinResult);
+    return () => {
+      socket.off("connect", onSocketReconnect);
+      socket.off("remote-view:rejoin-result", onRejoinResult);
+    };
+  }, [socket]);
+
+  // Heartbeat: periodically verify session is alive
+  useEffect(() => {
+    if (!socket) return;
+    const interval = setInterval(() => {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      socket.emit("remote-view:heartbeat", { sessionId: sid });
+    }, 10_000);
+    const onHeartbeatAck = (data: { sessionId: string; alive: boolean; otherConnected?: boolean; otherReconnecting?: boolean }) => {
+      if (data.sessionId !== sessionIdRef.current) return;
+      if (!data.alive) {
+        setSessionStatus("ended");
+        setSessionId(null);
+        sessionIdRef.current = null;
+        setConnectionStatus("disconnected");
+        setTimeout(() => setSessionStatus("idle"), 2000);
+        return;
+      }
+      if (data.otherReconnecting) {
+        setConnectionStatus("reconnecting");
+      } else if (data.otherConnected) {
+        setConnectionStatus(prev => prev === "reconnecting" ? "connected" : prev);
+      }
+    };
+    socket.on("remote-view:heartbeat-ack", onHeartbeatAck);
+    return () => {
+      clearInterval(interval);
+      socket.off("remote-view:heartbeat-ack", onHeartbeatAck);
+    };
+  }, [socket]);
 
   // Request remote view
   const requestRemoteView = useCallback((locationId: string) => {
@@ -300,37 +378,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {sessionStatus === "active" && (
-            <>
-              <button
-                onClick={toggleControl}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all",
-                  controlEnabled
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                )}
-              >
-                {controlEnabled ? <Hand className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {controlEnabled ? "Control On" : "View Only"}
-              </button>
-              <button
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors"
-              >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </button>
-              <button
-                onClick={endSession}
-                className="flex items-center gap-2 rounded-xl bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 transition-colors"
-              >
-                <X className="h-4 w-4" />
-                End Session
-              </button>
-            </>
-          )}
-        </div>
+        {/* Controls are in the MirrorModePanel card when active */}
       </div>
 
       {/* Idle state — target picker (online only) */}
@@ -409,6 +457,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
           selectedTarget={selectedTarget}
           sessionId={sessionId}
           controlEnabled={controlEnabled}
+          connectionStatus={connectionStatus}
           onToggleControl={toggleControl}
           onEndSession={endSession}
         />
@@ -433,11 +482,12 @@ interface MirrorModePanelProps {
   selectedTarget: RemoteTarget | undefined;
   sessionId: string | null;
   controlEnabled: boolean;
+  connectionStatus: "connected" | "reconnecting" | "disconnected";
   onToggleControl: () => void;
   onEndSession: () => void;
 }
 
-function MirrorModePanel({ selectedTarget, sessionId, controlEnabled, onToggleControl, onEndSession }: MirrorModePanelProps) {
+function MirrorModePanel({ selectedTarget, sessionId, controlEnabled, connectionStatus, onToggleControl, onEndSession }: MirrorModePanelProps) {
   const [mirrorOpened, setMirrorOpened] = useState(false);
 
   const openMirrorDashboard = useCallback(() => {
@@ -461,12 +511,20 @@ function MirrorModePanel({ selectedTarget, sessionId, controlEnabled, onToggleCo
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h3 className="text-lg font-bold text-foreground">Mirror Session Active</h3>
+              {connectionStatus === "reconnecting" ? (
+                <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
+              ) : (
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+              <h3 className="text-lg font-bold text-foreground">
+                {connectionStatus === "reconnecting" ? "Reconnecting..." : "Mirror Session Active"}
+              </h3>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Connected to {selectedTarget?.name || "target"}
-              {selectedTarget?.storeNumber ? ` (Store #${selectedTarget.storeNumber})` : ""}
+              {connectionStatus === "reconnecting"
+                ? "Target connection lost — attempting to reconnect"
+                : `Connected to ${selectedTarget?.name || "target"}${selectedTarget?.storeNumber ? ` (Store #${selectedTarget.storeNumber})` : ""}`
+              }
             </p>
           </div>
         </div>

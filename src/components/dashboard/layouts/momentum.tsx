@@ -206,7 +206,7 @@ export function MomentumLayout({
 
         {/* Timeline (widest) */}
         <div className={cn("flex-[2] rounded-2xl backdrop-blur-md border shadow-sm overflow-hidden flex flex-col", cardBg)}>
-          <div className="flex-1 overflow-y-auto px-4 py-2">
+          <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-4 py-2">
             {currentTime && (
               <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
             )}

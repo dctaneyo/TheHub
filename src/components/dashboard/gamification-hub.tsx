@@ -164,6 +164,27 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
     };
   }, [socket, fetchData]);
 
+  // ── Mirror sync: broadcast gamification popdown open/close ──
+  const panelSyncRef = useRef(false);
+  useEffect(() => {
+    if (panelSyncRef.current) return;
+    window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { gamificationOpen: isOpen } }));
+  }, [isOpen]);
+
+  // ── Mirror sync: receive gamification popdown state from other side ──
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.gamificationOpen !== undefined) {
+        panelSyncRef.current = true;
+        setIsOpen(detail.gamificationOpen);
+        requestAnimationFrame(() => { panelSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, []);
+
   // Compute fixed position when panel opens
   useEffect(() => {
     if (isOpen && triggerRef.current) {

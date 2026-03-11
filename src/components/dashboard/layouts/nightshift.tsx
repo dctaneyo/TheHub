@@ -130,7 +130,7 @@ export function NightshiftLayout({
       </div>
 
       {/* ═══ ZONE 2: Full-width Timeline ═══ */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-3 relative z-20">
+      <div data-scroll-sync="main" className="flex-1 min-h-0 overflow-y-auto px-6 py-3 relative z-20">
         {currentTime && (
           <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
         )}

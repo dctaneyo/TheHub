@@ -423,6 +423,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
           onDismissTask={handleDismissTaskNotif}
           onDismissAllTasks={handleDismissAllTasks}
           isMirroring={isMirroring}
+          targetLocationId={targetLocationId}
         />
       </div>
     </>

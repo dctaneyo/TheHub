@@ -376,6 +376,7 @@ export class RemoteCaptureManager {
   private endedHandler: ((data: any) => void) | null = null;
   private deviceInfoRequestHandler: ((data: any) => void) | null = null;
   private resizeHandler: (() => void) | null = null;
+  private reconnectHandler: (() => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
   private currentLayout: string = "classic";
@@ -473,20 +474,32 @@ export class RemoteCaptureManager {
       document.addEventListener("input", this.eventTracker, { capture: true });
     }
 
-    // Mirror mode: track scroll position
+    // Mirror mode: track scroll position on [data-scroll-sync] container
     if (this.mirrorMode) {
       let lastScrollTime = 0;
       this.scrollTracker = () => {
         const now = Date.now();
         if (now - lastScrollTime < 100) return; // throttle to ~10fps
         lastScrollTime = now;
+        const el = document.querySelector('[data-scroll-sync="main"]');
+        const x = el ? Math.round(el.scrollLeft) : Math.round(window.scrollX);
+        const y = el ? Math.round(el.scrollTop) : Math.round(window.scrollY);
+        const maxY = el ? (el.scrollHeight - el.clientHeight) : (document.documentElement.scrollHeight - window.innerHeight);
         this.socket.volatile.emit("mirror:scroll", {
           sessionId: this.sessionId,
-          x: Math.round(window.scrollX),
-          y: Math.round(window.scrollY),
+          x,
+          y,
+          maxY: Math.max(maxY, 1),
         });
       };
-      window.addEventListener("scroll", this.scrollTracker, { passive: true });
+      // Attach to container if available, fall back to window
+      const syncEl = document.querySelector('[data-scroll-sync="main"]');
+      if (syncEl) {
+        syncEl.addEventListener("scroll", this.scrollTracker, { passive: true });
+        (this as any)._scrollSyncEl = syncEl;
+      } else {
+        window.addEventListener("scroll", this.scrollTracker, { passive: true });
+      }
     }
 
     // Listen for remote actions (store reference for clean removal)
@@ -525,6 +538,18 @@ export class RemoteCaptureManager {
       window.addEventListener("resize", this.resizeHandler);
     }
 
+    // Auto-rejoin session on socket reconnect (location side)
+    this.reconnectHandler = () => {
+      if (!this.isActive) return;
+      console.log(`🖥️ Socket reconnected — rejoining session ${this.sessionId}`);
+      this.socket.emit("remote-view:rejoin", { sessionId: this.sessionId });
+      // Re-send device info so ARL knows we're back
+      if (this.mirrorMode) {
+        setTimeout(() => this.sendDeviceInfo(), 500);
+      }
+    };
+    this.socket.on("connect", this.reconnectHandler);
+
     console.log(`🖥️ Remote capture started for session ${this.sessionId} (mirror: ${this.mirrorMode})`);
   }
 
@@ -550,7 +575,13 @@ export class RemoteCaptureManager {
     }
 
     if (this.scrollTracker) {
-      window.removeEventListener("scroll", this.scrollTracker);
+      const syncEl = (this as any)._scrollSyncEl;
+      if (syncEl) {
+        syncEl.removeEventListener("scroll", this.scrollTracker);
+        (this as any)._scrollSyncEl = null;
+      } else {
+        window.removeEventListener("scroll", this.scrollTracker);
+      }
       this.scrollTracker = null;
     }
 
@@ -569,6 +600,10 @@ export class RemoteCaptureManager {
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
       this.resizeHandler = null;
+    }
+    if (this.reconnectHandler) {
+      this.socket.off("connect", this.reconnectHandler);
+      this.reconnectHandler = null;
     }
 
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);

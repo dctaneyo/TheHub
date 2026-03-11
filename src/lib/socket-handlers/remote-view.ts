@@ -1,7 +1,7 @@
 import type { Server as SocketIOServer, Socket } from "socket.io";
 import type { AuthPayload } from "../auth";
 import type { RemoteViewSession, DOMSnapshot, RemoteAction, UserEvent } from "./types";
-import { remoteViewSessions } from "./state";
+import { remoteViewSessions, rvDisconnectTimers, RV_DISCONNECT_GRACE_MS } from "./state";
 import { db, schema } from "../db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -467,10 +467,106 @@ export function registerRemoteViewHandlers(
     if (tp) socket.to(`${tp}:location:${data.locationId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
     socket.to(`location:${data.locationId}`).emit("notification:dismissed", { notificationIds: data.notificationIds });
   });
+
+  // ── Reconnection: user rejoins an active session after socket reconnect ──
+  socket.on("remote-view:rejoin", (data: { sessionId: string }) => {
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status === "ended") {
+      socket.emit("remote-view:rejoin-result", { sessionId: data.sessionId, success: false, reason: "session_not_found" });
+      return;
+    }
+
+    const isArl = user.userType === "arl" && session.arlId === user.id;
+    const isLoc = user.userType === "location" && session.locationId === user.id;
+    if (!isArl && !isLoc) {
+      socket.emit("remote-view:rejoin-result", { sessionId: data.sessionId, success: false, reason: "unauthorized" });
+      return;
+    }
+
+    // Cancel any pending disconnect timer for this session+side
+    const timerKey = `${data.sessionId}:${user.userType}:${user.id}`;
+    const existingTimer = rvDisconnectTimers.get(timerKey);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      rvDisconnectTimers.delete(timerKey);
+      console.log(`🖥️ Reconnect grace timer cancelled for ${user.name} on session ${data.sessionId}`);
+    }
+
+    // Update socket ID and rejoin room
+    const roomName = `remote-view:${data.sessionId}`;
+    socket.join(roomName);
+
+    if (isArl) {
+      session.arlSocketId = socket.id;
+    } else {
+      session.locationSocketId = socket.id;
+    }
+
+    // Notify both sides that reconnection succeeded
+    io.to(roomName).emit("remote-view:reconnected", {
+      sessionId: data.sessionId,
+      reconnectedUser: user.name,
+      reconnectedUserType: user.userType,
+    });
+
+    socket.emit("remote-view:rejoin-result", {
+      sessionId: data.sessionId,
+      success: true,
+      session: {
+        sessionId: session.sessionId,
+        locationId: session.locationId,
+        locationName: session.locationName,
+        controlEnabled: session.controlEnabled,
+        status: session.status,
+      },
+    });
+
+    // If location reconnected, request device info refresh for ARL
+    if (isLoc) {
+      socket.emit("mirror:request-device-info", { sessionId: data.sessionId });
+    }
+
+    console.log(`🖥️ ${user.name} rejoined remote view session ${data.sessionId}`);
+  });
+
+  // ── Heartbeat: verify session is alive ──
+  socket.on("remote-view:heartbeat", (data: { sessionId: string }) => {
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") {
+      socket.emit("remote-view:heartbeat-ack", { sessionId: data.sessionId, alive: false });
+      return;
+    }
+
+    const isArl = user.userType === "arl" && session.arlId === user.id;
+    const isLoc = user.userType === "location" && session.locationId === user.id;
+    if (!isArl && !isLoc) {
+      socket.emit("remote-view:heartbeat-ack", { sessionId: data.sessionId, alive: false });
+      return;
+    }
+
+    // Check that the other side's socket is still connected
+    const otherSocketId = isArl ? session.locationSocketId : session.arlSocketId;
+    const otherSocket = otherSocketId ? io.sockets.sockets.get(otherSocketId) : null;
+    const otherConnected = !!otherSocket?.connected;
+
+    // Check if there's a pending disconnect timer for the other side (they're reconnecting)
+    const otherUserId = isArl ? session.locationId : session.arlId;
+    const otherUserType = isArl ? "location" : "arl";
+    const otherTimerKey = `${data.sessionId}:${otherUserType}:${otherUserId}`;
+    const otherReconnecting = rvDisconnectTimers.has(otherTimerKey);
+
+    socket.emit("remote-view:heartbeat-ack", {
+      sessionId: data.sessionId,
+      alive: true,
+      otherConnected,
+      otherReconnecting,
+    });
+  });
 }
 
 /**
  * Clean up remote view sessions when a user disconnects.
+ * Uses a grace period to allow reconnection.
  */
 export function handleRemoteViewDisconnect(
   io: SocketIOServer,
@@ -484,23 +580,59 @@ export function handleRemoteViewDisconnect(
     const isLoc = user.userType === "location" && session.locationId === user.id;
 
     if (isArl || isLoc) {
-      session.status = "ended";
-      const endPayload = {
-        sessionId,
-        endedBy: user.name,
-        endedByType: user.userType,
-        reason: "disconnect",
-      };
+      const timerKey = `${sessionId}:${user.userType}:${user.id}`;
+
+      // Don't create duplicate timers
+      if (rvDisconnectTimers.has(timerKey)) continue;
+
+      // Notify the other side that this user is reconnecting
       const roomName = `remote-view:${sessionId}`;
-      io.to(roomName).emit("remote-view:ended", endPayload);
+      io.to(roomName).emit("remote-view:reconnecting", {
+        sessionId,
+        disconnectedUser: user.name,
+        disconnectedUserType: user.userType,
+        gracePeriodMs: RV_DISCONNECT_GRACE_MS,
+      });
 
-      // Also emit directly to both sockets as a fallback
-      const arlSock = io.sockets.sockets.get(session.arlSocketId);
-      const locSock = io.sockets.sockets.get(session.locationSocketId);
-      if (arlSock) { arlSock.emit("remote-view:ended", endPayload); arlSock.leave(roomName); }
-      if (locSock) { locSock.emit("remote-view:ended", endPayload); locSock.leave(roomName); }
+      console.log(`🖥️ ${user.name} disconnected from session ${sessionId}, grace period ${RV_DISCONNECT_GRACE_MS}ms started`);
 
-      remoteViewSessions.delete(sessionId);
+      // Start grace period timer
+      const timer = setTimeout(() => {
+        rvDisconnectTimers.delete(timerKey);
+
+        // Re-check session still exists and hasn't been rejoined
+        const s = remoteViewSessions.get(sessionId);
+        if (!s || s.status === "ended") return;
+
+        // Check if the user reconnected (socket ID would have changed)
+        const currentSocketId = isArl ? s.arlSocketId : s.locationSocketId;
+        const reconnectedSocket = currentSocketId ? io.sockets.sockets.get(currentSocketId) : null;
+        if (reconnectedSocket?.connected) {
+          // User already reconnected with updated socket — don't end
+          console.log(`🖥️ ${user.name} already reconnected to session ${sessionId}, skipping end`);
+          return;
+        }
+
+        // Grace period expired — end the session
+        s.status = "ended";
+        const endPayload = {
+          sessionId,
+          endedBy: user.name,
+          endedByType: user.userType,
+          reason: "disconnect",
+        };
+        io.to(roomName).emit("remote-view:ended", endPayload);
+
+        const arlSock = io.sockets.sockets.get(s.arlSocketId);
+        const locSock = io.sockets.sockets.get(s.locationSocketId);
+        if (arlSock) { arlSock.emit("remote-view:ended", endPayload); arlSock.leave(roomName); }
+        if (locSock) { locSock.emit("remote-view:ended", endPayload); locSock.leave(roomName); }
+
+        remoteViewSessions.delete(sessionId);
+        console.log(`🖥️ Remote view session ${sessionId} ended after grace period (${user.name} did not reconnect)`);
+      }, RV_DISCONNECT_GRACE_MS);
+
+      rvDisconnectTimers.set(timerKey, timer);
     }
   }
 }

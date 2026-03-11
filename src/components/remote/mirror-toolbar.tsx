@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMirror } from "@/lib/mirror-context";
-import { Eye, Hand, X, Monitor, Minimize2, Maximize2, Target } from "@/lib/icons";
+import { Eye, Hand, X, Monitor, Minimize2, Maximize2, Target, WifiOff } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 export function MirrorToolbar() {
@@ -13,6 +13,7 @@ export function MirrorToolbar() {
     controlEnabled,
     cursorVisible,
     targetDevice,
+    connectionStatus,
     endMirror,
     toggleControl,
     toggleCursorVisible,
@@ -136,23 +137,46 @@ export function MirrorToolbar() {
           >
             {/* Status indicator */}
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-                <Monitor className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-xl",
+                connectionStatus === "reconnecting"
+                  ? "bg-amber-100 dark:bg-amber-950"
+                  : "bg-indigo-100 dark:bg-indigo-950"
+              )}>
+                {connectionStatus === "reconnecting" ? (
+                  <WifiOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <Monitor className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-foreground">
-                    Mirroring: {targetLocationName || "Target"}
-                  </span>
+                  {connectionStatus === "reconnecting" ? (
+                    <>
+                      <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        Reconnecting...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-bold text-foreground">
+                        Mirroring: {targetLocationName || "Target"}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                  {targetDevice && (
+                  {connectionStatus === "reconnecting" ? (
+                    <span>Target connection lost — waiting for reconnect</span>
+                  ) : targetDevice ? (
                     <span>
                       {targetDevice.isMobile ? "📱 Mobile" : "🖥️ Desktop"} • {targetDevice.width}×{targetDevice.height}
                     </span>
+                  ) : (
+                    <span>Connecting...</span>
                   )}
-                  {!targetDevice && <span>Connecting...</span>}
                 </div>
               </div>
             </div>

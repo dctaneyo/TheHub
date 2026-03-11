@@ -70,7 +70,7 @@ export function ZenLayout({
 
         {/* Timeline card */}
         <div className={cn(glass, "flex-1 flex flex-col overflow-hidden")}>
-          <div className="flex-1 overflow-y-auto px-5 py-3">
+          <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-5 py-3">
             {currentTime && (
               <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
             )}

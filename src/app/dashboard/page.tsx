@@ -84,7 +84,7 @@ function MirrorShell() {
   const mirrorLocationId = searchParams.get("mirror")!;
   const mirrorSessionId = searchParams.get("session")!;
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId;
-  const { isMirroring, startMirror, targetDevice, targetLocationName, cursorVisible, setDisableCursorTracking } = useMirror();
+  const { isMirroring, startMirror, targetDevice, targetLocationName, cursorVisible, controlEnabled, setDisableCursorTracking } = useMirror();
   const { user } = useAuth();
 
   // Initialize mirror session
@@ -163,6 +163,7 @@ function MirrorShell() {
               width={targetDevice.width}
               height={targetDevice.height}
               className="border-0 rounded-lg shadow-2xl"
+              style={controlEnabled ? undefined : { pointerEvents: "none" }}
               title={`Mirror: ${targetLocationName || mirrorLocationName}`}
             />
           </div>
@@ -483,6 +484,15 @@ function DashboardPage() {
       }
       if (vs.hubMenuOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { hubMenuOpen: vs.hubMenuOpen } }));
+      }
+      if (vs.gamificationOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { gamificationOpen: vs.gamificationOpen } }));
+      }
+      if (vs.connectionOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { connectionOpen: vs.connectionOpen } }));
+      }
+      if (vs.sidebarOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { sidebarOpen: vs.sidebarOpen } }));
       }
     };
     viewSyncSocket.on("mirror:view-change", onReverseView);
@@ -965,7 +975,19 @@ function DashboardPage() {
   useEffect(() => {
     if (!isMirroring || !isEmbed || !remoteScroll) return;
     scrollSyncingRef.current = true;
-    window.scrollTo(remoteScroll.x, remoteScroll.y);
+    const el = document.querySelector('[data-scroll-sync="main"]');
+    if (el) {
+      // Use ratio-based scroll: target sends maxY so we can map proportionally
+      if (remoteScroll.maxY && remoteScroll.maxY > 0) {
+        const ratio = remoteScroll.y / remoteScroll.maxY;
+        el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
+      } else {
+        el.scrollTop = remoteScroll.y;
+      }
+      el.scrollLeft = remoteScroll.x;
+    } else {
+      window.scrollTo(remoteScroll.x, remoteScroll.y);
+    }
     requestAnimationFrame(() => { scrollSyncingRef.current = false; });
   }, [isMirroring, isEmbed, remoteScroll]);
 
@@ -979,21 +1001,39 @@ function DashboardPage() {
       const now = Date.now();
       if (now - lastScrollTime < 100) return; // throttle ~10fps
       lastScrollTime = now;
+      const el = document.querySelector('[data-scroll-sync="main"]');
+      const x = el ? Math.round(el.scrollLeft) : Math.round(window.scrollX);
+      const y = el ? Math.round(el.scrollTop) : Math.round(window.scrollY);
+      const maxY = el ? (el.scrollHeight - el.clientHeight) : (document.documentElement.scrollHeight - window.innerHeight);
       scrollSocket.volatile.emit("mirror:scroll-from-arl", {
         sessionId: mirrorSession,
-        x: Math.round(window.scrollX),
-        y: Math.round(window.scrollY),
+        x,
+        y,
+        maxY: Math.max(maxY, 1),
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const syncEl = document.querySelector('[data-scroll-sync="main"]');
+    const target = syncEl || window;
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
   }, [isMirroring, isEmbed, scrollSocket, mirrorSession]);
 
   // ── Target side: receive scroll from ARL mirror and apply it ──
   useEffect(() => {
     if (isMirroring || !remoteViewActive || !scrollSocket) return;
-    const onArlScroll = (data: { sessionId: string; x: number; y: number }) => {
-      window.scrollTo(data.x, data.y);
+    const onArlScroll = (data: { sessionId: string; x: number; y: number; maxY?: number }) => {
+      const el = document.querySelector('[data-scroll-sync="main"]');
+      if (el) {
+        if (data.maxY && data.maxY > 0) {
+          const ratio = data.y / data.maxY;
+          el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
+        } else {
+          el.scrollTop = data.y;
+        }
+        el.scrollLeft = data.x;
+      } else {
+        window.scrollTo(data.x, data.y);
+      }
     };
     scrollSocket.on("mirror:scroll-from-arl", onArlScroll);
     return () => { scrollSocket.off("mirror:scroll-from-arl", onArlScroll); };
@@ -1095,7 +1135,7 @@ function DashboardPage() {
               <div className="shrink-0 px-5 pt-5">
                 <SeasonalTheme showFloating={false} />
               </div>
-              <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+              <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
                 {currentTime && (
                   <Timeline
                     tasks={allTasks}

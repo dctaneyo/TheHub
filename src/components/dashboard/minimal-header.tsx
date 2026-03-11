@@ -160,7 +160,7 @@ export function MinimalHeader({
                   {LAYOUT_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}
-                      onClick={() => setLayout(opt.id)}
+                      onClick={() => { setLayout(opt.id); window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { layout: opt.id } })); }}
                       className={cn(
                         "flex-1 rounded-lg px-2.5 py-2 text-center transition-colors border",
                         layout === opt.id

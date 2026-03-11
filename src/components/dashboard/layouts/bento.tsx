@@ -120,7 +120,7 @@ export function BentoLayout({
 
         {/* ── Timeline (biggest card) ── */}
         <div style={{ gridArea: "timeline" }} className={cn(card, "flex flex-col")}>
-          <div className="flex-1 overflow-y-auto px-4 py-3">
+          <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-4 py-3">
             {currentTime && (
               <Timeline tasks={allTasks} onComplete={onComplete} onUncomplete={onUncomplete} currentTime={currentTime} />
             )}

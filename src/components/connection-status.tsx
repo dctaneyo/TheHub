@@ -151,6 +151,27 @@ export function ConnectionStatus() {
     };
   }, [showCode]);
 
+  // ── Mirror sync: broadcast connection popdown open/close ──
+  const connSyncRef = useRef(false);
+  useEffect(() => {
+    if (connSyncRef.current) return;
+    window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { connectionOpen: showCode } }));
+  }, [showCode]);
+
+  // ── Mirror sync: receive connection popdown state from other side ──
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.connectionOpen !== undefined) {
+        connSyncRef.current = true;
+        setShowCode(detail.connectionOpen);
+        requestAnimationFrame(() => { connSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, []);
+
   // API already filters to online-only; multiSession = more than one active session
   // Compute fixed position when dropdown opens
   useEffect(() => {

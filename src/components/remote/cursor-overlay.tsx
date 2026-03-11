@@ -45,21 +45,28 @@ export function CursorOverlay() {
       data-remote-view-overlay="true"
       className="fixed inset-0 z-[9999] pointer-events-none"
     >
-      {/* Remote cursor indicator */}
+      {/* Remote cursor indicator — arrow design matching ARL cursor */}
       <motion.div
-        animate={{ x: cx - 12, y: cy - 12 }}
+        animate={{ x: cx, y: cy }}
         transition={{ type: "spring", stiffness: 500, damping: 30, mass: 0.5 }}
         className="absolute top-0 left-0"
-        style={{ width: 24, height: 24 }}
       >
-        {/* Outer ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-red-500 bg-red-500/10" />
-        {/* Inner dot */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+        {/* Cursor arrow */}
+        <svg width="24" height="24" viewBox="0 0 24 24" className="drop-shadow-lg" style={{ transform: "translate(-2px, -2px)" }}>
+          <path
+            d="M5 3l14 8-6.5 2L9 19.5 5 3z"
+            fill="rgba(239, 68, 68, 0.9)"
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
         {/* Label */}
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-[8px] font-bold text-white shadow-lg">
+        <div className="absolute left-5 top-4 whitespace-nowrap rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md">
           Remote
         </div>
+        {/* Ripple ring */}
+        <div className="absolute -left-2 -top-2 h-8 w-8 rounded-full border-2 border-red-400/50 animate-ping" />
       </motion.div>
 
       {/* Click ripple effects */}
