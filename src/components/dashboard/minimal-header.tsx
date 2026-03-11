@@ -231,7 +231,7 @@ export function MinimalHeader({
 
         <button
           onClick={onOpenForms}
-          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
           title="Forms"
         >
           <FileText className="h-[18px] w-[18px]" />
@@ -239,7 +239,7 @@ export function MinimalHeader({
 
         <button
           onClick={onOpenCalendar}
-          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
           title="Calendar"
         >
           <CalendarDays className="h-[18px] w-[18px]" />
@@ -247,7 +247,7 @@ export function MinimalHeader({
 
         <button
           onClick={onToggleChat}
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
           title="Chat"
         >
           <MessageCircle className="h-[18px] w-[18px]" />
