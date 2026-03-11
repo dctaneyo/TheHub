@@ -95,11 +95,13 @@ interface BadgeResult {
 export async function GET(req: Request) {
   try {
     const session = await getAuthSession();
-    if (!session || session.userType !== "location") {
+    if (!session || (session.userType !== "location" && session.userType !== "arl")) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const locationId = session.id;
+    // ARLs can fetch gamification data for a specific location (mirror mode)
+    const { searchParams: sp } = new URL(req.url);
+    const locationId = (session.userType === "arl" && sp.get("locationId")) || session.id;
     const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all();
     const allCompletions = db
       .select()

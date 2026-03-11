@@ -388,6 +388,10 @@ function DashboardPage() {
         setLayout(mirrorViewState.layout as any);
       }
     }
+    // Relay H dropdown open/close to MinimalHeader via DOM event
+    if (mirrorViewState.hubMenuOpen !== undefined) {
+      window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { hubMenuOpen: mirrorViewState.hubMenuOpen } }));
+    }
     // Reset flag after React processes the batch
     requestAnimationFrame(() => { mirrorSyncingRef.current = false; });
   }, [isMirroring, mirrorViewState, setLayout, isEmbed]);
@@ -412,12 +416,15 @@ function DashboardPage() {
       if (vs.accordions) {
         window.dispatchEvent(new CustomEvent("mirror:accordion-sync", { detail: vs.accordions }));
       }
-      // Relay panel open/close to NotificationBell / DashboardSettings via DOM events
+      // Relay panel open/close to NotificationBell / MinimalHeader / DashboardSettings via DOM events
       if (vs.notificationsOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { notificationsOpen: vs.notificationsOpen } }));
       }
       if (vs.settingsOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { settingsOpen: vs.settingsOpen } }));
+      }
+      if (vs.hubMenuOpen !== undefined) {
+        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { hubMenuOpen: vs.hubMenuOpen } }));
       }
     };
     viewSyncSocket.on("mirror:view-change", onReverseView);
@@ -649,6 +656,17 @@ function DashboardPage() {
     return () => window.removeEventListener("mirror:panel-change", handler);
   }, [remoteViewActive]);
 
+  // Embed mode (mirror iframe): relay panel-change DOM events via sendViewChange to the target
+  useEffect(() => {
+    if (!isEmbed || !isMirroring) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) sendViewChange(detail);
+    };
+    window.addEventListener("mirror:panel-change", handler);
+    return () => window.removeEventListener("mirror:panel-change", handler);
+  }, [isEmbed, isMirroring, sendViewChange]);
+
   const handleEarlyComplete = async (taskId: string, dateStr: string) => {
     try {
       const res = await fetch("/api/tasks/complete", {
@@ -798,6 +816,16 @@ function DashboardPage() {
     }
   }, [isMirroring, isEmbed, targetDevice, mirrorLayoutOverride]);
 
+  // When user changes layout via the H dropdown in embed mode,
+  // sync the context layout to the local override so effectiveLayout updates
+  const prevLayoutRef = useRef(layout);
+  useEffect(() => {
+    if (isEmbed && isMirroring && layout !== prevLayoutRef.current) {
+      prevLayoutRef.current = layout;
+      setMirrorLayoutOverride(layout);
+    }
+  }, [layout, isEmbed, isMirroring]);
+
   const dashboardContent = (
     <div className="flex flex-col overflow-hidden bg-[var(--background)] relative h-dvh w-screen">
 
@@ -824,6 +852,7 @@ function DashboardPage() {
         onOpenForms={() => setFormsOpen(true)}
         onOpenCalendar={() => setCalOpen(true)}
         onLogout={logout}
+        effectiveLocationId={effectiveLocationId}
       />
 
       {/* Main Content — layout-specific */}

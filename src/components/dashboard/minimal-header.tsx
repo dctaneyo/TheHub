@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LogOut,
   MessageCircle,
@@ -39,6 +39,7 @@ interface MinimalHeaderProps {
   onOpenForms: () => void;
   onOpenCalendar: () => void;
   onLogout: () => void;
+  effectiveLocationId?: string;
 }
 
 export function MinimalHeader({
@@ -57,9 +58,31 @@ export function MinimalHeader({
   onOpenForms,
   onOpenCalendar,
   onLogout,
+  effectiveLocationId,
 }: MinimalHeaderProps) {
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
   const { layout, setLayout } = useLayout();
+  const panelSyncRef = useRef(false);
+
+  // Sync H dropdown open/close FROM target (mirror side: target → mirror via mirror context)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.hubMenuOpen !== undefined) {
+        panelSyncRef.current = true;
+        setLayoutDropdownOpen(detail.hubMenuOpen);
+        requestAnimationFrame(() => { panelSyncRef.current = false; });
+      }
+    };
+    window.addEventListener("mirror:panel-sync", handler);
+    return () => window.removeEventListener("mirror:panel-sync", handler);
+  }, []);
+
+  // Broadcast H dropdown open/close changes
+  useEffect(() => {
+    if (panelSyncRef.current) return;
+    window.dispatchEvent(new CustomEvent("mirror:panel-change", { detail: { hubMenuOpen: layoutDropdownOpen } }));
+  }, [layoutDropdownOpen]);
 
   return (
     <header className="sticky top-0 flex h-12 shrink-0 items-center border-b border-border bg-card/80 backdrop-blur-md px-4 z-[100]">
@@ -223,7 +246,7 @@ export function MinimalHeader({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0">
-        <GamificationHub locationId={user?.id} />
+        <GamificationHub locationId={effectiveLocationId || user?.id} />
 
         <div className="hidden sm:block">
           <ConnectionStatus />
@@ -262,7 +285,7 @@ export function MinimalHeader({
           tasks={allTasks}
           currentTime={currentTime}
           soundEnabled={soundEnabled}
-          locationId={user?.id}
+          locationId={effectiveLocationId || user?.id}
         />
       </div>
     </header>

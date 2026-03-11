@@ -20,9 +20,12 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type") || undefined;
     const priority = searchParams.get("priority") || undefined;
 
+    // ARLs can fetch notifications for a specific location (mirror mode)
+    const userId = (session.userType === "arl" && searchParams.get("locationId")) || session.id;
+
     const [notificationsList, counts] = await Promise.all([
-      getNotifications(session.id, { limit, offset, unreadOnly, type, priority }),
-      getNotificationCounts(session.id),
+      getNotifications(userId, { limit, offset, unreadOnly, type, priority }),
+      getNotificationCounts(userId),
     ]);
 
     const notifications = notificationsList.map((n) => ({

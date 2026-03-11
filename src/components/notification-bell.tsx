@@ -80,17 +80,18 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     }
   }, [open, isMirroring, sendViewChange]);
 
-  // ── DB notification counts (skip in mirror mode — would show ARL's notifications) ──
+  // ── DB notification counts ──
+  // In mirror mode, fetch counts for the target location via locationId param
   const fetchCounts = useCallback(async () => {
-    if (isMirroring) return;
     try {
-      const res = await fetch("/api/notifications?limit=1");
+      const locParam = isMirroring && targetLocationId ? `&locationId=${targetLocationId}` : "";
+      const res = await fetch(`/api/notifications?limit=1${locParam}`);
       if (res.ok) {
         const data = await res.json();
         setDbCounts({ total: data.total, unread: data.unread, urgent: data.urgent });
       }
     } catch {}
-  }, [isMirroring]);
+  }, [isMirroring, targetLocationId]);
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 

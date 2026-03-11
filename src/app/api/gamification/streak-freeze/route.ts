@@ -18,18 +18,22 @@ function ensureTable() {
 }
 
 // GET: fetch how many freezes are available and which dates are frozen
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session || session.userType !== "location") {
+    if (!session || (session.userType !== "location" && session.userType !== "arl")) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    // ARLs can fetch freeze data for a specific location (mirror mode)
+    const { searchParams } = new URL(req.url);
+    const locationId = (session.userType === "arl" && searchParams.get("locationId")) || session.id;
 
     ensureTable();
 
     const freezes = sqlite
       .prepare("SELECT * FROM streak_freezes WHERE location_id = ? ORDER BY freeze_date DESC")
-      .all(session.id) as any[];
+      .all(locationId) as any[];
 
     // Max 3 freezes per location, reset monthly
     const now = new Date();

@@ -84,10 +84,11 @@ export function GamificationHub({ locationId }: { locationId?: string }) {
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
     try {
+      const locParam = locationId ? `&locationId=${locationId}` : "";
       const [gamRes, achRes, freezeRes, lbRes] = await Promise.all([
-        fetch(`/api/gamification?localDate=${localDate}`),
-        fetch("/api/achievements"),
-        fetch("/api/gamification/streak-freeze"),
+        fetch(`/api/gamification?localDate=${localDate}${locParam}`),
+        fetch(`/api/achievements?_=1${locParam}`),
+        fetch(`/api/gamification/streak-freeze?_=1${locParam}`),
         fetch(`/api/leaderboard?localDate=${localDate}`),
       ]);
 

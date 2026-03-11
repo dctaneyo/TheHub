@@ -84,18 +84,22 @@ function ensureAchievementsTable() {
   } catch {}
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getAuthSession();
-    if (!session || session.userType !== "location") {
+    if (!session || (session.userType !== "location" && session.userType !== "arl")) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    // ARLs can fetch achievements for a specific location (mirror mode)
+    const { searchParams } = new URL(req.url);
+    const locationId = (session.userType === "arl" && searchParams.get("locationId")) || session.id;
 
     ensureAchievementsTable();
 
     const unlocked = sqlite.prepare(
       "SELECT * FROM achievements WHERE location_id = ? ORDER BY unlocked_at DESC"
-    ).all(session.id) as any[];
+    ).all(locationId) as any[];
 
     const unlockedIds = new Set(unlocked.map(a => a.achievement_id));
     

@@ -20,6 +20,7 @@ export interface MirrorViewState {
   accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean };
   notificationsOpen?: boolean;
   settingsOpen?: boolean;
+  hubMenuOpen?: boolean;
 }
 
 interface MirrorState {
