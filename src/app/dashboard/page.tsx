@@ -816,7 +816,7 @@ function DashboardPage() {
             {/* Right Column - Mini Calendar + Leaderboard tabs */}
             <div className={cn(
               "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
-              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col") : "lg:flex lg:flex-col",
+              useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col") : "hidden lg:flex lg:flex-col",
               !useTargetMobile && mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full lg:relative lg:w-[300px] lg:border-l lg:border-border" : ""
             )}>
               {/* Mobile close button */}
