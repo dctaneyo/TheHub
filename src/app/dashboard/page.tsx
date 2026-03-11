@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import {
@@ -55,9 +55,107 @@ export default function DashboardPageWrapper() {
   return (
     <Suspense fallback={null}>
       <MirrorProvider>
-        <DashboardPage />
+        <DashboardRouter />
       </MirrorProvider>
     </Suspense>
+  );
+}
+
+/** Route between MirrorShell (lightweight iframe host) and DashboardPage */
+function DashboardRouter() {
+  const searchParams = useSearchParams();
+  const mirrorLocationId = searchParams.get("mirror");
+  const mirrorSessionId = searchParams.get("session");
+  const isEmbed = searchParams.get("embed") === "true";
+
+  // Mirror shell mode: renders toolbar + iframe sized to target viewport
+  if (mirrorLocationId && mirrorSessionId && !isEmbed) {
+    return <MirrorShell />;
+  }
+
+  // Normal dashboard or embed mode (inside iframe)
+  return <DashboardPage />;
+}
+
+/** Lightweight mirror shell — renders MirrorToolbar + iframe at target viewport dimensions */
+function MirrorShell() {
+  const searchParams = useSearchParams();
+  const mirrorLocationId = searchParams.get("mirror")!;
+  const mirrorSessionId = searchParams.get("session")!;
+  const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId;
+  const { isMirroring, startMirror, targetDevice, targetLocationName } = useMirror();
+
+  // Initialize mirror session
+  useEffect(() => {
+    if (!isMirroring && mirrorLocationId && mirrorSessionId) {
+      startMirror(mirrorLocationId, mirrorLocationName, mirrorSessionId);
+    }
+  }, [mirrorLocationId, mirrorSessionId, mirrorLocationName, isMirroring, startMirror]);
+
+  // Build iframe URL — same params plus embed=true
+  const iframeUrl = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("embed", "true");
+    return `/dashboard?${params.toString()}`;
+  }, [searchParams]);
+
+  // Track container size for scaling
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r) setContainerSize({ width: r.width, height: r.height });
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Scale iframe to fit container while preserving target aspect ratio
+  const scale =
+    targetDevice && containerSize.width > 0
+      ? Math.min(
+          containerSize.width / targetDevice.width,
+          containerSize.height / targetDevice.height,
+          1 // never scale up
+        )
+      : 1;
+
+  return (
+    <>
+      <MirrorToolbar />
+      <div
+        ref={containerRef}
+        className="fixed inset-0 overflow-hidden bg-black flex items-start justify-center pt-14"
+      >
+        {targetDevice ? (
+          <div
+            className="shrink-0"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "top center",
+            }}
+          >
+            <iframe
+              src={iframeUrl}
+              width={targetDevice.width}
+              height={targetDevice.height}
+              className="border-0 rounded-lg shadow-2xl"
+              title={`Mirror: ${targetLocationName || mirrorLocationName}`}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-white/60 text-sm">
+              Connecting to {mirrorLocationName}...
+            </p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -67,7 +165,12 @@ function DashboardPage() {
   const mirrorLocationId = searchParams.get("mirror");
   const mirrorSessionId = searchParams.get("session");
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
+  const isEmbed = searchParams.get("embed") === "true";
   const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange, targetDevice } = useMirror();
+
+  // In embed/iframe mode, use a local layout override so we don't persist
+  // the target's layout to the ARL's database
+  const [mirrorLayoutOverride, setMirrorLayoutOverride] = useState<string | null>(null);
 
   // Initialize mirror session on mount if URL params are present
   useEffect(() => {
@@ -247,6 +350,10 @@ function DashboardPage() {
 
   const { user, logout } = useAuth();
   const { layout, setLayout } = useLayout();
+
+  // Effective layout: use mirror override when in embed mode, otherwise use DB-backed layout
+  const effectiveLayout = (isMirroring && isEmbed && mirrorLayoutOverride) ? mirrorLayoutOverride : layout;
+
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
   const [currentTime, setCurrentTime] = useState("");
@@ -274,17 +381,22 @@ function DashboardPage() {
     setFormsOpen(mirrorViewState.formsOpen);
     setCalOpen(mirrorViewState.calendarOpen);
     if (mirrorViewState.layout) {
-      setLayout(mirrorViewState.layout as any);
+      // In embed mode, use local override to avoid saving target's layout to ARL's DB
+      if (isEmbed) {
+        setMirrorLayoutOverride(mirrorViewState.layout);
+      } else {
+        setLayout(mirrorViewState.layout as any);
+      }
     }
     // Reset flag after React processes the batch
     requestAnimationFrame(() => { mirrorSyncingRef.current = false; });
-  }, [isMirroring, mirrorViewState, setLayout]);
+  }, [isMirroring, mirrorViewState, setLayout, isEmbed]);
 
   // ── Mirror mode: send ARL's local view changes back to target ──
   useEffect(() => {
     if (!isMirroring || mirrorSyncingRef.current) return;
-    sendViewChange({ chatOpen, formsOpen, calendarOpen: calOpen, layout });
-  }, [isMirroring, chatOpen, formsOpen, calOpen, layout, sendViewChange]);
+    sendViewChange({ chatOpen, formsOpen, calendarOpen: calOpen, layout: effectiveLayout });
+  }, [isMirroring, chatOpen, formsOpen, calOpen, effectiveLayout, sendViewChange]);
 
   // ── Target mode: listen for reverse view changes from ARL (mirror → target) ──
   const { socket: viewSyncSocket } = useSocket();
@@ -492,6 +604,13 @@ function DashboardPage() {
     updateActivity(page);
   }, [chatOpen, calOpen, formsOpen, updateActivity]);
 
+  // Keep capture manager's layout in sync so sendDeviceInfo reports the correct value
+  useEffect(() => {
+    if (captureManagerRef.current) {
+      captureManagerRef.current.setLayout(layout);
+    }
+  }, [layout, remoteViewActive]);
+
   // Broadcast view state to mirror dashboard when being remote-viewed
   useEffect(() => {
     if (!remoteViewActive || !captureManagerRef.current) return;
@@ -667,26 +786,20 @@ function DashboardPage() {
   // In mirror mode, use the target location ID for location-specific components
   const effectiveLocationId = mirrorLocationId || user?.id;
 
-  // ── Mirror viewport scaling: render at target's exact dimensions ──
-  const mirrorScale = (() => {
-    if (!isMirroring || !targetDevice) return null;
-    const tw = targetDevice.width;
-    const th = targetDevice.height;
-    if (!tw || !th) return null;
-    const aw = typeof window !== "undefined" ? window.innerWidth : tw;
-    const ah = typeof window !== "undefined" ? window.innerHeight : th;
-    const scale = Math.min(aw / tw, ah / th);
-    return { tw, th, scale };
-  })();
+  // In embed mode (inside iframe), the iframe IS sized to the target's viewport,
+  // so CSS breakpoints work naturally — no scaling or targetIsMobile overrides needed.
+  const useTargetMobile = false;
+  const targetIsMobile = false;
 
-  // In mirror mode, determine if target is mobile for layout decisions
-  const targetIsMobile = isMirroring && targetDevice ? targetDevice.isMobile : false;
-
-  // For layout decisions: use targetIsMobile when mirroring, otherwise let responsive classes handle it
-  const useTargetMobile = isMirroring;
+  // Seed layout override from target device info on first connect
+  useEffect(() => {
+    if (isMirroring && isEmbed && targetDevice?.layout && !mirrorLayoutOverride) {
+      setMirrorLayoutOverride(targetDevice.layout);
+    }
+  }, [isMirroring, isEmbed, targetDevice, mirrorLayoutOverride]);
 
   const dashboardContent = (
-    <div className={cn("flex flex-col overflow-hidden bg-[var(--background)] relative", mirrorScale ? "w-full h-full" : "h-dvh w-screen")}>
+    <div className="flex flex-col overflow-hidden bg-[var(--background)] relative h-dvh w-screen">
 
       {/* Offline indicator with sync status */}
       <OfflineIndicator />
@@ -714,7 +827,7 @@ function DashboardPage() {
       />
 
       {/* Main Content — layout-specific */}
-      {layout === "classic" && (
+      {effectiveLayout === "classic" && (
         <>
           {/* Mobile Panel Toggle Buttons */}
           {(useTargetMobile ? targetIsMobile : true) && (
@@ -816,7 +929,7 @@ function DashboardPage() {
         </>
       )}
 
-      {layout === "focus" && (
+      {effectiveLayout === "focus" && (
         <FocusLayout
           allTasks={allTasks}
           completedTasks={completedTasks}
@@ -957,34 +1070,10 @@ function DashboardPage() {
     </div>
   );
 
-  if (mirrorScale) {
+  // Embed mode (inside iframe): render dashboard + cursor overlay, no toolbar/scaling
+  if (isMirroring && isEmbed) {
     return (
       <>
-        {/* Mirror mode UI — rendered outside the scaled container so they stay normal size */}
-        <MirrorToolbar />
-        <CursorOverlay />
-        <div className="h-dvh w-screen overflow-hidden bg-black flex items-start justify-center">
-          <div
-            style={{
-              width: mirrorScale.tw,
-              height: mirrorScale.th,
-              transform: `scale(${mirrorScale.scale})`,
-              transformOrigin: "top center",
-            }}
-            className="shrink-0 relative"
-          >
-            {dashboardContent}
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Not using viewport scaling (either not mirroring, or device info not yet received)
-  if (isMirroring) {
-    return (
-      <>
-        <MirrorToolbar />
         <CursorOverlay />
         {dashboardContent}
       </>

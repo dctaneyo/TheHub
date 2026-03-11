@@ -378,6 +378,7 @@ export class RemoteCaptureManager {
   private resizeHandler: (() => void) | null = null;
   private isActive = false;
   private isCapturing = false; // Prevent overlapping captures
+  private currentLayout: string = "classic";
 
   /**
    * @param mirrorMode - When true, skips screenshot/DOM capture and only streams
@@ -573,8 +574,12 @@ export class RemoteCaptureManager {
     console.log(`🖥️ Remote capture stopped for session ${this.sessionId}`);
   }
 
+  /** Update the current layout so sendDeviceInfo reports the correct value */
+  setLayout(layout: string) {
+    this.currentLayout = layout;
+  }
+
   private sendDeviceInfo() {
-    const layout = typeof localStorage !== "undefined" ? localStorage.getItem("hub-dashboard-layout") || "classic" : "classic";
     this.socket.emit("mirror:device-info", {
       sessionId: this.sessionId,
       device: {
@@ -582,7 +587,7 @@ export class RemoteCaptureManager {
         height: window.innerHeight,
         isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768,
         userAgent: navigator.userAgent,
-        layout,
+        layout: this.currentLayout,
       },
     });
   }
