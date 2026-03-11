@@ -222,13 +222,29 @@ export function MinimalHeader({
         </div>
 
         <button
+          onClick={onOpenForms}
+          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+          title="Forms"
+        >
+          <FileText className="h-[18px] w-[18px]" />
+        </button>
+
+        <button
+          onClick={onOpenCalendar}
+          className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+          title="Calendar"
+        >
+          <CalendarDays className="h-[18px] w-[18px]" />
+        </button>
+
+        <button
           onClick={onToggleChat}
-          className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
           title="Chat"
         >
-          <MessageCircle className="h-4 w-4" />
+          <MessageCircle className="h-[18px] w-[18px]" />
           {chatUnread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--hub-red)] text-[8px] font-bold text-white">
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--hub-red)] text-[10px] font-bold text-white">
               {chatUnread}
             </span>
           )}
