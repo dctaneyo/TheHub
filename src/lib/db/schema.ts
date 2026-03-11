@@ -32,6 +32,7 @@ export const locations = sqliteTable("locations", {
   pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
+  dashboardLayout: text("dashboard_layout").notNull().default("classic"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -49,6 +50,7 @@ export const arls = sqliteTable("arls", {
   permissions: text("permissions"), // JSON array of enabled permission keys — null = all (default)
   assignedLocationIds: text("assigned_location_ids"), // JSON array of location IDs — null = all locations
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  dashboardLayout: text("dashboard_layout").notNull().default("classic"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
