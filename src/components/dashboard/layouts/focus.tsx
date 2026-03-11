@@ -112,7 +112,7 @@ export function FocusLayout({
   displayTime,
   upcomingTasks,
   currentLocationId,
-  targetIsMobile = false,
+  targetIsMobile,
   onComplete,
   onUncomplete,
   onEarlyComplete,
