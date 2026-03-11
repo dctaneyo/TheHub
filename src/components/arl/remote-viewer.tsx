@@ -121,6 +121,12 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
 
     const onAccepted = (data: { sessionId: string; locationName: string }) => {
       setSessionStatus("active");
+      // Fire an immediate heartbeat to quickly detect phantom connects
+      setTimeout(() => {
+        if (sessionIdRef.current === data.sessionId) {
+          socket.emit("remote-view:heartbeat", { sessionId: data.sessionId });
+        }
+      }, 2000);
     };
 
     const onRejected = (data: { sessionId: string; locationName: string }) => {

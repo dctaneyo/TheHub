@@ -671,7 +671,7 @@ export class RemoteCaptureManager {
   }
 
   /** Broadcast current view state to mirror dashboard (call from React when views change) */
-  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string; accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean }; notificationsOpen?: boolean; settingsOpen?: boolean; hubMenuOpen?: boolean; celebration?: "confetti" | "coinRain" | "fireworks" | null; celebrationPoints?: number; soundEnabled?: boolean; mobilePanelOpen?: "left" | "right" | null; idle?: boolean; theme?: string; chatThreadId?: string | null; chatThreadName?: string | null }) {
+  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string; accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean }; notificationsOpen?: boolean; settingsOpen?: boolean; hubMenuOpen?: boolean; celebration?: "confetti" | "coinRain" | "fireworks" | null; celebrationPoints?: number; soundEnabled?: boolean; mobilePanelOpen?: "left" | "right" | null; idle?: boolean; theme?: string; chatThreadId?: string | null; chatThreadName?: string | null; sessionCode?: string | null; sessions?: { id: string; code: string; isOnline: boolean; isCurrent: boolean; deviceType: string | null; createdAt: string; lastSeen: string }[] }) {
     if (!this.isActive || !this.mirrorMode) return;
     this.socket.emit("mirror:view-change", {
       sessionId: this.sessionId,

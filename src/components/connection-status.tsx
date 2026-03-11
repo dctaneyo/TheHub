@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Wifi, WifiOff, RefreshCw, Hash, Monitor, Smartphone, Tablet, AlertTriangle } from "@/lib/icons";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
+import { useMirror } from "@/lib/mirror-context";
 
 interface SessionInfo {
   id: string;
@@ -23,6 +24,7 @@ function DeviceIcon({ type }: { type: string | null }) {
 }
 
 export function ConnectionStatus() {
+  const { isMirroring, viewState: mirrorViewState } = useMirror();
   const [isOnline, setIsOnline] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [sessionCode, setSessionCode] = useState<string | null>(null);
@@ -50,12 +52,17 @@ export function ConnectionStatus() {
   };
 
   const fetchSessionCode = async () => {
+    if (isMirroring) return; // Mirror mode uses target's data
     try {
       const res = await fetch("/api/session/code", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setSessionCode(data.sessionCode || null);
         setSessions(data.sessions || []);
+        // Broadcast to dashboard so it can relay to mirror via view state
+        window.dispatchEvent(new CustomEvent("mirror:connection-data", {
+          detail: { sessionCode: data.sessionCode, sessions: data.sessions },
+        }));
       }
     } catch {}
   };
@@ -150,6 +157,13 @@ export function ConnectionStatus() {
       clearInterval(tickTimer);
     };
   }, [showCode]);
+
+  // ── Mirror mode: use target's session data instead of our own ──
+  useEffect(() => {
+    if (!isMirroring || !mirrorViewState) return;
+    if (mirrorViewState.sessionCode !== undefined) setSessionCode(mirrorViewState.sessionCode ?? null);
+    if (mirrorViewState.sessions) setSessions(mirrorViewState.sessions);
+  }, [isMirroring, mirrorViewState]);
 
   // ── Mirror sync: broadcast connection popdown open/close ──
   const connSyncRef = useRef(false);

@@ -32,6 +32,9 @@ export interface MirrorViewState {
   // Chat thread sync fields
   chatThreadId?: string | null;
   chatThreadName?: string | null;
+  // Connection status sync fields
+  sessionCode?: string | null;
+  sessions?: { id: string; code: string; isOnline: boolean; isCurrent: boolean; deviceType: string | null; createdAt: string; lastSeen: string }[];
 }
 
 interface MirrorState {

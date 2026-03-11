@@ -64,7 +64,7 @@ export function registerRemoteViewHandlers(
 
       if (latestSession?.socketId) {
         const targetSocket = io.sockets.sockets.get(latestSession.socketId);
-        if (targetSocket) {
+        if (targetSocket && targetSocket.connected) {
           targetSocket.emit("remote-view:start", startPayload);
           targetSocket.join(roomName); // Join location to room so it receives ended events
           session.locationSocketId = latestSession.socketId;
@@ -87,6 +87,27 @@ export function registerRemoteViewHandlers(
       locationId: data.locationId,
       locationName: data.locationId, // will be updated once location starts streaming
     });
+
+    // If we couldn't find a connected target, schedule a quick check —
+    // if no location joins within 8s, end the session as unreachable
+    if (!targeted) {
+      setTimeout(() => {
+        const s = remoteViewSessions.get(sessionId);
+        if (!s || s.status !== "active") return;
+        if (!s.locationSocketId) {
+          // No location ever responded — end session
+          s.status = "ended";
+          socket.emit("remote-view:ended", {
+            sessionId,
+            endedBy: "system",
+            endedByType: "system",
+            reason: "Location unreachable",
+          });
+          remoteViewSessions.delete(sessionId);
+          console.log(`🖥️ Remote view session ${sessionId} ended: location ${data.locationId} unreachable`);
+        }
+      }, 8000);
+    }
 
     console.log(`🖥️ Remote view auto-accepted: ${user.name} → location ${data.locationId}`);
   });

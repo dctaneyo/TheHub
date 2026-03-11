@@ -724,6 +724,19 @@ function DashboardPage() {
     return () => window.removeEventListener("mirror:accordion-change", handler);
   }, [remoteViewActive]);
 
+  // Relay connection session data from ConnectionStatus to mirror via capture manager
+  useEffect(() => {
+    if (!remoteViewActive) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (captureManagerRef.current && detail) {
+        captureManagerRef.current.broadcastViewState(detail);
+      }
+    };
+    window.addEventListener("mirror:connection-data", handler);
+    return () => window.removeEventListener("mirror:connection-data", handler);
+  }, [remoteViewActive]);
+
   // Relay notification/settings panel open/close from child components to mirror via capture manager
   useEffect(() => {
     if (!remoteViewActive) return;
