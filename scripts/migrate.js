@@ -18,43 +18,76 @@ try {
   // Open database connection
   const db = new Database(dbPath);
   
-  // Check if broadcasts table already exists
-  const tableExists = db.prepare(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='broadcasts'"
-  ).get();
+  // Create migrations tracking table if it doesn't exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
   
-  if (tableExists) {
-    console.log('✅ Broadcast tables already exist, skipping migration');
+  // Get list of all migration files
+  const migrationsDir = path.join(__dirname, '../drizzle');
+  const migrationFiles = fs.readdirSync(migrationsDir)
+    .filter(file => file.endsWith('.sql'))
+    .sort(); // Sort to ensure migrations run in order
+  
+  if (migrationFiles.length === 0) {
+    console.log('⚠️  No migration files found');
     db.close();
     return;
   }
   
-  // Read and execute the migration SQL
-  const migrationPath = path.join(__dirname, '../drizzle/0002_puzzling_doctor_doom.sql');
+  // Get list of already applied migrations
+  const appliedMigrations = db.prepare('SELECT name FROM _migrations').all().map(row => row.name);
   
-  if (fs.existsSync(migrationPath)) {
+  let migrationsRun = 0;
+  
+  // Run each migration that hasn't been applied yet
+  for (const file of migrationFiles) {
+    if (appliedMigrations.includes(file)) {
+      console.log(`⏭️  Skipping ${file} (already applied)`);
+      continue;
+    }
+    
+    console.log(`🔄 Running migration: ${file}`);
+    const migrationPath = path.join(migrationsDir, file);
     const sql = fs.readFileSync(migrationPath, 'utf8');
     
     // Split by statement-breakpoint and execute each statement
     const statements = sql.split('--> statement-breakpoint');
     
-    for (const statement of statements) {
-      const trimmed = statement.trim();
-      if (trimmed && !trimmed.startsWith('-->')) {
-        try {
-          db.exec(trimmed);
-        } catch (err) {
-          // Ignore errors for DROP TABLE statements if table doesn't exist
-          if (!trimmed.startsWith('DROP TABLE')) {
-            throw err;
+    try {
+      for (const statement of statements) {
+        const trimmed = statement.trim();
+        if (trimmed && !trimmed.startsWith('-->')) {
+          try {
+            db.exec(trimmed);
+          } catch (err) {
+            // Ignore errors for DROP TABLE statements if table doesn't exist
+            // Also ignore ALTER TABLE errors for columns that already exist
+            if (!trimmed.startsWith('DROP TABLE') && !err.message.includes('duplicate column')) {
+              throw err;
+            }
           }
         }
       }
+      
+      // Mark migration as applied
+      db.prepare('INSERT INTO _migrations (name) VALUES (?)').run(file);
+      console.log(`✅ Migration ${file} completed successfully`);
+      migrationsRun++;
+    } catch (err) {
+      console.error(`❌ Migration ${file} failed:`, err.message);
+      throw err;
     }
-    
-    console.log('✅ Database migrations completed successfully');
+  }
+  
+  if (migrationsRun === 0) {
+    console.log('✅ All migrations already applied');
   } else {
-    console.log('⚠️  No migration file found, skipping');
+    console.log(`✅ Successfully applied ${migrationsRun} migration(s)`);
   }
   
   db.close();
