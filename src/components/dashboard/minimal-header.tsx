@@ -122,6 +122,14 @@ export function MinimalHeader({
 
               <div className="border-t border-border mx-2 my-1" />
 
+              {/* Connection Status - visible on mobile only */}
+              <div className="px-3 py-2 sm:hidden">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Connection</p>
+                <ConnectionStatus />
+              </div>
+
+              <div className="border-t border-border mx-2 my-1 sm:hidden" />
+
               {/* Layout selector */}
               <div className="px-3 pt-1.5 pb-1">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Layout</p>
