@@ -344,6 +344,25 @@ export function registerRemoteViewHandlers(
     });
   });
 
+  // ── ARL (mirror iframe): Send scroll position to target ──
+  socket.on("mirror:scroll-from-arl", (data: { sessionId: string; x: number; y: number }) => {
+    if (user.userType !== "arl") return;
+
+    const session = remoteViewSessions.get(data.sessionId);
+    if (!session || session.status !== "active") return;
+
+    if (session.locationSocketId) {
+      const locSocket = io.sockets.sockets.get(session.locationSocketId);
+      if (locSocket) {
+        locSocket.volatile.emit("mirror:scroll-from-arl", {
+          sessionId: data.sessionId,
+          x: data.x,
+          y: data.y,
+        });
+      }
+    }
+  });
+
   // ── Location: Send click event (for mirror mode ripple visualization) ──
   socket.on("mirror:click", (data: { sessionId: string; x: number; y: number }) => {
     if (user.userType !== "location") return;

@@ -43,6 +43,7 @@ interface MirrorContextValue extends MirrorState {
   toggleCursorVisible: () => void;
   setTargetDevice: (device: TargetDeviceInfo) => void;
   sendViewChange: (viewState: Partial<MirrorViewState>) => void;
+  setDisableCursorTracking: (disabled: boolean) => void;
 }
 
 const MirrorContext = createContext<MirrorContextValue | null>(null);
@@ -64,6 +65,11 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
 
   const sessionIdRef = useRef<string | null>(null);
   const cursorVisibleRef = useRef(false);
+  const disableCursorTrackingRef = useRef(false);
+
+  const setDisableCursorTracking = useCallback((disabled: boolean) => {
+    disableCursorTrackingRef.current = disabled;
+  }, []);
 
   const startMirror = useCallback((locationId: string, locationName: string, sessionId: string) => {
     sessionIdRef.current = sessionId;
@@ -215,7 +221,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!socket) return;
     const onMouseMove = (e: MouseEvent) => {
-      if (!cursorVisibleRef.current || !sessionIdRef.current) return;
+      if (!cursorVisibleRef.current || !sessionIdRef.current || disableCursorTrackingRef.current) return;
       // Send normalised percentages so it maps to any viewport size
       const x = e.clientX / window.innerWidth;
       const y = e.clientY / window.innerHeight;
@@ -240,7 +246,7 @@ export function MirrorProvider({ children }: { children: React.ReactNode }) {
   }, [socket]);
 
   return (
-    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, toggleCursorVisible, setTargetDevice, sendViewChange }}>
+    <MirrorContext.Provider value={{ ...state, startMirror, endMirror, toggleControl, toggleCursorVisible, setTargetDevice, sendViewChange, setDisableCursorTracking }}>
       {children}
     </MirrorContext.Provider>
   );
@@ -267,6 +273,7 @@ export function useMirror() {
       toggleCursorVisible: () => {},
       setTargetDevice: () => {},
       sendViewChange: () => {},
+      setDisableCursorTracking: () => {},
     } as MirrorContextValue;
   }
   return ctx;

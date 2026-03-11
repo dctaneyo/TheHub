@@ -83,7 +83,8 @@ function MirrorShell() {
   const mirrorLocationId = searchParams.get("mirror")!;
   const mirrorSessionId = searchParams.get("session")!;
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId;
-  const { isMirroring, startMirror, targetDevice, targetLocationName } = useMirror();
+  const { isMirroring, startMirror, targetDevice, targetLocationName, cursorVisible, setDisableCursorTracking } = useMirror();
+  const { user } = useAuth();
 
   // Initialize mirror session
   useEffect(() => {
@@ -91,6 +92,12 @@ function MirrorShell() {
       startMirror(mirrorLocationId, mirrorLocationName, mirrorSessionId);
     }
   }, [mirrorLocationId, mirrorSessionId, mirrorLocationName, isMirroring, startMirror]);
+
+  // Disable window-level cursor tracking — the embed iframe handles it with correct coordinates
+  useEffect(() => {
+    setDisableCursorTracking(true);
+    return () => setDisableCursorTracking(false);
+  }, [setDisableCursorTracking]);
 
   // Build iframe URL — same params plus embed=true
   const iframeUrl = useMemo(() => {
@@ -101,6 +108,7 @@ function MirrorShell() {
 
   // Track container size for scaling
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -123,6 +131,16 @@ function MirrorShell() {
         )
       : 1;
 
+  // PostMessage cursor visibility + ARL name to the embed iframe
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      { type: "mirror:cursor-visible", visible: cursorVisible, arlName: user?.name || "Admin" },
+      window.location.origin
+    );
+  }, [cursorVisible, user?.name]);
+
   return (
     <>
       <MirrorToolbar />
@@ -139,6 +157,7 @@ function MirrorShell() {
             }}
           >
             <iframe
+              ref={iframeRef}
               src={iframeUrl}
               width={targetDevice.width}
               height={targetDevice.height}
@@ -166,7 +185,7 @@ function DashboardPage() {
   const mirrorSessionId = searchParams.get("session");
   const mirrorLocationName = searchParams.get("locationName") || mirrorLocationId || "";
   const isEmbed = searchParams.get("embed") === "true";
-  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange, targetDevice } = useMirror();
+  const { isMirroring, startMirror, endMirror, viewState: mirrorViewState, sendViewChange, targetDevice, remoteScroll, sessionId: mirrorSession } = useMirror();
 
   // In embed/iframe mode, use a local layout override so we don't persist
   // the target's layout to the ARL's database
@@ -825,6 +844,89 @@ function DashboardPage() {
       setMirrorLayoutOverride(layout);
     }
   }, [layout, isEmbed, isMirroring]);
+
+  // Socket ref used by cursor tracking and scroll sync
+  const { socket: scrollSocket } = useSocket();
+
+  // ── ARL cursor tracking in embed mode ──
+  // MirrorShell postMessages cursor visibility; iframe tracks mouse and emits to target
+  const arlCursorVisibleRef = useRef(false);
+  const arlNameRef = useRef("Admin");
+  useEffect(() => {
+    if (!isEmbed || !isMirroring) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === "mirror:cursor-visible") {
+        arlCursorVisibleRef.current = e.data.visible;
+        if (e.data.arlName) arlNameRef.current = e.data.arlName;
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [isEmbed, isMirroring]);
+
+  // Emit ARL cursor position from embed iframe
+  useEffect(() => {
+    if (!isEmbed || !isMirroring || !scrollSocket || !mirrorSession) return;
+    let lastTime = 0;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!arlCursorVisibleRef.current) return;
+      const now = Date.now();
+      if (now - lastTime < 33) return; // ~30fps
+      lastTime = now;
+      // Normalized 0-1 coords relative to iframe viewport (= target viewport)
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      scrollSocket.volatile.emit("mirror:arl-cursor", {
+        sessionId: mirrorSession,
+        x,
+        y,
+        visible: true,
+      });
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    return () => document.removeEventListener("mousemove", onMouseMove);
+  }, [isEmbed, isMirroring, scrollSocket, mirrorSession]);
+
+  // ── Scroll sync: target → mirror (embed mode) ──
+  // When target scrolls, remoteScroll updates — apply it to the iframe window
+  const scrollSyncingRef = useRef(false);
+  useEffect(() => {
+    if (!isMirroring || !isEmbed || !remoteScroll) return;
+    scrollSyncingRef.current = true;
+    window.scrollTo(remoteScroll.x, remoteScroll.y);
+    requestAnimationFrame(() => { scrollSyncingRef.current = false; });
+  }, [isMirroring, isEmbed, remoteScroll]);
+
+  // ── Scroll sync: mirror → target (embed mode) ──
+  // Capture scroll in the embed iframe and emit to target via socket
+  useEffect(() => {
+    if (!isMirroring || !isEmbed || !scrollSocket || !mirrorSession) return;
+    let lastScrollTime = 0;
+    const onScroll = () => {
+      if (scrollSyncingRef.current) return; // don't echo back target's scroll
+      const now = Date.now();
+      if (now - lastScrollTime < 100) return; // throttle ~10fps
+      lastScrollTime = now;
+      scrollSocket.volatile.emit("mirror:scroll-from-arl", {
+        sessionId: mirrorSession,
+        x: Math.round(window.scrollX),
+        y: Math.round(window.scrollY),
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isMirroring, isEmbed, scrollSocket, mirrorSession]);
+
+  // ── Target side: receive scroll from ARL mirror and apply it ──
+  useEffect(() => {
+    if (isMirroring || !remoteViewActive || !scrollSocket) return;
+    const onArlScroll = (data: { sessionId: string; x: number; y: number }) => {
+      window.scrollTo(data.x, data.y);
+    };
+    scrollSocket.on("mirror:scroll-from-arl", onArlScroll);
+    return () => { scrollSocket.off("mirror:scroll-from-arl", onArlScroll); };
+  }, [isMirroring, remoteViewActive, scrollSocket]);
 
   const dashboardContent = (
     <div className="flex flex-col overflow-hidden bg-[var(--background)] relative h-dvh w-screen">
