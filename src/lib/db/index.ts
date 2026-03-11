@@ -40,6 +40,14 @@ function runMigrations() {
   const s = getSqlite();
 
   // ── Migration version tracking ──
+  // Check if _migrations table was corrupted by a bad deploy (wrong schema with INTEGER id + name column)
+  const migTableInfo = s.prepare("PRAGMA table_info(_migrations)").all() as Array<{ name: string; type: string }>;
+  const hasNameCol = migTableInfo.some((c) => c.name === "name");
+  if (hasNameCol) {
+    // Corrupted schema from bad migrate.js — drop and recreate with correct schema
+    console.log("🔄 Repairing corrupted _migrations table...");
+    s.exec(`DROP TABLE _migrations`);
+  }
   s.exec(`CREATE TABLE IF NOT EXISTS _migrations (
     id TEXT PRIMARY KEY,
     applied_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -483,6 +491,12 @@ function runMigrations() {
     // Re-create indexes
     s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`);
     s.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON notifications(tenant_id)`);
+  });
+
+  // ── Dashboard layout preference (persisted per user) ──
+  migrate("047_dashboard_layout", () => {
+    try { s.exec(`ALTER TABLE locations ADD COLUMN dashboard_layout TEXT NOT NULL DEFAULT 'classic'`); } catch {}
+    try { s.exec(`ALTER TABLE arls ADD COLUMN dashboard_layout TEXT NOT NULL DEFAULT 'classic'`); } catch {}
   });
 
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;

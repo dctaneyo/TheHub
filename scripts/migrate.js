@@ -18,94 +18,43 @@ try {
   // Open database connection
   const db = new Database(dbPath);
   
-  // Check if _migrations table exists and what columns it has
-  const tableInfo = db.prepare("PRAGMA table_info(_migrations)").all();
-  const hasNameColumn = tableInfo.some(col => col.name === 'name');
+  // Check if broadcasts table already exists
+  const tableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='broadcasts'"
+  ).get();
   
-  if (tableInfo.length === 0) {
-    // Table doesn't exist, create it
-    db.exec(`
-      CREATE TABLE _migrations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    `);
-  } else if (!hasNameColumn) {
-    // Old schema exists, migrate it
-    console.log('🔄 Migrating _migrations table to new schema...');
-    db.exec(`
-      DROP TABLE IF EXISTS _migrations;
-      CREATE TABLE _migrations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    `);
-    console.log('✅ _migrations table migrated');
-  }
-  
-  // Get list of already applied migrations
-  const appliedMigrations = db.prepare('SELECT name FROM _migrations').all().map(row => row.name);
-  
-  // Get list of all migration files
-  const migrationsDir = path.join(__dirname, '../drizzle');
-  const migrationFiles = fs.readdirSync(migrationsDir)
-    .filter(file => file.endsWith('.sql'))
-    .sort(); // Sort to ensure migrations run in order
-  
-  if (migrationFiles.length === 0) {
-    console.log('⚠️  No migration files found');
+  if (tableExists) {
+    console.log('✅ Broadcast tables already exist, skipping migration');
     db.close();
     return;
   }
   
-  let migrationsRun = 0;
+  // Read and execute the migration SQL
+  const migrationPath = path.join(__dirname, '../drizzle/0002_puzzling_doctor_doom.sql');
   
-  // Run each migration that hasn't been applied yet
-  for (const file of migrationFiles) {
-    if (appliedMigrations.includes(file)) {
-      console.log(`⏭️  Skipping ${file} (already applied)`);
-      continue;
-    }
-    
-    console.log(`🔄 Running migration: ${file}`);
-    const migrationPath = path.join(migrationsDir, file);
+  if (fs.existsSync(migrationPath)) {
     const sql = fs.readFileSync(migrationPath, 'utf8');
     
     // Split by statement-breakpoint and execute each statement
     const statements = sql.split('--> statement-breakpoint');
     
-    try {
-      for (const statement of statements) {
-        const trimmed = statement.trim();
-        if (trimmed && !trimmed.startsWith('-->')) {
-          try {
-            db.exec(trimmed);
-          } catch (err) {
-            // Ignore errors for DROP TABLE statements if table doesn't exist
-            // Also ignore ALTER TABLE errors for columns that already exist
-            if (!trimmed.startsWith('DROP TABLE') && !err.message.includes('duplicate column')) {
-              throw err;
-            }
+    for (const statement of statements) {
+      const trimmed = statement.trim();
+      if (trimmed && !trimmed.startsWith('-->')) {
+        try {
+          db.exec(trimmed);
+        } catch (err) {
+          // Ignore errors for DROP TABLE statements if table doesn't exist
+          if (!trimmed.startsWith('DROP TABLE')) {
+            throw err;
           }
         }
       }
-      
-      // Mark migration as applied
-      db.prepare('INSERT INTO _migrations (name) VALUES (?)').run(file);
-      console.log(`✅ Migration ${file} completed successfully`);
-      migrationsRun++;
-    } catch (err) {
-      console.error(`❌ Migration ${file} failed:`, err.message);
-      throw err;
     }
-  }
-  
-  if (migrationsRun === 0) {
-    console.log('✅ All migrations already applied');
+    
+    console.log('✅ Database migrations completed successfully');
   } else {
-    console.log(`✅ Successfully applied ${migrationsRun} migration(s)`);
+    console.log('⚠️  No migration file found, skipping');
   }
   
   db.close();
