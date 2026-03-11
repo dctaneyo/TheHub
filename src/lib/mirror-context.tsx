@@ -9,6 +9,7 @@ export interface TargetDeviceInfo {
   isMobile: boolean;
   userAgent: string;
   layout?: string;
+  theme?: string;
 }
 
 export interface MirrorViewState {
@@ -21,6 +22,13 @@ export interface MirrorViewState {
   notificationsOpen?: boolean;
   settingsOpen?: boolean;
   hubMenuOpen?: boolean;
+  // Remote desktop sync fields
+  celebration?: "confetti" | "coinRain" | "fireworks" | null;
+  celebrationPoints?: number;
+  soundEnabled?: boolean;
+  mobilePanelOpen?: "left" | "right" | null;
+  idle?: boolean;
+  theme?: string;
 }
 
 interface MirrorState {

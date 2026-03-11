@@ -42,6 +42,7 @@ import { useSearchParams } from "next/navigation";
 import { MirrorProvider, useMirror } from "@/lib/mirror-context";
 import { CursorOverlay } from "@/components/remote/cursor-overlay";
 import { MirrorToolbar } from "@/components/remote/mirror-toolbar";
+import { useTheme } from "next-themes";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -393,6 +394,7 @@ function DashboardPage() {
 
   // ── Mirror mode: sync view state from target ──
   const mirrorSyncingRef = useRef(false);
+  const { theme: currentTheme, setTheme } = useTheme();
   useEffect(() => {
     if (!isMirroring || !mirrorViewState) return;
     mirrorSyncingRef.current = true;
@@ -411,9 +413,46 @@ function DashboardPage() {
     if (mirrorViewState.hubMenuOpen !== undefined) {
       window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { hubMenuOpen: mirrorViewState.hubMenuOpen } }));
     }
+    // Sync sound toggle from target
+    if (mirrorViewState.soundEnabled !== undefined) {
+      setSoundEnabled(mirrorViewState.soundEnabled);
+    }
+    // Sync mobile panel open state from target
+    if (mirrorViewState.mobilePanelOpen !== undefined) {
+      setMobilePanelOpen(mirrorViewState.mobilePanelOpen);
+    }
+    // Sync mobileView from target
+    if (mirrorViewState.mobileView) {
+      setMobileView(mirrorViewState.mobileView);
+    }
+    // Sync theme from target
+    if (mirrorViewState.theme) {
+      setTheme(mirrorViewState.theme);
+    }
+    // Sync celebrations from target
+    if (mirrorViewState.celebration) {
+      const pts = mirrorViewState.celebrationPoints || 0;
+      if (mirrorViewState.celebration === "confetti") {
+        setConfettiPoints(pts);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2800);
+      } else if (mirrorViewState.celebration === "coinRain") {
+        setCoinRainAmount(pts);
+        setShowCoinRain(true);
+        setTimeout(() => setShowCoinRain(false), 3000);
+      } else if (mirrorViewState.celebration === "fireworks") {
+        setConfettiPoints(pts);
+        setShowFireworks(true);
+        setTimeout(() => setShowFireworks(false), 3500);
+      }
+    }
+    // Sync idle/screensaver from target
+    if (mirrorViewState.idle !== undefined) {
+      setForceIdle(mirrorViewState.idle);
+    }
     // Reset flag after React processes the batch
     requestAnimationFrame(() => { mirrorSyncingRef.current = false; });
-  }, [isMirroring, mirrorViewState, setLayout, isEmbed]);
+  }, [isMirroring, mirrorViewState, setLayout, isEmbed, setTheme]);
 
   // ── Mirror mode: send ARL's local view changes back to target ──
   useEffect(() => {
@@ -450,8 +489,9 @@ function DashboardPage() {
     return () => { viewSyncSocket.off("mirror:view-change", onReverseView); };
   }, [isMirroring, remoteViewActive, viewSyncSocket, setLayout]);
 
-  // Disable screensaver while in a meeting, during remote view, or in mirror mode
-  const idle = idleBase && !activeStream && !remoteViewActive && !isMirroring;
+  // Disable screensaver while in a meeting or during remote view.
+  // In mirror mode, only show screensaver when target reports idle (via forceIdle from mirrorViewState).
+  const idle = isMirroring ? forceIdle : (idleBase && !activeStream && !remoteViewActive);
 
   const localTimeParams = () => {
     const now = new Date();
@@ -646,8 +686,12 @@ function DashboardPage() {
       calendarOpen: calOpen,
       layout,
       mobileView,
+      soundEnabled,
+      mobilePanelOpen,
+      idle,
+      theme: currentTheme,
     });
-  }, [chatOpen, calOpen, formsOpen, layout, mobileView, remoteViewActive]);
+  }, [chatOpen, calOpen, formsOpen, layout, mobileView, soundEnabled, mobilePanelOpen, idle, currentTheme, remoteViewActive]);
 
   // Relay accordion state changes from FocusLayout to mirror via capture manager
   useEffect(() => {
@@ -704,9 +748,17 @@ function DashboardPage() {
           setCoinRainAmount(result.bonusPoints);
           setShowCoinRain(true);
           setTimeout(() => setShowCoinRain(false), 3000);
+          if (remoteViewActive && captureManagerRef.current) {
+            captureManagerRef.current.broadcastViewState({ celebration: "coinRain", celebrationPoints: result.bonusPoints });
+            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 3000);
+          }
         } else {
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 2800);
+          if (remoteViewActive && captureManagerRef.current) {
+            captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
+            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
+          }
         }
         playConfettiSound();
         await fetchTasks();
@@ -796,14 +848,26 @@ function DashboardPage() {
           if (allDone) {
             setShowFireworks(true);
             setTimeout(() => setShowFireworks(false), 3500);
+            if (remoteViewActive && captureManagerRef.current) {
+              captureManagerRef.current.broadcastViewState({ celebration: "fireworks", celebrationPoints: result.pointsEarned || 0 });
+              setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 3500);
+            }
           } else {
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 2800);
+            if (remoteViewActive && captureManagerRef.current) {
+              captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
+              setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
+            }
           }
           setData(updated);
         } else {
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 2800);
+          if (remoteViewActive && captureManagerRef.current) {
+            captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
+            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
+          }
         }
       } else {
         // Revert optimistic update on failure — bypass the lock
@@ -834,6 +898,13 @@ function DashboardPage() {
       setMirrorLayoutOverride(targetDevice.layout);
     }
   }, [isMirroring, isEmbed, targetDevice, mirrorLayoutOverride]);
+
+  // Force target's theme in the mirror iframe on initial connect
+  useEffect(() => {
+    if (isMirroring && isEmbed && targetDevice?.theme) {
+      setTheme(targetDevice.theme);
+    }
+  }, [isMirroring, isEmbed, targetDevice?.theme, setTheme]);
 
   // When user changes layout via the H dropdown in embed mode,
   // sync the context layout to the local override so effectiveLayout updates

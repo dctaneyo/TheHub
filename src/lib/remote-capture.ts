@@ -580,6 +580,10 @@ export class RemoteCaptureManager {
   }
 
   private sendDeviceInfo() {
+    // Read target's theme from next-themes localStorage or document class
+    const theme = typeof localStorage !== "undefined"
+      ? localStorage.getItem("hub-theme") || (document.documentElement.classList.contains("dark") ? "dark" : "light")
+      : "system";
     this.socket.emit("mirror:device-info", {
       sessionId: this.sessionId,
       device: {
@@ -588,12 +592,13 @@ export class RemoteCaptureManager {
         isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768,
         userAgent: navigator.userAgent,
         layout: this.currentLayout,
+        theme,
       },
     });
   }
 
   /** Broadcast current view state to mirror dashboard (call from React when views change) */
-  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string; accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean }; notificationsOpen?: boolean; settingsOpen?: boolean; hubMenuOpen?: boolean }) {
+  broadcastViewState(viewState: { chatOpen?: boolean; formsOpen?: boolean; calendarOpen?: boolean; layout?: string; mobileView?: string; accordions?: { completed?: boolean; missed?: boolean; leaderboard?: boolean }; notificationsOpen?: boolean; settingsOpen?: boolean; hubMenuOpen?: boolean; celebration?: "confetti" | "coinRain" | "fireworks" | null; celebrationPoints?: number; soundEnabled?: boolean; mobilePanelOpen?: "left" | "right" | null; idle?: boolean; theme?: string }) {
     if (!this.isActive || !this.mirrorMode) return;
     this.socket.emit("mirror:view-change", {
       sessionId: this.sessionId,
