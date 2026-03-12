@@ -74,6 +74,7 @@ import { OverviewDashboard } from "@/components/arl/overview-dashboard";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
 import { PageIndicator } from "@/components/arl/page-indicator";
+import { NotificationSettingsPanel } from "@/components/arl/notification-settings-panel";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -691,6 +692,14 @@ export default function ArlPage() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Notification Settings Panel */}
+            <NotificationSettingsPanel
+              userId={user?.id || ""}
+              userType="arl"
+              isOpen={showQuickSettings}
+              onClose={() => setShowQuickSettings(false)}
+            />
           </div>
           </header>
         )}

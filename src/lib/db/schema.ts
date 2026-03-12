@@ -274,6 +274,56 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Notification preferences - per-user notification type settings
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id").notNull(), // references arls.id or locations.id
+  userType: text("user_type").notNull(), // 'arl' | 'admin' | 'location'
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  
+  // Task notifications
+  taskDueSoon: integer("task_due_soon", { mode: "boolean" }).notNull().default(true), // tasks due in 30 min
+  taskOverdue: integer("task_overdue", { mode: "boolean" }).notNull().default(true), // overdue tasks
+  taskCompleted: integer("task_completed", { mode: "boolean" }).notNull().default(false), // task completion updates
+  
+  // Message notifications
+  newMessage: integer("new_message", { mode: "boolean" }).notNull().default(true), // new messages in conversations
+  messageReply: integer("message_reply", { mode: "boolean" }).notNull().default(true), // replies to user's messages
+  
+  // Location status notifications
+  locationOnline: integer("location_online", { mode: "boolean" }).notNull().default(true), // location comes online
+  locationOffline: integer("location_offline", { mode: "boolean" }).notNull().default(false), // location goes offline
+  locationStatusChange: integer("location_status_change", { mode: "boolean" }).notNull().default(false), // status changes
+  
+  // Broadcast notifications
+  emergencyBroadcast: integer("emergency_broadcast", { mode: "boolean" }).notNull().default(true), // emergency broadcasts
+  regularBroadcast: integer("regular_broadcast", { mode: "boolean" }).notNull().default(true), // regular broadcasts
+  
+  // Meeting notifications
+  meetingStarted: integer("meeting_started", { mode: "boolean" }).notNull().default(true), // meeting started
+  meetingEnded: integer("meeting_ended", { mode: "boolean" }).notNull().default(false), // meeting ended
+  meetingReminder: integer("meeting_reminder", { mode: "boolean" }).notNull().default(true), // 15 min before meeting
+  
+  // Gamification notifications
+  newShoutout: integer("new_shoutout", { mode: "boolean" }).notNull().default(true), // received shoutout
+  leaderboardUpdate: integer("leaderboard_update", { mode: "boolean" }).notNull().default(false), // weekly leaderboard
+  
+  // System notifications
+  systemAlert: integer("system_alert", { mode: "boolean" }).notNull().default(true), // critical system alerts
+  weeklyReport: integer("weekly_report", { mode: "boolean" }).notNull().default(false), // weekly summary report
+  
+  // Priority overrides - always send regardless of above settings
+  priorityTypes: text("priority_types"), // JSON array: ["urgent"] - urgent notifications always sent
+  
+  // Delivery preferences
+  emailNotifications: integer("email_notifications", { mode: "boolean" }).notNull().default(false), // send to email
+  pushNotifications: integer("push_notifications", { mode: "boolean" }).notNull().default(true), // browser push
+  inAppNotifications: integer("in_app_notifications", { mode: "boolean" }).notNull().default(true), // in-app bell
+  
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Live broadcasts - ARL streaming to locations
 export const broadcasts = sqliteTable("broadcasts", {
   id: text("id").primaryKey(), // UUID
