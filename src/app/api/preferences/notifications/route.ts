@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
-import { notificationPreferences, type NotificationPreferences } from "@/lib/db/schema";
+import { notificationPreferences } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+
+type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 
 /**
  * GET /api/preferences/notifications
