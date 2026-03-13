@@ -87,7 +87,7 @@ export async function shouldSendNotification(
  * Get the delivery method for a notification type
  */
 function getDeliveryMethod(notificationType: NotificationType): string | null {
-  const deliveryMap: Record<NotificationType, string> = {
+  const deliveryMap: Partial<Record<NotificationType, string>> = {
     taskDueSoon: "inApp",
     taskOverdue: "inApp",
     taskCompleted: "inApp",
@@ -117,7 +117,7 @@ function checkNotificationType(
   preferences: typeof notificationPreferences.$inferSelect,
   notificationType: NotificationType
 ): boolean {
-  const typeMap: Record<NotificationType, keyof typeof preferences> = {
+  const typeMap: Partial<Record<NotificationType, keyof typeof preferences>> = {
     taskDueSoon: "taskDueSoon",
     taskOverdue: "taskOverdue",
     taskCompleted: "taskCompleted",
