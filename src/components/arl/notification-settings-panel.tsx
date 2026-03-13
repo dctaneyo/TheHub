@@ -606,7 +606,7 @@ function ToggleField({ label, description, checked, onChange, icon, isCritical }
             {label}
           </label>
           {isCritical && (
-            <AlertCircle className="w-4 h-4 text-red-500" title="Cannot be disabled" />
+            <span title="Cannot be disabled"><AlertCircle className="w-4 h-4 text-red-500" /></span>
           )}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
