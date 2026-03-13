@@ -98,10 +98,10 @@ export async function POST(req: NextRequest) {
           if (!Array.isArray(body[field])) {
             return NextResponse.json({ error: "priorityTypes must be an array" }, { status: 400 });
           }
-          updates[field] = JSON.stringify(body[field]);
+          (updates as Record<string, unknown>)[field] = JSON.stringify(body[field]);
         } else {
           // Boolean fields
-          updates[field] = body[field] === true || body[field] === false ? body[field] : false;
+          (updates as Record<string, unknown>)[field] = body[field] === true || body[field] === false ? body[field] : false;
         }
       }
     }
