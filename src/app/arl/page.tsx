@@ -695,10 +695,9 @@ export default function ArlPage() {
 
             {/* Notification Settings Panel */}
             <NotificationSettingsPanel
-              userId={user?.id || ""}
-              userType="arl"
-              isOpen={showQuickSettings}
+              open={showQuickSettings}
               onClose={() => setShowQuickSettings(false)}
+              userType="arl"
             />
           </div>
           </header>
