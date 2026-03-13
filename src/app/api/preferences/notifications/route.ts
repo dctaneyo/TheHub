@@ -26,7 +26,10 @@ export async function GET(req: NextRequest) {
     if (preferences.length === 0) {
       // Return default preferences if none exist
       const defaults = getDefaultPreferences(session.userType);
-      return NextResponse.json(defaults);
+      return NextResponse.json({
+        ...defaults,
+        priorityTypes: defaults.priorityTypes ? JSON.parse(defaults.priorityTypes as string) : [],
+      });
     }
 
     const prefs = preferences[0];

@@ -75,6 +75,12 @@ const categories = [
     icon: "⚙️",
     description: "Critical alerts and weekly reports",
   },
+  {
+    id: "delivery",
+    title: "Delivery",
+    icon: "📬",
+    description: "How you receive notifications",
+  },
 ];
 
 const deliveryMethods = [
@@ -608,10 +614,11 @@ function ToggleField({ label, description, checked, onChange, icon, isCritical }
         </p>
       </div>
       <button
-        onClick={() => onChange(!checked)}
+        onClick={() => !isCritical && onChange(!checked)}
+        disabled={isCritical}
         className={cn(
           "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-          checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+          isCritical ? "bg-blue-600 opacity-60 cursor-not-allowed" : checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
         )}
       >
         <span

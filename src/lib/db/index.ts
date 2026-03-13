@@ -499,6 +499,41 @@ function runMigrations() {
     try { s.exec(`ALTER TABLE arls ADD COLUMN dashboard_layout TEXT NOT NULL DEFAULT 'classic'`); } catch {}
   });
 
+  // ── Notification Preferences (per-user notification type settings) ──
+  migrate("048_notification_preferences", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS notification_preferences (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi',
+      task_due_soon INTEGER NOT NULL DEFAULT 1,
+      task_overdue INTEGER NOT NULL DEFAULT 1,
+      task_completed INTEGER NOT NULL DEFAULT 0,
+      new_message INTEGER NOT NULL DEFAULT 1,
+      message_reply INTEGER NOT NULL DEFAULT 1,
+      location_online INTEGER NOT NULL DEFAULT 1,
+      location_offline INTEGER NOT NULL DEFAULT 0,
+      location_status_change INTEGER NOT NULL DEFAULT 0,
+      emergency_broadcast INTEGER NOT NULL DEFAULT 1,
+      regular_broadcast INTEGER NOT NULL DEFAULT 1,
+      meeting_started INTEGER NOT NULL DEFAULT 1,
+      meeting_ended INTEGER NOT NULL DEFAULT 0,
+      meeting_reminder INTEGER NOT NULL DEFAULT 1,
+      new_shoutout INTEGER NOT NULL DEFAULT 1,
+      leaderboard_update INTEGER NOT NULL DEFAULT 0,
+      system_alert INTEGER NOT NULL DEFAULT 1,
+      weekly_report INTEGER NOT NULL DEFAULT 0,
+      priority_types TEXT,
+      email_notifications INTEGER NOT NULL DEFAULT 0,
+      push_notifications INTEGER NOT NULL DEFAULT 1,
+      in_app_notifications INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_notif_prefs_user ON notification_preferences(user_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_notif_prefs_tenant ON notification_preferences(tenant_id)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }
