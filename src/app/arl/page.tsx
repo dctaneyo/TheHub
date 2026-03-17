@@ -74,7 +74,6 @@ import { OverviewDashboard } from "@/components/arl/overview-dashboard";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
 import { PageIndicator } from "@/components/arl/page-indicator";
-import { NotificationSettingsPanel } from "@/components/arl/notification-settings-panel";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
 type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics";
@@ -164,7 +163,6 @@ export default function ArlPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const locationNamesRef = useRef<Map<string, string>>(new Map());
   const [showQuickSettings, setShowQuickSettings] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const quickSettingsRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
   const [sessionCode, setSessionCode] = useState<string | null>(null);
@@ -690,31 +688,11 @@ export default function ArlPage() {
                       </button>
                     )}
 
-                    {/* Notification Settings Link */}
-                    <button
-                      onClick={() => { setShowQuickSettings(false); setShowNotificationSettings(true); }}
-                      className="w-full px-3 py-2.5 border-t border-border flex items-center gap-2.5 hover:bg-accent transition-colors"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <Settings className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-xs font-semibold text-foreground">Notification Settings</p>
-                        <p className="text-[10px] text-muted-foreground">Customize alerts</p>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Notification Settings Panel */}
-            <NotificationSettingsPanel
-              open={showNotificationSettings}
-              onClose={() => setShowNotificationSettings(false)}
-              userType="arl"
-            />
           </div>
           </header>
         )}

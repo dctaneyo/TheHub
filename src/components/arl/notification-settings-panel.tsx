@@ -135,6 +135,46 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
 
   const [activeCategory, setActiveCategory] = useState<string>("tasks");
 
+  // Detect which preset matches the current preferences
+  const getActivePreset = (): "minimal" | "balanced" | "comprehensive" | null => {
+    const presetFields = [
+      "taskDueSoon", "taskOverdue", "taskCompleted", "newMessage", "messageReply",
+      "locationOnline", "locationOffline", "locationStatusChange", "emergencyBroadcast",
+      "regularBroadcast", "meetingStarted", "meetingEnded", "meetingReminder",
+      "newShoutout", "leaderboardUpdate", "systemAlert", "weeklyReport",
+    ] as const;
+    const presets = {
+      minimal: {
+        taskDueSoon: true, taskOverdue: true, taskCompleted: false, newMessage: false,
+        messageReply: false, locationOnline: false, locationOffline: false,
+        locationStatusChange: false, emergencyBroadcast: true, regularBroadcast: false,
+        meetingStarted: true, meetingEnded: false, meetingReminder: true,
+        newShoutout: false, leaderboardUpdate: false, systemAlert: true, weeklyReport: false,
+      },
+      balanced: {
+        taskDueSoon: true, taskOverdue: true, taskCompleted: false, newMessage: true,
+        messageReply: true, locationOnline: true, locationOffline: false,
+        locationStatusChange: false, emergencyBroadcast: true, regularBroadcast: true,
+        meetingStarted: true, meetingEnded: false, meetingReminder: true,
+        newShoutout: true, leaderboardUpdate: false, systemAlert: true, weeklyReport: false,
+      },
+      comprehensive: {
+        taskDueSoon: true, taskOverdue: true, taskCompleted: true, newMessage: true,
+        messageReply: true, locationOnline: true, locationOffline: true,
+        locationStatusChange: true, emergencyBroadcast: true, regularBroadcast: true,
+        meetingStarted: true, meetingEnded: true, meetingReminder: true,
+        newShoutout: true, leaderboardUpdate: true, systemAlert: true, weeklyReport: true,
+      },
+    };
+    for (const mode of ["minimal", "balanced", "comprehensive"] as const) {
+      const match = presetFields.every((f) => preferences[f] === presets[mode][f]);
+      if (match) return mode;
+    }
+    return null;
+  };
+
+  const activePreset = getActivePreset();
+
   useEffect(() => {
     if (open) {
       fetchPreferences();
@@ -503,24 +543,20 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Setup</p>
               <div className="flex gap-2">
-                <button
-                  onClick={() => handleQuickSet("minimal")}
-                  className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  Minimal
-                </button>
-                <button
-                  onClick={() => handleQuickSet("balanced")}
-                  className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  Balanced
-                </button>
-                <button
-                  onClick={() => handleQuickSet("comprehensive")}
-                  className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  Comprehensive
-                </button>
+                {(["minimal", "balanced", "comprehensive"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => handleQuickSet(mode)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm rounded-lg transition-colors capitalize",
+                      activePreset === mode
+                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    )}
+                  >
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
 
