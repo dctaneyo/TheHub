@@ -1,10 +1,12 @@
 "use client";
+const Worker = require('worker-loader!../worker.js');
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock, CheckSquareOffset } from "@/lib/icons";
+import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock, CheckSquareOffset, Settings } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { NotificationSettingsPanel } from "./arl/notification-settings-panel";
 import { format } from "date-fns";
 
 interface Notification {
@@ -161,10 +163,35 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
 }
 
 export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotifications = [], onDismissTask, onDismissAllTasks, isMirroring = false, targetLocationId }: NotificationPanelProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(false);
   const prevOpenRef = useRef(false);
+
+  useEffect(() => {
+    const worker = new Worker();
+
+    worker.onmessage = (event: MessageEvent) => {
+      if (typeof event.data === 'string') {
+        console.log('Received string message from worker:', event.data);
+      } else if (Array.isArray(event.data)) {
+        console.log('Received array data from worker:', event.data);
+        // Assuming the array contains notifications
+        setNotifications(event.data);
+      }
+    };
+
+    worker.onerror = (error: ErrorEvent) => {
+      console.error('Worker error:', error);
+    };
+
+    worker.postMessage('Hello, worker!');
+
+    return () => {
+      worker.terminate();
+    };
+  }, [setNotifications]);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -280,12 +307,19 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
               <CheckSquareOffset className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Dismiss All</span>
             </button>
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            title="Notification Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
           </div>
         </div>
 
@@ -364,7 +398,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
             <div className="flex h-32 flex-col items-center justify-center text-center px-4">
               <Bell className="h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-sm font-medium text-muted-foreground">No notifications</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">You&apos;re all caught up!</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">You're all caught up!</p>
             </div>
           )}
 
@@ -376,6 +410,13 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           />
         </div>
       </motion.div>
+
+      {/* Settings Panel */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <NotificationSettingsPanel open={true} onClose={() => setIsSettingsOpen(false)} />
+        )}
+      </AnimatePresence>
     </>
   );
 }
