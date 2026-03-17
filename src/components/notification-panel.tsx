@@ -1,5 +1,4 @@
 "use client";
-const Worker = require('worker-loader!../worker.js');
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -168,30 +167,6 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(false);
   const prevOpenRef = useRef(false);
-
-  useEffect(() => {
-    const worker = new Worker();
-
-    worker.onmessage = (event: MessageEvent) => {
-      if (typeof event.data === 'string') {
-        console.log('Received string message from worker:', event.data);
-      } else if (Array.isArray(event.data)) {
-        console.log('Received array data from worker:', event.data);
-        // Assuming the array contains notifications
-        setNotifications(event.data);
-      }
-    };
-
-    worker.onerror = (error: ErrorEvent) => {
-      console.error('Worker error:', error);
-    };
-
-    worker.postMessage('Hello, worker!');
-
-    return () => {
-      worker.terminate();
-    };
-  }, [setNotifications]);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
