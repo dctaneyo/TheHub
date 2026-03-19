@@ -121,3 +121,43 @@ export function canAddUser(tenantId: string, maxUsers: number): boolean {
     .all().length;
   return count < maxUsers;
 }
+
+/**
+ * Server-side feature check. Returns a 403 NextResponse if the tenant
+ * doesn't have the feature, or null if allowed.
+ * Usage in API routes:
+ *   const denied = requireFeature(tenant, "meetings");
+ *   if (denied) return denied;
+ */
+export function requireFeature(tenant: Tenant, feature: string): Response | null {
+  if (hasFeature(tenant, feature)) return null;
+  return Response.json(
+    { error: `Feature "${feature}" is not available on your ${tenant.plan} plan` },
+    { status: 403 }
+  );
+}
+
+/**
+ * Full plan limit check. Returns an object describing whether the tenant
+ * can add more locations/users and their current usage.
+ */
+export function getPlanUsage(tenantId: string, tenant: Tenant) {
+  const locationCount = db
+    .select({ id: schema.locations.id })
+    .from(schema.locations)
+    .where(eq(schema.locations.tenantId, tenantId))
+    .all().length;
+
+  const userCount = db
+    .select({ id: schema.arls.id })
+    .from(schema.arls)
+    .where(eq(schema.arls.tenantId, tenantId))
+    .all().length;
+
+  return {
+    plan: tenant.plan,
+    locations: { current: locationCount, max: tenant.maxLocations, canAdd: locationCount < tenant.maxLocations },
+    users: { current: userCount, max: tenant.maxUsers, canAdd: userCount < tenant.maxUsers },
+    features: tenant.features,
+  };
+}

@@ -21,6 +21,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { type TaskItem } from "@/components/dashboard/timeline";
 import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useTenant } from "@/lib/tenant-context";
 
 interface DashboardHeaderProps {
   user: { id?: string; name?: string; storeNumber?: string } | null;
@@ -57,6 +58,9 @@ export function DashboardHeader({
   onOpenCalendar,
   onLogout,
 }: DashboardHeaderProps) {
+  const { tenant } = useTenant();
+  const brandInitial = (tenant?.name || "H").charAt(0).toUpperCase();
+  const brandTitle = tenant?.appTitle || tenant?.name || "The Hub";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { layout, setLayout } = useLayout();
   const [mobileMenuPos, setMobileMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -90,10 +94,10 @@ export function DashboardHeader({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm transition-transform active:scale-95"
           >
-            <span className="text-base font-black text-white">H</span>
+            <span className="text-base font-black text-white">{brandInitial}</span>
           </button>
           <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
-            <span className="text-base font-black text-white">H</span>
+            <span className="text-base font-black text-white">{brandInitial}</span>
           </div>
 
           {/* Hub Menu - All Options */}
@@ -226,7 +230,7 @@ export function DashboardHeader({
           </AnimatePresence>
         </div>
         <div className="hidden md:block">
-          <h1 className="text-base font-bold text-foreground">The Hub</h1>
+          <h1 className="text-base font-bold text-foreground">{brandTitle}</h1>
           <p className="text-[11px] text-muted-foreground">
             {user?.name} &middot; Store #{user?.storeNumber}
           </p>

@@ -26,15 +26,21 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-bold text-slate-900">The Hub</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <a href="mailto:hello@meetthehub.com" className="text-sm text-slate-500 hover:text-slate-900 transition-colors hidden sm:block">
               Contact
             </a>
             <a
               href="https://kazi.meetthehub.com/login"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Sign In
+            </a>
+            <a
+              href="/signup"
               className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
             >
-              Sign In <ArrowRight className="h-3.5 w-3.5" />
+              Get Started <ArrowRight className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>
@@ -56,16 +62,16 @@ export default function LandingPage() {
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="mailto:hello@meetthehub.com?subject=The Hub Demo Request"
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+            href="/signup"
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
           >
-            Request a Demo <ChevronRight className="h-4 w-4" />
+            Get Started Free <ChevronRight className="h-4 w-4" />
           </a>
           <a
-            href="https://kazi.meetthehub.com"
+            href="mailto:hello@meetthehub.com?subject=The Hub Demo Request"
             className="flex items-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
-            See it in action
+            Request a Demo
           </a>
         </div>
       </section>
@@ -113,12 +119,20 @@ export default function LandingPage() {
             Each franchise gets its own branded subdomain with complete data isolation.
             Your brand colors, your logo, your domain — powered by The Hub.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {["kazi", "brand-a", "brand-b"].map((slug) => (
               <div key={slug} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-mono text-slate-600 shadow-sm">
                 <span className="font-bold text-red-600">{slug}</span>.meetthehub.com
               </div>
             ))}
+          </div>
+          <div className="mt-8">
+            <a
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+            >
+              Create Your Hub <ChevronRight className="h-4 w-4" />
+            </a>
           </div>
         </div>
       </section>

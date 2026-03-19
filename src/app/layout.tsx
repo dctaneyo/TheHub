@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { CsrfInit } from "@/components/csrf-init";
 import { LayoutProvider } from "@/lib/layout-context";
+import { TenantProvider } from "@/lib/tenant-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -90,13 +91,15 @@ export default function RootLayout({
         >
           <AuthProvider>
             <SocketProvider>
-              <LayoutProvider>
-                <ErrorBoundary>
-                  <main id="main-content">
-                    {children}
-                  </main>
-                </ErrorBoundary>
-              </LayoutProvider>
+              <TenantProvider>
+                <LayoutProvider>
+                  <ErrorBoundary>
+                    <main id="main-content">
+                      {children}
+                    </main>
+                  </ErrorBoundary>
+                </LayoutProvider>
+              </TenantProvider>
             </SocketProvider>
           </AuthProvider>
         </ThemeProvider>

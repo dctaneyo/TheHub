@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const publicPaths = ["/login", "/api/auth/login", "/meeting", "/api/meetings/join", "/api/livekit/token"];
+const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token"];
 const hubDomains = ["meetthehub.com", "meethehub.com"];
 const systemSubdomains = ["join", "www", "admin"];
 
@@ -56,6 +56,7 @@ const csrfExemptPaths = [
   "/api/health",
   "/api/livekit/",
   "/api/graphql",
+  "/api/tenants/signup",
 ];
 
 export function middleware(request: NextRequest) {

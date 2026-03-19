@@ -74,9 +74,10 @@ import { OverviewDashboard } from "@/components/arl/overview-dashboard";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { NotificationTester } from "@/components/arl/notification-tester";
 import { PageIndicator } from "@/components/arl/page-indicator";
+import { TenantSettings } from "@/components/arl/tenant-settings";
 
 type DeviceType = "desktop" | "tablet" | "mobile";
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics" | "tenant-settings";
 
 function useDeviceType(): DeviceType {
   const getDevice = (w: number): DeviceType => {
@@ -730,6 +731,7 @@ export default function ArlPage() {
                 {activeView === "remote" && <div className="flex flex-col flex-1 min-h-0 overscroll-contain p-4"><RemoteManagement userRole={user?.role} /></div>}
                 {activeView === "data-management" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><DataManagement /></div>}
                 {activeView === "analytics" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><AnalyticsDashboard /></div>}
+                {activeView === "tenant-settings" && <div className="flex-1 overflow-y-auto overscroll-contain p-4"><TenantSettings /></div>}
                 {activeView === "meetings" && (
                   <div className="flex-1 overflow-y-auto overscroll-contain p-4"><div className="space-y-6">
                     {activeMeetings.length > 0 && (

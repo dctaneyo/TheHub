@@ -17,11 +17,13 @@ import {
   TrendingUp,
   BarChart3,
   Eye,
+  Settings,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
+import { useTenant } from "@/lib/tenant-context";
 
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics";
+type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics" | "tenant-settings";
 
 // Map additional sidebar views to the permissions that govern whether the ARL
 // should see them at all. Views not listed here are always visible.
@@ -44,6 +46,7 @@ export const navItems = [
   { id: "remote" as const, label: "Remote", icon: Monitor },
   { id: "data-management" as const, label: "Data Management", icon: Database },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
+  { id: "tenant-settings" as const, label: "Organization", icon: Settings },
 ];
 
 interface ArlSidebarProps {
@@ -69,6 +72,9 @@ export function ArlSidebar({
   onlineCount,
   onLogout,
 }: ArlSidebarProps) {
+  const { tenant } = useTenant();
+  const brandInitial = (tenant?.name || "H").charAt(0).toUpperCase();
+  const brandTitle = tenant?.appTitle || tenant?.name || "The Hub";
   return (
     <motion.aside
       className={cn(
@@ -89,10 +95,10 @@ export function ArlSidebar({
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
-            <span className="text-sm font-black text-white">H</span>
+            <span className="text-sm font-black text-white">{brandInitial}</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-foreground">The Hub</h1>
+            <h1 className="text-sm font-bold text-foreground">{brandTitle}</h1>
             <p className="text-[10px] text-muted-foreground">ARL Dashboard</p>
           </div>
         </div>
