@@ -19,6 +19,7 @@
 
 # production
 /build
+/dist
 
 # arena - keep local configuration
 /.arena/
