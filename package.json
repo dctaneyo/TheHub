@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node -e \"require('fs').writeFileSync('build-id.txt', process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now()))\" && next build",
-    "start": "node scripts/migrate.js && npx tsx src/lib/startup.ts && npx tsx server.ts",
+    "start": "node scripts/migrate.js && node --import tsx src/lib/startup.ts && node --import tsx server.ts",
     "lint": "eslint",
     "db:seed": "npx tsx src/lib/db/seed.ts",
     "db:push": "npx drizzle-kit push",
@@ -58,6 +58,7 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.4.1",
+    "tsx": "^4.19.4",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
