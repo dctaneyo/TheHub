@@ -3,7 +3,7 @@ import type { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import type { AuthPayload } from "./auth";
+import { getJwtSecret, type AuthPayload } from "./auth";
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
 import { sendPushToAllARLs } from "./push";
@@ -23,15 +23,6 @@ function readBuildId(): string {
   } catch {
     return "dev";
   }
-}
-
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (secret) return secret;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("FATAL: JWT_SECRET environment variable is not set. Cannot start in production without it.");
-  }
-  return "the-hub-dev-secret-key-local-only";
 }
 
 // Global singleton via globalThis so the io instance is shared between

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { notifications } from "@/lib/db/schema";
+import { notifications, notificationPreferences } from "@/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastNotification, broadcastNotificationRead, broadcastNotificationDeleted } from "./socket-emit";
@@ -55,9 +55,70 @@ export interface Notification {
 }
 
 /**
+ * Map from NotificationType (snake_case) to the corresponding
+ * boolean column on the notification_preferences table (camelCase).
+ */
+const NOTIFICATION_TYPE_TO_PREF: Partial<Record<NotificationType, keyof typeof notificationPreferences.$inferSelect>> = {
+  task_due_soon: "taskDueSoon",
+  task_overdue: "taskOverdue",
+  task_completed: "taskCompleted",
+  new_message: "newMessage",
+  new_shoutout: "newShoutout",
+  location_online: "locationOnline",
+  location_offline: "locationOffline",
+  emergency_broadcast: "emergencyBroadcast",
+  meeting_starting: "meetingStarted",
+  system_update: "systemAlert",
+};
+
+/**
+ * Check if a notification is allowed by user preferences.
+ * Returns true if allowed (send it), false if user has opted out.
+ * Emergency/urgent notifications and unknown types always pass.
+ */
+async function isNotificationAllowed(
+  userId: string,
+  type: NotificationType,
+  priority: NotificationPriority = "normal"
+): Promise<boolean> {
+  // Urgent notifications always pass
+  if (priority === "urgent") return true;
+  // Emergency broadcasts always pass
+  if (type === "emergency_broadcast") return true;
+
+  try {
+    const [prefs] = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId))
+      .limit(1);
+
+    // No preferences saved — use defaults (allow)
+    if (!prefs) return true;
+
+    // Check in-app delivery toggle
+    if (!prefs.inAppNotifications) return false;
+
+    // Check specific type toggle
+    const prefKey = NOTIFICATION_TYPE_TO_PREF[type];
+    if (!prefKey) return true; // Unknown type → allow by default
+
+    return (prefs as any)[prefKey] === true;
+  } catch (err) {
+    // On error, allow notification to prevent missing critical alerts
+    console.error("Error checking notification preferences:", err);
+    return true;
+  }
+}
+
+/**
  * Create a new notification
  */
-export async function createNotification(params: CreateNotificationParams): Promise<Notification> {
+export async function createNotification(params: CreateNotificationParams): Promise<Notification | null> {
+  // Check user preferences before creating
+  const allowed = await isNotificationAllowed(params.userId, params.type, params.priority);
+  if (!allowed) return null;
+
   const id = uuid();
   const notification = {
     id,
@@ -93,7 +154,16 @@ export async function createNotificationBulk(
 ): Promise<void> {
   if (userIds.length === 0) return;
 
-  const notificationRecords = userIds.map((userId) => ({
+  // Filter users by their notification preferences
+  const priority = params.priority || "normal";
+  const allowedUserIds: string[] = [];
+  for (const userId of userIds) {
+    const allowed = await isNotificationAllowed(userId, params.type, priority);
+    if (allowed) allowedUserIds.push(userId);
+  }
+  if (allowedUserIds.length === 0) return;
+
+  const notificationRecords = allowedUserIds.map((userId) => ({
     id: uuid(),
     userId,
     userType: params.userType,
@@ -102,7 +172,7 @@ export async function createNotificationBulk(
     message: params.message,
     actionUrl: params.actionUrl || null,
     actionLabel: params.actionLabel || null,
-    priority: params.priority || "normal",
+    priority,
     metadata: params.metadata ? JSON.stringify(params.metadata) : null,
     isRead: false,
     readAt: null,
@@ -110,6 +180,12 @@ export async function createNotificationBulk(
   }));
 
   await db.insert(notifications).values(notificationRecords);
+
+  // Broadcast via WebSocket to each user
+  for (const record of notificationRecords) {
+    const counts = await getNotificationCounts(record.userId);
+    broadcastNotification(record.userId, record, counts);
+  }
 }
 
 /**
@@ -127,15 +203,6 @@ export async function getNotifications(
 ) {
   const { limit = 50, offset = 0, unreadOnly = false, type, priority } = options;
 
-  let query = db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, userId))
-    .orderBy(desc(notifications.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  // Apply filters
   const conditions = [eq(notifications.userId, userId)];
   if (unreadOnly) {
     conditions.push(eq(notifications.isRead, false));
@@ -147,17 +214,14 @@ export async function getNotifications(
     conditions.push(eq(notifications.priority, priority));
   }
 
-  if (conditions.length > 1) {
-    query = db
-      .select()
-      .from(notifications)
-      .where(and(...conditions))
-      .orderBy(desc(notifications.createdAt))
-      .limit(limit)
-      .offset(offset);
-  }
+  const results = await db
+    .select()
+    .from(notifications)
+    .where(and(...conditions))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  const results = await query;
   return results;
 }
 
@@ -165,31 +229,19 @@ export async function getNotifications(
  * Get notification counts for a user
  */
 export async function getNotificationCounts(userId: string) {
-  const [totalResult] = await db
-    .select({ count: sql<number>`count(*)` })
+  const [result] = await db
+    .select({
+      total: sql<number>`count(*)`,
+      unread: sql<number>`sum(case when ${notifications.isRead} = 0 then 1 else 0 end)`,
+      urgent: sql<number>`sum(case when ${notifications.isRead} = 0 and ${notifications.priority} = 'urgent' then 1 else 0 end)`,
+    })
     .from(notifications)
     .where(eq(notifications.userId, userId));
 
-  const [unreadResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(notifications)
-    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
-
-  const [urgentResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, userId),
-        eq(notifications.isRead, false),
-        eq(notifications.priority, "urgent")
-      )
-    );
-
   return {
-    total: totalResult?.count || 0,
-    unread: unreadResult?.count || 0,
-    urgent: urgentResult?.count || 0,
+    total: result?.total || 0,
+    unread: result?.unread || 0,
+    urgent: result?.urgent || 0,
   };
 }
 
