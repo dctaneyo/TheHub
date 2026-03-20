@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
-import { db, schema } from "@/lib/db";
+import { db, schema, sqlite } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
@@ -172,27 +172,34 @@ export async function DELETE(req: NextRequest) {
     // 1. Delete sessions
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
 
-    // 2. Find and delete direct conversations (1:1) involving this ARL
-    const directConvos = db.select().from(schema.conversations).all().filter(
-      (c) => c.type === "direct" && (c.participantAId === id || c.participantBId === id)
-    );
-    for (const conv of directConvos) {
-      const msgIds = db.select({ id: schema.messages.id }).from(schema.messages)
-        .where(eq(schema.messages.conversationId, conv.id)).all().map((m) => m.id);
-      for (const msgId of msgIds) {
-        db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
-      }
-      db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
-      db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
-      db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
-    }
+    // 2. Find and delete direct conversations (1:1) involving this ARL — batch SQL
+    sqlite.prepare(`
+      DELETE FROM message_reads WHERE message_id IN (
+        SELECT m.id FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        WHERE c.type = 'direct' AND (c.participant_a_id = ? OR c.participant_b_id = ?)
+      )
+    `).run(id, id);
+    sqlite.prepare(`
+      DELETE FROM messages WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+      )
+    `).run(id, id);
+    sqlite.prepare(`
+      DELETE FROM conversation_members WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+      )
+    `).run(id, id);
+    sqlite.prepare(`
+      DELETE FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+    `).run(id, id);
 
-    // 3. Delete this ARL's messages in group/global conversations
-    const userMsgs = db.select({ id: schema.messages.id }).from(schema.messages)
-      .where(eq(schema.messages.senderId, id)).all();
-    for (const msg of userMsgs) {
-      db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
-    }
+    // 3. Delete reads for this ARL's messages in group/global conversations, then the messages
+    sqlite.prepare(`
+      DELETE FROM message_reads WHERE message_id IN (
+        SELECT id FROM messages WHERE sender_id = ?
+      )
+    `).run(id);
     db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
 
     // 4. Delete read receipts by this ARL

@@ -246,28 +246,38 @@ export async function DELETE(req: NextRequest) {
     // 5. Delete sessions
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)).run();
 
-    // 6. Find and delete direct conversations (1:1) involving this user
-    const directConvos = db.select().from(schema.conversations).all().filter(
-      (c) => c.type === "direct" && (c.participantAId === id || c.participantBId === id)
-    );
-    for (const conv of directConvos) {
-      // Delete all messages in the direct conversation
-      const msgIds = db.select({ id: schema.messages.id }).from(schema.messages)
-        .where(eq(schema.messages.conversationId, conv.id)).all().map((m) => m.id);
-      for (const msgId of msgIds) {
-        db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msgId)).run();
-      }
-      db.delete(schema.messages).where(eq(schema.messages.conversationId, conv.id)).run();
-      db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, conv.id)).run();
-      db.delete(schema.conversations).where(eq(schema.conversations.id, conv.id)).run();
-    }
+    // 6. Find and delete direct conversations (1:1) involving this user — batch SQL
+    // Delete reads for messages in direct conversations
+    sqlite.prepare(`
+      DELETE FROM message_reads WHERE message_id IN (
+        SELECT m.id FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        WHERE c.type = 'direct' AND (c.participant_a_id = ? OR c.participant_b_id = ?)
+      )
+    `).run(id, id);
+    // Delete messages in direct conversations
+    sqlite.prepare(`
+      DELETE FROM messages WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+      )
+    `).run(id, id);
+    // Delete members of direct conversations
+    sqlite.prepare(`
+      DELETE FROM conversation_members WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+      )
+    `).run(id, id);
+    // Delete the direct conversations themselves
+    sqlite.prepare(`
+      DELETE FROM conversations WHERE type = 'direct' AND (participant_a_id = ? OR participant_b_id = ?)
+    `).run(id, id);
 
-    // 7. Delete this user's messages in group/global conversations
-    const userMsgs = db.select({ id: schema.messages.id }).from(schema.messages)
-      .where(eq(schema.messages.senderId, id)).all();
-    for (const msg of userMsgs) {
-      db.delete(schema.messageReads).where(eq(schema.messageReads.messageId, msg.id)).run();
-    }
+    // 7. Delete reads for this user's messages in group/global conversations, then the messages
+    sqlite.prepare(`
+      DELETE FROM message_reads WHERE message_id IN (
+        SELECT id FROM messages WHERE sender_id = ?
+      )
+    `).run(id);
     db.delete(schema.messages).where(eq(schema.messages.senderId, id)).run();
 
     // 8. Delete read receipts by this user

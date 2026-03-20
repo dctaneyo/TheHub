@@ -7,6 +7,7 @@ import { createBackup } from "./scripts/backup-database";
 import { startTaskNotificationScheduler } from "./src/lib/task-notification-scheduler";
 import { cleanupStaleData } from "./src/lib/cleanup";
 import { processScheduledReports } from "./src/lib/report-generator";
+import { ensureIndexes } from "./src/lib/ensure-indexes";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
@@ -17,6 +18,10 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   console.log("✅ Next.js app is ready");
+
+  // Ensure critical DB indexes exist (idempotent)
+  ensureIndexes();
+
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true);
     handle(req, res, parsedUrl);
