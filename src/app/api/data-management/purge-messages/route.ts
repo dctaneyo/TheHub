@@ -3,6 +3,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -25,6 +26,8 @@ export async function POST() {
     }
     db.delete(schema.messageReads).run();
     db.delete(schema.messages).run();
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "messages", affectedCount: messageCount + readCount + reactionCount, payload: { deletedMessages: messageCount, deletedReads: readCount, deletedReactions: reactionCount }, status: "success" });
 
     return apiSuccess({
       deletedMessages: messageCount,

@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -12,6 +13,8 @@ export async function POST() {
 
     const count = db.select().from(schema.taskCompletions).all().length;
     db.delete(schema.taskCompletions).run();
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "reset", entityType: "leaderboard", affectedCount: count, status: "success" });
 
     return apiSuccess({
       deletedCompletions: count,

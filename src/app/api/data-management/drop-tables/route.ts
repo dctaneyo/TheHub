@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(req: Request) {
   try {
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
         skipped.push(table);
       }
     }
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "drop_tables", entityType: "tables", affectedCount: dropped.length, payload: { dropped, skipped }, status: "success" });
 
     return apiSuccess({
       dropped,

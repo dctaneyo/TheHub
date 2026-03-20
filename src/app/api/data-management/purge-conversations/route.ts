@@ -4,6 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -85,6 +86,8 @@ export async function POST() {
         VALUES (?, 'global', 'Global Chat', ?)
       `).run(globalId, new Date().toISOString());
     }
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "conversations", affectedCount: deletedConversations + deletedMessages, payload: { deletedConversations, deletedMessages, deletedReads, deletedReactions, deletedMembers }, status: "success" });
 
     return apiSuccess({
       deletedConversations,

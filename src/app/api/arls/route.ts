@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
@@ -10,6 +10,7 @@ import { setPendingForceAction } from "@/lib/socket-server";
 import { validate, createArlSchema, updateArlSchema } from "@/lib/validations";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { getTenant, canAddUser } from "@/lib/tenant";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function GET() {
   try {
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
     const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
     db.insert(schema.arls).values(arl).run();
     broadcastUserUpdate(session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "create", entityType: "arl", payload: { targetId: arl.id, name, userId, role: role || "arl" }, status: "success" });
     return apiSuccess({ arl: { ...arl, pinHash: undefined } });
   } catch (error) {
     console.error("Create ARL error:", error);
@@ -203,8 +205,10 @@ export async function DELETE(req: NextRequest) {
     db.delete(schema.pushSubscriptions).where(eq(schema.pushSubscriptions.userId, id)).run();
 
     // 7. Delete the ARL record
+    const targetName = targetArl ? db.select({ name: schema.arls.name }).from(schema.arls).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get()?.name : "unknown";
     db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
     broadcastUserUpdate(session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "delete", entityType: "arl", payload: { targetId: id, targetName }, status: "success" });
     return apiSuccess({ success: true });
   } catch (error) {
     console.error("Delete ARL error:", error);

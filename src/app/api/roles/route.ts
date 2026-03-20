@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthSession, unauthorized, forbidden } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -6,6 +6,7 @@ import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { setPendingForceAction } from "@/lib/socket-server";
 import { validate, createRoleSchema, updateRoleSchema, deleteRoleSchema } from "@/lib/validations";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function GET() {
   try {
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     };
 
     db.insert(schema.roles).values(role).run();
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "create", entityType: "role", payload: { roleId: role.id, name: role.name }, status: "success" });
     return apiSuccess({ role: { ...role, permissions } });
   } catch (error) {
     console.error("Create role error:", error);
@@ -89,6 +91,7 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.roles).set(updates)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "update", entityType: "role", payload: { roleId: id, roleName: existing.name, changes: Object.keys(updates).filter(k => k !== "updatedAt") }, status: "success" });
 
     // When role permissions change, force refresh for all ARLs using this role
     if (permissions !== undefined) {
@@ -141,6 +144,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     db.delete(schema.roles).where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "delete", entityType: "role", payload: { roleId: id, roleName: existing.name, affectedArls: affectedArls.length }, status: "success" });
     return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete role error:", error);

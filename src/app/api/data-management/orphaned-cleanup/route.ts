@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -48,6 +49,8 @@ export async function POST() {
     } catch (err) { console.error("Orphaned cleanup: completions error:", err); }
 
     const total = orphanedMessages + orphanedReads + orphanedReactions + orphanedCompletions;
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "orphaned_cleanup", entityType: "mixed", affectedCount: total, payload: { orphanedMessages, orphanedReads, orphanedReactions, orphanedCompletions }, status: "success" });
 
     return apiSuccess({
       orphanedMessages,

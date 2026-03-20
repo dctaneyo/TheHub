@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema, sqlite } from "@/lib/db";
@@ -7,6 +7,7 @@ import { v4 as uuid } from "uuid";
 import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate, broadcastSessionUpdated } from "@/lib/socket-emit";
 import { setPendingForceAction } from "@/lib/socket-server";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { logAudit } from "@/lib/audit-logger";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
       broadcastForceLogout(targetSession.userId, targetSession.userType);
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
+      logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "force_logout", entityType: "session", payload: { targetSessionId: sessionId, targetUserId: targetSession.userId, targetUserType: targetSession.userType }, status: "success" });
 
       return apiSuccess({ action: "logout" });
     }
@@ -194,6 +196,7 @@ export async function POST(req: NextRequest) {
       broadcastForceRedirect(targetSession.userId, targetSession.userType, token, redirectTo);
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
+      logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "force_reassign", entityType: "session", payload: { targetSessionId: sessionId, fromUserId: targetSession.userId, toUserId: assignToId, toUserType: assignToType, targetName }, status: "success" });
 
       return apiSuccess({ action: "reassign", targetName, redirectTo });
     }

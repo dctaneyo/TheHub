@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -18,6 +19,8 @@ export async function POST() {
     const result = sqlite.prepare(
       "DELETE FROM task_completions WHERE completed_date < ?"
     ).run(cutoffDate);
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "task_completions", affectedCount: result.changes, payload: { cutoffDate }, status: "success" });
 
     return apiSuccess({
       deletedCompletions: result.changes,

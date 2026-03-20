@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST() {
   try {
@@ -15,6 +16,8 @@ export async function POST() {
 
     try { deletedNotifications = sqlite.prepare("DELETE FROM notifications").run().changes; } catch (e) { console.error("Purge notifications error:", e); }
     try { deletedEmergency = sqlite.prepare("DELETE FROM emergency_messages").run().changes; } catch (e) { console.error("Purge emergency_messages error:", e); }
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "notifications", affectedCount: deletedNotifications + deletedEmergency, payload: { deletedNotifications, deletedEmergency }, status: "success" });
 
     return apiSuccess({
       deletedNotifications,

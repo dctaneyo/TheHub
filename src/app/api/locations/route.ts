@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -9,6 +9,7 @@ import { hashSync } from "bcryptjs";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
 import { validate, createLocationSchema, updateLocationSchema } from "@/lib/validations";
 import { getTenant, canAddLocation } from "@/lib/tenant";
+import { logAudit } from "@/lib/audit-logger";
 
 // GET all locations (+ ARLs) with session status
 export async function GET() {
@@ -180,6 +181,7 @@ export async function POST(req: NextRequest) {
     }
 
     broadcastUserUpdate(session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "create", entityType: "location", payload: { targetId: location.id, name, storeNumber }, status: "success" });
     return apiSuccess({ location: { ...location, pinHash: undefined } });
   } catch (error) {
     console.error("Create location error:", error);
@@ -275,8 +277,10 @@ export async function DELETE(req: NextRequest) {
     db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.memberId, id)).run();
 
     // 10. Delete the location record
+    const targetLoc = db.select({ name: schema.locations.name }).from(schema.locations).where(and(eq(schema.locations.id, id), eq(schema.locations.tenantId, session.tenantId))).get();
     db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
     broadcastUserUpdate(session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "delete", entityType: "location", payload: { targetId: id, targetName: targetLoc?.name }, status: "success" });
     return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete location error:", error);

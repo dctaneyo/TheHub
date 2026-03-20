@@ -2,6 +2,7 @@ import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +36,8 @@ export async function POST(request: Request) {
     } else {
       return ApiErrors.badRequest("Invalid mode");
     }
+
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "clear_sessions", entityType: "sessions", affectedCount: deleted, payload: { mode }, status: "success" });
 
     return apiSuccess({ deleted, mode });
   } catch (error) {

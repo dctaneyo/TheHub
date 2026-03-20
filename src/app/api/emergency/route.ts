@@ -9,6 +9,7 @@ import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyView
 import { createNotificationBulk } from "@/lib/notifications";
 import { validate, emergencyBroadcastSchema } from "@/lib/validations";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { logAudit } from "@/lib/audit-logger";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
       sentByName: session.name,
       targetLocationIds: targetLocationIds && targetLocationIds.length > 0 ? targetLocationIds : null,
     }, session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "send", entityType: "emergency_broadcast", payload: { broadcastId: id, targetCount: targetLocationIds?.length || "all" }, status: "success" });
 
     // Create urgent notifications for all targeted locations
     const targetIds = targetLocationIds && targetLocationIds.length > 0 
@@ -221,6 +223,7 @@ export async function DELETE() {
       .where(eq(schema.emergencyMessages.isActive, true)).run();
 
     broadcastEmergencyDismissed(session.tenantId);
+    logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "clear", entityType: "emergency_broadcast", status: "success" });
 
     return apiSuccess({ cleared: true });
   } catch (error) {
