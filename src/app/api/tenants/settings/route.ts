@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -39,13 +39,7 @@ export async function PUT(req: NextRequest) {
     if (!session) return ApiErrors.unauthorized();
 
     // Only ARLs with admin role can update tenant settings
-    if (session.userType !== "arl") {
-      return ApiErrors.forbidden("Admin access required");
-    }
-
-    // Check if user has admin role
-    const arl = db.select().from(schema.arls).where(eq(schema.arls.id, session.userId)).get();
-    if (!arl || arl.role !== "admin") {
+    if (session.userType !== "arl" || session.role !== "admin") {
       return ApiErrors.forbidden("Only tenant admins can update settings");
     }
 
