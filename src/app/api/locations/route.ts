@@ -33,20 +33,19 @@ export async function GET() {
       `UPDATE sessions SET is_online = 0 WHERE is_online = 1 AND last_seen < ?`
     ).run(staleTimestamp);
 
+    // Batch-fetch all online sessions once (avoids N+1 per-location/ARL lookups)
+    const onlineSessions = db.select().from(schema.sessions)
+      .where(eq(schema.sessions.isOnline, true))
+      .orderBy(desc(schema.sessions.lastSeen))
+      .all();
+    // Build a map: userId → latest session (first match since ordered by lastSeen DESC)
+    const sessionMap = new Map<string, typeof onlineSessions[0]>();
+    for (const s of onlineSessions) {
+      if (!sessionMap.has(s.userId)) sessionMap.set(s.userId, s);
+    }
+
     const locationsWithStatus = allLocations.map((loc) => {
-      const latestSession = db
-        .select()
-        .from(schema.sessions)
-        .where(
-          and(
-            eq(schema.sessions.userId, loc.id),
-            eq(schema.sessions.userType, "location"),
-            eq(schema.sessions.isOnline, true)
-          )
-        )
-        .orderBy(desc(schema.sessions.lastSeen))
-        .limit(1)
-        .get();
+      const latestSession = sessionMap.get(loc.id);
 
       return {
         id: loc.id,
@@ -76,19 +75,7 @@ export async function GET() {
     if (isArl) {
       const allArls = db.select().from(schema.arls).where(eq(schema.arls.tenantId, session.tenantId)).all();
       arlsWithStatus = allArls.map((arl) => {
-        const latestArlSession = db
-          .select()
-          .from(schema.sessions)
-          .where(
-            and(
-              eq(schema.sessions.userId, arl.id),
-              eq(schema.sessions.userType, "arl"),
-              eq(schema.sessions.isOnline, true)
-            )
-          )
-          .orderBy(desc(schema.sessions.lastSeen))
-          .limit(1)
-          .get();
+        const latestArlSession = sessionMap.get(arl.id);
 
         return {
           id: arl.id,
