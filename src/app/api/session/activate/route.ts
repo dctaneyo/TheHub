@@ -5,6 +5,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastSessionActivated } from "@/lib/socket-emit";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -13,6 +14,10 @@ function genSessionCode(): string {
 // POST - ARL activates a pending session by assigning it to a location or ARL account
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`activate:${ip}`, { maxAttempts: 20, windowMs: 60_000, lockoutMs: 2 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const session = await getSession();
     if (!session || session.userType !== "arl") {
       return ApiErrors.forbidden();

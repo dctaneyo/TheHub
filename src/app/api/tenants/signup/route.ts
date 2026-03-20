@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import bcrypt from "bcryptjs";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 const ALL_FEATURES = ["messaging", "tasks", "forms", "gamification", "meetings", "analytics", "broadcasts"];
 
@@ -15,6 +16,10 @@ const PLAN_LIMITS: Record<string, { maxLocations: number; maxUsers: number }> = 
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`signup:${ip}`, { maxAttempts: 3, windowMs: 60_000, lockoutMs: 10 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const body = await req.json();
     const {
       // Tenant info

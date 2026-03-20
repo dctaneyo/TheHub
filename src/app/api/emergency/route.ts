@@ -8,6 +8,7 @@ import { v4 as uuid } from "uuid";
 import { broadcastEmergency, broadcastEmergencyDismissed, broadcastEmergencyViewed, broadcastEmergencyViewedLocal } from "@/lib/socket-emit";
 import { createNotificationBulk } from "@/lib/notifications";
 import { validate, emergencyBroadcastSchema } from "@/lib/validations";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -75,6 +76,10 @@ export async function GET() {
 // Body: { message, targetLocationIds?: string[] | null }  (null = all)
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`emergency:${ip}`, { maxAttempts: 5, windowMs: 60_000, lockoutMs: 5 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
       return ApiErrors.forbidden("ARL only");

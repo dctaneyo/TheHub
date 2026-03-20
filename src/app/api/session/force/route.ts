@@ -6,6 +6,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastForceLogout, broadcastForceRedirect, broadcastPresenceUpdate, broadcastSessionUpdated } from "@/lib/socket-emit";
 import { setPendingForceAction } from "@/lib/socket-server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -67,6 +68,10 @@ export async function GET() {
 // POST - force logout or reassign an active session
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`force:${ip}`, { maxAttempts: 15, windowMs: 60_000, lockoutMs: 2 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const session = await getSession();
     if (!session || session.userType !== "arl") {
       return ApiErrors.forbidden();
