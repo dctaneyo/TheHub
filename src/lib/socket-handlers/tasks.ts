@@ -3,6 +3,7 @@ import { db, schema } from "../db";
 import { eq, and } from "drizzle-orm";
 import { createNotification, upgradeDueSoonToOverdue } from "../notifications";
 import { taskTimers } from "./state";
+import { taskAppliesToDate } from "../task-utils";
 
 // ── Hawaii timezone helpers ──
 // The server runs on Railway (UTC) but all tasks are in Hawaii local time.
@@ -29,40 +30,9 @@ function timeToMinutes(t: string): number {
 export function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
   const today = todayStr();
   const dow = dayOfWeek();
-  if (task.isHidden || !task.showInToday) return false;
-  if (!task.isRecurring) return task.dueDate === today;
-  if (task.isRecurring && task.createdAt) {
-    if (today < task.createdAt.split("T")[0]) return false;
-  }
-  const rType = task.recurringType || "weekly";
-  if (rType === "daily") return true;
-  if (rType === "weekly" || rType === "biweekly") {
-    if (!task.recurringDays) return false;
-    try {
-      const days = JSON.parse(task.recurringDays) as string[];
-      if (!days.includes(dow)) return false;
-      if (rType === "biweekly") {
-        const anchor = task.createdAt ? new Date(task.createdAt) : new Date(0);
-        const anchorMon = new Date(anchor);
-        const ad = anchorMon.getDay();
-        anchorMon.setDate(anchorMon.getDate() + (ad === 0 ? -6 : 1 - ad));
-        anchorMon.setHours(0, 0, 0, 0);
-        const hiNow = hawaiiNow(); hiNow.setHours(0, 0, 0, 0);
-        const nd = hiNow.getDay();
-        const nowMon = new Date(hiNow);
-        nowMon.setDate(nowMon.getDate() + (nd === 0 ? -6 : 1 - nd));
-        const weeksDiff = Math.round((nowMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
-        const isEven = weeksDiff % 2 === 0;
-        return (task as any).biweeklyStart === "next" ? !isEven : isEven;
-      }
-      return true;
-    } catch { return false; }
-  }
-  if (rType === "monthly") {
-    if (!task.recurringDays) return false;
-    try { return (JSON.parse(task.recurringDays) as number[]).includes(hawaiiNow().getDate()); } catch { return false; }
-  }
-  return false;
+  const date = hawaiiNow();
+  date.setHours(12, 0, 0, 0);
+  return taskAppliesToDate(task, date, today, dow, false);
 }
 
 /**

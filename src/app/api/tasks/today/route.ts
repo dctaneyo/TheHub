@@ -3,6 +3,7 @@ import { getAuthSession, unauthorized, getEffectiveLocationId } from "@/lib/api-
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
+import { taskAppliesToDate } from "@/lib/task-utils";
 
 export async function GET(req: Request) {
   try {
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
       if (task.isHidden) return false;
       if (!task.showInToday) return false;
       if (locationId && task.locationId && task.locationId !== locationId) return false;
-      return taskAppliesToDate(task, today, todayStr, dayOfWeek);
+      return taskAppliesToDate(task, today, todayStr, dayOfWeek, false);
     });
 
     // Get completions for today
@@ -130,58 +131,3 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
 }
 
-// Returns the Monday of the week containing `d` (week anchor for biweekly math)
-function startOfWeekMonday(d: Date): Date {
-  const day = d.getDay(); // 0=Sun,1=Mon,...,6=Sat
-  const diff = (day === 0 ? -6 : 1 - day); // days back to Monday
-  const m = new Date(d);
-  m.setDate(m.getDate() + diff);
-  m.setHours(0, 0, 0, 0);
-  return m;
-}
-
-function taskAppliesToDate(
-  task: { isRecurring: boolean; recurringType: string | null; recurringDays: string | null; dueDate: string | null; createdAt?: string },
-  date: Date,
-  dateStr: string,
-  dayOfWeek: string
-): boolean {
-  // Never show a recurring task on a date before it was created
-  if (task.isRecurring && task.createdAt) {
-    const createdDateStr = task.createdAt.split("T")[0];
-    if (dateStr < createdDateStr) return false;
-  }
-  if (!task.isRecurring) {
-    return task.dueDate === dateStr;
-  }
-  const rType = task.recurringType || "weekly";
-  if (rType === "daily") return true;
-  if (rType === "weekly") {
-    if (!task.recurringDays) return false;
-    try { return (JSON.parse(task.recurringDays) as string[]).includes(dayOfWeek); } catch { return false; }
-  }
-  if (rType === "biweekly") {
-    if (!task.recurringDays) return false;
-    try {
-      const days = JSON.parse(task.recurringDays) as string[];
-      if (!days.includes(dayOfWeek)) return false;
-      // Anchor to the week the task was created (or epoch if missing)
-      const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
-      const anchorWeek = startOfWeekMonday(anchorDate);
-      const targetWeek = startOfWeekMonday(date);
-      const weeksDiff = Math.round((targetWeek.getTime() - anchorWeek.getTime()) / (7 * 86400000));
-      // biweeklyStart='this': fire on even intervals (0,2,4,...)
-      // biweeklyStart='next': fire on odd intervals (1,3,5,...)
-      const isEvenInterval = weeksDiff % 2 === 0;
-      return (task as any).biweeklyStart === "next" ? !isEvenInterval : isEvenInterval;
-    } catch { return false; }
-  }
-  if (rType === "monthly") {
-    if (!task.recurringDays) return false;
-    try {
-      const days = JSON.parse(task.recurringDays) as number[];
-      return days.includes(date.getDate());
-    } catch { return false; }
-  }
-  return false;
-}
