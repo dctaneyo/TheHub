@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { logAudit } from "@/lib/audit-logger";
+import { invalidateTenantCache } from "@/lib/tenant";
 
 // GET — fetch current tenant settings (any authenticated user)
 export async function GET() {
@@ -62,6 +63,7 @@ export async function PUT(req: NextRequest) {
       .where(eq(schema.tenants.id, session.tenantId))
       .run();
 
+    invalidateTenantCache(session.tenantId);
     logAudit({ tenantId: session.tenantId, userId: session.id, userType: "arl", operation: "update", entityType: "tenant_settings", payload: { changes: Object.keys(updates).filter(k => k !== "updatedAt") }, status: "success" });
 
     // Return updated tenant

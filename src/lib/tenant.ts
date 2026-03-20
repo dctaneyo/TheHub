@@ -22,11 +22,22 @@ export interface Tenant {
 /**
  * Resolve tenant from the x-tenant-id header (set by middleware).
  * Returns null if no tenant found or tenant is inactive.
+ * Results are cached in-memory for 60s to avoid repeated DB lookups.
  */
+
+const tenantCache = new Map<string, { tenant: Tenant; expiresAt: number }>();
+const TENANT_CACHE_TTL = 60_000; // 60 seconds
+
 export async function getTenant(): Promise<Tenant | null> {
   const h = await headers();
   const tenantId = h.get("x-tenant-id");
   if (!tenantId) return null;
+
+  // Check cache
+  const cached = tenantCache.get(tenantId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.tenant;
+  }
 
   const row = db
     .select()
@@ -36,10 +47,18 @@ export async function getTenant(): Promise<Tenant | null> {
 
   if (!row || !row.isActive) return null;
 
-  return {
+  const tenant: Tenant = {
     ...row,
     features: JSON.parse(row.features || "[]") as string[],
   };
+
+  tenantCache.set(tenantId, { tenant, expiresAt: Date.now() + TENANT_CACHE_TTL });
+  return tenant;
+}
+
+/** Invalidate tenant cache (call after settings update). */
+export function invalidateTenantCache(tenantId: string) {
+  tenantCache.delete(tenantId);
 }
 
 /**
