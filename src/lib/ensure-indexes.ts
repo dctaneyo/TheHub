@@ -10,18 +10,42 @@ export function ensureIndexes() {
   const patches = [
     `ALTER TABLE tenants ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Pacific/Honolulu'`,
     `ALTER TABLE locations ADD COLUMN timezone TEXT`,
-    // audit_log columns that may be missing from older table versions
-    `ALTER TABLE audit_log ADD COLUMN tenant_id TEXT`,
-    `ALTER TABLE audit_log ADD COLUMN operation TEXT NOT NULL DEFAULT 'unknown'`,
-    `ALTER TABLE audit_log ADD COLUMN entity_type TEXT NOT NULL DEFAULT 'unknown'`,
-    `ALTER TABLE audit_log ADD COLUMN affected_count INTEGER NOT NULL DEFAULT 1`,
-    `ALTER TABLE audit_log ADD COLUMN payload TEXT`,
-    `ALTER TABLE audit_log ADD COLUMN status TEXT NOT NULL DEFAULT 'success'`,
-    `ALTER TABLE audit_log ADD COLUMN error_message TEXT`,
   ];
 
   for (const sql of patches) {
     try { sqlite.exec(sql); } catch { /* column already exists */ }
+  }
+
+  // Ensure audit_log table has correct schema (may have been created by older code)
+  try {
+    sqlite.prepare('SELECT operation FROM audit_log LIMIT 0').get();
+  } catch {
+    // Table missing or wrong schema — recreate
+    try { sqlite.exec('DROP TABLE IF EXISTS audit_log_old'); } catch { /* */ }
+    try { sqlite.exec('ALTER TABLE audit_log RENAME TO audit_log_old'); } catch { /* */ }
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT,
+        user_id TEXT NOT NULL,
+        user_type TEXT NOT NULL,
+        operation TEXT NOT NULL DEFAULT 'unknown',
+        entity_type TEXT NOT NULL DEFAULT 'unknown',
+        affected_count INTEGER NOT NULL DEFAULT 1,
+        payload TEXT,
+        status TEXT NOT NULL DEFAULT 'success',
+        error_message TEXT,
+        created_at TEXT NOT NULL
+      )
+    `);
+    try {
+      sqlite.exec(`
+        INSERT INTO audit_log (id, user_id, user_type, operation, entity_type, created_at)
+        SELECT id, user_id, user_type, COALESCE(action, 'unknown'), 'unknown', created_at
+        FROM audit_log_old
+      `);
+      sqlite.exec('DROP TABLE audit_log_old');
+    } catch { /* no old data */ }
   }
 
   const indexes = [
