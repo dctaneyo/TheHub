@@ -228,7 +228,7 @@ export default function LoginPage() {
         window.location.href = "/arl";
       }
     } else {
-      setError(result.error?.message || result.error || "Incorrect PIN. Please try again.");
+      setError(result.error || "Incorrect PIN. Please try again.");
       setShakeKey((k) => k + 1);
       pinRef.current = "";
       setPin("");
