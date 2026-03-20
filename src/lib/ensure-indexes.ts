@@ -10,6 +10,14 @@ export function ensureIndexes() {
   const patches = [
     `ALTER TABLE tenants ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Pacific/Honolulu'`,
     `ALTER TABLE locations ADD COLUMN timezone TEXT`,
+    // audit_log columns that may be missing from older table versions
+    `ALTER TABLE audit_log ADD COLUMN tenant_id TEXT`,
+    `ALTER TABLE audit_log ADD COLUMN operation TEXT NOT NULL DEFAULT 'unknown'`,
+    `ALTER TABLE audit_log ADD COLUMN entity_type TEXT NOT NULL DEFAULT 'unknown'`,
+    `ALTER TABLE audit_log ADD COLUMN affected_count INTEGER NOT NULL DEFAULT 1`,
+    `ALTER TABLE audit_log ADD COLUMN payload TEXT`,
+    `ALTER TABLE audit_log ADD COLUMN status TEXT NOT NULL DEFAULT 'success'`,
+    `ALTER TABLE audit_log ADD COLUMN error_message TEXT`,
   ];
 
   for (const sql of patches) {

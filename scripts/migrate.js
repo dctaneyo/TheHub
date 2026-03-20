@@ -25,7 +25,7 @@ try {
   // If it exists with a different schema, drop and recreate it —
   // it's just a tracking table, not user data.
   try {
-    db.prepare('SELECT name FROM _migrations LIMIT 0').run();
+    db.prepare('SELECT name FROM _migrations LIMIT 1').get();
   } catch {
     // Table doesn't exist or has wrong schema — (re)create it
     db.exec('DROP TABLE IF EXISTS _migrations');
