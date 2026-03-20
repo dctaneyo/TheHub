@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   LogOut,
   MessageCircle,
@@ -16,13 +17,13 @@ import {
   Video,
   TrendingUp,
   BarChart3,
-  Eye,
   Settings,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { useTenant } from "@/lib/tenant-context";
 import type { ArlView } from "@/lib/arl-views";
+import { VIEW_ROUTE_MAP } from "@/lib/arl-views";
 
 // Map additional sidebar views to the permissions that govern whether the ARL
 // should see them at all. Views not listed here are always visible.
@@ -132,8 +133,10 @@ export function ArlSidebar({
           const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
           const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;
           return (
-            <button
+            <Link
               key={item.id}
+              href={VIEW_ROUTE_MAP[item.id] || "/arl"}
+              prefetch={true}
               onClick={() => {
                 onViewChange(item.id);
                 if (isMobileOrTablet) onClose();
@@ -163,7 +166,7 @@ export function ArlSidebar({
                   {onlineBadge}
                 </span>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

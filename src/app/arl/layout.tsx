@@ -17,10 +17,7 @@ import {
   MoreVertical,
 } from "@/lib/icons";
 import { useAuth } from "@/lib/auth-context";
-import { ConnectionStatus } from "@/components/connection-status";
 import { OfflineIndicator } from "@/components/offline-indicator";
-import { ShoutoutsFeed } from "@/components/shoutouts-feed";
-import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { HighFiveAnimation } from "@/components/high-five-animation";
 import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { BroadcastStudio } from "@/components/arl/broadcast-studio";
@@ -28,14 +25,11 @@ import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { useTheme } from "next-themes";
 import { ArlSidebar, navItems } from "@/components/arl/arl-sidebar";
 import { GlobalSearch } from "@/components/global-search";
-import { TickerPush } from "@/components/arl/ticker-push";
 import { NotificationBell } from "@/components/notification-bell";
 import { PageIndicator } from "@/components/arl/page-indicator";
-import { NotificationTester } from "@/components/arl/notification-tester";
 import {
   ArlDashboardProvider,
   useArlDashboard,
@@ -61,13 +55,10 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
   const {
     activeView,
     navigateToView,
-    swipeDirection,
     unreadCount,
     onlineCount,
-    activeMeetings,
     joiningMeeting,
     setJoiningMeeting,
-    leftMeetingId,
     setLeftMeetingId,
     activeBroadcast,
     setActiveBroadcast,
@@ -81,7 +72,6 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
     sidebarOpen,
     setSidebarOpen,
     isMobileOrTablet,
-    device,
     cycleTheme,
     sessionCode,
     sessionCount,
@@ -159,7 +149,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             </h2>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <GlobalSearch onNavigate={(type, id) => {
+            <GlobalSearch onNavigate={(type) => {
               if (type === "task") navigateToView("tasks");
               else if (type === "message") navigateToView("messages");
               else if (type === "form") navigateToView("forms");
@@ -301,18 +291,9 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
           "flex-1 flex flex-col overflow-hidden relative",
           isMobileOrTablet ? "pb-16" : ""
         )}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ x: swipeDirection * 100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: swipeDirection * -100, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="flex flex-col flex-1 h-full min-h-0"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div className="flex flex-col flex-1 h-full min-h-0">
+            {children}
+          </div>
         </main>
 
         {/* Mobile page indicator - sticky at bottom like iPhone */}
