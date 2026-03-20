@@ -217,22 +217,22 @@ Task notification timers are scheduled on socket connect and cancelled on discon
 
 ## 10. Recommended Priority Order
 
-### Immediate (Security)
-1. Fix tenant isolation in form download/email/email-self routes
-2. Fix tenant isolation in session activate/force routes
-3. Fix tenant isolation in meeting analytics route
+### Immediate (Security) — ✅ ALL DONE
+1. ✅ Fix tenant isolation in form download/email/email-self routes
+2. ✅ Fix tenant isolation in session activate/force routes
+3. ✅ Fix tenant isolation in meeting analytics route
 
-### Short-Term (Quality)
-4. Extract shared `taskAppliesToday()` to eliminate 4 copies
-5. Add rate limiting to sensitive mutation routes
-6. Wire up audit logging for destructive operations
+### Short-Term (Quality) — ✅ ALL DONE
+4. ✅ Extract shared `taskAppliesToday()` to eliminate 4 copies → `src/lib/task-utils.ts`
+5. ✅ Add rate limiting to sensitive mutation routes (session/activate, session/force, tenants/signup, emergency)
+6. ✅ Wire up audit logging for all destructive operations (16 routes)
 7. Add tests for task recurrence logic and notification system
 
-### Medium-Term (Architecture)
+### Medium-Term (Architecture) — MOSTLY DONE
 8. Break down oversized components (dashboard, chat, meeting room)
-9. Add database indexes for common query patterns
-10. Add in-memory caching for tenant settings and leaderboard
-11. Replace N+1 queries with batch operations
+9. ✅ Add database indexes for common query patterns (auto-applied on server startup)
+10. ✅ Add in-memory caching for tenant settings (60s TTL with invalidation)
+11. ✅ Replace N+1 queries with batch operations (locations GET + user/location DELETE)
 
 ### Long-Term (Polish)
 12. Accessibility audit and ARIA improvements
