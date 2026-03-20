@@ -73,9 +73,13 @@ export default function AdminPortal() {
         const data = await res.json();
         setTenants(data.tenants);
         setAuthenticated(true);
+      } else {
+        // Server error — still mark as authenticated so we don't get stuck on spinner
+        setAuthenticated(true);
       }
     } catch (err) {
       console.error("Failed to fetch tenants:", err);
+      setAuthenticated(true); // assume auth is fine, just a network/server error
     } finally {
       setLoading(false);
     }
