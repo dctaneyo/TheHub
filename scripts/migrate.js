@@ -21,14 +21,22 @@ try {
 
   const db = new Database(dbPath);
 
-  // Create migration tracking table if it doesn't exist
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS _migrations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
+  // Create migration tracking table if it doesn't exist.
+  // If it exists with a different schema, drop and recreate it —
+  // it's just a tracking table, not user data.
+  try {
+    db.prepare('SELECT name FROM _migrations LIMIT 0').run();
+  } catch {
+    // Table doesn't exist or has wrong schema — (re)create it
+    db.exec('DROP TABLE IF EXISTS _migrations');
+    db.exec(`
+      CREATE TABLE _migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  }
 
   // Backfill: if the tracking table is brand new but the DB already has tables
   // from previous migrations, mark those old migrations as already applied.

@@ -19,11 +19,18 @@ function ensureAuditTable() {
         created_at TEXT NOT NULL
       )
     `);
-    // Add tenant_id column if missing (migration for existing tables)
-    try {
-      sqlite.exec(`ALTER TABLE audit_log ADD COLUMN tenant_id TEXT`);
-    } catch {
-      // Column already exists
+    // Add columns that may be missing from older versions of the table
+    const patches = [
+      `ALTER TABLE audit_log ADD COLUMN tenant_id TEXT`,
+      `ALTER TABLE audit_log ADD COLUMN operation TEXT NOT NULL DEFAULT 'unknown'`,
+      `ALTER TABLE audit_log ADD COLUMN entity_type TEXT NOT NULL DEFAULT 'unknown'`,
+      `ALTER TABLE audit_log ADD COLUMN affected_count INTEGER NOT NULL DEFAULT 1`,
+      `ALTER TABLE audit_log ADD COLUMN payload TEXT`,
+      `ALTER TABLE audit_log ADD COLUMN status TEXT NOT NULL DEFAULT 'success'`,
+      `ALTER TABLE audit_log ADD COLUMN error_message TEXT`,
+    ];
+    for (const sql of patches) {
+      try { sqlite.exec(sql); } catch { /* column already exists */ }
     }
   } catch (e) {
     console.error("Failed to ensure audit_log table:", e);
