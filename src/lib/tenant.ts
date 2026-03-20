@@ -17,6 +17,7 @@ export interface Tenant {
   maxUsers: number;
   isActive: boolean;
   customDomain: string | null;
+  timezone: string;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { db, schema } from "./db";
 import { eq, and } from "drizzle-orm";
 import { createNotification, createNotificationBulk } from "./notifications";
+import { getTenantTimezone, tzNow, tzTodayStr } from "./timezone";
 
 /**
  * Real-time task notification scheduler
@@ -27,19 +28,17 @@ const _timers = new Map<string, ReturnType<typeof setTimeout>>();
 let _midnightTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Get current time in Hawaii timezone (server runs on Railway in UTC).
+ * Get current time in the given IANA timezone (server runs on Railway in UTC).
  */
-function hawaiiNow(): Date {
-  const str = new Date().toLocaleString("en-US", { timeZone: "Pacific/Honolulu" });
-  return new Date(str);
+function localNow(tz: string): Date {
+  return tzNow(tz);
 }
 
 /**
- * Get today's date string in YYYY-MM-DD format (Hawaii time)
+ * Get today's date string in YYYY-MM-DD format for the given timezone.
  */
-function getTodayDate(): string {
-  const d = hawaiiNow();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function getTodayDate(tz: string): string {
+  return tzTodayStr(tz);
 }
 
 /**
@@ -121,8 +120,8 @@ function isTaskCompleted(taskId: string, locationId: string, todayDate: string):
 /**
  * Fire a "due soon" notification for a specific task + location
  */
-async function fireDueSoon(taskId: string, taskTitle: string, dueTime: string, taskPriority: string, locationId: string, locationName: string) {
-  const todayDate = getTodayDate();
+async function fireDueSoon(taskId: string, taskTitle: string, dueTime: string, taskPriority: string, locationId: string, locationName: string, tz: string) {
+  const todayDate = getTodayDate(tz);
   // Re-check completion at fire time (task may have been completed since timer was set)
   if (isTaskCompleted(taskId, locationId, todayDate)) return;
 
@@ -145,8 +144,8 @@ async function fireDueSoon(taskId: string, taskTitle: string, dueTime: string, t
  * Fire an "overdue" notification for a specific task + location,
  * plus notify all ARLs about the overdue task.
  */
-async function fireOverdue(taskId: string, taskTitle: string, dueTime: string, locationId: string, locationName: string) {
-  const todayDate = getTodayDate();
+async function fireOverdue(taskId: string, taskTitle: string, dueTime: string, locationId: string, locationName: string, tz: string) {
+  const todayDate = getTodayDate(tz);
   if (isTaskCompleted(taskId, locationId, todayDate)) return;
 
   // Notify the location
@@ -195,94 +194,114 @@ function clearAllTimers() {
 
 /**
  * Schedule timers for all of today's tasks across all active locations.
- * This is the core function — it computes exact milliseconds and sets setTimeout.
+ * Groups locations by tenant timezone so each tenant's tasks fire at the correct local time.
  */
 function scheduleAllForToday() {
   clearAllTimers();
 
-  const todayDate = getTodayDate();
-  // Use Hawaii hours/minutes/seconds for delay math — avoids epoch mismatch
-  // (hawaiiNow()'s internal epoch is wrong on UTC servers, but its h/m/s are correct)
-  const hiNow = hawaiiNow();
-  const nowMinutes = hiNow.getHours() * 60 + hiNow.getMinutes();
-  const nowSeconds = hiNow.getSeconds();
+  // Get all active tenants and their timezones
+  const allTenants = db.select({ id: schema.tenants.id, timezone: schema.tenants.timezone })
+    .from(schema.tenants).where(eq(schema.tenants.isActive, true)).all();
 
-  const locations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
-
-  // Get all non-hidden tasks
+  const allLocations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
   const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
 
   let dueSoonCount = 0;
   let overdueCount = 0;
 
-  for (const location of locations) {
-    // Filter tasks for this location (locationId matches or null = all locations)
-    const locationTasks = allTasks.filter(
-      (t) => !t.locationId || t.locationId === location.id
-    );
+  for (const tenant of allTenants) {
+    const tz = tenant.timezone || "Pacific/Honolulu";
+    const todayDate = getTodayDate(tz);
+    const now = localNow(tz);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const nowSeconds = now.getSeconds();
 
-    for (const task of locationTasks) {
-      if (!isTaskDueToday(task, todayDate)) continue;
+    const tenantLocations = allLocations.filter((l) => l.tenantId === tenant.id);
+    const tenantTasks = allTasks.filter((t) => t.tenantId === tenant.id);
 
-      const taskMinutes = timeToMinutes(task.dueTime);
+    for (const location of tenantLocations) {
+      const locationTasks = tenantTasks.filter(
+        (t) => !t.locationId || t.locationId === location.id
+      );
 
-      // "Due soon" fires 30 minutes before due time
-      const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
-      const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
+      for (const task of locationTasks) {
+        if (!isTaskDueToday(task, todayDate)) continue;
 
-      if (dueSoonDelay > 0) {
-        const key = `${location.id}:${task.id}:due-soon`;
-        const timer = setTimeout(
-          () => {
-            _timers.delete(key);
-            fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name);
-          },
-          dueSoonDelay
-        );
-        _timers.set(key, timer);
-        dueSoonCount++;
-      }
+        const taskMinutes = timeToMinutes(task.dueTime);
 
-      // "Overdue" fires exactly at due time
-      const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
+        // "Due soon" fires 30 minutes before due time
+        const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
+        const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
-      if (overdueDelay > 0) {
-        const key = `${location.id}:${task.id}:overdue`;
-        const timer = setTimeout(
-          () => {
-            _timers.delete(key);
-            fireOverdue(task.id, task.title, task.dueTime, location.id, location.name);
-          },
-          overdueDelay
-        );
-        _timers.set(key, timer);
-        overdueCount++;
+        if (dueSoonDelay > 0) {
+          const key = `${location.id}:${task.id}:due-soon`;
+          const timer = setTimeout(
+            () => {
+              _timers.delete(key);
+              fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
+            },
+            dueSoonDelay
+          );
+          _timers.set(key, timer);
+          dueSoonCount++;
+        }
+
+        // "Overdue" fires exactly at due time
+        const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
+
+        if (overdueDelay > 0) {
+          const key = `${location.id}:${task.id}:overdue`;
+          const timer = setTimeout(
+            () => {
+              _timers.delete(key);
+              fireOverdue(task.id, task.title, task.dueTime, location.id, location.name, tz);
+            },
+            overdueDelay
+          );
+          _timers.set(key, timer);
+          overdueCount++;
+        }
       }
     }
   }
 
-  console.log(`🔔 Scheduled ${dueSoonCount} due-soon + ${overdueCount} overdue timers for ${todayDate}`);
+  console.log(`🔔 Scheduled ${dueSoonCount} due-soon + ${overdueCount} overdue timers`);
 }
 
 /**
- * Schedule the midnight rollover — at 00:00:01 recalculate all timers for the new day.
+ * Schedule the midnight rollover — at 00:00:01 (earliest tenant timezone) recalculate all timers.
  */
 function scheduleMidnightRollover() {
   if (_midnightTimer) clearTimeout(_midnightTimer);
 
-  // Compute delay using Hawaii h/m/s only (avoids epoch mismatch on UTC servers)
-  const hiNow = hawaiiNow();
-  const nowTotalSecs = hiNow.getHours() * 3600 + hiNow.getMinutes() * 60 + hiNow.getSeconds();
-  const midnightSecs = 24 * 3600 + 1; // 00:00:01 next day
-  const delay = (midnightSecs - nowTotalSecs) * 1000;
+  // Find the shortest delay to midnight across all tenant timezones
+  const allTenants = db.select({ timezone: schema.tenants.timezone })
+    .from(schema.tenants).where(eq(schema.tenants.isActive, true)).all();
+
+  let minDelay = Infinity;
+  for (const tenant of allTenants) {
+    const tz = tenant.timezone || "Pacific/Honolulu";
+    const now = localNow(tz);
+    const nowTotalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const midnightSecs = 24 * 3600 + 1; // 00:00:01 next day
+    const delay = (midnightSecs - nowTotalSecs) * 1000;
+    if (delay < minDelay) minDelay = delay;
+  }
+
+  // Fallback if no tenants
+  if (!isFinite(minDelay)) {
+    const now = localNow("Pacific/Honolulu");
+    const nowTotalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    minDelay = (24 * 3600 + 1 - nowTotalSecs) * 1000;
+  }
 
   _midnightTimer = setTimeout(() => {
     console.log("🌅 Midnight rollover — recalculating task timers for new day");
     scheduleAllForToday();
     scheduleMidnightRollover(); // schedule next midnight
-  }, delay);
+  }, minDelay);
 
-  console.log(`🕛 Midnight rollover scheduled in ${Math.round(delay / 60000)} minutes`);
+  console.log(`🕛 Midnight rollover scheduled in ${Math.round(minDelay / 60000)} minutes`);
 }
 
 /**

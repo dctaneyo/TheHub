@@ -33,6 +33,14 @@
 - ✅ React Error #31 fix (error objects rendered as React children)
 - ✅ Tenant settings admin check fix (`session.role` instead of broken DB lookup)
 - ✅ Notification improvements: auto-dismiss >2 days, due-soon→overdue upgrade, preferences wired up
+- ✅ Dashboard layout preference fix: removed broken Bearer token auth, now uses cookie auth
+- ✅ ARL Hub navigation loading skeleton (shows during route transitions)
+- ✅ Timezone audit: replaced all hardcoded Hawaii timezone with per-tenant IANA timezone
+  - New `timezone` column on `tenants` table (migration `0003_add_tenant_timezone.sql`)
+  - Shared `src/lib/timezone.ts` utilities (`getTenantTimezone`, `tzNow`, `tzTodayStr`, `tzDayOfWeek`)
+  - Task notification scheduler groups by tenant timezone
+  - Socket task handlers look up location's tenant timezone
+  - Tenant settings UI exposes timezone picker for admins
 - ✅ Zod validation on key mutation routes (login, ARLs, locations, roles, emergency, reports, etc.)
 - ✅ Rate limiting on login and user validation endpoints
 

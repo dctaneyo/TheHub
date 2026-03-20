@@ -292,7 +292,24 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
           "flex-1 flex flex-col overflow-hidden relative",
           isMobileOrTablet ? "pb-16" : ""
         )}>
-          <div className="flex flex-col flex-1 h-full min-h-0">
+          <div className="flex flex-col flex-1 h-full min-h-0 relative">
+            {/* Route loading skeleton — shows during navigation transitions */}
+            {displayView !== activeView && (
+              <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-[2px] flex flex-col p-6 gap-4 animate-in fade-in duration-150">
+                <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+                <div className="flex gap-4 flex-1">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <div className="h-24 rounded-xl bg-muted animate-pulse" />
+                    <div className="h-24 rounded-xl bg-muted animate-pulse delay-75" />
+                    <div className="h-24 rounded-xl bg-muted animate-pulse delay-150" />
+                  </div>
+                  <div className="hidden lg:flex flex-col gap-3 w-72">
+                    <div className="h-32 rounded-xl bg-muted animate-pulse" />
+                    <div className="h-32 rounded-xl bg-muted animate-pulse delay-75" />
+                  </div>
+                </div>
+              </div>
+            )}
             {children}
           </div>
         </main>

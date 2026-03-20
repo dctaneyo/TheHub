@@ -11,6 +11,18 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant-context";
 
+const COMMON_TIMEZONES = [
+  { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+  { value: "America/Anchorage", label: "Alaska (AKST)" },
+  { value: "America/Los_Angeles", label: "Pacific (PST)" },
+  { value: "America/Denver", label: "Mountain (MST)" },
+  { value: "America/Chicago", label: "Central (CST)" },
+  { value: "America/New_York", label: "Eastern (EST)" },
+  { value: "America/Puerto_Rico", label: "Atlantic (AST)" },
+  { value: "Pacific/Guam", label: "Guam (ChST)" },
+  { value: "Pacific/Pago_Pago", label: "Samoa (SST)" },
+];
+
 interface TenantData {
   id: string;
   slug: string;
@@ -26,6 +38,7 @@ interface TenantData {
   maxUsers: number;
   isActive: boolean;
   customDomain: string | null;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +69,7 @@ export function TenantSettings() {
   const [logoUrl, setLogoUrl] = useState("");
   const [faviconUrl, setFaviconUrl] = useState("");
   const [customDomain, setCustomDomain] = useState("");
+  const [timezone, setTimezone] = useState("Pacific/Honolulu");
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -70,6 +84,7 @@ export function TenantSettings() {
         setLogoUrl(t.logoUrl || "");
         setFaviconUrl(t.faviconUrl || "");
         setCustomDomain(t.customDomain || "");
+        setTimezone(t.timezone || "Pacific/Honolulu");
       }
     } catch (err) {
       console.error("Failed to fetch tenant settings:", err);
@@ -98,6 +113,7 @@ export function TenantSettings() {
           logoUrl: logoUrl || null,
           faviconUrl: faviconUrl || null,
           customDomain: customDomain || null,
+          timezone,
         }),
       });
       if (!res.ok) {
@@ -125,7 +141,8 @@ export function TenantSettings() {
       primaryColor !== tenant.primaryColor ||
       (logoUrl || "") !== (tenant.logoUrl || "") ||
       (faviconUrl || "") !== (tenant.faviconUrl || "") ||
-      (customDomain || "") !== (tenant.customDomain || ""));
+      (customDomain || "") !== (tenant.customDomain || "") ||
+      timezone !== (tenant.timezone || "Pacific/Honolulu"));
 
   if (loading) {
     return (
@@ -330,6 +347,40 @@ export function TenantSettings() {
             </div>
           </div>
         </div>
+      </motion.div>
+
+      {/* Timezone section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="rounded-2xl border border-border bg-card p-5"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-900/30">
+            <Globe className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Timezone</h3>
+            <p className="text-xs text-muted-foreground">Used for task scheduling and notifications</p>
+          </div>
+        </div>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          {COMMON_TIMEZONES.map((tz) => (
+            <option key={tz.value} value={tz.value}>{tz.label}</option>
+          ))}
+          {/* If current timezone isn't in the common list, show it too */}
+          {!COMMON_TIMEZONES.some((tz) => tz.value === timezone) && (
+            <option value={timezone}>{timezone}</option>
+          )}
+        </select>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Task due-soon and overdue notifications fire based on this timezone
+        </p>
       </motion.div>
 
       {/* URLs section */}

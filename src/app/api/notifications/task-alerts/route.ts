@@ -4,6 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { getTenantTimezone, tzTodayStr } from "@/lib/timezone";
 
 /**
  * GET /api/notifications/task-alerts
@@ -19,8 +20,8 @@ export async function GET(req: NextRequest) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    // Today in Hawaii time (server may run in UTC)
-    const hawaiiDate = new Date().toLocaleDateString("en-CA", { timeZone: "Pacific/Honolulu" }); // YYYY-MM-DD
+    // Today in the tenant's timezone (server runs in UTC)
+    const todayDate = tzTodayStr(getTenantTimezone(session.tenantId));
 
     const rows = await db
       .select({
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
         and(
           eq(notifications.userId, session.id),
           sql`${notifications.type} IN ('task_due_soon', 'task_overdue')`,
-          sql`${notifications.createdAt} >= ${hawaiiDate}`
+          sql`${notifications.createdAt} >= ${todayDate}`
         )
       );
 
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve clientIds → DB notification IDs by querying today's alerts
     if (clientIds.length > 0) {
-      const hawaiiDate = new Date().toLocaleDateString("en-CA", { timeZone: "Pacific/Honolulu" });
+      const alertDate = tzTodayStr(getTenantTimezone(session.tenantId));
 
       const rows = db
         .select({ id: notifications.id, type: notifications.type, metadata: notifications.metadata })
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
           and(
             eq(notifications.userId, session.id),
             sql`${notifications.type} IN ('task_due_soon', 'task_overdue')`,
-            sql`${notifications.createdAt} >= ${hawaiiDate}`
+            sql`${notifications.createdAt} >= ${alertDate}`
           )
         )
         .all();

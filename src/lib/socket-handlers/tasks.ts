@@ -4,22 +4,17 @@ import { eq, and } from "drizzle-orm";
 import { createNotification, upgradeDueSoonToOverdue } from "../notifications";
 import { taskTimers } from "./state";
 import { taskAppliesToDate } from "../task-utils";
+import { getTenantTimezone, tzNow, tzTodayStr, tzDayOfWeek } from "../timezone";
 
-// ── Hawaii timezone helpers ──
-// The server runs on Railway (UTC) but all tasks are in Hawaii local time.
+// ── Timezone-aware helpers ──
+// The server runs on Railway (UTC). Each tenant has its own IANA timezone.
 
-export function hawaiiNow(): Date {
-  const str = new Date().toLocaleString("en-US", { timeZone: "Pacific/Honolulu" });
-  return new Date(str);
+export function todayStr(tz = "Pacific/Honolulu"): string {
+  return tzTodayStr(tz);
 }
 
-export function todayStr(): string {
-  const d = hawaiiNow();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function dayOfWeek(): string {
-  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][hawaiiNow().getDay()];
+function dayOfWeek(tz = "Pacific/Honolulu"): string {
+  return tzDayOfWeek(tz);
 }
 
 function timeToMinutes(t: string): number {
@@ -27,10 +22,10 @@ function timeToMinutes(t: string): number {
   return h * 60 + m;
 }
 
-export function taskAppliesToToday(task: typeof schema.tasks.$inferSelect): boolean {
-  const today = todayStr();
-  const dow = dayOfWeek();
-  const date = hawaiiNow();
+export function taskAppliesToToday(task: typeof schema.tasks.$inferSelect, tz = "Pacific/Honolulu"): boolean {
+  const today = todayStr(tz);
+  const dow = dayOfWeek(tz);
+  const date = tzNow(tz);
   date.setHours(12, 0, 0, 0);
   return taskAppliesToDate(task, date, today, dow, false);
 }
@@ -46,8 +41,12 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
   taskTimers.set(locationId, []);
 
   try {
+    // Look up the location's tenant timezone
+    const loc = db.select({ tenantId: schema.locations.tenantId }).from(schema.locations).where(eq(schema.locations.id, locationId)).get();
+    const tz = loc?.tenantId ? getTenantTimezone(loc.tenantId) : "Pacific/Honolulu";
+
     const allTasks = db.select().from(schema.tasks).all();
-    const today = todayStr();
+    const today = todayStr(tz);
     const completions = db.select({ taskId: schema.taskCompletions.taskId })
       .from(schema.taskCompletions)
       .where(and(eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, today)))
@@ -57,10 +56,10 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
     const todayTasks = allTasks.filter((t) =>
       (!t.locationId || t.locationId === locationId) &&
       !completedIds.has(t.id) &&
-      taskAppliesToToday(t)
+      taskAppliesToToday(t, tz)
     );
 
-    const now = hawaiiNow();
+    const now = tzNow(tz);
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -73,7 +72,7 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       if (msUntilDueSoon > 0) {
         timers.push(setTimeout(() => {
           const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
-            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
+            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr(tz))))
             .get();
           if (!c) {
             io.to(`location:${locationId}`).emit("task:due-soon", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
@@ -95,7 +94,7 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       if (msUntilOverdue > 0) {
         timers.push(setTimeout(async () => {
           const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
-            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
+            .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr(tz))))
             .get();
           if (!c) {
             io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });

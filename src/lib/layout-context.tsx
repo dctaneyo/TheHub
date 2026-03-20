@@ -22,63 +22,29 @@ const LayoutContext = createContext<LayoutContextType>({
 
 export function LayoutProvider({ children }: { children: ReactNode }) {
   const [layout, setLayoutState] = useState<DashboardLayout>("classic");
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Fetch layout preference from database on mount
+  // Fetch layout preference from database on mount (cookie auth, no Bearer needed)
   useEffect(() => {
-    const fetchLayout = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setLoading(false);
-          return;
+    if (!user) return;
+    fetch("/api/preferences/layout")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.layout && LAYOUT_OPTIONS.some((o) => o.id === data.layout)) {
+          setLayoutState(data.layout as DashboardLayout);
         }
-
-        const res = await fetch("/api/preferences/layout", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.layout && LAYOUT_OPTIONS.some((o) => o.id === data.layout)) {
-            setLayoutState(data.layout as DashboardLayout);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch layout preference:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLayout();
+      })
+      .catch(() => {});
   }, [user]);
 
-  const setLayout = async (l: DashboardLayout) => {
+  const setLayout = (l: DashboardLayout) => {
     setLayoutState(l);
-
-    // Save to database
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      await fetch("/api/preferences/layout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ layout: l }),
-      });
-    } catch (error) {
-      console.error("Failed to save layout preference:", error);
-    }
+    // Persist to DB in background (cookie auth)
+    fetch("/api/preferences/layout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ layout: l }),
+    }).catch(() => {});
   };
 
   return (

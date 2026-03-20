@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, appTitle, primaryColor, accentColor, logoUrl, faviconUrl, customDomain } = body;
+    const { name, appTitle, primaryColor, accentColor, logoUrl, faviconUrl, customDomain, timezone } = body;
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
 
@@ -57,6 +57,11 @@ export async function PUT(req: NextRequest) {
     if (logoUrl !== undefined) updates.logoUrl = logoUrl;
     if (faviconUrl !== undefined) updates.faviconUrl = faviconUrl;
     if (customDomain !== undefined) updates.customDomain = customDomain;
+    if (timezone !== undefined) {
+      // Validate IANA timezone
+      try { Intl.DateTimeFormat(undefined, { timeZone: timezone }); } catch { return ApiErrors.badRequest("Invalid timezone"); }
+      updates.timezone = timezone;
+    }
 
     db.update(schema.tenants)
       .set(updates)

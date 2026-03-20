@@ -1,36 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { locations, arls } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { verifyToken } from "@/lib/auth";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return ApiErrors.unauthorized();
-    }
-
-    const token = authHeader.substring(7);
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return ApiErrors.unauthorized();
-    }
-
-    const { userType, userId } = payload;
+    const session = await getAuthSession();
+    if (!session) return ApiErrors.unauthorized();
 
     let layout = "classic";
-    if (userType === "location") {
-      const [location] = await db.select().from(locations).where(eq(locations.id, userId));
-      if (location) {
-        layout = location.dashboardLayout || "classic";
-      }
-    } else if (userType === "arl") {
-      const [arl] = await db.select().from(arls).where(eq(arls.id, userId));
-      if (arl) {
-        layout = arl.dashboardLayout || "classic";
-      }
+    if (session.userType === "location") {
+      const loc = db.select({ dashboardLayout: locations.dashboardLayout }).from(locations).where(eq(locations.id, session.id)).get();
+      if (loc?.dashboardLayout) layout = loc.dashboardLayout;
+    } else if (session.userType === "arl") {
+      const arl = db.select({ dashboardLayout: arls.dashboardLayout }).from(arls).where(eq(arls.id, session.id)).get();
+      if (arl?.dashboardLayout) layout = arl.dashboardLayout;
     }
 
     return apiSuccess({ layout });
@@ -42,36 +28,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return ApiErrors.unauthorized();
-    }
+    const session = await getAuthSession();
+    if (!session) return ApiErrors.unauthorized();
 
-    const token = authHeader.substring(7);
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return ApiErrors.unauthorized();
-    }
-
-    const { userType, userId } = payload;
-    const body = await req.json();
-    const { layout } = body;
-
+    const { layout } = await req.json();
     if (!layout || !["classic", "focus"].includes(layout)) {
       return ApiErrors.badRequest("Invalid layout value");
     }
 
-    if (userType === "location") {
-      await db.update(locations)
+    if (session.userType === "location") {
+      db.update(locations)
         .set({ dashboardLayout: layout, updatedAt: new Date().toISOString() })
-        .where(eq(locations.id, userId));
-    } else if (userType === "arl") {
-      await db.update(arls)
+        .where(eq(locations.id, session.id))
+        .run();
+    } else if (session.userType === "arl") {
+      db.update(arls)
         .set({ dashboardLayout: layout, updatedAt: new Date().toISOString() })
-        .where(eq(arls.id, userId));
+        .where(eq(arls.id, session.id))
+        .run();
     }
 
-    return apiSuccess({ success: true, layout });
+    return apiSuccess({ layout });
   } catch (error) {
     console.error("Error updating layout preference:", error);
     return ApiErrors.internal();

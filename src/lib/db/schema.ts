@@ -16,6 +16,7 @@ export const tenants = sqliteTable("tenants", {
   maxUsers: integer("max_users").notNull().default(20),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   customDomain: text("custom_domain"), // e.g. "hub.kfc.com"
+  timezone: text("timezone").notNull().default("Pacific/Honolulu"), // IANA timezone for task scheduling
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
