@@ -13,8 +13,8 @@ export function generateNonce(): string {
 export function buildCspHeader(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://*.sentry.io`,
-    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.sentry.io`,
+    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "media-src 'self' blob:",
