@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastSessionActivated } from "@/lib/socket-emit";
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const sessionCode = genSessionCode();
 
     if (assignToType === "location") {
-      const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
+      const location = db.select().from(schema.locations).where(and(eq(schema.locations.id, assignToId), eq(schema.locations.tenantId, session.tenantId))).get();
       if (!location) return ApiErrors.notFound("Location");
       if (!location.isActive) return ApiErrors.forbidden("Location is deactivated");
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         expiresAt: getTokenExpiry(),
       }).run();
     } else {
-      const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
+      const arl = db.select().from(schema.arls).where(and(eq(schema.arls.id, assignToId), eq(schema.arls.tenantId, session.tenantId))).get();
       if (!arl) return ApiErrors.notFound("ARL");
       if (!arl.isActive) return ApiErrors.forbidden("ARL account is deactivated");
 

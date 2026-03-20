@@ -20,7 +20,32 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
+    // Verify caller has access to the conversations these messages belong to
+    const verifiedConvIds = new Set<string>();
+    const deniedConvIds = new Set<string>();
+
     for (const messageId of messageIds) {
+      const msg = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
+      if (!msg) continue;
+
+      if (!verifiedConvIds.has(msg.conversationId) && !deniedConvIds.has(msg.conversationId)) {
+        const conv = db.select().from(schema.conversations).where(eq(schema.conversations.id, msg.conversationId)).get();
+        if (!conv) { deniedConvIds.add(msg.conversationId); continue; }
+        if (conv.type === "direct") {
+          if (conv.participantAId !== session.id && conv.participantBId !== session.id) {
+            deniedConvIds.add(msg.conversationId); continue;
+          }
+        } else if (conv.type !== "global") {
+          const member = db.select().from(schema.conversationMembers)
+            .where(and(eq(schema.conversationMembers.conversationId, conv.id), eq(schema.conversationMembers.memberId, session.id)))
+            .get();
+          if (!member) { deniedConvIds.add(msg.conversationId); continue; }
+        }
+        verifiedConvIds.add(msg.conversationId);
+      }
+
+      if (deniedConvIds.has(msg.conversationId)) continue;
+
       // Check if already read
       const existing = db
         .select()
@@ -44,13 +69,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get conversation IDs for these messages to broadcast read receipts
-    const conversationIds = new Set<string>();
-    for (const messageId of messageIds) {
-      const msg = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
-      if (msg) conversationIds.add(msg.conversationId);
-    }
-    for (const convId of conversationIds) {
+    // Broadcast read receipts for verified conversations
+    for (const convId of verifiedConvIds) {
       broadcastMessageRead(convId, session.id);
     }
 

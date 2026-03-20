@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { NextRequest } from "next/server";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import sgMail from "@sendgrid/mail";
 import fs from "fs";
 import path from "path";
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return ApiErrors.badRequest("formId and recipientEmails required");
     }
 
-    const form = db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
+    const form = db.select().from(schema.forms).where(and(eq(schema.forms.id, formId), eq(schema.forms.tenantId, session.tenantId))).get();
     if (!form) {
       return ApiErrors.notFound("Form");
     }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
     // Single meeting detail with participants
     // Prefer unique analytics record ID; fall back to meetingId for backwards compat
     const meeting = analyticsId
-      ? db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.id, analyticsId)).get()
-      : db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.meetingId, meetingId!)).get();
+      ? db.select().from(schema.meetingAnalytics).where(and(eq(schema.meetingAnalytics.id, analyticsId), eq(schema.meetingAnalytics.tenantId, session.tenantId))).get()
+      : db.select().from(schema.meetingAnalytics).where(and(eq(schema.meetingAnalytics.meetingId, meetingId!), eq(schema.meetingAnalytics.tenantId, session.tenantId))).get();
 
     if (!meeting) {
       return ApiErrors.notFound("Meeting");
@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
   const meetings = db
     .select()
     .from(schema.meetingAnalytics)
+    .where(eq(schema.meetingAnalytics.tenantId, session.tenantId))
     .orderBy(desc(schema.meetingAnalytics.startedAt))
     .all();
 
@@ -89,11 +90,18 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    // Delete all meeting participants
-    db.delete(schema.meetingParticipants).run();
+    // Delete all meeting participants for this tenant's meetings
+    const tenantMeetings = db.select({ meetingId: schema.meetingAnalytics.meetingId })
+      .from(schema.meetingAnalytics)
+      .where(eq(schema.meetingAnalytics.tenantId, session.tenantId))
+      .all();
+    const meetingIds = tenantMeetings.map(m => m.meetingId);
+    for (const mid of meetingIds) {
+      db.delete(schema.meetingParticipants).where(eq(schema.meetingParticipants.meetingId, mid)).run();
+    }
     
-    // Delete all meeting analytics
-    db.delete(schema.meetingAnalytics).run();
+    // Delete this tenant's meeting analytics
+    db.delete(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.tenantId, session.tenantId)).run();
 
     return apiSuccess({ success: true, message: "All meeting data deleted" });
   } catch (error) {

@@ -17,10 +17,27 @@ export async function POST(request: NextRequest) {
       return ApiErrors.badRequest("Missing messageId or emoji");
     }
 
-    // Check if message exists
+    // Check if message exists and caller has access to the conversation
     const message = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
     if (!message) {
       return ApiErrors.notFound("Message");
+    }
+
+    // Verify caller is a participant in this conversation
+    const conv = db.select().from(schema.conversations).where(eq(schema.conversations.id, message.conversationId)).get();
+    if (!conv) return ApiErrors.notFound("Conversation");
+    if (conv.type === "direct") {
+      if (conv.participantAId !== session.id && conv.participantBId !== session.id) {
+        return ApiErrors.forbidden("Not a participant in this conversation");
+      }
+    } else {
+      // group/global — check membership
+      const member = db.select().from(schema.conversationMembers)
+        .where(and(eq(schema.conversationMembers.conversationId, conv.id), eq(schema.conversationMembers.memberId, session.id)))
+        .get();
+      if (!member && conv.type !== "global") {
+        return ApiErrors.forbidden("Not a member of this conversation");
+      }
     }
 
     // Toggle: if user already reacted with this emoji, remove it; otherwise add it

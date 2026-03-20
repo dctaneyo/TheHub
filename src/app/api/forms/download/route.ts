@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { NextRequest } from "next/server";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { ApiErrors } from "@/lib/api-response";
@@ -11,13 +11,13 @@ const FORMS_DIR = join(process.cwd(), "data", "forms");
 export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) return ApiErrors.badRequest("id required");
 
-    const form = db.select().from(schema.forms).where(eq(schema.forms.id, id)).get();
+    const form = db.select().from(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).get();
     if (!form) return ApiErrors.notFound("Form");
 
     let bodyBuffer: Buffer;
