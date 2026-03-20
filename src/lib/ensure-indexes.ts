@@ -1,10 +1,21 @@
 import { sqlite } from './db';
 
 /**
- * Ensures critical database indexes exist. Safe to call on every startup
- * since all statements use CREATE INDEX IF NOT EXISTS.
+ * Ensures critical database indexes and schema patches exist.
+ * Safe to call on every startup — all statements are idempotent.
  */
 export function ensureIndexes() {
+  // Schema patches — add columns that may be missing if migrations haven't run yet.
+  // ALTER TABLE ADD COLUMN throws "duplicate column" if it exists, which we catch.
+  const patches = [
+    `ALTER TABLE tenants ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Pacific/Honolulu'`,
+    `ALTER TABLE locations ADD COLUMN timezone TEXT`,
+  ];
+
+  for (const sql of patches) {
+    try { sqlite.exec(sql); } catch { /* column already exists */ }
+  }
+
   const indexes = [
     // Tenant isolation
     `CREATE INDEX IF NOT EXISTS idx_arls_tenant ON arls(tenant_id)`,
