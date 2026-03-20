@@ -1,7 +1,8 @@
 import { db, schema } from "./db";
 import { eq, and } from "drizzle-orm";
 import { createNotification, createNotificationBulk } from "./notifications";
-import { tzNow, tzTodayStr } from "./timezone";
+import { tzNow, tzTodayStr, tzDayOfWeek } from "./timezone";
+import { taskAppliesToDate } from "./task-utils";
 
 /**
  * Real-time task notification scheduler
@@ -50,54 +51,14 @@ function timeToMinutes(timeStr: string): number {
 }
 
 /**
- * Check if a task should run today based on its recurrence settings
+ * Check if a task should run today based on its recurrence settings.
+ * Delegates to the shared taskAppliesToDate() in task-utils.ts which
+ * correctly handles biweekly anchor-based week counting.
  */
-function isTaskDueToday(task: any, todayDate: string): boolean {
-  // One-time task with specific date
-  if (task.dueDate && !task.isRecurring) {
-    return task.dueDate === todayDate;
-  }
-  // Recurring or no dueDate (daily by default)
-  if (!task.isRecurring && !task.dueDate) {
-    return true; // daily task, always due
-  }
-  if (task.isRecurring) {
-    const today = new Date(todayDate + "T12:00:00");
-    const dayIndex = today.getDay(); // 0=Sun, 1=Mon, ...
-    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const todayName = dayNames[dayIndex];
-
-    if (task.recurringType === "daily") return true;
-    if (task.recurringType === "weekly" && task.recurringDays) {
-      try {
-        const days: string[] = JSON.parse(task.recurringDays);
-        return days.includes(todayName);
-      } catch {
-        return true;
-      }
-    }
-    if (task.recurringType === "biweekly" && task.recurringDays) {
-      try {
-        const days: string[] = JSON.parse(task.recurringDays);
-        if (!days.includes(todayName)) return false;
-        // Biweekly logic: check if this is the correct week
-        const anchor = task.biweeklyStart === "next" ? 1 : 0;
-        const weekNumber = Math.floor((today.getTime() - new Date("2024-01-01").getTime()) / (7 * 24 * 60 * 60 * 1000));
-        return weekNumber % 2 === anchor;
-      } catch {
-        return true;
-      }
-    }
-    if (task.recurringType === "monthly" && task.recurringDays) {
-      try {
-        const days: number[] = JSON.parse(task.recurringDays);
-        return days.includes(today.getDate());
-      } catch {
-        return true;
-      }
-    }
-  }
-  return true;
+function isTaskDueToday(task: any, todayDate: string, tz: string): boolean {
+  const date = new Date(todayDate + "T12:00:00");
+  const dayOfWeek = tzDayOfWeek(tz);
+  return taskAppliesToDate(task, date, todayDate, dayOfWeek, false);
 }
 
 /**
@@ -223,7 +184,7 @@ function scheduleAllForToday() {
     );
 
     for (const task of locationTasks) {
-      if (!isTaskDueToday(task, todayDate)) continue;
+      if (!isTaskDueToday(task, todayDate, tz)) continue;
 
       const taskMinutes = timeToMinutes(task.dueTime);
 
