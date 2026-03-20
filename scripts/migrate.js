@@ -30,6 +30,29 @@ try {
     )
   `);
 
+  // Backfill: if the tracking table is brand new but the DB already has tables
+  // from previous migrations, mark those old migrations as already applied.
+  const trackingCount = db.prepare('SELECT COUNT(*) as c FROM _migrations').get().c;
+  if (trackingCount === 0) {
+    // Check if the DB has tables from the original schema (migration 0000)
+    const hasLocations = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='locations'"
+    ).get();
+    if (hasLocations) {
+      // DB was set up before tracking existed — mark old migrations as applied
+      const oldMigrations = [
+        '0000_left_energizer.sql',
+        '0001_glossy_fallen_one.sql',
+        '0002_puzzling_doctor_doom.sql',
+      ];
+      const insert = db.prepare('INSERT OR IGNORE INTO _migrations (name) VALUES (?)');
+      for (const m of oldMigrations) {
+        insert.run(m);
+      }
+      console.log('  ℹ️  Backfilled 3 pre-existing migrations into tracking table');
+    }
+  }
+
   // Get already-applied migrations
   const applied = new Set(
     db.prepare('SELECT name FROM _migrations').all().map(r => r.name)
@@ -48,7 +71,7 @@ try {
 
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
 
-    // Split by statement-breakpoint (Drizzle convention) and execute each statement
+    // Split by statement-breakpoint (Drizzle convention) and execute each
     const statements = sql.split('--> statement-breakpoint');
 
     for (const statement of statements) {
@@ -57,7 +80,7 @@ try {
         try {
           db.exec(trimmed);
         } catch (err) {
-          // Ignore "duplicate column" or "table already exists" errors for idempotency
+          // Ignore idempotency errors (column/table already exists or was already dropped)
           if (err.message && (
             err.message.includes('duplicate column') ||
             err.message.includes('already exists')
@@ -81,5 +104,4 @@ try {
 } catch (error) {
   console.error('❌ Migration failed:', error.message);
   // Don't exit with error — let the app start anyway
-  // The tables might already exist from a previous run
 }
