@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
@@ -10,9 +10,12 @@ import { CsrfInit } from "@/components/csrf-init";
 import { LayoutProvider } from "@/lib/layout-context";
 import { TenantProvider } from "@/lib/tenant-context";
 
-const inter = Inter({
+const inter = localFont({
+  src: [
+    { path: "./fonts/Inter.woff2", style: "normal" },
+  ],
   variable: "--font-inter",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
