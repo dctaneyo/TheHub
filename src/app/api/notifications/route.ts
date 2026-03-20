@@ -6,6 +6,7 @@ import {
   getNotificationCounts,
   markAllNotificationsRead,
   deleteAllNotifications,
+  autoDismissOldNotifications,
 } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
@@ -22,6 +23,9 @@ export async function GET(req: NextRequest) {
 
     // ARLs can fetch notifications for a specific location (mirror mode)
     const userId = (session.userType === "arl" && searchParams.get("locationId")) || session.id;
+
+    // Auto-dismiss notifications older than 2 days
+    await autoDismissOldNotifications(userId);
 
     const [notificationsList, counts] = await Promise.all([
       getNotifications(userId, { limit, offset, unreadOnly, type, priority }),

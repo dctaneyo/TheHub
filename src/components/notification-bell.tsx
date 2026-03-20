@@ -235,7 +235,24 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
     const id = `${type === "due_soon" ? "due" : "overdue"}-${data.taskId}${suffix}`;
     if (notifiedRef.current.has(id)) return;
     notifiedRef.current.add(id);
-    setTaskNotifs((prev) => [{ id, taskId: data.taskId, title: data.title, type, dueTime: data.dueTime, dismissed: false }, ...prev]);
+
+    // If this is an overdue notification, upgrade any existing due-soon for the same task
+    if (type === "overdue") {
+      const dueSoonId = `due-${data.taskId}${suffix}`;
+      setTaskNotifs((prev) => {
+        const hasDueSoon = prev.some((n) => n.id === dueSoonId && !n.dismissed);
+        if (hasDueSoon) {
+          // Upgrade the due-soon notification in place
+          return prev.map((n) =>
+            n.id === dueSoonId ? { ...n, id, type: "overdue" as const, dismissed: false } : n
+          );
+        }
+        // No due-soon exists — add a new overdue notification
+        return [{ id, taskId: data.taskId, title: data.title, type, dueTime: data.dueTime, dismissed: false }, ...prev];
+      });
+    } else {
+      setTaskNotifs((prev) => [{ id, taskId: data.taskId, title: data.title, type, dueTime: data.dueTime, dismissed: false }, ...prev]);
+    }
     playTaskSound();
   }, [playTaskSound, locationId]);
 
@@ -249,11 +266,17 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
   }, [socket, fireTaskNotif]);
 
   // Client-side fallback time check
+  // Use a ref to read current taskNotifs without adding it as a dependency (avoids re-render loop)
+  const taskNotifsRef = useRef(taskNotifs);
+  taskNotifsRef.current = taskNotifs;
+
   useEffect(() => {
     if (!currentTime || tasks.length === 0) return;
     const nowMin = timeToMinutes(currentTime);
     const newNotifs: TaskNotification[] = [];
+    const upgrades: { fromId: string; toNotif: TaskNotification }[] = [];
     const suffix = locationId ? `-${locationId}` : "";
+    const currentNotifs = taskNotifsRef.current;
     for (const task of tasks) {
       if (task.isCompleted) continue;
       const taskMin = timeToMinutes(task.dueTime);
@@ -261,15 +284,29 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
       const dueId = `due-${task.id}${suffix}`;
       if (taskMin < nowMin && !notifiedRef.current.has(overdueId)) {
         notifiedRef.current.add(overdueId);
-        newNotifs.push({ id: overdueId, taskId: task.id, title: task.title, type: "overdue", dueTime: task.dueTime, dismissed: false });
+        // Check if there's an existing due-soon to upgrade
+        const hasDueSoon = currentNotifs.some((n) => n.id === dueId && !n.dismissed);
+        if (hasDueSoon) {
+          upgrades.push({ fromId: dueId, toNotif: { id: overdueId, taskId: task.id, title: task.title, type: "overdue", dueTime: task.dueTime, dismissed: false } });
+        } else {
+          newNotifs.push({ id: overdueId, taskId: task.id, title: task.title, type: "overdue", dueTime: task.dueTime, dismissed: false });
+        }
       }
       if (!task.isCompleted && taskMin >= nowMin && taskMin <= nowMin + DUE_SOON_MINUTES && !notifiedRef.current.has(dueId)) {
         notifiedRef.current.add(dueId);
         newNotifs.push({ id: dueId, taskId: task.id, title: task.title, type: "due_soon", dueTime: task.dueTime, dismissed: false });
       }
     }
-    if (newNotifs.length > 0) {
-      setTaskNotifs((prev) => [...newNotifs, ...prev]);
+    if (newNotifs.length > 0 || upgrades.length > 0) {
+      setTaskNotifs((prev) => {
+        let updated = prev;
+        // Apply upgrades (due-soon → overdue)
+        for (const { fromId, toNotif } of upgrades) {
+          updated = updated.map((n) => (n.id === fromId ? toNotif : n));
+        }
+        // Add new notifications
+        return [...newNotifs, ...updated];
+      });
       playTaskSound();
     }
   }, [tasks, currentTime, playTaskSound]);

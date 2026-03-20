@@ -1,7 +1,7 @@
 import type { Server as SocketIOServer } from "socket.io";
 import { db, schema } from "../db";
 import { eq, and } from "drizzle-orm";
-import { createNotification } from "../notifications";
+import { createNotification, upgradeDueSoonToOverdue } from "../notifications";
 import { taskTimers } from "./state";
 
 // ── Hawaii timezone helpers ──
@@ -123,21 +123,30 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       // Overdue: exactly at due time
       const msUntilOverdue = (taskMinutes - nowMinutes) * 60 * 1000 - now.getSeconds() * 1000;
       if (msUntilOverdue > 0) {
-        timers.push(setTimeout(() => {
+        timers.push(setTimeout(async () => {
           const c = db.select({ id: schema.taskCompletions.id }).from(schema.taskCompletions)
             .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr())))
             .get();
           if (!c) {
             io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
-            createNotification({
-              userId: locationId,
-              userType: "location",
-              type: "task_overdue",
-              title: `Overdue: ${task.title}`,
-              message: `Task "${task.title}" was due at ${task.dueTime}`,
-              priority: "urgent",
-              metadata: { taskId: task.id, dueTime: task.dueTime },
-            }).catch(() => {});
+            // Try to upgrade existing due-soon notification instead of creating a duplicate
+            const overdueTitle = `Overdue: ${task.title}`;
+            const overdueMsg = `Task "${task.title}" was due at ${task.dueTime}`;
+            try {
+              const upgraded = await upgradeDueSoonToOverdue(locationId, task.id, overdueTitle, overdueMsg);
+              if (!upgraded) {
+                // No due-soon notification existed — create a fresh overdue notification
+                await createNotification({
+                  userId: locationId,
+                  userType: "location",
+                  type: "task_overdue",
+                  title: overdueTitle,
+                  message: overdueMsg,
+                  priority: "urgent",
+                  metadata: { taskId: task.id, dueTime: task.dueTime },
+                });
+              }
+            } catch {}
           }
         }, msUntilOverdue));
       }

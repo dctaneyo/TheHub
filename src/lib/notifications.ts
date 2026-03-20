@@ -302,3 +302,93 @@ export async function deleteOldNotifications(daysOld: number = 30): Promise<void
       )
     );
 }
+
+
+/**
+ * Auto-dismiss (mark as read) unread notifications older than 2 days.
+ * Prevents users from being bombarded with stale notifications after
+ * being offline for an extended period.
+ */
+export async function autoDismissOldNotifications(userId: string): Promise<number> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 2);
+  const cutoffISO = cutoff.toISOString();
+
+  const result = db
+    .update(notifications)
+    .set({ isRead: true, readAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false),
+        sql`${notifications.createdAt} < ${cutoffISO}`
+      )
+    )
+    .run();
+
+  return result.changes;
+}
+
+/**
+ * Upgrade a "task_due_soon" notification to "task_overdue" for the same task.
+ * Returns the upgraded notification if found, or null if no due-soon exists.
+ * This prevents duplicate notifications for the same task.
+ */
+export async function upgradeDueSoonToOverdue(
+  userId: string,
+  taskId: string,
+  overdueTitle: string,
+  overdueMessage: string
+): Promise<Notification | null> {
+  // Find today's unread due-soon notification for this task
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayISO = todayStart.toISOString();
+
+  const rows = db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.type, "task_due_soon"),
+        sql`${notifications.createdAt} >= ${todayISO}`,
+        sql`json_extract(${notifications.metadata}, '$.taskId') = ${taskId}`
+      )
+    )
+    .all();
+
+  if (rows.length === 0) return null;
+
+  const existing = rows[0];
+  const now = new Date().toISOString();
+
+  // Upgrade in place: change type, title, message, priority
+  db.update(notifications)
+    .set({
+      type: "task_overdue",
+      title: overdueTitle,
+      message: overdueMessage,
+      priority: "urgent",
+      isRead: false,
+      readAt: null,
+    })
+    .where(eq(notifications.id, existing.id))
+    .run();
+
+  const upgraded = {
+    ...existing,
+    type: "task_overdue",
+    title: overdueTitle,
+    message: overdueMessage,
+    priority: "urgent",
+    isRead: false,
+    readAt: null,
+  } as Notification;
+
+  // Broadcast the updated notification via WebSocket
+  const counts = await getNotificationCounts(userId);
+  broadcastNotification(userId, upgraded, counts);
+
+  return upgraded;
+}
