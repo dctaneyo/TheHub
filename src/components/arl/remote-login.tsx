@@ -142,7 +142,7 @@ export function RemoteLogin() {
         fetchData();
       } else {
         const data = await res.json();
-        setErrorMsg(data.error || "Failed to activate session");
+        setErrorMsg(data.error?.message || data.error || "Failed to activate session");
       }
     } catch {
       setErrorMsg("Network error. Please try again.");

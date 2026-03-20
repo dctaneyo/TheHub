@@ -168,7 +168,7 @@ export default function LoginPage() {
               setError("");
               setStep("pin");
             } else {
-              setError(data.error || "User ID not found");
+              setError(data.error?.message || data.error || "User ID not found");
               // Reset so they can try again
               userIdRef.current = "";
               setUserId("");
@@ -228,7 +228,7 @@ export default function LoginPage() {
         window.location.href = "/arl";
       }
     } else {
-      setError(result.error || "Incorrect PIN. Please try again.");
+      setError(result.error?.message || result.error || "Incorrect PIN. Please try again.");
       setShakeKey((k) => k + 1);
       pinRef.current = "";
       setPin("");

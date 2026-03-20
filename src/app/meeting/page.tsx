@@ -152,7 +152,7 @@ function GuestMeetingPageWithParams() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to join meeting");
+        setError(data.error?.message || data.error || "Failed to join meeting");
         setLoading(false);
         return;
       }
@@ -226,7 +226,7 @@ function GuestMeetingPageWithParams() {
               setError("");
               setPinPadStep("pin");
             } else {
-              setError(data.error || "User ID not found");
+              setError(data.error?.message || data.error || "User ID not found");
               setUserId("");
             }
           } catch {
@@ -255,7 +255,7 @@ function GuestMeetingPageWithParams() {
             const data = await res.json();
 
             if (!res.ok) {
-              setError(data.error || "Invalid credentials");
+              setError(data.error?.message || data.error || "Invalid credentials");
               setPin("");
               setLoading(false);
               return;

@@ -102,7 +102,7 @@ export function TenantSettings() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Failed to save");
+        setError(data.error?.message || data.error || "Failed to save");
         return;
       }
       const data = await res.json();

@@ -102,7 +102,7 @@ export default function AdminPortal() {
         fetchTenants();
       } else {
         const data = await res.json();
-        setLoginError(data.error || "Invalid secret");
+        setLoginError(data.error?.message || data.error || "Invalid secret");
       }
     } catch {
       setLoginError("Connection failed");

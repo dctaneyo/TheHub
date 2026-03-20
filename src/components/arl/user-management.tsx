@@ -241,7 +241,7 @@ export function UserManagement() {
         await fetchData();
       } else {
         const data = await res!.json();
-        setError(data.error || "Failed to save");
+        setError(data.error?.message || data.error || "Failed to save");
       }
     } catch {
       setError("Network error");

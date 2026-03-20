@@ -147,7 +147,7 @@ export default function SignupPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Something went wrong");
+        setError(data.error?.message || data.error || "Something went wrong");
         return;
       }
       setResult(data);
