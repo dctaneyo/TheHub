@@ -327,6 +327,16 @@ export function refreshTaskTimers() {
  */
 export function startTaskNotificationScheduler() {
   console.log("🔔 Task notification scheduler started (exact-second precision)");
-  scheduleAllForToday();
-  scheduleMidnightRollover();
+  try {
+    scheduleAllForToday();
+    scheduleMidnightRollover();
+  } catch (err) {
+    console.error("🔔 Task notification scheduler failed to start (will retry at next midnight):", err);
+    // Schedule a retry so the server doesn't stay broken forever
+    const fallbackDelay = 60 * 60 * 1000; // 1 hour
+    _midnightTimer = setTimeout(() => {
+      console.log("🔔 Retrying task notification scheduler...");
+      try { scheduleAllForToday(); scheduleMidnightRollover(); } catch (e) { console.error("🔔 Retry failed:", e); }
+    }, fallbackDelay);
+  }
 }
