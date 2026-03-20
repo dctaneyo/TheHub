@@ -40,8 +40,8 @@ export async function PUT(req: NextRequest) {
     const session = await getAuthSession();
     if (!session) return ApiErrors.unauthorized();
 
-    // Only ARLs with admin role can update tenant settings
-    if (session.userType !== "arl" || session.role !== "admin") {
+    // Only ARLs with admin/superadmin role can update tenant settings
+    if (session.userType !== "arl" || (session.role !== "admin" && session.role !== "superadmin")) {
       return ApiErrors.forbidden("Only tenant admins can update settings");
     }
 
