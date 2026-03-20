@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession } from "@/lib/api-helpers";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 function ensureTable() {
   try {
@@ -14,7 +14,9 @@ function ensureTable() {
         created_at TEXT NOT NULL
       )
     `);
-  } catch {}
+  } catch (e) {
+    console.error("Failed to ensure streak_freezes table:", e);
+  }
 }
 
 // GET: fetch how many freezes are available and which dates are frozen
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || (session.userType !== "location" && session.userType !== "arl")) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     // ARLs can fetch freeze data for a specific location (mirror mode)
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
     const available = Math.max(0, 3 - usedThisMonth);
     const frozenDates = new Set(freezes.map((f) => f.freeze_date));
 
-    return NextResponse.json({
+    return apiSuccess({
       available,
       usedThisMonth,
       maxPerMonth: 3,
@@ -50,7 +52,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Streak freeze GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     ensureTable();
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
       .get(session.id, `${thisMonth}%`) as any;
 
     if (usedThisMonth.count >= 3) {
-      return NextResponse.json({ error: "Monthly freeze limit reached (3 per month)" }, { status: 400 });
+      return ApiErrors.badRequest("Monthly freeze limit reached (3 per month)");
     }
 
     // Check if already frozen
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
       .get(session.id, freezeDate);
 
     if (existing) {
-      return NextResponse.json({ error: "Date already frozen" }, { status: 400 });
+      return ApiErrors.badRequest("Date already frozen");
     }
 
     const nowStr = now.toISOString();
@@ -100,13 +102,13 @@ export async function POST(req: NextRequest) {
 
     const remaining = Math.max(0, 3 - (usedThisMonth.count + 1));
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       freezeDate,
       remaining,
     });
   } catch (error) {
     console.error("Streak freeze POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

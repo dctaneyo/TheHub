@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, getEffectiveLocationIdFromBody } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { broadcastTaskUpdate, broadcastTaskUncompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 import { validate, uncompleteTaskSchema } from "@/lib/validations";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) return unauthorized();
     if (session.userType !== "location" && session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const body = await req.json();
     const parsed = validate(uncompleteTaskSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { taskId, completedDate: requestedDate, localDate } = parsed.data;
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       .get();
 
     if (!completion) {
-      return NextResponse.json({ error: "No completion found for this date" }, { status: 404 });
+      return ApiErrors.notFound("No completion found for this date");
     }
 
     db.delete(schema.taskCompletions)
@@ -50,9 +50,9 @@ export async function POST(req: NextRequest) {
     broadcastLeaderboardUpdate(effectiveLocationId, session.tenantId);
     refreshTaskTimers();
 
-    return NextResponse.json({ success: true, pointsRevoked: completion.pointsEarned });
+    return apiSuccess({ success: true, pointsRevoked: completion.pointsEarned });
   } catch (error) {
     console.error("Uncomplete task error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

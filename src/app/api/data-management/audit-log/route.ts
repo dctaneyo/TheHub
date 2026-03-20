@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
@@ -19,14 +19,16 @@ function ensureAuditTable() {
         created_at TEXT NOT NULL
       )
     `);
-  } catch {}
+  } catch (e) {
+    console.error("Ensure audit table error:", e);
+  }
 }
 
 // Log an action
 export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
 
     ensureAuditTable();
 
@@ -47,10 +49,10 @@ export async function POST(request: Request) {
       new Date().toISOString()
     );
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({});
   } catch (error) {
     console.error("Audit log error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -58,7 +60,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -91,9 +93,9 @@ export async function GET(request: Request) {
 
     const logs = sqlite.prepare(query).all(...params);
 
-    return NextResponse.json({ logs });
+    return apiSuccess({ logs });
   } catch (error) {
     console.error("Get audit logs error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

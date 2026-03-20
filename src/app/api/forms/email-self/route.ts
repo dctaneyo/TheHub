@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import sgMail from "@sendgrid/mail";
 import fs from "fs";
 import path from "path";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const apiKey = process.env.SENDGRID_API_KEY;
     const fromEmail = process.env.SENDGRID_FROM_EMAIL;
     if (!apiKey || !fromEmail) {
-      return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
+      return ApiErrors.internal("Email service not configured");
     }
 
     sgMail.setApiKey(apiKey);
 
     const { formId } = await req.json();
     if (!formId) {
-      return NextResponse.json({ error: "formId required" }, { status: 400 });
+      return ApiErrors.badRequest("formId required");
     }
 
     const form = db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
     if (!form) {
-      return NextResponse.json({ error: "Form not found" }, { status: 404 });
+      return ApiErrors.notFound("Form");
     }
 
     // Get the recipient's email based on session type
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!recipientEmail) {
-      return NextResponse.json({ error: "No email address on file for this account" }, { status: 400 });
+      return ApiErrors.badRequest("No email address on file for this account");
     }
 
     let base64Content: string;
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       const FORMS_DIR = path.join(process.cwd(), "data", "forms");
       const filePath = path.join(FORMS_DIR, form.filePath);
       if (!fs.existsSync(filePath)) {
-        return NextResponse.json({ error: "File not found on server" }, { status: 404 });
+        return ApiErrors.notFound("File");
       }
       base64Content = fs.readFileSync(filePath).toString("base64");
     }
@@ -79,9 +80,9 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Form email-self error:", error);
-    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+    return ApiErrors.internal("Failed to send email");
   }
 }

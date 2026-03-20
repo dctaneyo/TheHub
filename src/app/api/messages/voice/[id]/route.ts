@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
+import { ApiErrors } from "@/lib/api-response";
 
 const VOICE_DIR = path.join(process.cwd(), "data", "voice-messages");
 
@@ -12,20 +13,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { id } = await params;
     const filePath = path.join(VOICE_DIR, `${id}.webm`);
 
     if (!existsSync(filePath)) {
-      return NextResponse.json({ error: "Voice message not found" }, { status: 404 });
+      return ApiErrors.notFound("Voice message");
     }
 
     const fileBuffer = await readFile(filePath);
 
+    // Binary response — keep as raw NextResponse
     return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": "audio/webm",
@@ -35,6 +35,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Voice message retrieval error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { NextRequest } from "next/server";
+import { getAuthSession } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { sqlite } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     const query = req.nextUrl.searchParams.get("q")?.trim();
     const type = req.nextUrl.searchParams.get("type") || "all"; // all, tasks, messages, forms, locations
     const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") || "20"), 50);
 
     if (!query || query.length < 2) {
-      return NextResponse.json({ results: [], query: "" });
+      return apiSuccess({ results: [], query: "" });
     }
 
     const searchTerm = `%${query}%`;
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           subtitle: `${t.type} • ${t.priority} priority • Due ${t.dueTime || "N/A"}`,
           metadata: { taskType: t.type, priority: t.priority },
         }));
-      } catch {}
+      } catch (err) { console.error("Search tasks error:", err); }
     }
 
     // Search messages
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
           subtitle: `${m.senderName} in ${m.conversationName || "Direct"} • ${m.createdAt?.split("T")[0] || ""}`,
           metadata: { senderName: m.senderName },
         }));
-      } catch {}
+      } catch (err) { console.error("Search messages error:", err); }
     }
 
     // Search forms
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
           subtitle: `${f.category || "General"} • ${f.description || ""}`.trim(),
           metadata: { category: f.category },
         }));
-      } catch {}
+      } catch (err) { console.error("Search forms error:", err); }
     }
 
     // Search locations
@@ -102,16 +102,16 @@ export async function GET(req: NextRequest) {
           subtitle: `Store #${l.storeNumber || "N/A"}`,
           metadata: { storeNumber: l.storeNumber },
         }));
-      } catch {}
+      } catch (err) { console.error("Search locations error:", err); }
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       results: results.slice(0, limit),
       query,
       total: results.length,
     });
   } catch (error) {
     console.error("Search error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

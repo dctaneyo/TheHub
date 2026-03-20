@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { validate, createBroadcastSchema } from "@/lib/validations";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // GET - Fetch broadcasts (active, scheduled, or past)
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status"); // 'live' | 'scheduled' | 'ended' | 'all'
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -26,25 +24,25 @@ export async function GET(request: Request) {
           .orderBy(desc(schema.broadcasts.createdAt))
           .limit(limit);
 
-    return NextResponse.json({ broadcasts });
+    return apiSuccess({ broadcasts });
   } catch (error) {
     console.error("Error fetching broadcasts:", error);
-    return NextResponse.json({ error: "Failed to fetch broadcasts" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
 // POST - Create/start a new broadcast
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized - ARLs only" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const body = await request.json();
     const parsed = validate(createBroadcastSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { title, description, streamMode, targetAudience, targetLocationIds, scheduledFor } = parsed.data;
 
@@ -54,6 +52,7 @@ export async function POST(request: Request) {
 
     await db.insert(schema.broadcasts).values({
       id: broadcastId,
+      tenantId: session.tenantId,
       arlId: session.userId,
       arlName: session.name || "ARL",
       title,
@@ -67,26 +66,26 @@ export async function POST(request: Request) {
       createdAt: now,
     });
 
-    return NextResponse.json({ broadcastId, status: isScheduled ? "scheduled" : "live" });
+    return apiSuccess({ broadcastId, status: isScheduled ? "scheduled" : "live" });
   } catch (error) {
     console.error("Error creating broadcast:", error);
-    return NextResponse.json({ error: "Failed to create broadcast" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
 // PATCH - Update broadcast status or details
 export async function PATCH(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { broadcastId, status, viewerCount, duration } = body;
 
     if (!broadcastId) {
-      return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Broadcast ID required");
     }
 
     const updates: any = {};
@@ -110,9 +109,9 @@ export async function PATCH(request: Request) {
       .set(updates)
       .where(eq(schema.broadcasts.id, broadcastId));
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Error updating broadcast:", error);
-    return NextResponse.json({ error: "Failed to update broadcast" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastConversationUpdate } from "@/lib/socket-emit";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
     const { messageId, emoji } = await request.json();
 
     if (!messageId || !emoji) {
-      return NextResponse.json({ error: "Missing messageId or emoji" }, { status: 400 });
+      return ApiErrors.badRequest("Missing messageId or emoji");
     }
 
     // Check if message exists
     const message = db.select().from(schema.messages).where(eq(schema.messages.id, messageId)).get();
     if (!message) {
-      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+      return ApiErrors.notFound("Message");
     }
 
     // Toggle: if user already reacted with this emoji, remove it; otherwise add it
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       db.delete(schema.messageReactions).where(eq(schema.messageReactions.id, existing.id)).run();
       broadcastConversationUpdate(message.conversationId);
-      return NextResponse.json({ success: true, action: "removed" });
+      return apiSuccess({ success: true, action: "removed" });
     }
 
     db.insert(schema.messageReactions).values({
@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
     }).run();
 
     broadcastConversationUpdate(message.conversationId);
-    return NextResponse.json({ success: true, action: "added" });
+    return apiSuccess({ success: true, action: "added" });
   } catch (error) {
     console.error("Error adding reaction:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

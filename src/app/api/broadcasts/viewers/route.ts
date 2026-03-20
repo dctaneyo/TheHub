@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - Join a broadcast as a viewer
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await request.json();
     const { broadcastId } = body;
 
     if (!broadcastId) {
-      return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Broadcast ID required");
     }
 
     const viewerId = uuidv4();
@@ -43,26 +42,24 @@ export async function POST(request: Request) {
         .where(eq(schema.broadcasts.id, broadcastId));
     }
 
-    return NextResponse.json({ viewerId });
+    return apiSuccess({ viewerId });
   } catch (error) {
     console.error("Error joining broadcast:", error);
-    return NextResponse.json({ error: "Failed to join broadcast" }, { status: 500 });
+    return ApiErrors.internal("Failed to join broadcast");
   }
 }
 
 // PATCH - Update viewer status (minimize, dismiss, leave)
 export async function PATCH(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await request.json();
     const { viewerId, broadcastId, isMinimized, isDismissed, leftAt, watchDuration, completionRate } = body;
 
     if (!viewerId) {
-      return NextResponse.json({ error: "Viewer ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Viewer ID required");
     }
 
     const updates: any = {};
@@ -90,34 +87,32 @@ export async function PATCH(request: Request) {
       .set(updates)
       .where(eq(schema.broadcastViewers.id, viewerId));
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Error updating viewer:", error);
-    return NextResponse.json({ error: "Failed to update viewer" }, { status: 500 });
+    return ApiErrors.internal("Failed to update viewer");
   }
 }
 
 // GET - Get viewers for a broadcast
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(request.url);
     const broadcastId = searchParams.get("broadcastId");
 
     if (!broadcastId) {
-      return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Broadcast ID required");
     }
 
     const viewers = await db.select().from(schema.broadcastViewers)
       .where(eq(schema.broadcastViewers.broadcastId, broadcastId));
 
-    return NextResponse.json({ viewers });
+    return apiSuccess({ viewers });
   } catch (error) {
     console.error("Error fetching viewers:", error);
-    return NextResponse.json({ error: "Failed to fetch viewers" }, { status: 500 });
+    return ApiErrors.internal("Failed to fetch viewers");
   }
 }

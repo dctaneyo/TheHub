@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 import { createNotification } from "@/lib/notifications";
@@ -81,14 +80,16 @@ function ensureAchievementsTable() {
         notified INTEGER DEFAULT 0
       )
     `);
-  } catch {}
+  } catch (e) {
+    console.error("Failed to ensure achievements table:", e);
+  }
 }
 
 export async function GET(req: Request) {
   try {
     const session = await getAuthSession();
     if (!session || (session.userType !== "location" && session.userType !== "arl")) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     // ARLs can fetch achievements for a specific location (mirror mode)
@@ -109,14 +110,14 @@ export async function GET(req: Request) {
       earnedDate: unlocked.find(a => a.achievement_id === achievement.id)?.unlocked_at || null,
     }));
 
-    return NextResponse.json({ 
+    return apiSuccess({ 
       badges: all, 
       earnedCount: unlocked.length, 
       totalCount: Object.keys(ACHIEVEMENTS).length 
     });
   } catch (error) {
     console.error("Get achievements error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const { achievementId } = await request.json();
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
     ).get(session.id, achievementId);
 
     if (existing) {
-      return NextResponse.json({ alreadyUnlocked: true });
+      return apiSuccess({ alreadyUnlocked: true });
     }
 
     // Unlock achievement
@@ -168,9 +169,9 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ unlocked: true, achievement });
+    return apiSuccess({ unlocked: true, achievement });
   } catch (error) {
     console.error("Unlock achievement error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

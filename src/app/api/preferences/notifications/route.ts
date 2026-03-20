@@ -3,6 +3,7 @@ import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { notificationPreferences } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 
@@ -26,14 +27,14 @@ export async function GET(req: NextRequest) {
     if (preferences.length === 0) {
       // Return default preferences if none exist
       const defaults = getDefaultPreferences(session.userType);
-      return NextResponse.json({
+      return apiSuccess({
         ...defaults,
         priorityTypes: defaults.priorityTypes ? JSON.parse(defaults.priorityTypes as string) : [],
       });
     }
 
     const prefs = preferences[0];
-    return NextResponse.json({
+    return apiSuccess({
       id: prefs.id,
       userId: prefs.userId,
       userType: prefs.userType,
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching notification preferences:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
         if (field === "priorityTypes") {
           // Validate priorityTypes is an array of strings
           if (!Array.isArray(body[field])) {
-            return NextResponse.json({ error: "priorityTypes must be an array" }, { status: 400 });
+            return ApiErrors.badRequest("priorityTypes must be an array");
           }
           (updates as Record<string, unknown>)[field] = JSON.stringify(body[field]);
         } else {
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     if (Object.keys(updates).length === 1) {
       // No valid fields to update
-      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+      return ApiErrors.badRequest("No valid fields to update");
     }
 
     // Check if preferences exist
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
       .where(eq(notificationPreferences.userId, session.id))
       .limit(1);
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       preferences: {
         id: updatedPrefs.id,
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error updating notification preferences:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 

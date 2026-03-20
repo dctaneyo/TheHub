@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema, sqlite } from "@/lib/db";
 import fs from "fs";
@@ -8,7 +8,7 @@ import path from "path";
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -25,23 +25,23 @@ export async function GET() {
     const onlineSessions = db.select().from(schema.sessions).all().filter((s: any) => s.isOnline).length;
 
     let taskCompletions = 0;
-    try { taskCompletions = db.select().from(schema.taskCompletions).all().length; } catch {}
+    try { taskCompletions = db.select().from(schema.taskCompletions).all().length; } catch (e) { console.error("System report: taskCompletions count error:", e); }
     let messageReads = 0;
-    try { messageReads = db.select().from(schema.messageReads).all().length; } catch {}
+    try { messageReads = db.select().from(schema.messageReads).all().length; } catch (e) { console.error("System report: messageReads count error:", e); }
     let messageReactions = 0;
-    try { messageReactions = db.select().from(schema.messageReactions).all().length; } catch {}
+    try { messageReactions = db.select().from(schema.messageReactions).all().length; } catch (e) { console.error("System report: messageReactions count error:", e); }
     let forms = 0;
-    try { forms = db.select().from(schema.forms).all().length; } catch {}
+    try { forms = db.select().from(schema.forms).all().length; } catch (e) { console.error("System report: forms count error:", e); }
     let broadcasts = 0;
-    try { broadcasts = db.select().from(schema.broadcasts).all().length; } catch {}
+    try { broadcasts = db.select().from(schema.broadcasts).all().length; } catch (e) { console.error("System report: broadcasts count error:", e); }
     let broadcastMessages = 0;
-    try { broadcastMessages = db.select().from(schema.broadcastMessages).all().length; } catch {}
+    try { broadcastMessages = db.select().from(schema.broadcastMessages).all().length; } catch (e) { console.error("System report: broadcastMessages count error:", e); }
     let broadcastQuestions = 0;
-    try { broadcastQuestions = db.select().from(schema.broadcastQuestions).all().length; } catch {}
+    try { broadcastQuestions = db.select().from(schema.broadcastQuestions).all().length; } catch (e) { console.error("System report: broadcastQuestions count error:", e); }
     let emergencyMessages = 0;
-    try { emergencyMessages = db.select().from(schema.emergencyMessages).all().length; } catch {}
+    try { emergencyMessages = db.select().from(schema.emergencyMessages).all().length; } catch (e) { console.error("System report: emergencyMessages count error:", e); }
     let notifications = 0;
-    try { notifications = db.select().from(schema.notifications).all().length; } catch {}
+    try { notifications = db.select().from(schema.notifications).all().length; } catch (e) { console.error("System report: notifications count error:", e); }
 
     // Table sizes
     const tableInfo = sqlite.prepare(
@@ -57,7 +57,7 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       generatedAt: new Date().toISOString(),
       database: {
         path: dbPath,
@@ -94,7 +94,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("System report error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 

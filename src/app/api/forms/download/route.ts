@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { ApiErrors } from "@/lib/api-response";
 
 const FORMS_DIR = join(process.cwd(), "data", "forms");
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("id required");
 
     const form = db.select().from(schema.forms).where(eq(schema.forms.id, id)).get();
-    if (!form) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!form) return ApiErrors.notFound("Form");
 
     let bodyBuffer: Buffer;
     if (form.fileContent) {
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
       bodyBuffer = await readFile(filePath);
     }
 
+    // Binary response — keep as raw Response
     return new Response(bodyBuffer.toString("base64"), {
       headers: {
         "Content-Type": "application/pdf",
@@ -40,6 +42,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Download form error:", error);
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
+    return ApiErrors.notFound("File");
   }
 }

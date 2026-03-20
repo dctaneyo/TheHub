@@ -7,6 +7,7 @@ import { v4 as uuid } from "uuid";
 import { broadcastSessionUpdated } from "@/lib/socket-emit";
 import { checkRateLimit, resetRateLimit, getClientIP } from "@/lib/rate-limiter";
 import { validate, loginSchema } from "@/lib/validations";
+import { ApiErrors } from "@/lib/api-response";
 
 function genSessionCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -18,16 +19,13 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(`login:${ip}`, { maxAttempts: 5, windowMs: 60_000, lockoutMs: 5 * 60_000 });
     if (!rl.allowed) {
       const retrySeconds = Math.ceil((rl.retryAfterMs || 0) / 1000);
-      return NextResponse.json(
-        { error: `Too many login attempts. Try again in ${retrySeconds}s.` },
-        { status: 429, headers: { "Retry-After": String(retrySeconds) } }
-      );
+      return ApiErrors.tooManyRequests(retrySeconds);
     }
 
     const body = await req.json();
     const parsed = validate(loginSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
+      return ApiErrors.badRequest("Invalid credentials");
     }
     const { userId, pin } = parsed.data;
 
@@ -43,17 +41,11 @@ export async function POST(req: NextRequest) {
 
     if (location) {
       if (!location.isActive) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
+        return ApiErrors.unauthorized();
       }
 
       if (!compareSync(pin, location.pinHash)) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
+        return ApiErrors.unauthorized();
       }
 
       const sessionCode = genSessionCode();
@@ -93,7 +85,9 @@ export async function POST(req: NextRequest) {
 
       resetRateLimit(`login:${ip}`);
 
+      // Cookie needs to be set, so keep NextResponse.json
       const response = NextResponse.json({
+        ok: true,
         success: true,
         userType: "location",
         sessionCode,
@@ -125,17 +119,11 @@ export async function POST(req: NextRequest) {
 
     if (arl) {
       if (!arl.isActive) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
+        return ApiErrors.unauthorized();
       }
 
       if (!compareSync(pin, arl.pinHash)) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
+        return ApiErrors.unauthorized();
       }
 
       resetRateLimit(`login:${ip}`);
@@ -180,7 +168,9 @@ export async function POST(req: NextRequest) {
         expiresAt,
       }).run();
 
+      // Cookie needs to be set, so keep NextResponse.json
       const response = NextResponse.json({
+        ok: true,
         success: true,
         userType: "arl",
         sessionCode,
@@ -204,15 +194,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Generic error — don't reveal whether user exists
-    return NextResponse.json(
-      { error: "Invalid credentials" },
-      { status: 401 }
-    );
+    return ApiErrors.unauthorized();
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return ApiErrors.internal();
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { ApiErrors } from "@/lib/api-response";
 
 // GET - Login page polls this to check if their pending session was activated
 // No auth required (the login page doesn't have a token yet)
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     const pendingId = searchParams.get("id");
 
     if (!pendingId) {
-      return NextResponse.json({ error: "id parameter required" }, { status: 400 });
+      return ApiErrors.badRequest("id parameter required");
     }
 
     const pending = db
@@ -49,6 +50,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status: "pending" });
   } catch (error) {
     console.error("Pending session status error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

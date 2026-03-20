@@ -3,17 +3,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
-  PhoneOff, MessageCircle, HelpCircle, Hand, Users,
-  Send, CheckCircle, ThumbsUp, X, Crown, Shield,
-  Keyboard, Loader2, SwitchCamera, Timer, ArrowRightLeft, Edit3,
+  Video, VideoOff, Mic, MicOff, Monitor,
+  MessageCircle, HelpCircle, Hand, Users,
+  X, Crown, Shield,
+  Loader2, Timer,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
-import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import {
   LiveKitRoom,
   useParticipants,
@@ -24,26 +22,17 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import { ZoomableVideo } from "./meeting-room/zoomable-video";
-import { Track, RoomEvent, LocalParticipant, RemoteParticipant, LocalTrackPublication } from "livekit-client";
+import { TransferDialog } from "./meeting-room/transfer-dialog";
+import { RenameDialog } from "./meeting-room/rename-dialog";
+import { ChatPanel } from "./meeting-room/chat-panel";
+import { QAPanel } from "./meeting-room/qa-panel";
+import { ParticipantPanel } from "./meeting-room/participant-panel";
+import { ControlsBar } from "./meeting-room/controls-bar";
+import type { ChatMessage, Question } from "./meeting-room/types";
+import { REACTION_EMOJIS } from "./meeting-room/types";
+import { Track, RoomEvent, LocalParticipant } from "livekit-client";
 import "@livekit/components-styles";
-import { LogOut, DoorOpen, Settings, AudioLines } from "@/lib/icons";
 import { RNNoiseProcessor } from "@/lib/rnnoise-processor";
-
-interface ChatMessage {
-  id: string;
-  senderName: string;
-  senderType: string;
-  content: string;
-  timestamp: number;
-}
-
-interface Question {
-  id: string;
-  askerName: string;
-  question: string;
-  upvotes: number;
-  isAnswered: boolean;
-}
 
 interface MeetingRoomLiveKitCustomProps {
   meetingId: string;
@@ -52,8 +41,6 @@ interface MeetingRoomLiveKitCustomProps {
   onLeave: (didEndMeeting?: boolean, wasDisconnected?: boolean) => void;
   shouldStartMeeting?: boolean;
 }
-
-const REACTION_EMOJIS = ["❤️", "👍", "🔥", "😂", "👏", "💯"];
 
 export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, shouldStartMeeting }: MeetingRoomLiveKitCustomProps) {
   const { user } = useAuth();
@@ -525,8 +512,6 @@ function MeetingUI({
   const [notification, setNotification] = useState<{ message: string; type: 'info' | 'success' | 'warning' } | null>(null);
   const [participantNicknames, setParticipantNicknames] = useState<Map<string, string>>(new Map()); // livekitIdentity -> nickname
   const [renamingParticipant, setRenamingParticipant] = useState<{ identity: string; currentName: string } | null>(null);
-  const [renameInput, setRenameInput] = useState("");
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isArlUser = user?.userType === "arl";
@@ -575,7 +560,6 @@ function MeetingUI({
     const handleChatMessage = (data: ChatMessage) => {
       setMessages(prev => [...prev, data]);
       if (!showChat) setHasUnreadChat(true);
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     const handleQuestion = (data: Question) => {
@@ -1078,122 +1062,27 @@ function MeetingUI({
       {/* Host transfer dialog */}
       <AnimatePresence>
         {showTransferDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4"
-            onClick={() => setShowTransferDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-sm"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-white font-bold text-base mb-1">Transfer Host Role</h3>
-              <p className="text-slate-400 text-xs mb-4">Select a participant to become the new host. You will become a co-host.</p>
-              <div className="space-y-1 max-h-60 overflow-y-auto">
-                {participants.filter(p => p !== localParticipant).map(p => {
-                  const metadata = p.metadata ? JSON.parse(p.metadata) : {};
-                  return (
-                    <button
-                      key={p.identity}
-                      onClick={() => transferHost(p.identity, p.name)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-700/50 transition-colors text-left"
-                    >
-                      <div className={cn(
-                        "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
-                        metadata.userType === "arl" ? "bg-blue-600" : metadata.userType === "guest" ? "bg-purple-600" : "bg-slate-600"
-                      )}>
-                        {p.name?.charAt(0) || "?"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm text-white font-medium truncate block">{p.name}</span>
-                        <span className="text-[10px] text-slate-400 capitalize">{metadata.userType || "participant"}</span>
-                      </div>
-                      <ArrowRightLeft className="h-4 w-4 text-slate-500" />
-                    </button>
-                  );
-                })}
-                {participants.filter(p => p !== localParticipant).length === 0 && (
-                  <p className="text-slate-500 text-xs text-center py-4">No other participants to transfer to</p>
-                )}
-              </div>
-              <button
-                onClick={() => setShowTransferDialog(false)}
-                className="mt-3 w-full h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-            </motion.div>
-          </motion.div>
+          <TransferDialog
+            participants={participants}
+            localParticipant={localParticipant}
+            onTransfer={transferHost}
+            onClose={() => setShowTransferDialog(false)}
+          />
         )}
       </AnimatePresence>
 
       {/* Rename participant dialog */}
       <AnimatePresence>
         {renamingParticipant && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-            onClick={() => setRenamingParticipant(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
-            >
-              <h3 className="text-white font-bold text-base mb-1">Rename Participant</h3>
-              <p className="text-slate-400 text-xs mb-4">Set a nickname for this participant. Original name will be preserved.</p>
-              <Input
-                value={renameInput}
-                onChange={(e) => setRenameInput(e.target.value)}
-                placeholder="Enter nickname"
-                className="mb-4 bg-slate-800 border-slate-700 text-white"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && renameInput.trim()) {
-                    socket?.emit("meeting:set-nickname", {
-                      meetingId,
-                      targetIdentity: renamingParticipant.identity,
-                      nickname: renameInput.trim(),
-                    });
-                    setRenamingParticipant(null);
-                  }
-                }}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setRenamingParticipant(null)}
-                  className="flex-1 h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (renameInput.trim()) {
-                      socket?.emit("meeting:set-nickname", {
-                        meetingId,
-                        targetIdentity: renamingParticipant.identity,
-                        nickname: renameInput.trim(),
-                      });
-                      setRenamingParticipant(null);
-                    }
-                  }}
-                  disabled={!renameInput.trim()}
-                  className="flex-1 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-semibold transition-colors"
-                >
-                  Save
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <RenameDialog
+            identity={renamingParticipant.identity}
+            currentName={renamingParticipant.currentName}
+            onRename={(identity, nickname) => {
+              socket?.emit("meeting:set-nickname", { meetingId, targetIdentity: identity, nickname });
+              setRenamingParticipant(null);
+            }}
+            onClose={() => setRenamingParticipant(null)}
+          />
         )}
       </AnimatePresence>
 
@@ -1528,259 +1417,51 @@ function MeetingUI({
             >
               {/* Participants panel */}
               {showParticipants && (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-white font-bold text-sm">Participants ({participants.length})</h3>
-                      <button onClick={() => setShowParticipants(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {/* Host-only controls */}
-                    {localIsHost && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            socket?.emit("meeting:mute-all", { meetingId });
-                          }}
-                          className="flex-1 px-2 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold transition-colors"
-                          title="Mute all participants"
-                        >
-                          Mute All
-                        </button>
-                        <button
-                          onClick={() => {
-                            socket?.emit("meeting:unmute-all", { meetingId });
-                          }}
-                          className="flex-1 px-2 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 text-xs font-semibold transition-colors"
-                          title="Unmute all participants"
-                        >
-                          Unmute All
-                        </button>
-                        <button
-                          onClick={() => {
-                            socket?.emit("meeting:lower-all-hands", { meetingId });
-                          }}
-                          className="flex-1 px-2 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold transition-colors"
-                          title="Lower all raised hands"
-                        >
-                          Lower All Hands
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                    {participants.map(p => {
-                      const metadata = p.metadata ? JSON.parse(p.metadata) : {};
-                      const isLocal = p === localParticipant;
-                      return (
-                        <div key={p.identity} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/50">
-                          <div
-                            className={cn(
-                              "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
-                              isLocal ? "bg-red-600" : metadata.userType === "arl" ? "bg-blue-600" : "bg-slate-600"
-                            )}
-                          >
-                            {p.name?.charAt(0) || "?"}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm text-white font-medium truncate block">
-                              {participantNicknames.get(p.identity) || p.name} {isLocal && "(You)"}
-                            </span>
-                            <span className="text-[10px] text-slate-400 capitalize">
-                              {metadata.role || "participant"} • {metadata.userType || "guest"}
-                              {participantNicknames.has(p.identity) && <span className="text-slate-500"> • {p.name}</span>}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {isHandRaised(p) && <Hand className="h-3.5 w-3.5 text-yellow-400" />}
-                            {p.isMicrophoneEnabled === false && <MicOff className="h-3 w-3 text-red-400" />}
-                            {metadata.role === "host" && <Crown className="h-3.5 w-3.5 text-yellow-400" />}
-                            {metadata.role === "cohost" && <Shield className="h-3.5 w-3.5 text-blue-400" />}
-                            {/* Rename button - available to everyone */}
-                            <button
-                              onClick={() => {
-                                const currentName = participantNicknames.get(p.identity) || p.name || "";
-                                setRenamingParticipant({ identity: p.identity, currentName });
-                                setRenameInput(currentName);
-                              }}
-                              title="Rename participant"
-                              className="p-1 rounded-lg hover:bg-slate-600 text-slate-400 hover:text-slate-200 transition-colors"
-                            >
-                              <Edit3 className="h-3 w-3" />
-                            </button>
-                            {/* Host/cohost controls - can mute/unmute anyone except the host */}
-                            {isHostOrCohost && metadata.role !== "host" && !isLocal && (
-                              <div className="flex gap-1 ml-2">
-                                {/* Lower hand button - only show if hand is raised */}
-                                {isHandRaised(p) && (
-                                  <button
-                                    onClick={() => {
-                                      socket?.emit("meeting:lower-hand-target", { meetingId, targetIdentity: p.identity });
-                                    }}
-                                    title="Lower hand"
-                                    className="p-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 active:scale-95 transition-transform"
-                                  >
-                                    <Hand className="h-4 w-4" />
-                                  </button>
-                                )}
-                                {p.isMicrophoneEnabled === false ? (
-                                  <button
-                                    onClick={() => {
-                                      // Send unmute request via Socket.io (using LiveKit identity)
-                                      socket?.emit("meeting:allow-speak", { meetingId, targetIdentity: p.identity });
-                                    }}
-                                    title="Allow to speak"
-                                    className="p-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
-                                  >
-                                    <Mic className="h-4 w-4" />
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      // Send mute request via Socket.io (using LiveKit identity)
-                                      socket?.emit("meeting:mute-participant", { meetingId, targetIdentity: p.identity });
-                                    }}
-                                    title="Mute"
-                                    className="p-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
-                                  >
-                                    <MicOff className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ParticipantPanel
+                  participants={participants}
+                  localParticipant={localParticipant}
+                  participantNicknames={participantNicknames}
+                  raisedHands={raisedHands}
+                  isHostOrCohost={isHostOrCohost}
+                  localIsHost={localIsHost}
+                  meetingId={meetingId}
+                  onClose={() => setShowParticipants(false)}
+                  onMuteAll={() => socket?.emit("meeting:mute-all", { meetingId })}
+                  onUnmuteAll={() => socket?.emit("meeting:unmute-all", { meetingId })}
+                  onLowerAllHands={() => socket?.emit("meeting:lower-all-hands", { meetingId })}
+                  onMuteParticipant={(identity) => socket?.emit("meeting:mute-participant", { meetingId, targetIdentity: identity })}
+                  onUnmuteParticipant={(identity) => socket?.emit("meeting:allow-speak", { meetingId, targetIdentity: identity })}
+                  onLowerHand={(identity) => socket?.emit("meeting:lower-hand-target", { meetingId, targetIdentity: identity })}
+                  onRenameParticipant={(identity, currentName) => setRenamingParticipant({ identity, currentName })}
+                />
               )}
 
               {/* Chat panel */}
               {showChat && (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 className="text-white font-bold text-sm">Chat</h3>
-                    <button onClick={() => setShowChat(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {messages.length === 0 ? (
-                      <p className="text-slate-500 text-xs text-center py-8">No messages yet</p>
-                    ) : (
-                      messages.map(msg => (
-                        <div key={msg.id}>
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-xs font-semibold text-slate-300">{msg.senderName}</span>
-                            {msg.senderType === "arl" && <span className="text-[9px] font-bold bg-red-600/30 text-red-400 px-1 py-0.5 rounded">ARL</span>}
-                          </div>
-                          <div className="text-sm text-slate-200 bg-slate-700/50 rounded-lg p-2">{msg.content}</div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={chatEndRef} />
-                  </div>
-                  {!isArlUser && showMeetingKeyboard && (
-                    <OnscreenKeyboard
-                      value={newMessage}
-                      onChange={setNewMessage}
-                      onSubmit={newMessage.trim() ? sendChat : undefined}
-                      onDismiss={() => setShowMeetingKeyboard(false)}
-                      placeholder="Type a message..."
-                    />
-                  )}
-                  <div className="p-3 border-t border-slate-700 flex gap-2">
-                    {!isArlUser && (
-                      <button
-                        onClick={() => setShowMeetingKeyboard(k => !k)}
-                        className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                          showMeetingKeyboard ? "bg-red-600/20 text-red-400" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                        )}
-                        title="Onscreen keyboard"
-                      >
-                        <Keyboard className="h-4 w-4" />
-                      </button>
-                    )}
-                    <Input
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") sendChat();
-                      }}
-                      placeholder="Type a message..."
-                      className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
-                    />
-                    <Button onClick={sendChat} disabled={!newMessage.trim()} size="icon" className="bg-red-600 hover:bg-red-700 h-9 w-9 shrink-0" aria-label="Send chat message">
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                <ChatPanel
+                  messages={messages}
+                  newMessage={newMessage}
+                  onNewMessageChange={setNewMessage}
+                  onSend={sendChat}
+                  onClose={() => setShowChat(false)}
+                  isArlUser={isArlUser}
+                  showKeyboard={showMeetingKeyboard}
+                  onToggleKeyboard={() => setShowMeetingKeyboard(k => !k)}
+                />
               )}
 
               {/* Q&A panel */}
               {showQA && (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 className="text-white font-bold text-sm">Q&A</h3>
-                    <button onClick={() => setShowQA(false)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {questions.length === 0 ? (
-                      <p className="text-slate-500 text-xs text-center py-8">No questions yet</p>
-                    ) : (
-                      questions.map(q => (
-                        <div key={q.id} className={cn("p-3 rounded-lg border", q.isAnswered ? "bg-green-900/20 border-green-800" : "bg-slate-700/50 border-slate-600")}>
-                          <div className="text-xs font-medium text-slate-300 mb-1">{q.askerName}</div>
-                          <div className="text-sm text-white mb-2">{q.question}</div>
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => socket?.emit("meeting:upvote-question", { meetingId, questionId: q.id })}
-                              className="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-400"
-                            >
-                              <ThumbsUp className="h-3 w-3" />
-                              <span>{q.upvotes}</span>
-                            </button>
-                            <div className="flex items-center gap-2">
-                              {q.isAnswered && (
-                                <span className="flex items-center gap-1 text-xs text-green-400">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Answered
-                                </span>
-                              )}
-                              {isHostOrCohost && !q.isAnswered && (
-                                <button
-                                  onClick={() => socket?.emit("meeting:answer-question", { meetingId, questionId: q.id })}
-                                  className="text-xs text-green-400 hover:text-green-300 font-medium"
-                                >
-                                  Mark Answered
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div className="p-3 border-t border-slate-700 flex gap-2">
-                    <Input
-                      value={newQuestion}
-                      onChange={e => setNewQuestion(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") sendQuestion();
-                      }}
-                      placeholder="Ask a question..."
-                      className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
-                    />
-                    <Button onClick={sendQuestion} disabled={!newQuestion.trim()} size="icon" className="bg-yellow-600 hover:bg-yellow-700 h-9 w-9 shrink-0" aria-label="Submit question">
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                <QAPanel
+                  questions={questions}
+                  newQuestion={newQuestion}
+                  onNewQuestionChange={setNewQuestion}
+                  onSendQuestion={sendQuestion}
+                  onUpvote={(questionId) => socket?.emit("meeting:upvote-question", { meetingId, questionId })}
+                  onMarkAnswered={(questionId) => socket?.emit("meeting:answer-question", { meetingId, questionId })}
+                  onClose={() => setShowQA(false)}
+                  isHostOrCohost={isHostOrCohost}
+                />
               )}
             </motion.div>
           )}
@@ -1788,124 +1469,18 @@ function MeetingUI({
       </div>
 
       {/* Controls bar */}
-      <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-center gap-2 shrink-0">
-        <div className="flex-1" />
-
-        {/* Center: media controls — all pill-shaped custom buttons */}
-        <div className="flex items-center gap-2">
-          {/* Mic toggle */}
-          <button
-            onClick={() => localParticipant.setMicrophoneEnabled(!localParticipant.isMicrophoneEnabled)}
-            className={cn(
-              "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
-              localParticipant.isMicrophoneEnabled
-                ? "bg-slate-700 hover:bg-slate-600 text-white"
-                : "bg-red-600 hover:bg-red-700 text-white"
-            )}
-            title={localParticipant.isMicrophoneEnabled ? "Mute" : "Unmute"}
-          >
-            {localParticipant.isMicrophoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-          </button>
-
-          {/* Video toggle (ARL only) */}
-          {hasVideoCapability && (
-            <button
-              onClick={() => localParticipant.setCameraEnabled(!localParticipant.isCameraEnabled)}
-              className={cn(
-                "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
-                localParticipant.isCameraEnabled
-                  ? "bg-slate-700 hover:bg-slate-600 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              )}
-              title={localParticipant.isCameraEnabled ? "Turn off camera" : "Turn on camera"}
-            >
-              {localParticipant.isCameraEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </button>
-          )}
-
-          {/* Screen share (host only per spec) */}
-          {myRole === "host" && (
-            <button
-              onClick={() => localParticipant.setScreenShareEnabled(!localParticipant.isScreenShareEnabled)}
-              className={cn(
-                "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
-                localParticipant.isScreenShareEnabled
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-slate-700 hover:bg-slate-600 text-white"
-              )}
-              title={localParticipant.isScreenShareEnabled ? "Stop sharing" : "Share screen"}
-            >
-              {localParticipant.isScreenShareEnabled ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
-            </button>
-          )}
-
-          {/* RNNoise noise suppression toggle */}
-          <button
-            onClick={() => setNoiseSuppression(!noiseSuppression)}
-            className={cn(
-              "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
-              noiseSuppression
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-slate-700 hover:bg-slate-600 text-white"
-            )}
-            title={noiseSuppression ? "RNNoise: ON (click to disable)" : "RNNoise: OFF (click to enable)"}
-          >
-            <AudioLines className="h-5 w-5" />
-          </button>
-
-          {/* Raise hand (all non-host roles: participants + co-hosts) */}
-          {myRole !== "host" && (
-            <button
-              onClick={toggleRaiseHand}
-              className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}
-              title={handRaised ? "Lower hand" : "Raise hand"}
-            >
-              <Hand className="h-5 w-5" />
-            </button>
-          )}
-
-          {/* Host: Transfer + Leave + End Meeting buttons */}
-          {myRole === "host" ? (
-            <>
-              <button
-                onClick={() => setShowTransferDialog(true)}
-                className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
-                title="Transfer host role to another participant"
-              >
-                <ArrowRightLeft className="h-5 w-5" />
-                <span className="text-xs font-medium hidden sm:inline">Transfer</span>
-              </button>
-              <button
-                onClick={leaveMeeting}
-                className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
-                title="Leave meeting (meeting continues)"
-              >
-                <LogOut className="h-5 w-5" />
-                <span className="text-xs font-medium hidden sm:inline">Leave</span>
-              </button>
-              <button
-                onClick={endMeeting}
-                className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-                title="End meeting for all"
-              >
-                <PhoneOff className="h-5 w-5" />
-                <span className="text-xs font-medium hidden sm:inline">End</span>
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={leaveMeeting}
-              className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-              title="Leave meeting"
-            >
-              <PhoneOff className="h-5 w-5" />
-              <span className="text-xs font-medium hidden sm:inline">Leave</span>
-            </button>
-          )}
-        </div>
-
-        <div className="flex-1" />
-      </div>
+      <ControlsBar
+        localParticipant={localParticipant}
+        hasVideoCapability={hasVideoCapability}
+        myRole={myRole}
+        handRaised={handRaised}
+        noiseSuppression={noiseSuppression}
+        onToggleHand={toggleRaiseHand}
+        onToggleNoiseSuppression={() => setNoiseSuppression(!noiseSuppression)}
+        onShowTransferDialog={() => setShowTransferDialog(true)}
+        onLeaveMeeting={leaveMeeting}
+        onEndMeeting={endMeeting}
+      />
 
       {/* Reconnecting Overlay */}
       {isReconnecting && (

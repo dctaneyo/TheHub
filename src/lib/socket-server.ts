@@ -250,7 +250,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
             .run();
           socket.emit("session:heartbeat-ack", { lastSeen: now, sessionCode: user.sessionCode });
         }
-      } catch {}
+      } catch (err) { console.error("Heartbeat update error:", err); }
     });
 
     // ── Activity tracking ──
@@ -308,7 +308,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         io.to("arls").emit("presence:update", offlineData);
         try {
           db.update(schema.sessions).set({ isOnline: false }).where(eq(schema.sessions.userId, user.id)).run();
-        } catch {}
+        } catch (err) { console.error("Disconnect session update error:", err); }
 
         if (user.userType === "location") {
           // Delayed offline notification (only if still offline after 5 min)

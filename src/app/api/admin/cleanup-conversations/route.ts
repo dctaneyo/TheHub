@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, desc, sql } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 interface Conversation {
   id: string;
@@ -21,9 +22,9 @@ interface Conversation {
 // Admin-only endpoint to clean up duplicate conversations
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     console.log('🧹 Starting duplicate conversation cleanup...');
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${duplicates.length} duplicate conversations`);
     
     if (duplicates.length === 0) {
-      return NextResponse.json({ 
+      return apiSuccess({ 
         message: "No duplicates found. Database is clean!",
         deleted: 0
       });
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
     
     console.log('✅ Cleanup completed successfully!');
     
-    return NextResponse.json({ 
+    return apiSuccess({ 
       message: "Cleanup completed successfully!",
       deleted: deletedCount,
       totalBefore: allConversations.length,
@@ -111,19 +112,16 @@ export async function POST(req: NextRequest) {
     
   } catch (error) {
     console.error('❌ Error during cleanup:', error);
-    return NextResponse.json({ 
-      error: "Internal server error during cleanup",
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
 // GET method to check for duplicates without deleting
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const allConversations: Conversation[] = db.select().from(schema.conversations).all();
@@ -141,7 +139,7 @@ export async function GET(req: NextRequest) {
       }
     });
     
-    return NextResponse.json({ 
+    return apiSuccess({ 
       totalConversations: allConversations.length,
       duplicateCount: duplicates.length,
       duplicates: duplicates.map(d => ({
@@ -155,9 +153,6 @@ export async function GET(req: NextRequest) {
     
   } catch (error) {
     console.error('❌ Error checking duplicates:', error);
-    return NextResponse.json({ 
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

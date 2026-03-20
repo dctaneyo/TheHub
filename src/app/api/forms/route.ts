@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -18,10 +18,10 @@ export async function GET() {
     if (!session) return unauthorized();
 
     const forms = db.select().from(schema.forms).where(eq(schema.forms.tenantId, session.tenantId)).orderBy(schema.forms.createdAt).all();
-    return NextResponse.json({ forms });
+    return apiSuccess({ forms });
   } catch (error) {
     console.error("Get forms error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL only" }, { status: 403 });
+      return ApiErrors.forbidden("ARL only");
     }
     const denied = await requirePermission(session, PERMISSIONS.FORMS_UPLOAD);
     if (denied) return denied;
@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
-      return NextResponse.json({ error: "file is required" }, { status: 400 });
+      return ApiErrors.badRequest("file is required");
     }
     if (!file.name.endsWith(".pdf")) {
-      return NextResponse.json({ error: "Only PDF files allowed" }, { status: 400 });
+      return ApiErrors.badRequest("Only PDF files allowed");
     }
 
     const parsed = validate(uploadFormSchema, {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       category: formData.get("category"),
     });
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { title, description, category } = parsed.data;
 
@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
       await mkdir(FORMS_DIR, { recursive: true });
       const fileName = `${uuid()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       await writeFile(join(FORMS_DIR, fileName), fileBuffer);
-    } catch {}
+    } catch (e) {
+      console.error("Failed to write form to disk:", e);
+    }
 
     const fileName = `${uuid()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const now = new Date().toISOString();
@@ -101,10 +103,10 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    return NextResponse.json({ success: true, form });
+    return apiSuccess({ form });
   } catch (error) {
     console.error("Upload form error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -112,20 +114,20 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL only" }, { status: 403 });
+      return ApiErrors.forbidden("ARL only");
     }
     const denied = await requirePermission(session, PERMISSIONS.FORMS_DELETE);
     if (denied) return denied;
     const body = await req.json();
     const parsed = validate(deleteFormSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id } = parsed.data;
     db.delete(schema.forms).where(and(eq(schema.forms.id, id), eq(schema.forms.tenantId, session.tenantId))).run();
-    return NextResponse.json({ success: true });
+    return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete form error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getAuthSession } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { addDays, format } from "date-fns";
@@ -148,7 +148,7 @@ function computeLeaderboard(tenantId: string, localDate: string | null) {
 export async function GET(req: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     const { searchParams } = new URL(req.url);
     const localDate = searchParams.get("localDate");
@@ -161,9 +161,9 @@ export async function GET(req: Request) {
       computeLeaderboard(session.tenantId, localDate)
     );
 
-    return NextResponse.json(result);
+    return apiSuccess(result);
   } catch (error) {
     console.error("Leaderboard error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -24,7 +24,9 @@ export async function GET() {
           count: row.c,
         });
       }
-    } catch {}
+    } catch (e) {
+      console.error("Duplicate check conversations error:", e);
+    }
 
     // Duplicate task completions (same task + same location + same date)
     try {
@@ -42,7 +44,9 @@ export async function GET() {
           count: totalDupes,
         });
       }
-    } catch {}
+    } catch (e) {
+      console.error("Duplicate check task completions error:", e);
+    }
 
     // Duplicate sessions (same user with multiple active sessions)
     try {
@@ -61,23 +65,25 @@ export async function GET() {
           count: totalDupes,
         });
       }
-    } catch {}
+    } catch (e) {
+      console.error("Duplicate check sessions error:", e);
+    }
 
-    return NextResponse.json({
+    return apiSuccess({
       hasDuplicates: duplicates.length > 0,
       duplicates,
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Duplicate check error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
 export async function POST() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -92,7 +98,9 @@ export async function POST() {
         )`
       ).run();
       removedCompletions = r.changes;
-    } catch {}
+    } catch (e) {
+      console.error("Remove duplicate completions error:", e);
+    }
 
     // Remove duplicate online sessions (keep the newest)
     try {
@@ -102,16 +110,17 @@ export async function POST() {
         )`
       ).run();
       removedSessions = r.changes;
-    } catch {}
+    } catch (e) {
+      console.error("Remove duplicate sessions error:", e);
+    }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       removedCompletions,
       removedSessions,
       total: removedCompletions + removedSessions,
     });
   } catch (error) {
     console.error("Duplicate removal error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -22,8 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { useTenant } from "@/lib/tenant-context";
-
-type ArlView = "overview" | "messages" | "tasks" | "calendar" | "locations" | "forms" | "emergency" | "users" | "leaderboard" | "remote" | "data-management" | "broadcast" | "meetings" | "analytics" | "tenant-settings";
+import type { ArlView } from "@/lib/arl-views";
 
 // Map additional sidebar views to the permissions that govern whether the ARL
 // should see them at all. Views not listed here are always visible.

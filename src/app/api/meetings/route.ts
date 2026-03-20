@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 function generateMeetingCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -16,9 +16,9 @@ function generateMeetingCode(): string {
 // GET - List scheduled meetings
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -29,10 +29,10 @@ export async function GET(req: NextRequest) {
     query += " ORDER BY scheduled_at ASC";
 
     const meetings = sqlite.prepare(query).all() as any[];
-    return NextResponse.json({ meetings });
+    return apiSuccess({ meetings });
   } catch (error) {
     console.error("Get meetings error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
     const denied = await requirePermission(session, PERMISSIONS.MEETINGS_SCHEDULE);
     if (denied) return denied;
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     if (!title || !scheduledAt) {
-      return NextResponse.json({ error: "Title and scheduled time are required" }, { status: 400 });
+      return ApiErrors.badRequest("Title and scheduled time are required");
     }
 
     // Generate unique 6-char meeting code
@@ -84,10 +84,10 @@ export async function POST(req: NextRequest) {
     );
 
     const meeting = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
-    return NextResponse.json({ meeting });
+    return apiSuccess({ meeting });
   } catch (error) {
     console.error("Create meeting error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -96,19 +96,19 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
     const denied = await requirePermission(session, PERMISSIONS.MEETINGS_EDIT);
     if (denied) return denied;
 
     const { id, ...updates } = await req.json();
     if (!id) {
-      return NextResponse.json({ error: "Meeting ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Meeting ID required");
     }
 
     const meeting = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id) as any;
     if (!meeting) {
-      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      return ApiErrors.notFound("Meeting");
     }
 
     const fields: string[] = [];
@@ -126,7 +126,7 @@ export async function PATCH(req: NextRequest) {
     if (updates.isActive !== undefined) { fields.push("is_active = ?"); values.push(updates.isActive ? 1 : 0); }
 
     if (fields.length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      return ApiErrors.badRequest("No fields to update");
     }
 
     fields.push("updated_at = ?");
@@ -136,10 +136,10 @@ export async function PATCH(req: NextRequest) {
     sqlite.prepare(`UPDATE scheduled_meetings SET ${fields.join(", ")} WHERE id = ?`).run(...values);
 
     const updated = sqlite.prepare("SELECT * FROM scheduled_meetings WHERE id = ?").get(id);
-    return NextResponse.json({ meeting: updated });
+    return apiSuccess({ meeting: updated });
   } catch (error) {
     console.error("Update meeting error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -148,7 +148,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
     const denied = await requirePermission(session, PERMISSIONS.MEETINGS_DELETE);
     if (denied) return denied;
@@ -156,13 +156,13 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {
-      return NextResponse.json({ error: "Meeting ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Meeting ID required");
     }
 
     sqlite.prepare("DELETE FROM scheduled_meetings WHERE id = ?").run(id);
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Delete meeting error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

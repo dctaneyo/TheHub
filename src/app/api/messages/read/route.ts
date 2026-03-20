@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastMessageRead } from "@/lib/socket-emit";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST mark messages as read
 export async function POST(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const { messageIds } = await req.json();
 
     if (!messageIds || !Array.isArray(messageIds)) {
-      return NextResponse.json({ error: "messageIds array is required" }, { status: 400 });
+      return ApiErrors.badRequest("messageIds array is required");
     }
 
     const now = new Date().toISOString();
@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
       broadcastMessageRead(convId, session.id);
     }
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Mark read error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

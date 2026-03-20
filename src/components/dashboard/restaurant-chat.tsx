@@ -181,7 +181,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
       }
       if (arlRes.ok) {
         const d = await arlRes.json();
-        for (const a of d.data?.arls || []) parts.push({ id: a.id, name: a.name, type: "arl" });
+        for (const a of d.arls || []) parts.push({ id: a.id, name: a.name, type: "arl" });
       }
       setParticipants(parts);
     } catch {}

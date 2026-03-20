@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 
 // POST /api/messages/groups/:id/leave - Leave group

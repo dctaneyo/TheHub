@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, getTenantIdFromHeaders, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc, or, isNull, gte } from "drizzle-orm";
@@ -20,10 +20,10 @@ export async function GET() {
       .all()
       .filter((m) => !m.expiresAt || m.expiresAt > now);
 
-    return NextResponse.json({ messages });
+    return apiSuccess({ messages });
   } catch (error) {
     console.error("Ticker GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -32,14 +32,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
     const denied = await requirePermission(session, PERMISSIONS.TICKER_CREATE);
     if (denied) return denied;
 
     const { content, icon, expiresInMinutes } = await req.json();
     if (!content?.trim()) {
-      return NextResponse.json({ error: "Content required" }, { status: 400 });
+      return ApiErrors.badRequest("Content required");
     }
 
     const id = uuid();
@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
     // Broadcast to all locations via socket
     emitTickerMessage(msg, session.tenantId);
 
-    return NextResponse.json({ message: msg });
+    return apiSuccess({ message: msg });
   } catch (error) {
     console.error("Ticker POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -76,21 +76,21 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
     const denied = await requirePermission(session, PERMISSIONS.TICKER_DELETE);
     if (denied) return denied;
 
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("ID required");
 
     db.delete(schema.tickerMessages).where(and(eq(schema.tickerMessages.id, id), eq(schema.tickerMessages.tenantId, session.tenantId))).run();
 
     emitTickerDelete(id, session.tenantId);
 
-    return NextResponse.json({ ok: true });
+    return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Ticker DELETE error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

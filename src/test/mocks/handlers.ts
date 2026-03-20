@@ -17,6 +17,7 @@ export const handlers = [
   // Tasks
   http.get('/api/tasks', () => {
     return HttpResponse.json({
+      ok: true,
       tasks: [
         {
           id: 'task-1',
@@ -45,6 +46,7 @@ export const handlers = [
   // Achievements
   http.get('/api/achievements', () => {
     return HttpResponse.json({
+      ok: true,
       badges: [
         {
           id: 'first_task',
@@ -63,6 +65,6 @@ export const handlers = [
 
   // Notifications
   http.get('/api/notifications', () => {
-    return HttpResponse.json({ notifications: [] })
+    return HttpResponse.json({ ok: true, notifications: [] })
   }),
 ]

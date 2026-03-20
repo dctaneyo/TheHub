@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
@@ -25,9 +25,12 @@ function ensureShoutoutsTable() {
         reactions TEXT DEFAULT '[]'
       )
     `);
-    // Add tenant_id column if missing (existing tables)
-    try { sqlite.exec(`ALTER TABLE shoutouts ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
-  } catch {}
+    try { sqlite.exec(`ALTER TABLE shoutouts ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch (e) {
+      // Column may already exist
+    }
+  } catch (e) {
+    console.error("Failed to ensure shoutouts table:", e);
+  }
 }
 
 // GET - Fetch recent shoutouts
@@ -61,10 +64,10 @@ export async function GET(request: Request) {
       reactions: JSON.parse(s.reactions || '[]'),
     }));
 
-    return NextResponse.json({ shoutouts: parsed });
+    return apiSuccess({ shoutouts: parsed });
   } catch (error) {
     console.error("Get shoutouts error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -82,7 +85,7 @@ export async function POST(request: Request) {
     const { toLocationId, toLocationName, message } = await request.json();
 
     if (!toLocationId || !message) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return ApiErrors.badRequest("Missing required fields");
     }
 
     ensureShoutoutsTable();
@@ -146,10 +149,10 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ shoutout });
+    return apiSuccess({ shoutout });
   } catch (error) {
     console.error("Create shoutout error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -162,7 +165,7 @@ export async function PATCH(request: Request) {
     const { shoutoutId, emoji } = await request.json();
 
     if (!shoutoutId || !emoji) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return ApiErrors.badRequest("Missing required fields");
     }
 
     ensureShoutoutsTable();
@@ -170,7 +173,7 @@ export async function PATCH(request: Request) {
     const shoutout = sqlite.prepare("SELECT * FROM shoutouts WHERE id = ?").get(shoutoutId) as any;
 
     if (!shoutout) {
-      return NextResponse.json({ error: "Shoutout not found" }, { status: 404 });
+      return ApiErrors.notFound("Shoutout");
     }
 
     const reactions = JSON.parse(shoutout.reactions || '[]');
@@ -189,10 +192,10 @@ export async function PATCH(request: Request) {
     // Broadcast update
     broadcastToAll("shoutout:reaction", { shoutoutId, reactions });
 
-    return NextResponse.json({ reactions });
+    return apiSuccess({ reactions });
   } catch (error) {
     console.error("React to shoutout error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -201,18 +204,17 @@ export async function DELETE() {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     ensureShoutoutsTable();
     sqlite.prepare("DELETE FROM shoutouts WHERE tenant_id = ?").run(session.tenantId);
 
-    // Broadcast to all clients so they refresh
     broadcastToAll("shoutout:purged", {});
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ purged: true });
   } catch (error) {
     console.error("Purge shoutouts error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

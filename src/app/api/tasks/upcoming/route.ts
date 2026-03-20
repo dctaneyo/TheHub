@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, getEffectiveLocationId } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { addDays, format } from "date-fns";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function GET(req: Request) {
   try {
@@ -48,10 +48,10 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ upcoming });
+    return apiSuccess({ upcoming });
   } catch (error) {
     console.error("Upcoming tasks error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 

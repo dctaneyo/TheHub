@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
@@ -7,7 +8,7 @@ import { v4 as uuid } from "uuid";
 export async function POST() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -26,21 +27,27 @@ export async function POST() {
         const r = sqlite.prepare("DELETE FROM messages").run();
         deletedMessages = r.changes;
       }
-    } catch {}
+    } catch (e) {
+      console.error("Failed to delete messages from non-global conversations:", e);
+    }
 
     // Delete all message reads
     let deletedReads = 0;
     try {
       const r = sqlite.prepare("DELETE FROM message_reads").run();
       deletedReads = r.changes;
-    } catch {}
+    } catch (e) {
+      console.error("Failed to delete message reads:", e);
+    }
 
     // Delete all message reactions
     let deletedReactions = 0;
     try {
       const r = sqlite.prepare("DELETE FROM message_reactions").run();
       deletedReactions = r.changes;
-    } catch {}
+    } catch (e) {
+      console.error("Failed to delete message reactions:", e);
+    }
 
     // Delete conversation members from non-global conversations
     let deletedMembers = 0;
@@ -52,7 +59,9 @@ export async function POST() {
         const r = sqlite.prepare("DELETE FROM conversation_members").run();
         deletedMembers = r.changes;
       }
-    } catch {}
+    } catch (e) {
+      console.error("Failed to delete conversation members:", e);
+    }
 
     // Delete all non-global conversations
     let deletedConversations = 0;
@@ -77,8 +86,7 @@ export async function POST() {
       `).run(globalId, new Date().toISOString());
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       deletedConversations,
       deletedMessages,
       deletedReads,
@@ -88,6 +96,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Purge conversations error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

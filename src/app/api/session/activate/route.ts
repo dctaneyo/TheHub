@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -14,17 +15,17 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const { pendingId, assignToType, assignToId } = await req.json();
 
     if (!pendingId || !assignToType || !assignToId) {
-      return NextResponse.json({ error: "pendingId, assignToType, and assignToId are required" }, { status: 400 });
+      return ApiErrors.badRequest("pendingId, assignToType, and assignToId are required");
     }
 
     if (!["location", "arl"].includes(assignToType)) {
-      return NextResponse.json({ error: "assignToType must be 'location' or 'arl'" }, { status: 400 });
+      return ApiErrors.badRequest("assignToType must be 'location' or 'arl'");
     }
 
     // Find the pending session
@@ -35,15 +36,15 @@ export async function POST(req: NextRequest) {
       .get();
 
     if (!pending) {
-      return NextResponse.json({ error: "Pending session not found" }, { status: 404 });
+      return ApiErrors.notFound("Pending session");
     }
 
     if (pending.status !== "pending") {
-      return NextResponse.json({ error: "Session already activated" }, { status: 400 });
+      return ApiErrors.badRequest("Session already activated");
     }
 
     if (new Date(pending.expiresAt) < new Date()) {
-      return NextResponse.json({ error: "Pending session has expired" }, { status: 400 });
+      return ApiErrors.badRequest("Pending session has expired");
     }
 
     // Look up the target account
@@ -54,8 +55,8 @@ export async function POST(req: NextRequest) {
 
     if (assignToType === "location") {
       const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
-      if (!location) return NextResponse.json({ error: "Location not found" }, { status: 404 });
-      if (!location.isActive) return NextResponse.json({ error: "Location is deactivated" }, { status: 403 });
+      if (!location) return ApiErrors.notFound("Location");
+      if (!location.isActive) return ApiErrors.forbidden("Location is deactivated");
 
       const payload: AuthPayload = {
         id: location.id,
@@ -86,8 +87,8 @@ export async function POST(req: NextRequest) {
       }).run();
     } else {
       const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
-      if (!arl) return NextResponse.json({ error: "ARL not found" }, { status: 404 });
-      if (!arl.isActive) return NextResponse.json({ error: "ARL account is deactivated" }, { status: 403 });
+      if (!arl) return ApiErrors.notFound("ARL");
+      if (!arl.isActive) return ApiErrors.forbidden("ARL account is deactivated");
 
       const payload: AuthPayload = {
         id: arl.id,
@@ -134,13 +135,12 @@ export async function POST(req: NextRequest) {
     // Instantly notify login page watcher + ARLs
     broadcastSessionActivated(pendingId, session.tenantId);
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       targetName,
       redirectTo,
     });
   } catch (error) {
     console.error("Activate session error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastConversationUpdate } from "@/lib/socket-emit";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - soft-delete (hide) a conversation for the current user
 // The conversation and its messages are preserved; starting a new direct chat
@@ -14,16 +14,16 @@ export async function POST(req: NextRequest) {
     if (!session) return unauthorized();
 
     const { conversationId } = await req.json();
-    if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
+    if (!conversationId) return ApiErrors.badRequest("conversationId required");
 
     const conv = db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId))
       .get();
-    if (!conv) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    if (!conv) return ApiErrors.notFound("Conversation");
 
     // Don't allow deleting global chat
     if (conv.type === "global") {
-      return NextResponse.json({ error: "Cannot delete global chat" }, { status: 403 });
+      return ApiErrors.forbidden("Cannot delete global chat");
     }
 
     // Add current user to deletedBy array
@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
     // Notify all members so sibling kiosks (same location) also hide the conversation
     broadcastConversationUpdate(conversationId);
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Delete conversation error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

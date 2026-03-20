@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // GET /api/meetings/analytics — list all meeting analytics (ARL only)
 // GET /api/meetings/analytics?meetingId=xxx — get single meeting detail
 export async function GET(req: NextRequest) {
-  const session = await getSession();
+  const session = await getAuthSession();
   if (!session || session.userType !== "arl") {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   const analyticsId = req.nextUrl.searchParams.get("id");
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
       : db.select().from(schema.meetingAnalytics).where(eq(schema.meetingAnalytics.meetingId, meetingId!)).get();
 
     if (!meeting) {
-      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      return ApiErrors.notFound("Meeting");
     }
 
     // Use the specific analytics record's meetingId + startedAt to scope participants
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
       return joinedAt >= meetingStart - 60_000 && joinedAt <= meetingEnd;
     });
 
-    return NextResponse.json({ meeting, participants });
+    return apiSuccess({ meeting, participants });
   }
 
   // List all meetings, most recent first
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
   const totalQuestions = meetings.reduce((sum, m) => sum + (m.totalQuestions || 0), 0);
   const totalHandRaises = meetings.reduce((sum, m) => sum + (m.totalHandRaises || 0), 0);
 
-  return NextResponse.json({
+  return apiSuccess({
     meetings,
     summary: {
       totalMeetings,
@@ -82,9 +83,9 @@ export async function GET(req: NextRequest) {
 
 // DELETE /api/meetings/analytics — delete all meeting analytics data (ARL only)
 export async function DELETE(req: NextRequest) {
-  const session = await getSession();
+  const session = await getAuthSession();
   if (!session || session.userType !== "arl") {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return ApiErrors.unauthorized();
   }
 
   try {
@@ -94,9 +95,9 @@ export async function DELETE(req: NextRequest) {
     // Delete all meeting analytics
     db.delete(schema.meetingAnalytics).run();
 
-    return NextResponse.json({ success: true, message: "All meeting data deleted" });
+    return apiSuccess({ success: true, message: "All meeting data deleted" });
   } catch (error) {
     console.error("Failed to delete meeting analytics:", error);
-    return NextResponse.json({ error: "Failed to delete meeting data" }, { status: 500 });
+    return ApiErrors.internal("Failed to delete meeting data");
   }
 }

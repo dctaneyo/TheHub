@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, sqlite, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -124,7 +125,7 @@ export async function GET(req: NextRequest) {
       const convIds = memberships.map((m) => m.conversationId);
 
       if (convIds.length === 0) {
-        return NextResponse.json({ conversations: [] });
+        return apiSuccess({ conversations: [] });
       }
 
       const allConvs = db.select().from(schema.conversations).all()
@@ -167,14 +168,14 @@ export async function GET(req: NextRequest) {
           };
         });
 
-      return NextResponse.json({ conversations: convosWithDetails });
+      return apiSuccess({ conversations: convosWithDetails });
     }
 
     // Verify membership
     const membership = db.select().from(schema.conversationMembers)
       .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.memberId, session.id)))
       .get();
-    if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    if (!membership) return ApiErrors.forbidden("Not a member");
 
     const messages = db.select().from(schema.messages)
       .where(eq(schema.messages.conversationId, conversationId))
@@ -244,10 +245,10 @@ export async function GET(req: NextRequest) {
       console.error("Failed to load reactions (table may not exist):", reactionError);
     }
 
-    return NextResponse.json({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [], reactions: reactionMap.get(m.id) || [] })) });
+    return apiSuccess({ messages: messages.map((m) => ({ ...m, reads: readMap.get(m.id) || [], reactions: reactionMap.get(m.id) || [] })) });
   } catch (error) {
     console.error("Get messages error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -260,7 +261,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(sendMessageSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { conversationId, content } = parsed.data;
 
@@ -268,7 +269,7 @@ export async function POST(req: NextRequest) {
     const membership = db.select().from(schema.conversationMembers)
       .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.memberId, session.id)))
       .get();
-    if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    if (!membership) return ApiErrors.forbidden("Not a member");
 
     const now = new Date().toISOString();
     const message = {
@@ -354,10 +355,10 @@ export async function POST(req: NextRequest) {
     broadcastNewMessage(conversationId, message);
     broadcastConversationUpdate(conversationId);
 
-    return NextResponse.json({ success: true, message });
+    return apiSuccess({ message });
   } catch (error) {
     console.error("Send message error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -368,12 +369,9 @@ export async function PUT(req: NextRequest) {
     if (!session) return unauthorized();
 
     const { type, name, memberIds, memberTypes } = await req.json();
-    // type: 'group' | 'direct'
-    // memberIds: array of participant IDs (including self)
-    // memberTypes: array matching memberIds
 
     if (!type || !memberIds || !Array.isArray(memberIds)) {
-      return NextResponse.json({ error: "type and memberIds required" }, { status: 400 });
+      return ApiErrors.badRequest("type and memberIds required");
     }
 
     const now = new Date().toISOString();
@@ -399,7 +397,7 @@ export async function PUT(req: NextRequest) {
             .where(eq(schema.conversations.id, existing.id))
             .run();
         }
-        return NextResponse.json({ conversation: existing });
+        return apiSuccess({ conversation: existing });
       }
 
       db.insert(schema.conversations).values({
@@ -413,7 +411,7 @@ export async function PUT(req: NextRequest) {
         { id: uuid(), conversationId: convId, memberId: otherId, memberType: otherType, joinedAt: now },
       ]).run();
     } else if (type === "group") {
-      if (!name) return NextResponse.json({ error: "Group name required" }, { status: 400 });
+      if (!name) return ApiErrors.badRequest("Group name required");
       db.insert(schema.conversations).values({
         id: convId, tenantId: session.tenantId, type: "group", name, createdBy: session.id, createdByType: session.userType, createdAt: now,
       }).run();
@@ -437,9 +435,9 @@ export async function PUT(req: NextRequest) {
     }
 
     const conv = db.select().from(schema.conversations).where(eq(schema.conversations.id, convId)).get();
-    return NextResponse.json({ success: true, conversation: conv });
+    return apiSuccess({ conversation: conv });
   } catch (error) {
     console.error("Create conversation error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

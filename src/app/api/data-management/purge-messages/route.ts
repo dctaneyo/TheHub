@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 
 export async function POST() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -15,22 +16,23 @@ export async function POST() {
     let reactionCount = 0;
     try {
       reactionCount = db.select().from(schema.messageReactions).all().length;
-    } catch {
-      // Table may not exist yet
+    } catch (e) {
+      console.error("Failed to count message reactions (table may not exist):", e);
     }
 
-    try { db.delete(schema.messageReactions).run(); } catch { /* table may not exist */ }
+    try { db.delete(schema.messageReactions).run(); } catch (e) {
+      console.error("Failed to delete message reactions (table may not exist):", e);
+    }
     db.delete(schema.messageReads).run();
     db.delete(schema.messages).run();
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       deletedMessages: messageCount,
       deletedReads: readCount,
       deletedReactions: reactionCount,
     });
   } catch (error) {
     console.error("Purge messages error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

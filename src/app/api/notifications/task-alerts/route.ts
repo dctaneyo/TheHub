@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -46,7 +47,9 @@ export async function GET(req: NextRequest) {
         taskId = meta.taskId || "";
         title = meta.taskTitle || meta.title || "";
         dueTime = meta.dueTime || "";
-      } catch {}
+      } catch (e) {
+        console.error("Failed to parse task alert metadata:", e);
+      }
 
       const clientId =
         row.type === "task_due_soon"
@@ -64,10 +67,10 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ alerts });
+    return apiSuccess({ alerts });
   } catch (error) {
     console.error("Error fetching task alerts:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -92,7 +95,7 @@ export async function POST(req: NextRequest) {
     const clientIds: string[] = body.clientIds || [];
 
     if (dbIds.length === 0 && clientIds.length === 0) {
-      return NextResponse.json({ error: "dbIds or clientIds required" }, { status: 400 });
+      return ApiErrors.badRequest("dbIds or clientIds required");
     }
 
     const now = new Date().toISOString();
@@ -125,7 +128,9 @@ export async function POST(req: NextRequest) {
           if (requestedClientIds.has(cid)) {
             idsToMark.add(row.id);
           }
-        } catch {}
+        } catch (e) {
+          console.error("Failed to parse task alert metadata for dismiss:", e);
+        }
       }
     }
 
@@ -137,9 +142,9 @@ export async function POST(req: NextRequest) {
         .run();
     }
 
-    return NextResponse.json({ success: true, dismissed: idsToMark.size });
+    return apiSuccess({ dismissed: idsToMark.size });
   } catch (error) {
     console.error("Error dismissing task alerts:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

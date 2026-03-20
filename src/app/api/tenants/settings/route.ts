@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // GET — fetch current tenant settings (any authenticated user)
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
 
     const tenant = db
       .select()
@@ -16,10 +17,10 @@ export async function GET() {
       .get();
 
     if (!tenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return ApiErrors.notFound("Tenant");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       tenant: {
         ...tenant,
         features: JSON.parse(tenant.features || "[]"),
@@ -27,7 +28,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Get tenant settings error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -35,17 +36,17 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
 
     // Only ARLs with admin role can update tenant settings
     if (session.userType !== "arl") {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      return ApiErrors.forbidden("Admin access required");
     }
 
     // Check if user has admin role
     const arl = db.select().from(schema.arls).where(eq(schema.arls.id, session.userId)).get();
     if (!arl || arl.role !== "admin") {
-      return NextResponse.json({ error: "Only tenant admins can update settings" }, { status: 403 });
+      return ApiErrors.forbidden("Only tenant admins can update settings");
     }
 
     const body = await req.json();
@@ -73,12 +74,12 @@ export async function PUT(req: NextRequest) {
       .where(eq(schema.tenants.id, session.tenantId))
       .get();
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       tenant: updated ? { ...updated, features: JSON.parse(updated.features || "[]") } : null,
     });
   } catch (error) {
     console.error("Update tenant settings error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

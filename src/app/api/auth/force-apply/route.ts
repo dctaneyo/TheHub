@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { ApiErrors } from "@/lib/api-response";
 
 function setTokenCookie(response: NextResponse, token: string) {
   response.cookies.set("hub-token", token, {
@@ -47,13 +48,14 @@ export async function POST(req: NextRequest) {
     const { token } = await req.json();
 
     if (!token || !verifyToken(token)) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 400 });
+      return ApiErrors.badRequest("Invalid token");
     }
 
-    const response = NextResponse.json({ success: true });
+    // Cookie needs to be set on the response, so keep NextResponse.json
+    const response = NextResponse.json({ ok: true, success: true });
     setTokenCookie(response, token);
     return response;
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return ApiErrors.badRequest("Invalid request");
   }
 }

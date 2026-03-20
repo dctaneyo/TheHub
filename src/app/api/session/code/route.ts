@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { and, eq, desc } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -8,7 +9,7 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     // The sessionCode in the JWT payload is unique to this browser's login
@@ -39,7 +40,7 @@ export async function GET() {
     const cookieStore = await cookies();
     const myToken = cookieStore.get("hub-token")?.value ?? null;
 
-    return NextResponse.json({
+    return apiSuccess({
       sessionCode: myCode,
       sessions: onlineSessions.map((s) => ({
         id: s.id,
@@ -53,6 +54,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Session code error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

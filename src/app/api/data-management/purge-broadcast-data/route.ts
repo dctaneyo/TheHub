@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function POST() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -16,14 +16,13 @@ export async function POST() {
     let deletedReactions = 0;
     let deletedViewers = 0;
 
-    try { deletedViewers = sqlite.prepare("DELETE FROM broadcast_viewers").run().changes; } catch {}
-    try { deletedReactions = sqlite.prepare("DELETE FROM broadcast_reactions").run().changes; } catch {}
-    try { deletedMessages = sqlite.prepare("DELETE FROM broadcast_messages").run().changes; } catch {}
-    try { deletedQuestions = sqlite.prepare("DELETE FROM broadcast_questions").run().changes; } catch {}
-    try { deletedBroadcasts = sqlite.prepare("DELETE FROM broadcasts").run().changes; } catch {}
+    try { deletedViewers = sqlite.prepare("DELETE FROM broadcast_viewers").run().changes; } catch (err) { console.error("Purge broadcast_viewers:", err); }
+    try { deletedReactions = sqlite.prepare("DELETE FROM broadcast_reactions").run().changes; } catch (err) { console.error("Purge broadcast_reactions:", err); }
+    try { deletedMessages = sqlite.prepare("DELETE FROM broadcast_messages").run().changes; } catch (err) { console.error("Purge broadcast_messages:", err); }
+    try { deletedQuestions = sqlite.prepare("DELETE FROM broadcast_questions").run().changes; } catch (err) { console.error("Purge broadcast_questions:", err); }
+    try { deletedBroadcasts = sqlite.prepare("DELETE FROM broadcasts").run().changes; } catch (err) { console.error("Purge broadcasts:", err); }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       deletedBroadcasts,
       deletedMessages,
       deletedQuestions,
@@ -32,6 +31,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Purge broadcast data error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

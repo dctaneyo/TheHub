@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // GET /api/messages/groups/:id - Get group details
 export async function GET(
@@ -25,7 +25,7 @@ export async function GET(
       .get();
 
     if (!conversation || conversation.type !== "group") {
-      return NextResponse.json({ error: "Group not found" }, { status: 404 });
+      return ApiErrors.notFound("Group");
     }
 
     // Get active members (leftAt is null)
@@ -69,7 +69,7 @@ export async function GET(
       };
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       id: conversation.id,
       name: conversation.name,
       description: conversation.description,
@@ -82,10 +82,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Failed to get group details:", error);
-    return NextResponse.json(
-      { error: "Failed to get group details" },
-      { status: 500 }
-    );
+    return ApiErrors.internal("Failed to get group details");
   }
 }
 
@@ -117,10 +114,7 @@ export async function PATCH(
       .get();
 
     if (!member || member.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can update group info" },
-        { status: 403 }
-      );
+      return ApiErrors.forbidden("Only admins can update group info");
     }
 
     // Update conversation
@@ -136,12 +130,9 @@ export async function PATCH(
         .run();
     }
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Failed to update group:", error);
-    return NextResponse.json(
-      { error: "Failed to update group" },
-      { status: 500 }
-    );
+    return ApiErrors.internal("Failed to update group");
   }
 }

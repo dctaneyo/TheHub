@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL only" }, { status: 403 });
+      return ApiErrors.forbidden("ARL only");
     }
     const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
     if (denied) return denied;
@@ -84,10 +85,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(emergencyBroadcastSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { message, targetLocationIds } = parsed.data;
-    if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
+    if (!message?.trim()) return ApiErrors.badRequest("Message required");
 
     // Deactivate all previous messages for this tenant
     db.update(schema.emergencyMessages)
@@ -141,10 +142,10 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    return NextResponse.json({ success: true, id });
+    return apiSuccess({ id });
   } catch (error) {
     console.error("Send emergency error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -154,15 +155,15 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Location only" }, { status: 403 });
+      return ApiErrors.forbidden("Location only");
     }
 
     const { messageId } = await req.json();
-    if (!messageId) return NextResponse.json({ error: "messageId required" }, { status: 400 });
+    if (!messageId) return ApiErrors.badRequest("messageId required");
 
     const msg = db.select().from(schema.emergencyMessages)
       .where(eq(schema.emergencyMessages.id, messageId)).get();
-    if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!msg) return ApiErrors.notFound("Emergency message");
 
     const viewedBy: string[] = msg.viewedBy ? JSON.parse(msg.viewedBy) : [];
     if (!viewedBy.includes(session.id)) {
@@ -193,10 +194,10 @@ export async function PATCH(req: NextRequest) {
     // Notify sibling kiosks at this location so they also dismiss the overlay
     broadcastEmergencyViewedLocal(session.id, messageId, session.tenantId);
 
-    return NextResponse.json({ success: true, archived: shouldArchive });
+    return apiSuccess({ archived: shouldArchive });
   } catch (error) {
     console.error("Mark viewed error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -205,7 +206,7 @@ export async function DELETE() {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL only" }, { status: 403 });
+      return ApiErrors.forbidden("ARL only");
     }
     const denied = await requirePermission(session, PERMISSIONS.EMERGENCY_ACCESS);
     if (denied) return denied;
@@ -216,9 +217,9 @@ export async function DELETE() {
 
     broadcastEmergencyDismissed(session.tenantId);
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ cleared: true });
   } catch (error) {
     console.error("Clear emergency error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { lt, eq } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST() {
   try {
@@ -30,9 +30,9 @@ export async function POST() {
         .run();
     }
 
-    return NextResponse.json({ success: true, purged: oldMessages.length });
+    return apiSuccess({ success: true, purged: oldMessages.length });
   } catch (error) {
     console.error("Purge messages error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized, getArlPermissions } from "@/lib/api-helpers";
+import { getAuthSession, getArlPermissions } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     // For ARLs, include fresh role + permissions + location assignments from DB
     if (session.userType === "arl") {
@@ -14,13 +14,13 @@ export async function GET() {
       const permissions = role === "admin" ? ALL_PERMISSIONS : (arlPerms?.permissions ?? ALL_PERMISSIONS);
       const roleId = arlPerms?.roleId ?? null;
       const assignedLocationIds = role === "admin" ? null : (arlPerms?.assignedLocationIds ?? null);
-      return NextResponse.json({
+      return apiSuccess({
         user: { ...session, role, roleId, permissions, assignedLocationIds },
       });
     }
 
-    return NextResponse.json({ user: session });
+    return apiSuccess({ user: session });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

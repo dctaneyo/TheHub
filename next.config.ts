@@ -17,21 +17,6 @@ function readBuildId(): string {
 
 const BUILD_ID = readBuildId();
 
-const cspHeader = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: blob:",
-  "media-src 'self' blob:",
-  "connect-src 'self' wss: ws: https://*.meetthehub.com https://*.meethehub.com https://*.sentry.io",
-  "frame-src 'self'",
-  "worker-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ");
-
 const nextConfig: NextConfig = {
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.5.165"],
@@ -43,11 +28,12 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "Content-Security-Policy", value: cspHeader },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
         ],
       },
     ];

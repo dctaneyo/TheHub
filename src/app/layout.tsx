@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SocketProvider } from "@/lib/socket-context";
@@ -49,22 +50,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") ?? "";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="The Hub" />
+        <meta name="csp-nonce" content={nonce} />
       </head>
       <body
         className={`${inter.variable} antialiased`}
       >
         {/* Block iOS Safari page-level pinch-to-zoom (Safari ignores viewport user-scalable=no).
             Elements with touch-action:none (like ZoomableVideo) handle their own zoom. */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `
           document.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) {
               e.preventDefault();

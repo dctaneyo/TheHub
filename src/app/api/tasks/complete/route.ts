@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, getEffectiveLocationIdFromBody } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
     if (!session) return unauthorized();
     // Allow locations directly, and ARLs in mirror/control mode
     if (session.userType !== "location" && session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const body = await req.json();
     const parsed = validate(completeTaskSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { taskId, notes, completedDate: requestedDate, localDate } = parsed.data;
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const task = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!task) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+      return ApiErrors.notFound("Task");
     }
 
     // Prefer client-supplied localDate (avoids UTC vs local timezone mismatch on Railway).
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     // If completing for a future date, check allowEarlyComplete
     if (targetDate > todayStr && !task.allowEarlyComplete) {
-      return NextResponse.json({ error: "This task cannot be completed early" }, { status: 403 });
+      return ApiErrors.forbidden("This task cannot be completed early");
     }
 
     // Early bird bonus: +25% when completing ahead of due date
@@ -99,8 +99,7 @@ export async function POST(req: NextRequest) {
 
     refreshTaskTimers();
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       pointsEarned: task.points,
       bonusPoints,
       totalPoints: task.points + bonusPoints,
@@ -109,6 +108,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Complete task error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,5 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// ── CSP Nonce Generation ──
+
+/** Generate a cryptographically random nonce (16 bytes, base64-encoded). */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes));
+}
+
+/** Build the Content-Security-Policy header with the given nonce. */
+export function buildCspHeader(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' https://*.sentry.io`,
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "connect-src 'self' wss: ws: https://*.meetthehub.com https://*.meethehub.com https://*.sentry.io https://*.ingest.sentry.io",
+    "frame-src 'self'",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token"];
 const hubDomains = ["meetthehub.com", "meethehub.com"];
 const systemSubdomains = ["join", "www", "admin"];
@@ -55,13 +83,23 @@ const csrfExemptPaths = [
   "/api/session/pending",
   "/api/health",
   "/api/livekit/",
-  "/api/graphql",
   "/api/tenants/signup",
 ];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "localhost";
+
+  // Generate a per-request nonce for CSP
+  const nonce = generateNonce();
+  const cspHeader = buildCspHeader(nonce);
+
+  /** Apply CSP + nonce headers to a NextResponse. */
+  function applyCsp(response: NextResponse): NextResponse {
+    response.headers.set("Content-Security-Policy", cspHeader);
+    response.headers.set("x-nonce", nonce);
+    return response;
+  }
 
   // ── CSRF protection for API mutations ──
   const method = request.method.toUpperCase();
@@ -72,10 +110,10 @@ export function middleware(request: NextRequest) {
   ) {
     const csrfHeader = request.headers.get("x-hub-request");
     if (csrfHeader !== "1") {
-      return NextResponse.json(
+      return applyCsp(NextResponse.json(
         { error: "CSRF validation failed" },
         { status: 403 }
-      );
+      ));
     }
   }
 
@@ -84,9 +122,9 @@ export function middleware(request: NextRequest) {
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/meeting";
-      return NextResponse.rewrite(url);
+      return applyCsp(NextResponse.rewrite(url));
     }
-    return NextResponse.next();
+    return applyCsp(NextResponse.next());
   }
 
   // ── Root domain → landing page ──
@@ -98,7 +136,7 @@ export function middleware(request: NextRequest) {
       pathname.startsWith("/_next") ||
       pathname.includes(".")
     ) {
-      return NextResponse.next();
+      return applyCsp(NextResponse.next());
     }
     // Redirect everything else to root landing
     return NextResponse.redirect(new URL("/", request.url));
@@ -116,7 +154,7 @@ export function middleware(request: NextRequest) {
       pathname.startsWith("/_next") ||
       pathname.includes(".")
     ) {
-      return NextResponse.next({ request: { headers } });
+      return applyCsp(NextResponse.next({ request: { headers } }));
     }
     // Redirect to /admin
     return NextResponse.redirect(new URL("/admin", request.url));
@@ -141,7 +179,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/tenants") ||
     pathname.includes(".")
   ) {
-    return NextResponse.next({ request: { headers } });
+    return applyCsp(NextResponse.next({ request: { headers } }));
   }
 
   const token = request.cookies.get("hub-token")?.value;
@@ -187,7 +225,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next({ request: { headers } });
+  return applyCsp(NextResponse.next({ request: { headers } }));
 }
 
 export const config = {

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_CREATE);
     if (denied) return denied;
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(createLocationGroupSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { name, description, color, parentId, locationIds } = parsed.data;
 
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_EDIT);
     if (denied) return denied;
@@ -94,13 +94,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(updateLocationGroupSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id, name, description, color, parentId, locationIds } = parsed.data;
 
     const existing = db.select().from(schema.locationGroups)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Group");
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name.trim();
@@ -139,17 +139,17 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_DELETE);
     if (denied) return denied;
 
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("id required");
 
     const existing = db.select().from(schema.locationGroups)
       .where(and(eq(schema.locationGroups.id, id), eq(schema.locationGroups.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Group");
 
     // Delete members first
     db.delete(schema.locationGroupMembers)

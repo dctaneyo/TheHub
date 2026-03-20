@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - Ask a question during broadcast
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await request.json();
     const { broadcastId, question } = body;
 
     if (!broadcastId || !question) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return ApiErrors.badRequest("Missing required fields");
     }
 
     const questionId = uuidv4();
@@ -32,26 +31,24 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ questionId });
+    return apiSuccess({ questionId });
   } catch (error) {
     console.error("Error asking question:", error);
-    return NextResponse.json({ error: "Failed to ask question" }, { status: 500 });
+    return ApiErrors.internal("Failed to ask question");
   }
 }
 
 // PATCH - Answer a question or upvote
 export async function PATCH(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await request.json();
     const { questionId, answer, upvote } = body;
 
     if (!questionId) {
-      return NextResponse.json({ error: "Question ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Question ID required");
     }
 
     const updates: any = {};
@@ -59,7 +56,7 @@ export async function PATCH(request: Request) {
     if (answer !== undefined) {
       // Only ARLs can answer
       if (session.userType !== "arl") {
-        return NextResponse.json({ error: "Only ARLs can answer questions" }, { status: 403 });
+        return ApiErrors.forbidden("Only ARLs can answer questions");
       }
       updates.answer = answer;
       updates.isAnswered = true;
@@ -80,34 +77,32 @@ export async function PATCH(request: Request) {
       .set(updates)
       .where(eq(schema.broadcastQuestions.id, questionId));
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Error updating question:", error);
-    return NextResponse.json({ error: "Failed to update question" }, { status: 500 });
+    return ApiErrors.internal("Failed to update question");
   }
 }
 
 // GET - Get questions for a broadcast
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(request.url);
     const broadcastId = searchParams.get("broadcastId");
 
     if (!broadcastId) {
-      return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Broadcast ID required");
     }
 
     const questions = await db.select().from(schema.broadcastQuestions)
       .where(eq(schema.broadcastQuestions.broadcastId, broadcastId));
 
-    return NextResponse.json({ questions });
+    return apiSuccess({ questions });
   } catch (error) {
     console.error("Error fetching questions:", error);
-    return NextResponse.json({ error: "Failed to fetch questions" }, { status: 500 });
+    return ApiErrors.internal("Failed to fetch questions");
   }
 }

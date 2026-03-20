@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -40,7 +40,9 @@ export async function POST(request: Request) {
           archived_at TEXT
         )
       `);
-    } catch {}
+    } catch (e) {
+      console.error("Archive table creation error:", e);
+    }
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - (daysOld || 180));
@@ -74,11 +76,10 @@ export async function POST(request: Request) {
       const deleted = sqlite.prepare("DELETE FROM task_completions WHERE completed_date < ?").run(cutoff.split("T")[0]);
       archived = deleted.changes;
     } else {
-      return NextResponse.json({ error: "Invalid data type" }, { status: 400 });
+      return ApiErrors.badRequest("Invalid data type");
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       archived,
       dataType,
       cutoffDate: cutoff,
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Archive old data error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -104,20 +105,24 @@ export async function GET() {
     try {
       const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_messages").get() as any;
       archivedMessages = r?.c || 0;
-    } catch {}
+    } catch (e) {
+      console.error("Count archived messages error:", e);
+    }
 
     try {
       const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_task_completions").get() as any;
       archivedCompletions = r?.c || 0;
-    } catch {}
+    } catch (e) {
+      console.error("Count archived task completions error:", e);
+    }
 
-    return NextResponse.json({
+    return apiSuccess({
       archivedMessages,
       archivedCompletions,
       total: archivedMessages + archivedCompletions,
     });
   } catch (error) {
     console.error("Get archive stats error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

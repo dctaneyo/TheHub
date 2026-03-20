@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 
 // PUT /api/messages/groups/:id/members - Add members to group

@@ -1,5 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
 
+// Read CSP nonce from meta tag injected by the root layout
+const cspNonce =
+  typeof document !== "undefined"
+    ? document.querySelector('meta[name="csp-nonce"]')?.getAttribute("content") || undefined
+    : undefined;
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   
@@ -12,6 +18,9 @@ Sentry.init({
   // Session Replay
   replaysSessionSampleRate: 0.1, // 10% of sessions
   replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
+
+  // Pass CSP nonce so Sentry can inject inline scripts without violating CSP
+  ...(cspNonce ? { _experiments: { nonce: cspNonce } } : {}),
   
   // Filter out sensitive data
   beforeSend(event, hint) {

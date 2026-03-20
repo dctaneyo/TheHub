@@ -91,7 +91,7 @@ export function useMessaging() {
       const [locRes, arlRes] = await Promise.all([fetch("/api/locations"), fetch("/api/arls")]);
       const items: Mentionable[] = [];
       if (locRes.ok) { const d = await locRes.json(); for (const l of d.locations || []) items.push({ id: l.id, name: l.name, type: "location", storeNumber: l.storeNumber }); }
-      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.data?.arls || []) items.push({ id: a.id, name: a.name, type: "arl", storeNumber: a.storeNumber }); }
+      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.arls || []) items.push({ id: a.id, name: a.name, type: "arl", storeNumber: a.storeNumber }); }
       setMentionables(items);
     } catch {}
   }, []);
@@ -128,7 +128,7 @@ export function useMessaging() {
       const [locRes, arlRes] = await Promise.all([fetch("/api/locations"), fetch("/api/arls")]);
       const map = new Map<string, MemberInfo>();
       if (locRes.ok) { const d = await locRes.json(); for (const l of d.locations || []) map.set(l.id, { id: l.id, name: l.name, type: "location" }); }
-      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.data?.arls || []) map.set(a.id, { id: a.id, name: a.name, type: "arl" }); }
+      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.arls || []) map.set(a.id, { id: a.id, name: a.name, type: "arl" }); }
       setMemberInfoMap(map);
     } catch {}
   }, []);
@@ -138,7 +138,7 @@ export function useMessaging() {
       const [locRes, arlRes] = await Promise.all([fetch("/api/locations"), fetch("/api/arls")]);
       const parts: Participant[] = [];
       if (locRes.ok) { const d = await locRes.json(); for (const l of d.locations || []) parts.push({ id: l.id, name: l.name, type: "location", storeNumber: l.storeNumber }); }
-      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.data?.arls || []) parts.push({ id: a.id, name: a.name, type: "arl" }); }
+      if (arlRes.ok) { const d = await arlRes.json(); for (const a of d.arls || []) parts.push({ id: a.id, name: a.name, type: "arl" }); }
       setParticipants(parts);
     } catch {}
   }, []);

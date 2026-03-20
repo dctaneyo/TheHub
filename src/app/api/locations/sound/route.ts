@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastSoundToggle } from "@/lib/socket-emit";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // GET — dashboard fetches its own mute state on mount
 export async function GET() {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
     const loc = db.select({ soundMuted: schema.locations.soundMuted })
       .from(schema.locations)
       .where(eq(schema.locations.id, session.userId))
       .get();
-    if (!loc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ muted: loc.soundMuted });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (!loc) return ApiErrors.notFound("Location");
+    return apiSuccess({ muted: loc.soundMuted });
+  } catch (e) {
+    console.error("Sound GET error:", e);
+    return ApiErrors.internal();
   }
 }
 
@@ -28,7 +29,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
 
     const { locationId, muted } = await req.json();
 
@@ -40,9 +41,9 @@ export async function PATCH(req: NextRequest) {
 
     // ARL can target any location; a location can only toggle itself
     const targetId = session.userType === "arl" ? locationId : session.userId;
-    if (!targetId) return NextResponse.json({ error: "locationId required" }, { status: 400 });
+    if (!targetId) return ApiErrors.badRequest("locationId required");
     if (session.userType === "location" && targetId !== session.userId) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     db.update(schema.locations)
@@ -51,8 +52,9 @@ export async function PATCH(req: NextRequest) {
       .run();
 
     broadcastSoundToggle(targetId, muted, session.tenantId);
-    return NextResponse.json({ ok: true, muted });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiSuccess({ muted });
+  } catch (e) {
+    console.error("Sound PATCH error:", e);
+    return ApiErrors.internal();
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/lib/db";
 import { findActiveMeetingByCode } from "@/lib/socket-server";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - Validate meeting code + password for guest access
 export async function POST(req: NextRequest) {
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
     const { meetingCode, password, guestName } = await req.json();
 
     if (!meetingCode || !guestName) {
-      return NextResponse.json({ error: "Meeting code and name are required" }, { status: 400 });
+      return ApiErrors.badRequest("Meeting code and name are required");
     }
 
     const code = meetingCode.toUpperCase().trim();
@@ -20,17 +21,17 @@ export async function POST(req: NextRequest) {
 
     if (meeting) {
       if (!meeting.allow_guests) {
-        return NextResponse.json({ error: "This meeting does not allow guest access" }, { status: 403 });
+        return ApiErrors.forbidden("This meeting does not allow guest access");
       }
 
       if (meeting.password && meeting.password !== password) {
-        return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+        return ApiErrors.unauthorized();
       }
 
       // Check if the meeting is already live (host has started it)
       const liveCheck = findActiveMeetingByCode(code);
 
-      return NextResponse.json({
+      return apiSuccess({
         success: true,
         meeting: {
           id: meeting.id,
@@ -50,10 +51,10 @@ export async function POST(req: NextRequest) {
     const activeMeeting = findActiveMeetingByCode(code);
     if (activeMeeting) {
       if (activeMeeting.password && activeMeeting.password !== password) {
-        return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+        return ApiErrors.unauthorized();
       }
 
-      return NextResponse.json({
+      return apiSuccess({
         success: true,
         meeting: {
           id: activeMeeting.meetingId,
@@ -69,9 +70,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ error: "Meeting not found or inactive" }, { status: 404 });
+    return ApiErrors.notFound("Meeting not found or inactive");
   } catch (error) {
     console.error("Join meeting error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

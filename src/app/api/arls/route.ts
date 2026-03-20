@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { hashSync } from "bcryptjs";
 import { v4 as uuid } from "uuid";
 import { broadcastUserUpdate } from "@/lib/socket-emit";
+import { setPendingForceAction } from "@/lib/socket-server";
 import { validate, createArlSchema, updateArlSchema } from "@/lib/validations";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { getTenant, canAddUser } from "@/lib/tenant";
@@ -15,7 +16,7 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
     if (session.userType !== "arl" && session.userType !== "location") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
     const arls = db.select({
       id: schema.arls.id,
@@ -32,7 +33,7 @@ export async function GET() {
     return apiSuccess({ arls });
   } catch (error) {
     console.error("Get ARLs error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ARLS_CREATE);
     if (denied) return denied;
@@ -48,17 +49,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(createArlSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { name, email, userId, pin, role } = parsed.data;
     // Enforce tenant user limit
     const tenant = await getTenant();
     if (tenant && !canAddUser(session.tenantId, tenant.maxUsers)) {
-      return NextResponse.json({ error: `ARL user limit reached (${tenant.maxUsers} max for your plan)` }, { status: 403 });
+      return ApiErrors.forbidden(`ARL user limit reached (${tenant.maxUsers} max for your plan)`);
     }
 
     const existing = db.select().from(schema.arls).where(and(eq(schema.arls.userId, userId), eq(schema.arls.tenantId, session.tenantId))).get();
-    if (existing) return NextResponse.json({ error: "User ID already taken" }, { status: 409 });
+    if (existing) return ApiErrors.badRequest("User ID already taken");
 
     const now = new Date().toISOString();
     const arl = { id: uuid(), tenantId: session.tenantId, name, email: email || null, userId, pinHash: hashSync(pin, 10), role: role || "arl", isActive: true, createdAt: now, updatedAt: now };
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     return apiSuccess({ arl: { ...arl, pinHash: undefined } });
   } catch (error) {
     console.error("Create ARL error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -75,7 +76,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ARLS_EDIT);
     if (denied) return denied;
@@ -83,7 +84,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(updateArlSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id, name, email, pin, role, isActive, permissions: perms, roleId, assignedLocationIds } = parsed.data;
 
@@ -94,14 +95,14 @@ export async function PUT(req: NextRequest) {
 
     // Prevent non-admins from promoting/demoting or changing permissions/roles/location assignments
     if (!isCallerAdmin && (role !== undefined || perms !== undefined || roleId !== undefined || assignedLocationIds !== undefined)) {
-      return NextResponse.json({ error: "Only admins can change roles or permissions" }, { status: 403 });
+      return ApiErrors.forbidden("Only admins can change roles or permissions");
     }
 
     // Prevent demoting/editing another admin unless caller is also admin
     const targetArl = db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (targetArl?.role === "admin" && !isCallerAdmin) {
-      return NextResponse.json({ error: "Only admins can edit other admins" }, { status: 403 });
+      return ApiErrors.forbidden("Only admins can edit other admins");
     }
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -118,6 +119,21 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.arls).set(updates).where(and(eq(schema.arls.id, id), eq(schema.arls.tenantId, session.tenantId))).run();
     broadcastUserUpdate(session.tenantId);
+
+    // Force session refresh when privileges change so the user gets a fresh JWT
+    const privilegeChanged = role !== undefined || perms !== undefined || roleId !== undefined
+      || assignedLocationIds !== undefined || isActive === false;
+    if (privilegeChanged && id !== session.id) {
+      const targetSession = db.select({ token: schema.sessions.token })
+        .from(schema.sessions)
+        .where(and(eq(schema.sessions.userId, id), eq(schema.sessions.isOnline, true)))
+        .get();
+      if (targetSession?.token) {
+        // If deactivated, force logout; otherwise force a redirect to refresh the JWT
+        setPendingForceAction(targetSession.token, { action: isActive === false ? "logout" : "redirect", redirectTo: "/arl" });
+      }
+    }
+
     return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Update ARL error:", error);
@@ -129,17 +145,17 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ARLS_DELETE);
     if (denied) return denied;
 
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("id required");
 
     // Prevent self-deletion
     if (id === session.id) {
-      return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
+      return ApiErrors.badRequest("Cannot delete yourself");
     }
 
     // Only admins can delete other admins
@@ -148,7 +164,7 @@ export async function DELETE(req: NextRequest) {
     const callerArl = db.select({ role: schema.arls.role }).from(schema.arls)
       .where(and(eq(schema.arls.id, session.id), eq(schema.arls.tenantId, session.tenantId))).get();
     if (targetArl?.role === "admin" && callerArl?.role !== "admin") {
-      return NextResponse.json({ error: "Only admins can delete other admins" }, { status: 403 });
+      return ApiErrors.forbidden("Only admins can delete other admins");
     }
 
     // 1. Delete sessions
@@ -189,9 +205,9 @@ export async function DELETE(req: NextRequest) {
     // 7. Delete the ARL record
     db.delete(schema.arls).where(eq(schema.arls.id, id)).run();
     broadcastUserUpdate(session.tenantId);
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Delete ARL error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

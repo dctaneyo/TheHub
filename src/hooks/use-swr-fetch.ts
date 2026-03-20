@@ -65,8 +65,8 @@ export function useSwrFetch<T>(
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
-      // Extract data from standardized response or use raw
-      const data = json.data !== undefined ? json.data : json;
+      // Use the response JSON directly — standardized responses spread data at top level
+      const data = json;
 
       _cache.set(fetchUrl, { data, timestamp: Date.now() });
 

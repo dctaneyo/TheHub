@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 
 export async function POST() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
 
     if (session) {
       // Mark sessions as offline

@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { setPendingForceAction } from "@/lib/socket-server";
 import { validate, createRoleSchema, updateRoleSchema, deleteRoleSchema } from "@/lib/validations";
 
 export async function GET() {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const parsed = validate(createRoleSchema, body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    if (!parsed.success) return ApiErrors.badRequest(parsed.error);
     const { name, description, permissions } = parsed.data;
 
     const now = new Date().toISOString();
@@ -73,13 +74,13 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const parsed = validate(updateRoleSchema, body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    if (!parsed.success) return ApiErrors.badRequest(parsed.error);
     const { id, name, description, permissions } = parsed.data;
 
     // Prevent editing default system roles
     const existing = db.select().from(schema.roles)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Role not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Role");
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name.trim();
@@ -88,6 +89,22 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.roles).set(updates)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).run();
+
+    // When role permissions change, force refresh for all ARLs using this role
+    if (permissions !== undefined) {
+      const affectedArls = db.select({ userId: schema.arls.id })
+        .from(schema.arls)
+        .where(and(eq(schema.arls.roleId, id), eq(schema.arls.tenantId, session.tenantId))).all();
+      for (const arl of affectedArls) {
+        const arlSession = db.select({ token: schema.sessions.token })
+          .from(schema.sessions)
+          .where(and(eq(schema.sessions.userId, arl.userId), eq(schema.sessions.isOnline, true)))
+          .get();
+        if (arlSession?.token) {
+          setPendingForceAction(arlSession.token, { action: "redirect", redirectTo: "/arl" });
+        }
+      }
+    }
 
     return apiSuccess({ updated: true });
   } catch (error) {
@@ -107,14 +124,14 @@ export async function DELETE(req: NextRequest) {
 
     const body = await req.json();
     const parsed = validate(deleteRoleSchema, body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    if (!parsed.success) return ApiErrors.badRequest(parsed.error);
     const { id } = parsed.data;
 
     // Prevent deleting system default roles
     const existing = db.select().from(schema.roles)
       .where(and(eq(schema.roles.id, id), eq(schema.roles.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Role not found" }, { status: 404 });
-    if (existing.isDefault) return NextResponse.json({ error: "Cannot delete system default roles" }, { status: 400 });
+    if (!existing) return ApiErrors.notFound("Role");
+    if (existing.isDefault) return ApiErrors.badRequest("Cannot delete system default roles");
 
     // Clear roleId from any ARLs using this role
     const affectedArls = db.select({ id: schema.arls.id }).from(schema.arls)

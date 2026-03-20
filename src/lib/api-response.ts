@@ -4,12 +4,15 @@ import { NextResponse } from "next/server";
  * Standardized API response helpers.
  * All API routes should use these to ensure consistent response shapes:
  *
- * Success: { ok: true, data: { ... } }
+ * Success: { ok: true, ...data }  (data properties spread at top level)
  * Error:   { ok: false, error: { code: "ERROR_CODE", message: "Human-readable message" } }
+ *
+ * The `ok` flag lets clients distinguish success/error without checking HTTP status,
+ * while spreading data at the top level preserves backward compatibility.
  */
 
-export function apiSuccess<T>(data: T, status = 200) {
-  return NextResponse.json({ ok: true, data }, { status });
+export function apiSuccess<T extends Record<string, unknown>>(data: T, status = 200) {
+  return NextResponse.json({ ok: true, ...data }, { status });
 }
 
 export function apiError(code: string, message: string, status = 400) {

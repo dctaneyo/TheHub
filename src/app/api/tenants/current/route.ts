@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { getTenant } from "@/lib/tenant";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function GET() {
   try {
     const tenant = await getTenant();
     if (!tenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return ApiErrors.notFound("Tenant");
     }
-    return NextResponse.json({ tenant });
+    return apiSuccess({ tenant });
   } catch (error) {
     console.error("Get tenant error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

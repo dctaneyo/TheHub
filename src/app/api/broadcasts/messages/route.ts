@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - Send a message in broadcast chat
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const body = await request.json();
     const { broadcastId, content, timestamp } = body;
 
     if (!broadcastId || !content) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return ApiErrors.badRequest("Missing required fields");
     }
 
     const messageId = uuidv4();
@@ -31,34 +30,32 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ messageId });
+    return apiSuccess({ messageId });
   } catch (error) {
     console.error("Error sending message:", error);
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
+    return ApiErrors.internal("Failed to send message");
   }
 }
 
 // GET - Get messages for a broadcast
 export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(request.url);
     const broadcastId = searchParams.get("broadcastId");
 
     if (!broadcastId) {
-      return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+      return ApiErrors.badRequest("Broadcast ID required");
     }
 
     const messages = await db.select().from(schema.broadcastMessages)
       .where(eq(schema.broadcastMessages.broadcastId, broadcastId));
 
-    return NextResponse.json({ messages });
+    return apiSuccess({ messages });
   } catch (error) {
     console.error("Error fetching messages:", error);
-    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
+    return ApiErrors.internal("Failed to fetch messages");
   }
 }

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function GET() {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -87,7 +88,9 @@ export async function GET() {
         FROM sessions
       `).get() as any;
       sessionStats = stats;
-    } catch {}
+    } catch (e) {
+      console.error("Failed to fetch session stats:", e);
+    }
 
     // Conversation activity
     const conversationStats = sqlite.prepare(`
@@ -98,7 +101,7 @@ export async function GET() {
       GROUP BY type
     `).all();
 
-    return NextResponse.json({
+    return apiSuccess({
       topLocations,
       messageActivity,
       peakHours,
@@ -110,6 +113,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Usage analytics error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

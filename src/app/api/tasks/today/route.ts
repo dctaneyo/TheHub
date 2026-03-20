@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, getEffectiveLocationId } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       tasks: tasksWithStatus,
       completedToday: completions.length,
       totalToday: todayTasks.length,
@@ -118,7 +118,7 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("Tasks error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 

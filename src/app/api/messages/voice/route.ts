@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -9,6 +8,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { broadcastNewMessage, broadcastConversationUpdate } from "@/lib/socket-emit";
 import { sendPushToARL } from "@/lib/push";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 const VOICE_DIR = path.join(process.cwd(), "data", "voice-messages");
 
@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
     const durationMs = parseInt(formData.get("duration") as string || "0");
 
     if (!audioFile || !conversationId) {
-      return NextResponse.json({ error: "Missing audio or conversationId" }, { status: 400 });
+      return ApiErrors.badRequest("Missing audio or conversationId");
     }
 
     // Validate file size (max 5MB)
     if (audioFile.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
+      return ApiErrors.badRequest("File too large (max 5MB)");
     }
 
     await ensureVoiceDir();
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       console.error("Push notification error (non-fatal):", pushErr);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       id: messageId,
       fileName,
       durationMs,
@@ -141,6 +141,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Voice message upload error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

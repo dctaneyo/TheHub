@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import sgMail from "@sendgrid/mail";
 import fs from "fs";
 import path from "path";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const apiKey = process.env.SENDGRID_API_KEY;
     const fromEmail = process.env.SENDGRID_FROM_EMAIL;
     if (!apiKey || !fromEmail) {
-      return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
+      return ApiErrors.internal("Email service not configured");
     }
 
     sgMail.setApiKey(apiKey);
 
     const { formId, recipientEmails } = await req.json();
     if (!formId || !recipientEmails?.length) {
-      return NextResponse.json({ error: "formId and recipientEmails required" }, { status: 400 });
+      return ApiErrors.badRequest("formId and recipientEmails required");
     }
 
     const form = db.select().from(schema.forms).where(eq(schema.forms.id, formId)).get();
     if (!form) {
-      return NextResponse.json({ error: "Form not found" }, { status: 404 });
+      return ApiErrors.notFound("Form");
     }
 
     let base64Content: string;
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
       const FORMS_DIR = path.join(process.cwd(), "data", "forms");
       const filePath = path.join(FORMS_DIR, form.filePath);
       if (!fs.existsSync(filePath)) {
-        return NextResponse.json({ error: "File not found on server" }, { status: 404 });
+        return ApiErrors.notFound("File");
       }
       base64Content = fs.readFileSync(filePath).toString("base64");
     }
@@ -63,9 +64,9 @@ export async function POST(req: NextRequest) {
 
     await sgMail.sendMultiple(msg);
 
-    return NextResponse.json({ success: true, sentTo: recipientEmails.length });
+    return apiSuccess({ success: true, sentTo: recipientEmails.length });
   } catch (error) {
     console.error("Form email error:", error);
-    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+    return ApiErrors.internal("Failed to send email");
   }
 }

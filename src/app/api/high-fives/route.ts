@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { v4 as uuid } from "uuid";
@@ -24,8 +24,12 @@ function ensureHighFivesTable() {
         created_at TEXT NOT NULL
       )
     `);
-    try { sqlite.exec(`ALTER TABLE high_fives ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch {}
-  } catch {}
+    try { sqlite.exec(`ALTER TABLE high_fives ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'kazi'`); } catch (e) {
+      // Column may already exist
+    }
+  } catch (e) {
+    console.error("Failed to ensure high_fives table:", e);
+  }
 }
 
 // GET - Fetch high-fives for a user
@@ -62,14 +66,14 @@ export async function GET(request: Request) {
       WHERE tenant_id = ? AND to_user_id = ? AND to_user_type = ?
     `).get(session.tenantId, userId, userType) as any;
 
-    return NextResponse.json({ 
+    return apiSuccess({ 
       received, 
       sent,
       totalReceived: totalReceived.count 
     });
   } catch (error) {
     console.error("Get high-fives error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -87,7 +91,7 @@ export async function POST(request: Request) {
     const { toUserId, toUserType, toUserName, message } = await request.json();
 
     if (!toUserId || !toUserType || !toUserName) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return ApiErrors.badRequest("Missing required fields");
     }
 
     ensureHighFivesTable();
@@ -145,9 +149,9 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ highFive });
+    return apiSuccess({ highFive });
   } catch (error) {
     console.error("Send high-five error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

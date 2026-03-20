@@ -8,11 +8,11 @@ describe('API Response Helpers', () => {
       expect(res.status).toBe(200)
     })
 
-    it('wraps data in a success envelope', async () => {
+    it('spreads data at top level with ok flag', async () => {
       const res = apiSuccess({ items: [1, 2, 3] })
       const json = await res.json()
       expect(json.ok).toBe(true)
-      expect(json.data.items).toEqual([1, 2, 3])
+      expect(json.items).toEqual([1, 2, 3])
     })
 
     it('accepts a custom status code', () => {

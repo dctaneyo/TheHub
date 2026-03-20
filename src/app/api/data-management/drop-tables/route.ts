@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
     const { tables } = await req.json();
     if (!Array.isArray(tables) || tables.length === 0) {
-      return NextResponse.json({ error: "No tables specified" }, { status: 400 });
+      return ApiErrors.badRequest("No tables specified");
     }
 
     // Safety: only allow dropping known unused tables
@@ -38,14 +38,13 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       dropped,
       skipped,
       message: `Dropped ${dropped.length} table(s)${skipped.length > 0 ? `, skipped ${skipped.length}` : ""}`,
     });
   } catch (error) {
     console.error("Drop tables error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

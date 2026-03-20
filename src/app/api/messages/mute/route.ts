@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // POST - toggle mute for a conversation
 export async function POST(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!session) return unauthorized();
 
     const { conversationId } = await req.json();
-    if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
+    if (!conversationId) return ApiErrors.badRequest("conversationId required");
 
     const existing = db
       .select()
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         .set({ isMuted: newMuted, updatedAt: now })
         .where(eq(schema.conversationSettings.id, existing.id))
         .run();
-      return NextResponse.json({ isMuted: newMuted });
+      return apiSuccess({ isMuted: newMuted });
     } else {
       db.insert(schema.conversationSettings).values({
         id: uuid(),
@@ -45,11 +45,11 @@ export async function POST(req: NextRequest) {
         createdAt: now,
         updatedAt: now,
       }).run();
-      return NextResponse.json({ isMuted: true });
+      return apiSuccess({ isMuted: true });
     }
   } catch (error) {
     console.error("Mute toggle error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const conversationId = searchParams.get("conversationId");
-    if (!conversationId) return NextResponse.json({ error: "conversationId required" }, { status: 400 });
+    if (!conversationId) return ApiErrors.badRequest("conversationId required");
 
     const setting = db
       .select()
@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
       )
       .get();
 
-    return NextResponse.json({ isMuted: setting?.isMuted ?? false });
+    return apiSuccess({ isMuted: setting?.isMuted ?? false });
   } catch (error) {
     console.error("Mute GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

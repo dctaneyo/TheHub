@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
@@ -17,7 +17,7 @@ export async function GET() {
     const isArl = session?.userType === "arl";
     const isLocation = session?.userType === "location";
     if (!session || (!isArl && !isLocation)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const allLocations = db.select().from(schema.locations).where(eq(schema.locations.tenantId, session.tenantId)).all();
@@ -105,10 +105,10 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ locations: locationsWithStatus, arls: arlsWithStatus });
+    return apiSuccess({ locations: locationsWithStatus, arls: arlsWithStatus });
   } catch (error) {
     console.error("Get locations error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_CREATE);
     if (denied) return denied;
@@ -125,14 +125,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(createLocationSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { name, storeNumber, address, email, userId, pin } = parsed.data;
 
     // Enforce tenant location limit
     const tenant = await getTenant();
     if (tenant && !canAddLocation(session.tenantId, tenant.maxLocations)) {
-      return NextResponse.json({ error: `Location limit reached (${tenant.maxLocations} max for your plan)` }, { status: 403 });
+      return ApiErrors.forbidden(`Location limit reached (${tenant.maxLocations} max for your plan)`);
     }
 
     const now = new Date().toISOString();
@@ -180,10 +180,10 @@ export async function POST(req: NextRequest) {
     }
 
     broadcastUserUpdate(session.tenantId);
-    return NextResponse.json({ success: true, location: { ...location, pinHash: undefined } });
+    return apiSuccess({ location: { ...location, pinHash: undefined } });
   } catch (error) {
     console.error("Create location error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -192,7 +192,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_EDIT);
     if (denied) return denied;
@@ -200,7 +200,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(updateLocationSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id, name, email, pin, address, isActive } = parsed.data;
 
@@ -213,10 +213,10 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.locations).set(updates).where(and(eq(schema.locations.id, id), eq(schema.locations.tenantId, session.tenantId))).run();
     broadcastUserUpdate(session.tenantId);
-    return NextResponse.json({ success: true });
+    return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Update location error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -225,12 +225,12 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.LOCATIONS_DELETE);
     if (denied) return denied;
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("id required");
 
     // 1. Delete tasks assigned only to this location
     db.delete(schema.tasks).where(eq(schema.tasks.locationId, id)).run();
@@ -277,9 +277,9 @@ export async function DELETE(req: NextRequest) {
     // 10. Delete the location record
     db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
     broadcastUserUpdate(session.tenantId);
-    return NextResponse.json({ success: true });
+    return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete location error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

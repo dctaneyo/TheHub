@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "location") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const completions = db
@@ -19,9 +20,9 @@ export async function GET() {
       .where(eq(schema.taskCompletions.locationId, session.id))
       .all();
 
-    return NextResponse.json({ completions });
+    return apiSuccess({ completions });
   } catch (error) {
     console.error("Get completions error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

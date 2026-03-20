@@ -90,12 +90,12 @@ export function UserManagement() {
         fetch("/api/locations"),
         fetch("/api/roles"),
       ]);
-      if (arlRes.ok) setArls((await arlRes.json()).data?.arls || []);
+      if (arlRes.ok) setArls((await arlRes.json()).arls || []);
       if (locRes.ok) {
         const locData = await locRes.json();
-        setLocations(locData.locations || locData.data?.locations || []);
+        setLocations(locData.locations || []);
       }
-      if (rolesRes.ok) setRoles((await rolesRes.json()).data?.roles || []);
+      if (rolesRes.ok) setRoles((await rolesRes.json()).roles || []);
     } catch {}
     setLoading(false);
   }, []);

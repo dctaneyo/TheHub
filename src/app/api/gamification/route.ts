@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { format, subDays } from "date-fns";
@@ -96,7 +96,7 @@ export async function GET(req: Request) {
   try {
     const session = await getAuthSession();
     if (!session || (session.userType !== "location" && session.userType !== "arl")) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     // ARLs can fetch gamification data for a specific location (mirror mode)
@@ -121,7 +121,9 @@ export async function GET(req: Request) {
       sqlite.exec(`CREATE TABLE IF NOT EXISTS streak_freezes (id TEXT PRIMARY KEY, location_id TEXT NOT NULL, freeze_date TEXT NOT NULL, created_at TEXT NOT NULL)`);
       const freezes = sqlite.prepare("SELECT freeze_date FROM streak_freezes WHERE location_id = ?").all(locationId) as any[];
       frozenDates = new Set(freezes.map((f) => f.freeze_date));
-    } catch {}
+    } catch (e) {
+      console.error("Failed to load streak freezes:", e);
+    }
 
     // ── STREAK CALCULATION ──
     // Check each day going backwards. A day counts as "perfect" if all applicable tasks were completed,
@@ -278,7 +280,7 @@ export async function GET(req: Request) {
       earned: allCompletions.length >= 100,
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       streak: {
         current: streak,
         currentMilestone,
@@ -295,6 +297,6 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("Gamification error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,15 +1,14 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
@@ -92,7 +91,7 @@ export async function GET() {
       };
     }).sort((a, b) => b.pointsToday - a.pointsToday);
 
-    return NextResponse.json({
+    return apiSuccess({
       locationsOnline: onlineLocations.length,
       locationsTotal: allLocations.length,
       overdueCount,
@@ -106,6 +105,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Overview analytics error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

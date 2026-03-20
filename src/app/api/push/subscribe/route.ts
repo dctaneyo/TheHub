@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return ApiErrors.unauthorized();
     }
 
     const subscription = await req.json();
     if (!subscription.endpoint) {
-      return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
+      return ApiErrors.badRequest("Invalid subscription");
     }
 
     // Store or update subscription for this ARL — keyed by endpoint (unique per device)
@@ -45,9 +46,9 @@ export async function POST(req: NextRequest) {
       }).run();
     }
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Push subscription error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { NextRequest } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { getAuthSession, unauthorized, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, apiError, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { v4 as uuid } from "uuid";
 import { broadcastTaskUpdate } from "@/lib/socket-emit";
@@ -21,12 +21,12 @@ export async function GET() {
       const locationTasks = tasks.filter(
         (t) => !t.locationId || t.locationId === session.id
       );
-      return NextResponse.json({ tasks: locationTasks });
+      return apiSuccess({ tasks: locationTasks });
     }
-    return NextResponse.json({ tasks });
+    return apiSuccess({ tasks });
   } catch (error) {
     console.error("Get tasks error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(createTaskSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const {
       title,
@@ -101,10 +101,10 @@ export async function POST(req: NextRequest) {
     broadcastTaskUpdate(resolvedLocationId, session.tenantId);
     refreshTaskTimers();
 
-    return NextResponse.json({ success: true, task });
+    return apiSuccess({ task });
   } catch (error) {
     console.error("Create task error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -113,7 +113,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
 
     const denied = await requirePermission(session, PERMISSIONS.TASKS_EDIT);
@@ -122,13 +122,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(updateTaskSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id, ...updates } = parsed.data;
 
     const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
     if (!existing) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+      return ApiErrors.notFound("Task");
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -154,10 +154,10 @@ export async function PUT(req: NextRequest) {
     broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ updated: true });
   } catch (error) {
     console.error("Update task error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -170,10 +170,10 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    if (!id) return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("Task ID is required");
 
     const existing = db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Task");
 
     // ARL permission check
     if (session.userType === "arl") {
@@ -184,7 +184,7 @@ export async function DELETE(req: NextRequest) {
     // Locations can only delete tasks they created themselves
     if (session.userType === "location") {
       if (existing.createdByType !== "location" || existing.createdBy !== session.id) {
-        return NextResponse.json({ error: "Cannot delete ARL-assigned tasks" }, { status: 403 });
+        return ApiErrors.forbidden("Cannot delete ARL-assigned tasks");
       }
     }
 
@@ -193,9 +193,9 @@ export async function DELETE(req: NextRequest) {
     broadcastTaskUpdate(existing.locationId, session.tenantId);
     refreshTaskTimers();
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ deleted: true });
   } catch (error) {
     console.error("Delete task error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

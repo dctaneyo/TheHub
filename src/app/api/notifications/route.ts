@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { NextRequest } from "next/server";
+import { getAuthSession } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import {
   getNotifications,
   getNotificationCounts,
@@ -11,7 +11,7 @@ import {
 export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       metadata: n.metadata ? JSON.parse(n.metadata) : null,
     }));
 
-    return NextResponse.json({
+    return apiSuccess({
       notifications,
       total: counts.total,
       unread: counts.unread,
@@ -41,31 +41,31 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session) return unauthorized();
+    if (!session) return ApiErrors.unauthorized();
 
     const { action } = await req.json();
 
     if (action === "mark_all_read") {
       await markAllNotificationsRead(session.id);
       const counts = await getNotificationCounts(session.id);
-      return NextResponse.json({ success: true, counts });
+      return apiSuccess({ counts });
     }
 
     if (action === "dismiss_all") {
       await deleteAllNotifications(session.id);
-      return NextResponse.json({ success: true, counts: { total: 0, unread: 0, urgent: 0 } });
+      return apiSuccess({ counts: { total: 0, unread: 0, urgent: 0 } });
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    return ApiErrors.badRequest("Invalid action");
   } catch (error) {
     console.error("Error handling notification action:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

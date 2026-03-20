@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { NextRequest } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
       // achievements table might not exist yet
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       pointsLeaderboard,
       achievementTrends,
       popularAchievements,
@@ -103,6 +103,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Gamification analytics error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

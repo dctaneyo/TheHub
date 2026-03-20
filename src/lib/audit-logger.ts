@@ -18,7 +18,9 @@ function ensureAuditTable() {
         created_at TEXT NOT NULL
       )
     `);
-  } catch {}
+  } catch (e) {
+    console.error("Failed to ensure audit_log table:", e);
+  }
 }
 
 export function logBulkOperation(params: {

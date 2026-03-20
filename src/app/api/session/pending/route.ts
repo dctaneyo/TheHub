@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and, gt } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -55,10 +56,10 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    return NextResponse.json({ id: pending.id, code: pending.code, expiresAt });
+    return apiSuccess({ id: pending.id, code: pending.code, expiresAt });
   } catch (error) {
     console.error("Create pending session error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -67,7 +68,7 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const now = new Date().toISOString();
@@ -84,7 +85,7 @@ export async function GET() {
       )
       .all();
 
-    return NextResponse.json({
+    return apiSuccess({
       pendingSessions: pending.map((p) => ({
         id: p.id,
         code: p.code,
@@ -95,6 +96,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("List pending sessions error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

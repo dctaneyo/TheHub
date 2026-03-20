@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -33,12 +33,12 @@ export async function POST(request: Request) {
       ).run(session.sessionCode || "");
       deleted = r.changes;
     } else {
-      return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
+      return ApiErrors.badRequest("Invalid mode");
     }
 
-    return NextResponse.json({ success: true, deleted, mode });
+    return apiSuccess({ deleted, mode });
   } catch (error) {
     console.error("Clear sessions error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

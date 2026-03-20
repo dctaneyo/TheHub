@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema, sqlite } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
@@ -15,7 +16,7 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     // Mark stale sessions offline before listing (same threshold as locations route)
@@ -56,10 +57,10 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ activeSessions: enriched });
+    return apiSuccess({ activeSessions: enriched });
   } catch (error) {
     console.error("Get active sessions error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -68,13 +69,13 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      return ApiErrors.forbidden();
     }
 
     const { action, sessionId, assignToType, assignToId } = await req.json();
 
     if (!action || !sessionId) {
-      return NextResponse.json({ error: "action and sessionId are required" }, { status: 400 });
+      return ApiErrors.badRequest("action and sessionId are required");
     }
 
     // Find the active session
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       .get();
 
     if (!targetSession) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      return ApiErrors.notFound("Session");
     }
 
     // ── FORCE LOGOUT ──
@@ -105,16 +106,16 @@ export async function POST(req: NextRequest) {
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
-      return NextResponse.json({ success: true, action: "logout" });
+      return apiSuccess({ action: "logout" });
     }
 
     // ── FORCE REASSIGN ──
     if (action === "reassign") {
       if (!assignToType || !assignToId) {
-        return NextResponse.json({ error: "assignToType and assignToId required for reassign" }, { status: 400 });
+        return ApiErrors.badRequest("assignToType and assignToId required for reassign");
       }
       if (!["location", "arl"].includes(assignToType)) {
-        return NextResponse.json({ error: "assignToType must be 'location' or 'arl'" }, { status: 400 });
+        return ApiErrors.badRequest("assignToType must be 'location' or 'arl'");
       }
 
       // Create new token + session for the target account
@@ -125,8 +126,8 @@ export async function POST(req: NextRequest) {
 
       if (assignToType === "location") {
         const location = db.select().from(schema.locations).where(eq(schema.locations.id, assignToId)).get();
-        if (!location) return NextResponse.json({ error: "Location not found" }, { status: 404 });
-        if (!location.isActive) return NextResponse.json({ error: "Location is deactivated" }, { status: 403 });
+        if (!location) return ApiErrors.notFound("Location");
+        if (!location.isActive) return ApiErrors.forbidden("Location is deactivated");
 
         const payload: AuthPayload = {
           id: location.id,
@@ -143,8 +144,8 @@ export async function POST(req: NextRequest) {
         targetName = location.name;
       } else {
         const arl = db.select().from(schema.arls).where(eq(schema.arls.id, assignToId)).get();
-        if (!arl) return NextResponse.json({ error: "ARL not found" }, { status: 404 });
-        if (!arl.isActive) return NextResponse.json({ error: "ARL account is deactivated" }, { status: 403 });
+        if (!arl) return ApiErrors.notFound("ARL");
+        if (!arl.isActive) return ApiErrors.forbidden("ARL account is deactivated");
 
         const payload: AuthPayload = {
           id: arl.id,
@@ -189,12 +190,12 @@ export async function POST(req: NextRequest) {
       broadcastPresenceUpdate(targetSession.userId, targetSession.userType, "", false, undefined, session.tenantId);
       broadcastSessionUpdated(targetSession.userId, targetSession.userType);
 
-      return NextResponse.json({ success: true, action: "reassign", targetName, redirectTo });
+      return apiSuccess({ action: "reassign", targetName, redirectTo });
     }
 
-    return NextResponse.json({ error: "action must be 'logout' or 'reassign'" }, { status: 400 });
+    return ApiErrors.badRequest("action must be 'logout' or 'reassign'");
   } catch (error) {
     console.error("Force session error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

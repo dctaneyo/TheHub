@@ -3,17 +3,18 @@ import { cookies } from "next/headers";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 async function requireAdmin(): Promise<NextResponse | null> {
   if (!ADMIN_SECRET) {
-    return NextResponse.json({ error: "Admin not configured" }, { status: 503 });
+    return ApiErrors.internal("Admin not configured");
   }
   const cookieStore = await cookies();
   const token = cookieStore.get("hub-admin-token")?.value;
   if (!token || token !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiErrors.unauthorized();
   }
   return null; // authorized
 }
@@ -45,10 +46,10 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ tenants });
+    return apiSuccess({ tenants });
   } catch (error) {
     console.error("Get tenants error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -61,13 +62,13 @@ export async function POST(req: NextRequest) {
     const { slug, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain } = body;
 
     if (!slug || !name) {
-      return NextResponse.json({ error: "Slug and name are required" }, { status: 400 });
+      return ApiErrors.badRequest("Slug and name are required");
     }
 
     // Check slug uniqueness
     const existing = db.select().from(schema.tenants).where(eq(schema.tenants.slug, slug)).get();
     if (existing) {
-      return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
+      return ApiErrors.badRequest("Slug already exists");
     }
 
     const now = new Date().toISOString();
@@ -89,10 +90,10 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     }).run();
 
-    return NextResponse.json({ success: true, id });
+    return apiSuccess({ id });
   } catch (error) {
     console.error("Create tenant error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -104,7 +105,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain, isActive } = body;
 
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("ID required");
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name;
@@ -119,10 +120,10 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.tenants).set(updates).where(eq(schema.tenants.id, id)).run();
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Update tenant error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -132,11 +133,11 @@ export async function DELETE(req: NextRequest) {
   if (denied) return denied;
   try {
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("ID required");
 
     // Prevent deleting the seed tenant
     if (id === "kazi") {
-      return NextResponse.json({ error: "Cannot delete the primary tenant" }, { status: 403 });
+      return ApiErrors.forbidden("Cannot delete the primary tenant");
     }
 
     // Soft-delete: just mark inactive
@@ -145,9 +146,9 @@ export async function DELETE(req: NextRequest) {
       .where(eq(schema.tenants.id, id))
       .run();
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Delete tenant error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

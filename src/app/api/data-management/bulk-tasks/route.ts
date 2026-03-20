@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { logBulkOperation } from "@/lib/audit-logger";
@@ -9,7 +9,7 @@ import { v4 as uuid } from "uuid";
 export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       case "create-tasks-bulk": {
         const { tasks } = payload || {};
         if (!Array.isArray(tasks) || tasks.length === 0) {
-          return NextResponse.json({ error: "No tasks provided" }, { status: 400 });
+          return ApiErrors.badRequest("No tasks provided");
         }
 
         const insertStmt = sqlite.prepare(`
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       case "delete-tasks-bulk": {
         const { taskIds } = payload || {};
         if (!Array.isArray(taskIds) || taskIds.length === 0) {
-          return NextResponse.json({ error: "No task IDs provided" }, { status: 400 });
+          return ApiErrors.badRequest("No task IDs provided");
         }
 
         const placeholders = taskIds.map(() => "?").join(",");
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       case "update-tasks-bulk": {
         const { taskIds, updates } = payload || {};
         if (!Array.isArray(taskIds) || taskIds.length === 0 || !updates) {
-          return NextResponse.json({ error: "Task IDs and updates required" }, { status: 400 });
+          return ApiErrors.badRequest("Task IDs and updates required");
         }
 
         const setClauses: string[] = [];
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
         if (updates.showInCalendar !== undefined) { setClauses.push("show_in_calendar = ?"); setParams.push(updates.showInCalendar ? 1 : 0); }
 
         if (setClauses.length === 0) {
-          return NextResponse.json({ error: "No valid updates provided" }, { status: 400 });
+          return ApiErrors.badRequest("No valid updates provided");
         }
 
         setClauses.push("updated_at = ?");
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       }
 
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return ApiErrors.badRequest("Invalid action");
     }
 
     // Log the operation
@@ -162,9 +162,9 @@ export async function POST(request: Request) {
 
     refreshTaskTimers();
 
-    return NextResponse.json({ success: true, deleted, created, updated, action });
+    return apiSuccess({ deleted, created, updated, action });
   } catch (error) {
     console.error("Bulk tasks error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }

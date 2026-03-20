@@ -31,7 +31,7 @@ export async function GET() {
     const session = await getAuthSession();
     if (!session) return unauthorized();
     if (session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(createScheduledReportSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { name, type, frequency, recipients, filters } = parsed.data;
 
@@ -112,7 +112,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
@@ -120,13 +120,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = validate(updateScheduledReportSchema, body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      return ApiErrors.badRequest(parsed.error);
     }
     const { id, name, type, frequency, recipients, filters, isActive } = parsed.data;
 
     const existing = db.select().from(schema.scheduledReports)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Report");
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name.trim();
@@ -153,17 +153,17 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session || session.userType !== "arl") {
-      return NextResponse.json({ error: "ARL access required" }, { status: 403 });
+      return ApiErrors.forbidden("ARL access required");
     }
     const denied = await requirePermission(session, PERMISSIONS.ANALYTICS_ACCESS);
     if (denied) return denied;
 
     const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!id) return ApiErrors.badRequest("id required");
 
     const existing = db.select().from(schema.scheduledReports)
       .where(and(eq(schema.scheduledReports.id, id), eq(schema.scheduledReports.tenantId, session.tenantId))).get();
-    if (!existing) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!existing) return ApiErrors.notFound("Report");
 
     // Delete history first
     db.delete(schema.reportHistory)

@@ -3,6 +3,7 @@ import { db, schema, sqlite } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import bcrypt from "bcryptjs";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 const ALL_FEATURES = ["messaging", "tasks", "forms", "gamification", "meetings", "analytics", "broadcasts"];
 
@@ -30,48 +31,42 @@ export async function POST(req: NextRequest) {
 
     // ── Validation ──
     if (!slug || !name || !adminName || !adminUserId || !adminPin) {
-      return NextResponse.json(
-        { error: "All fields are required: slug, name, adminName, adminUserId, adminPin" },
-        { status: 400 }
-      );
+      return ApiErrors.badRequest("All fields are required: slug, name, adminName, adminUserId, adminPin");
     }
 
     // Slug format: lowercase, alphanumeric + hyphens, 3-30 chars
     const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
     if (cleanSlug.length < 3 || cleanSlug.length > 30) {
-      return NextResponse.json(
-        { error: "Slug must be 3-30 characters (lowercase letters, numbers, hyphens)" },
-        { status: 400 }
-      );
+      return ApiErrors.badRequest("Slug must be 3-30 characters (lowercase letters, numbers, hyphens)");
     }
 
     // Reserved slugs
     const reserved = ["admin", "www", "join", "api", "app", "hub", "mail", "ftp", "ns1", "ns2", "test", "staging", "dev"];
     if (reserved.includes(cleanSlug)) {
-      return NextResponse.json({ error: "This subdomain is reserved" }, { status: 400 });
+      return ApiErrors.badRequest("This subdomain is reserved");
     }
 
     // Admin userId: 4 digits
     if (!/^\d{4}$/.test(adminUserId)) {
-      return NextResponse.json({ error: "Admin user ID must be exactly 4 digits" }, { status: 400 });
+      return ApiErrors.badRequest("Admin user ID must be exactly 4 digits");
     }
 
     // Admin PIN: 4 digits
     if (!/^\d{4}$/.test(adminPin)) {
-      return NextResponse.json({ error: "Admin PIN must be exactly 4 digits" }, { status: 400 });
+      return ApiErrors.badRequest("Admin PIN must be exactly 4 digits");
     }
 
     // ── Check uniqueness ──
     const existingTenant = db.select().from(schema.tenants).where(eq(schema.tenants.slug, cleanSlug)).get();
     if (existingTenant) {
-      return NextResponse.json({ error: "This subdomain is already taken" }, { status: 409 });
+      return ApiErrors.badRequest("This subdomain is already taken");
     }
 
     // Check if adminUserId is globally unique
     const existingArl = db.select().from(schema.arls).where(eq(schema.arls.userId, adminUserId)).get();
     const existingLoc = db.select().from(schema.locations).where(eq(schema.locations.userId, adminUserId)).get();
     if (existingArl || existingLoc) {
-      return NextResponse.json({ error: "This user ID is already in use" }, { status: 409 });
+      return ApiErrors.badRequest("This user ID is already in use");
     }
 
     // ── Create tenant + admin in a transaction ──
@@ -115,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     transaction();
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       tenant: {
         id: tenantId,
@@ -131,7 +126,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Tenant signup error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
 
@@ -141,16 +136,16 @@ export async function GET(req: NextRequest) {
   const slug = searchParams.get("slug");
 
   if (!slug) {
-    return NextResponse.json({ error: "Slug parameter required" }, { status: 400 });
+    return ApiErrors.badRequest("Slug parameter required");
   }
 
   const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
   const reserved = ["admin", "www", "join", "api", "app", "hub", "mail", "ftp", "ns1", "ns2", "test", "staging", "dev"];
 
   if (reserved.includes(cleanSlug)) {
-    return NextResponse.json({ available: false, reason: "reserved" });
+    return apiSuccess({ available: false, reason: "reserved" });
   }
 
   const existing = db.select().from(schema.tenants).where(eq(schema.tenants.slug, cleanSlug)).get();
-  return NextResponse.json({ available: !existing, slug: cleanSlug });
+  return apiSuccess({ available: !existing, slug: cleanSlug });
 }

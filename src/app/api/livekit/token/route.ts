@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
     const { roomName, participantName, role, isGuest } = await req.json();
     if (!roomName || !participantName) {
-      return NextResponse.json({ error: "Missing roomName or participantName" }, { status: 400 });
+      return ApiErrors.badRequest("Missing roomName or participantName");
     }
 
     const apiKey = process.env.LIVEKIT_API_KEY;
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
     if (!apiKey || !apiSecret || !wsUrl) {
-      return NextResponse.json({ error: "LiveKit not configured" }, { status: 500 });
+      return ApiErrors.internal("LiveKit not configured");
     }
 
     let identity: string;
@@ -26,9 +27,9 @@ export async function POST(req: NextRequest) {
       userType = "guest";
     } else {
       // Regular authenticated user
-      const session = await getSession();
+      const session = await getAuthSession();
       if (!session) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        return ApiErrors.unauthorized();
       }
       identity = session.id;
       userType = session.userType;
@@ -57,9 +58,9 @@ export async function POST(req: NextRequest) {
 
     const token = await at.toJwt();
 
-    return NextResponse.json({ token, wsUrl });
+    return apiSuccess({ token, wsUrl });
   } catch (error) {
     console.error("LiveKit token error:", error);
-    return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
+    return ApiErrors.internal("Failed to generate token");
   }
 }

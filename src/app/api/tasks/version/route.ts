@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { desc } from "drizzle-orm";
+import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const session = await getAuthSession();
+    if (!session) return ApiErrors.unauthorized();
 
     // Get the latest updatedAt from tasks table
     const latest = db
@@ -28,9 +29,9 @@ export async function GET() {
     const completionVersion = latestCompletion?.completedAt || "";
     const version = [taskVersion, completionVersion].sort().pop() || "";
 
-    return NextResponse.json({ version });
+    return apiSuccess({ version });
   } catch (error) {
     console.error("Task version error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiErrors.internal();
   }
 }
