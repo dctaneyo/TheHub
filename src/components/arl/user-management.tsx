@@ -43,6 +43,7 @@ interface Location {
   address: string | null;
   email: string | null;
   userId: string;
+  timezone: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -57,9 +58,10 @@ interface FormState {
   role: string;
   storeNumber: string;
   address: string;
+  timezone: string;
 }
 
-const EMPTY_FORM: FormState = { name: "", email: "", userId: "", pin: "", role: "arl", storeNumber: "", address: "" };
+const EMPTY_FORM: FormState = { name: "", email: "", userId: "", pin: "", role: "arl", storeNumber: "", address: "", timezone: "" };
 
 
 export function UserManagement() {
@@ -183,7 +185,7 @@ export function UserManagement() {
       setForm({ ...EMPTY_FORM, name: a.name, email: a.email || "", userId: a.userId, role: a.role });
     } else {
       const l = item as Location;
-      setForm({ ...EMPTY_FORM, name: l.name, email: l.email || "", userId: l.userId, storeNumber: l.storeNumber, address: l.address || "" });
+      setForm({ ...EMPTY_FORM, name: l.name, email: l.email || "", userId: l.userId, storeNumber: l.storeNumber, address: l.address || "", timezone: l.timezone || "" });
     }
     setError("");
     setShowForm(true);
@@ -226,13 +228,13 @@ export function UserManagement() {
           res = await fetch("/api/locations", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: editTarget.id, name: form.name, email: form.email, pin: form.pin || undefined, address: form.address }),
+            body: JSON.stringify({ id: editTarget.id, name: form.name, email: form.email, pin: form.pin || undefined, address: form.address, timezone: form.timezone || null }),
           });
         } else {
           res = await fetch("/api/locations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: form.name, email: form.email, userId: form.userId, pin: form.pin, storeNumber: form.storeNumber, address: form.address }),
+            body: JSON.stringify({ name: form.name, email: form.email, userId: form.userId, pin: form.pin, storeNumber: form.storeNumber, address: form.address, timezone: form.timezone || null }),
           });
         }
       }
@@ -514,6 +516,29 @@ export function UserManagement() {
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">Address</label>
                     <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} placeholder="Street address" className="rounded-xl" />
+                  </div>
+                )}
+
+                {tab === "locations" && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Timezone</label>
+                    <select
+                      value={form.timezone}
+                      onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}
+                      className="w-full h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">Use tenant default</option>
+                      <option value="Pacific/Honolulu">Hawaii (HST)</option>
+                      <option value="America/Anchorage">Alaska (AKST)</option>
+                      <option value="America/Los_Angeles">Pacific (PST)</option>
+                      <option value="America/Denver">Mountain (MST)</option>
+                      <option value="America/Chicago">Central (CST)</option>
+                      <option value="America/New_York">Eastern (EST)</option>
+                      <option value="America/Puerto_Rico">Atlantic (AST)</option>
+                      <option value="Pacific/Guam">Guam (ChST)</option>
+                      <option value="Pacific/Pago_Pago">Samoa (SST)</option>
+                    </select>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Leave blank to use the organization default</p>
                   </div>
                 )}
 

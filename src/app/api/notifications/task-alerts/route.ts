@@ -4,7 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { getTenantTimezone, tzTodayStr } from "@/lib/timezone";
+import { getTenantTimezone, getLocationTimezone, tzTodayStr } from "@/lib/timezone";
 
 /**
  * GET /api/notifications/task-alerts
@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
     const session = await getAuthSession();
     if (!session) return unauthorized();
 
-    // Today in the tenant's timezone (server runs in UTC)
-    const todayDate = tzTodayStr(getTenantTimezone(session.tenantId));
+    // Today in the user's timezone (location override → tenant default)
+    const todayDate = tzTodayStr(
+      session.userType === "location" ? getLocationTimezone(session.id) : getTenantTimezone(session.tenantId)
+    );
 
     const rows = await db
       .select({
@@ -104,7 +106,9 @@ export async function POST(req: NextRequest) {
 
     // Resolve clientIds → DB notification IDs by querying today's alerts
     if (clientIds.length > 0) {
-      const alertDate = tzTodayStr(getTenantTimezone(session.tenantId));
+      const alertDate = tzTodayStr(
+        session.userType === "location" ? getLocationTimezone(session.id) : getTenantTimezone(session.tenantId)
+      );
 
       const rows = db
         .select({ id: notifications.id, type: notifications.type, metadata: notifications.metadata })

@@ -4,7 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { createNotification, upgradeDueSoonToOverdue } from "../notifications";
 import { taskTimers } from "./state";
 import { taskAppliesToDate } from "../task-utils";
-import { getTenantTimezone, tzNow, tzTodayStr, tzDayOfWeek } from "../timezone";
+import { getLocationTimezone, tzNow, tzTodayStr, tzDayOfWeek } from "../timezone";
 
 // ── Timezone-aware helpers ──
 // The server runs on Railway (UTC). Each tenant has its own IANA timezone.
@@ -41,9 +41,8 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
   taskTimers.set(locationId, []);
 
   try {
-    // Look up the location's tenant timezone
-    const loc = db.select({ tenantId: schema.locations.tenantId }).from(schema.locations).where(eq(schema.locations.id, locationId)).get();
-    const tz = loc?.tenantId ? getTenantTimezone(loc.tenantId) : "Pacific/Honolulu";
+    // Look up the location's timezone (location override → tenant default)
+    const tz = getLocationTimezone(locationId);
 
     const allTasks = db.select().from(schema.tasks).all();
     const today = todayStr(tz);

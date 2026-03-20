@@ -127,6 +127,7 @@ export const createLocationSchema = z.object({
   pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
   email: z.string().email("Invalid email").nullable().optional(),
   address: z.string().max(500).nullable().optional(),
+  timezone: z.string().max(100).nullable().optional(),
 });
 
 export const updateLocationSchema = z.object({
@@ -137,6 +138,7 @@ export const updateLocationSchema = z.object({
   pin: z.string().length(4).regex(/^\d{4}$/).optional(),
   address: z.string().max(500).nullable().optional(),
   isActive: z.boolean().optional(),
+  timezone: z.string().max(100).nullable().optional(),
 });
 
 // ── Conversation schemas ──

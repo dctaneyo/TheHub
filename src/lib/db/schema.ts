@@ -31,6 +31,7 @@ export const locations = sqliteTable("locations", {
   email: text("email"), // for sending forms
   userId: text("user_id").notNull().unique(), // 4-digit login ID
   pinHash: text("pin_hash").notNull(), // hashed 4-digit PIN
+  timezone: text("timezone"), // IANA timezone override — null = use tenant default
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
   dashboardLayout: text("dashboard_layout").notNull().default("classic"),

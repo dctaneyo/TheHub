@@ -1,7 +1,7 @@
 import { db, schema } from "./db";
 import { eq, and } from "drizzle-orm";
 import { createNotification, createNotificationBulk } from "./notifications";
-import { getTenantTimezone, tzNow, tzTodayStr } from "./timezone";
+import { tzNow, tzTodayStr } from "./timezone";
 
 /**
  * Real-time task notification scheduler
@@ -194,73 +194,70 @@ function clearAllTimers() {
 
 /**
  * Schedule timers for all of today's tasks across all active locations.
- * Groups locations by tenant timezone so each tenant's tasks fire at the correct local time.
+ * Each location resolves its own timezone (location override → tenant default).
  */
 function scheduleAllForToday() {
   clearAllTimers();
 
-  // Get all active tenants and their timezones
-  const allTenants = db.select({ id: schema.tenants.id, timezone: schema.tenants.timezone })
-    .from(schema.tenants).where(eq(schema.tenants.isActive, true)).all();
-
   const allLocations = db.select().from(schema.locations).where(eq(schema.locations.isActive, true)).all();
   const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.isHidden, false)).all();
+
+  // Pre-fetch tenant timezones for fallback
+  const tenantTzMap = new Map<string, string>();
+  const allTenants = db.select({ id: schema.tenants.id, timezone: schema.tenants.timezone })
+    .from(schema.tenants).where(eq(schema.tenants.isActive, true)).all();
+  for (const t of allTenants) tenantTzMap.set(t.id, t.timezone || "Pacific/Honolulu");
 
   let dueSoonCount = 0;
   let overdueCount = 0;
 
-  for (const tenant of allTenants) {
-    const tz = tenant.timezone || "Pacific/Honolulu";
+  for (const location of allLocations) {
+    const tz = location.timezone || tenantTzMap.get(location.tenantId) || "Pacific/Honolulu";
     const todayDate = getTodayDate(tz);
     const now = localNow(tz);
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const nowSeconds = now.getSeconds();
 
-    const tenantLocations = allLocations.filter((l) => l.tenantId === tenant.id);
-    const tenantTasks = allTasks.filter((t) => t.tenantId === tenant.id);
+    const locationTasks = allTasks.filter(
+      (t) => t.tenantId === location.tenantId && (!t.locationId || t.locationId === location.id)
+    );
 
-    for (const location of tenantLocations) {
-      const locationTasks = tenantTasks.filter(
-        (t) => !t.locationId || t.locationId === location.id
-      );
+    for (const task of locationTasks) {
+      if (!isTaskDueToday(task, todayDate)) continue;
 
-      for (const task of locationTasks) {
-        if (!isTaskDueToday(task, todayDate)) continue;
+      const taskMinutes = timeToMinutes(task.dueTime);
 
-        const taskMinutes = timeToMinutes(task.dueTime);
+      // "Due soon" fires 30 minutes before due time
+      const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
+      const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
-        // "Due soon" fires 30 minutes before due time
-        const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
-        const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
+      if (dueSoonDelay > 0) {
+        const key = `${location.id}:${task.id}:due-soon`;
+        const timer = setTimeout(
+          () => {
+            _timers.delete(key);
+            fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
+          },
+          dueSoonDelay
+        );
+        _timers.set(key, timer);
+        dueSoonCount++;
+      }
 
-        if (dueSoonDelay > 0) {
-          const key = `${location.id}:${task.id}:due-soon`;
-          const timer = setTimeout(
-            () => {
-              _timers.delete(key);
-              fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
-            },
-            dueSoonDelay
-          );
-          _timers.set(key, timer);
-          dueSoonCount++;
-        }
+      // "Overdue" fires exactly at due time
+      const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
-        // "Overdue" fires exactly at due time
-        const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
-
-        if (overdueDelay > 0) {
-          const key = `${location.id}:${task.id}:overdue`;
-          const timer = setTimeout(
-            () => {
-              _timers.delete(key);
-              fireOverdue(task.id, task.title, task.dueTime, location.id, location.name, tz);
-            },
-            overdueDelay
-          );
-          _timers.set(key, timer);
-          overdueCount++;
-        }
+      if (overdueDelay > 0) {
+        const key = `${location.id}:${task.id}:overdue`;
+        const timer = setTimeout(
+          () => {
+            _timers.delete(key);
+            fireOverdue(task.id, task.title, task.dueTime, location.id, location.name, tz);
+          },
+          overdueDelay
+        );
+        _timers.set(key, timer);
+        overdueCount++;
       }
     }
   }
@@ -269,18 +266,29 @@ function scheduleAllForToday() {
 }
 
 /**
- * Schedule the midnight rollover — at 00:00:01 (earliest tenant timezone) recalculate all timers.
+ * Schedule the midnight rollover — at 00:00:01 (earliest timezone across all locations) recalculate all timers.
  */
 function scheduleMidnightRollover() {
   if (_midnightTimer) clearTimeout(_midnightTimer);
 
-  // Find the shortest delay to midnight across all tenant timezones
-  const allTenants = db.select({ timezone: schema.tenants.timezone })
+  // Collect all unique timezones across locations and tenants
+  const tzSet = new Set<string>();
+  const allLocations = db.select({ timezone: schema.locations.timezone, tenantId: schema.locations.tenantId })
+    .from(schema.locations).where(eq(schema.locations.isActive, true)).all();
+  const allTenants = db.select({ id: schema.tenants.id, timezone: schema.tenants.timezone })
     .from(schema.tenants).where(eq(schema.tenants.isActive, true)).all();
+  const tenantTzMap = new Map<string, string>();
+  for (const t of allTenants) {
+    const tz = t.timezone || "Pacific/Honolulu";
+    tenantTzMap.set(t.id, tz);
+    tzSet.add(tz);
+  }
+  for (const loc of allLocations) {
+    tzSet.add(loc.timezone || tenantTzMap.get(loc.tenantId) || "Pacific/Honolulu");
+  }
 
   let minDelay = Infinity;
-  for (const tenant of allTenants) {
-    const tz = tenant.timezone || "Pacific/Honolulu";
+  for (const tz of tzSet) {
     const now = localNow(tz);
     const nowTotalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
     const midnightSecs = 24 * 3600 + 1; // 00:00:01 next day
@@ -288,7 +296,7 @@ function scheduleMidnightRollover() {
     if (delay < minDelay) minDelay = delay;
   }
 
-  // Fallback if no tenants
+  // Fallback if no locations/tenants
   if (!isFinite(minDelay)) {
     const now = localNow("Pacific/Honolulu");
     const nowTotalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();

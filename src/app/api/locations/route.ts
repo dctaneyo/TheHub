@@ -117,6 +117,11 @@ export async function POST(req: NextRequest) {
     }
     const { name, storeNumber, address, email, userId, pin } = parsed.data;
 
+    // Validate timezone if provided
+    if (parsed.data.timezone) {
+      try { Intl.DateTimeFormat(undefined, { timeZone: parsed.data.timezone }); } catch { return ApiErrors.badRequest("Invalid timezone"); }
+    }
+
     // Enforce tenant location limit
     const tenant = await getTenant();
     if (tenant && !canAddLocation(session.tenantId, tenant.maxLocations)) {
@@ -133,6 +138,7 @@ export async function POST(req: NextRequest) {
       email: email || null,
       userId,
       pinHash: hashSync(pin, 10),
+      timezone: parsed.data.timezone || null,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -193,12 +199,18 @@ export async function PUT(req: NextRequest) {
     }
     const { id, name, email, pin, address, isActive } = parsed.data;
 
+    // Validate timezone if provided
+    if (parsed.data.timezone !== undefined && parsed.data.timezone !== null) {
+      try { Intl.DateTimeFormat(undefined, { timeZone: parsed.data.timezone }); } catch { return ApiErrors.badRequest("Invalid timezone"); }
+    }
+
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updates.name = name;
     if (email !== undefined) updates.email = email;
     if (address !== undefined) updates.address = address;
     if (isActive !== undefined) updates.isActive = isActive;
     if (pin && pin.length === 4) updates.pinHash = hashSync(pin, 10);
+    if (parsed.data.timezone !== undefined) updates.timezone = parsed.data.timezone;
 
     db.update(schema.locations).set(updates).where(and(eq(schema.locations.id, id), eq(schema.locations.tenantId, session.tenantId))).run();
     broadcastUserUpdate(session.tenantId);

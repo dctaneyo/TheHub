@@ -18,6 +18,24 @@ export function getTenantTimezone(tenantId: string): string {
   }
 }
 
+/**
+ * Get the IANA timezone for a specific location.
+ * Checks the location's own timezone first, then falls back to the tenant's timezone.
+ */
+export function getLocationTimezone(locationId: string): string {
+  try {
+    const row = db
+      .select({ timezone: schema.locations.timezone, tenantId: schema.locations.tenantId })
+      .from(schema.locations)
+      .where(eq(schema.locations.id, locationId))
+      .get();
+    if (!row) return "Pacific/Honolulu";
+    return row.timezone || getTenantTimezone(row.tenantId);
+  } catch {
+    return "Pacific/Honolulu";
+  }
+}
+
 /** Get a Date object representing "now" in the given IANA timezone. */
 export function tzNow(tz: string): Date {
   const str = new Date().toLocaleString("en-US", { timeZone: tz });
