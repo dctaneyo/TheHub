@@ -95,6 +95,7 @@ export interface ActiveBroadcast {
 export interface ArlDashboardContextValue {
   // Navigation
   activeView: ArlView;
+  displayView: ArlView; // optimistic: highlights immediately on click
   navigateToView: (view: ArlView) => void;
   swipeDirection: 1 | -1;
 
@@ -189,19 +190,27 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
 
   // ── Navigation ──
   const activeView = pathnameToViewId(pathname);
+  // Optimistic pending view: highlights the sidebar immediately on click
+  // before the route finishes loading. Cleared once pathname catches up.
+  const [pendingView, setPendingView] = useState<ArlView | null>(null);
+  const displayView: ArlView = pendingView ?? activeView;
   const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
   const prevViewRef = useRef<ArlView>(activeView);
 
-  // Track direction when pathname changes
+  // Clear pending view once the real pathname catches up
   useEffect(() => {
+    if (pendingView && activeView === pendingView) {
+      setPendingView(null);
+    }
     if (prevViewRef.current !== activeView) {
       setSwipeDirection(computeSlideDirection(prevViewRef.current, activeView, navItems));
       prevViewRef.current = activeView;
     }
-  }, [activeView]);
+  }, [activeView, pendingView]);
 
   const navigateToView = useCallback(
     (view: ArlView) => {
+      setPendingView(view);
       setSwipeDirection(computeSlideDirection(activeView, view, navItems));
       router.push(viewIdToPathname(view));
     },
@@ -588,6 +597,7 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
   // ── Context value ──
   const value: ArlDashboardContextValue = {
     activeView,
+    displayView,
     navigateToView,
     swipeDirection,
     unreadCount,

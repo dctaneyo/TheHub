@@ -54,6 +54,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
 
   const {
     activeView,
+    displayView,
     navigateToView,
     unreadCount,
     onlineCount,
@@ -114,7 +115,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
       {!joiningMeeting && activeView !== "broadcast" && (
         <ArlSidebar
           user={user}
-          activeView={activeView}
+          activeView={displayView}
           onViewChange={(view) => {
             navigateToView(view as ArlView);
           }}
@@ -145,7 +146,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
               </button>
             )}
             <h2 className="text-base font-bold text-foreground hidden sm:block">
-              {navItems.find((n) => n.id === activeView)?.label ?? ""}
+              {navItems.find((n) => n.id === displayView)?.label ?? ""}
             </h2>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
@@ -300,7 +301,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
         {isMobileOrTablet && (
           <PageIndicator
             pages={navItems.map(item => ({ id: item.id, label: item.label }))}
-            currentPageId={activeView}
+            currentPageId={displayView}
             onPageChange={(view) => navigateToView(view as ArlView)}
             className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
           />
