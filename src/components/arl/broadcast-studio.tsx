@@ -42,7 +42,6 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
     if (initialTitle) setTitle(initialTitle);
   }, [initialTitle]);
   const [meetingId, setMeetingId] = useState<string | null>(null);
-  const [broadcastId, setBroadcastId] = useState<string | null>(null);
   const [inMeeting, setInMeeting] = useState(false);
   const [titleError, setTitleError] = useState(false);
 
@@ -61,7 +60,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
     }
     setTitleError(false);
 
-    const id = `broadcast-${meetingCode}`;
+    const id = `scheduled-${meetingCode}`;
     setMeetingId(id);
 
     // Create meeting on server (include password if set)
@@ -72,35 +71,14 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
       meetingCode,
     });
 
-    // Start the broadcast — this notifies all online locations
-    socket?.emit("broadcast:start", {
-      title: title.trim(),
-      meetingId: id,
-      meetingCode,
-    });
-
-    // Listen for broadcastId from server
-    const handleBroadcastStarted = (data: { broadcastId: string; meetingId: string }) => {
-      if (data.meetingId === id) {
-        setBroadcastId(data.broadcastId);
-        socket?.off("broadcast:started", handleBroadcastStarted);
-      }
-    };
-    socket?.on("broadcast:started", handleBroadcastStarted);
-
     // Enter the meeting room
     setInMeeting(true);
   };
 
   const handleLeaveMeeting = (didEndMeeting?: boolean) => {
-    // End the broadcast when the ARL leaves/ends
-    if (broadcastId) {
-      socket?.emit("broadcast:end", { broadcastId });
-    }
     const leftId = meetingId;
     setInMeeting(false);
     setMeetingId(null);
-    setBroadcastId(null);
     setTitle("");
     setPassword("");
     // Pass the meeting ID if user left (not ended) so they can rejoin
@@ -134,8 +112,8 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           <div className="flex items-center gap-3">
             <Video className="h-6 w-6" />
             <div>
-              <h2 className="text-lg font-bold">Start a Broadcast</h2>
-              <p className="text-sm text-red-100">Go live to all online locations</p>
+              <h2 className="text-lg font-bold">Start a Meeting</h2>
+              <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
           <button onClick={() => onClose()} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -146,11 +124,11 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
         {/* Body */}
         <div className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Broadcast Title</label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Title</label>
             <Input
               value={title}
               onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
-              placeholder="e.g. Morning Huddle, Training Session..."
+              placeholder="e.g. Weekly Team Huddle, Training Session..."
               className={`text-base ${titleError ? "border-red-500 ring-red-500/20 ring-2" : ""}`}
               onKeyDown={(e) => { if (e.key === "Enter") startMeeting(); }}
             />
@@ -198,7 +176,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold rounded-xl"
           >
             <Play className="h-5 w-5 mr-2" />
-            Go Live
+            Start Meeting
           </Button>
         </div>
       </motion.div>
