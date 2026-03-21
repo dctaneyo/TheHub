@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard } from "@/lib/icons";
-import { OnscreenKeyboard } from "@/components/onscreen-keyboard";
+import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
@@ -522,22 +522,18 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Virtual keyboard */}
-        <OnscreenKeyboard
-          isOpen={showOrgKeyboard}
-          onClose={() => setShowOrgKeyboard(false)}
-          onInput={(char) => {
-            setOrgInput((prev) => {
-              if (prev.length >= 10) return prev;
-              const filtered = char.replace(/[^a-zA-Z0-9]/g, "");
-              if (!filtered) return prev;
-              return (prev + filtered).slice(0, 10).toUpperCase();
-            });
-          }}
-          onDelete={() => {
-            setOrgInput((prev) => prev.slice(0, -1));
-          }}
-          onSubmit={handleOrgSubmit}
-        />
+        {showOrgKeyboard && (
+          <OnscreenKeyboard
+            value={orgInput}
+            onChange={(val) => {
+              const filtered = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase();
+              setOrgInput(filtered);
+            }}
+            onSubmit={handleOrgSubmit}
+            onDismiss={() => setShowOrgKeyboard(false)}
+            placeholder="e.g. KAZI"
+          />
+        )}
       </div>
     );
   }
