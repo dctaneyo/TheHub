@@ -36,17 +36,18 @@ describe("middleware — root domain handler", () => {
     vi.clearAllMocks();
   });
 
-  // ── Landing page always accessible ──
+  // ── Landing page redirects to /login ──
 
-  it("allows / (landing page) without a cookie", () => {
+  it("redirects / to /login", () => {
     const res = middleware(makeRequest("https://meetthehub.com/"));
-    expect(res.status).toBe(200);
-    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 
-  it("allows /landing without a cookie", () => {
+  it("redirects /landing to /login", () => {
     const res = middleware(makeRequest("https://meetthehub.com/landing"));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 
   it("allows /_next/... without a cookie", () => {

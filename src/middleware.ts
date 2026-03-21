@@ -144,13 +144,13 @@ export function middleware(request: NextRequest) {
 
   // ── Root domain → cookie-based tenant resolution or public access ──
   if (isRootDomain(hostname)) {
-    // Landing page and static assets are always accessible without a cookie
-    if (
-      pathname === "/" ||
-      pathname.startsWith("/landing") ||
-      pathname.startsWith("/_next") ||
-      pathname.includes(".")
-    ) {
+    // Redirect landing page to /login (org entry is the new front door)
+    if (pathname === "/" || pathname.startsWith("/landing")) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Static assets always accessible
+    if (pathname.startsWith("/_next") || pathname.includes(".")) {
       return applyCsp(NextResponse.next());
     }
 
