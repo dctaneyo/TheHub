@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
 import {
   CalendarDays,
-  Video,
   X,
   CheckCircle2,
 } from "@/lib/icons";
@@ -390,9 +389,7 @@ function DashboardPage() {
   const [showCoinRain, setShowCoinRain] = useState(false);
   const [coinRainAmount, setCoinRainAmount] = useState(0);
   const [showFireworks, setShowFireworks] = useState(false);
-  const [activeStream, setActiveStream] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
-  const [pendingMeeting, setPendingMeeting] = useState<{ broadcastId: string; arlName: string; title: string } | null>(null);
-  const [showMeetingNotification, setShowMeetingNotification] = useState(false);
+  const [activeStream, setActiveStream] = useState<{ broadcastId: string; meetingId: string; arlName: string; title: string } | null>(null);
   const playConfettiSound = useConfettiSound();
 
   // ── Mirror mode: sync view state from target ──
@@ -631,36 +628,31 @@ function DashboardPage() {
     socket.on("task:updated", handleTaskUpdate);
     socket.on("task:completed", handleTaskUpdate);
     
-    // Listen for meeting events
-    const handleMeetingStarted = (data: { meetingId: string; hostName: string; title: string }) => {
-      setPendingMeeting({ broadcastId: data.meetingId, arlName: data.hostName, title: data.title });
-      setShowMeetingNotification(true);
+    // Listen for broadcast events — auto-open on locations
+    const handleBroadcastStarted = (data: { broadcastId: string; meetingId: string; arlName: string; title: string }) => {
+      setActiveStream({
+        broadcastId: data.broadcastId,
+        meetingId: data.meetingId,
+        arlName: data.arlName,
+        title: data.title,
+      });
+      // Notify server we're viewing
+      socket.emit("broadcast:viewer-joined", { broadcastId: data.broadcastId });
     };
-    const handleMeetingEnded = (data: { meetingId: string }) => {
-      setActiveStream(prev => prev?.broadcastId === data.meetingId ? null : prev);
-      setPendingMeeting(prev => prev?.broadcastId === data.meetingId ? null : prev);
-      setShowMeetingNotification(false);
+    const handleBroadcastEnded = (data: { broadcastId: string }) => {
+      setActiveStream(prev => {
+        if (prev?.broadcastId === data.broadcastId) return null;
+        return prev;
+      });
     };
-    // Check for already-active meetings (location logged in after meeting started)
-    const handleMeetingList = (data: { meetings: Array<{ meetingId: string; hostName: string; title: string }> }) => {
-      if (data.meetings.length > 0 && !pendingMeeting && !activeStream) {
-        const m = data.meetings[0];
-        setPendingMeeting({ broadcastId: m.meetingId, arlName: m.hostName, title: m.title });
-        setShowMeetingNotification(true);
-      }
-    };
-    socket.on("meeting:started", handleMeetingStarted);
-    socket.on("meeting:ended", handleMeetingEnded);
-    socket.on("meeting:list", handleMeetingList);
-    // Request active meetings on connect
-    socket.emit("meeting:list");
+    socket.on("broadcast:started", handleBroadcastStarted);
+    socket.on("broadcast:ended", handleBroadcastEnded);
     
     return () => {
       socket.off("task:updated", handleTaskUpdate);
       socket.off("task:completed", handleTaskUpdate);
-      socket.off("meeting:started", handleMeetingStarted);
-      socket.off("meeting:ended", handleMeetingEnded);
-      socket.off("meeting:list", handleMeetingList);
+      socket.off("broadcast:started", handleBroadcastStarted);
+      socket.off("broadcast:ended", handleBroadcastEnded);
     };
   }, [socket, fetchTasks]);
 
@@ -1270,52 +1262,16 @@ function DashboardPage() {
       {/* High-Five Animation — disabled during remote view and mirror mode */}
       {!remoteViewActive && !isMirroring && <HighFiveAnimation />}
 
-      {/* Meeting Join Notification */}
-      <AnimatePresence>
-        {showMeetingNotification && pendingMeeting && !activeStream && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50"
-          >
-            <div className="bg-card rounded-2xl shadow-2xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <Video className="h-5 w-5 text-red-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs font-bold text-red-600 uppercase">Live Meeting</span>
-                  </div>
-                  <p className="text-sm font-bold text-foreground truncate">{pendingMeeting.title}</p>
-                  <p className="text-xs text-muted-foreground">by {pendingMeeting.arlName}</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setActiveStream(pendingMeeting);
-                    setShowMeetingNotification(false);
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 px-4 rounded-xl transition-colors"
-                >
-                  Join Meeting
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Live Stream Viewer */}
+      {/* Live Broadcast Overlay — auto-opens when ARL starts a broadcast */}
       {activeStream && (
         <StreamViewer
-          broadcastId={activeStream.broadcastId}
+          broadcastId={activeStream.meetingId}
           arlName={activeStream.arlName}
           title={activeStream.title}
-          onClose={() => setActiveStream(null)}
+          onClose={() => {
+            socket?.emit("broadcast:viewer-left", { broadcastId: activeStream.broadcastId });
+            setActiveStream(null);
+          }}
         />
       )}
 

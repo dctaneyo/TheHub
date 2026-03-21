@@ -1,4 +1,5 @@
 import type { ActiveMeeting, MeetingAnalyticsData, ForceAction, RemoteViewSession } from "./types";
+import type { ActiveBroadcastState } from "./broadcasts";
 
 /**
  * Global singleton state stored on globalThis so it survives HMR and
@@ -54,6 +55,12 @@ if (!_g.__hubRvDisconnectTimers) {
   _g.__hubRvDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 }
 export const rvDisconnectTimers: Map<string, ReturnType<typeof setTimeout>> = _g.__hubRvDisconnectTimers;
+
+// ── Active broadcasts ──
+if (!_g.__hubActiveBroadcasts) {
+  _g.__hubActiveBroadcasts = new Map<string, ActiveBroadcastState>();
+}
+export const activeBroadcasts: Map<string, ActiveBroadcastState> = _g.__hubActiveBroadcasts;
 
 // ── Constants ──
 export const HOST_LEFT_AUTO_END_MS = 10 * 60 * 1000; // 10 minutes

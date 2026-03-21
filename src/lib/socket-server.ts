@@ -16,6 +16,7 @@ import { registerMeetingHandlers, handleMeetingDisconnect, findActiveMeetingByCo
 import { scheduleTaskNotifications, cancelTaskTimers } from "./socket-handlers/tasks";
 import { registerTestHandlers } from "./socket-handlers/tests";
 import { registerRemoteViewHandlers, handleRemoteViewDisconnect } from "./socket-handlers/remote-view";
+import { registerBroadcastHandlers, handleBroadcastDisconnect, getActiveBroadcastForTenant } from "./socket-handlers/broadcasts";
 
 function readBuildId(): string {
   try {
@@ -111,6 +112,18 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
         socket.join(`location:${user.id}`); // keep legacy room for backwards compat
         socket.join("locations"); // legacy
         scheduleTaskNotifications(io, user.id);
+
+        // If there's an active broadcast, notify this location immediately
+        const activeBroadcast = getActiveBroadcastForTenant(tenantId);
+        if (activeBroadcast) {
+          socket.emit("broadcast:started", {
+            broadcastId: activeBroadcast.broadcastId,
+            meetingId: activeBroadcast.meetingId,
+            title: activeBroadcast.title,
+            arlId: activeBroadcast.arlId,
+            arlName: activeBroadcast.arlName,
+          });
+        }
       } else {
         socket.join(`${tp}:arl:${user.id}`);
         socket.join(`${tp}:arls`);
@@ -290,10 +303,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // ── Register modular handlers (meetings, tests, remote-view) ──
+    // ── Register modular handlers (meetings, tests, remote-view, broadcasts) ──
     registerMeetingHandlers(io, socket, user);
     registerTestHandlers(io, socket, user);
     registerRemoteViewHandlers(io, socket, user);
+    registerBroadcastHandlers(io, socket, user);
 
     // ── Disconnect ──
     socket.on("disconnect", () => {
@@ -336,6 +350,9 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
         // Meeting disconnect cleanup (grace period)
         handleMeetingDisconnect(io, socket, user);
+
+        // Broadcast disconnect cleanup (grace period)
+        handleBroadcastDisconnect(io, socket, user);
 
         // Remote view disconnect cleanup
         handleRemoteViewDisconnect(io, socket, user);
