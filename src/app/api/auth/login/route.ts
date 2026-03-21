@@ -27,10 +27,21 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return ApiErrors.badRequest("Invalid credentials");
     }
-    const { userId, pin } = parsed.data;
+    const { userId, pin, orgSlug } = parsed.data;
 
-    // Resolve tenant from middleware header
-    const tenantId = req.headers.get("x-tenant-id") || "kazi";
+    // Resolve tenant: prefer explicit orgSlug from body, fall back to middleware header
+    let tenantId = req.headers.get("x-tenant-id") || "kazi";
+    if (orgSlug) {
+      // Look up tenant by slug to get the tenant ID
+      const tenant = db
+        .select({ id: schema.tenants.id })
+        .from(schema.tenants)
+        .where(and(eq(schema.tenants.slug, orgSlug.toLowerCase()), eq(schema.tenants.isActive, true)))
+        .get();
+      if (tenant) {
+        tenantId = tenant.id;
+      }
+    }
 
     // Try to find as location first (scoped to tenant)
     const location = db

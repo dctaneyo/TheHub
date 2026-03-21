@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface Tenant {
   id: string;
@@ -109,6 +109,44 @@ export function resolveTenantByHost(host: string): { id: string; slug: string } 
     .where(eq(schema.tenants.customDomain, hostname))
     .get();
   return row || null;
+}
+
+/**
+ * Resolve tenant by slug (used by org entry flow).
+ * Case-insensitive lookup, only returns active tenants.
+ */
+export function resolveTenantBySlug(slug: string): {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  primaryColor: string;
+  accentColor: string | null;
+  faviconUrl: string | null;
+  appTitle: string | null;
+  isActive: boolean;
+} | null {
+  const row = db
+    .select({
+      id: schema.tenants.id,
+      slug: schema.tenants.slug,
+      name: schema.tenants.name,
+      logoUrl: schema.tenants.logoUrl,
+      primaryColor: schema.tenants.primaryColor,
+      accentColor: schema.tenants.accentColor,
+      faviconUrl: schema.tenants.faviconUrl,
+      appTitle: schema.tenants.appTitle,
+      isActive: schema.tenants.isActive,
+    })
+    .from(schema.tenants)
+    .where(
+      and(
+        eq(schema.tenants.slug, slug.toLowerCase()),
+        eq(schema.tenants.isActive, true)
+      )
+    )
+    .get();
+  return row ?? null;
 }
 
 /**

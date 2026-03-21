@@ -502,6 +502,15 @@ export const reportHistory = sqliteTable("report_history", {
   completedAt: text("completed_at"),
 });
 
+// Organization IP mappings - associate IPs with tenants for kiosk auto-login
+export const orgIpMappings = sqliteTable("org_ip_mappings", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().references(() => tenants.id),
+  ipAddress: text("ip_address").notNull().unique(),
+  createdBy: text("created_by").notNull().references(() => arls.id),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Meeting participants - detailed per-participant analytics
 export const meetingParticipants = sqliteTable("meeting_participants", {
   id: text("id").primaryKey(), // UUID

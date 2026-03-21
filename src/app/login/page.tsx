@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw } from "@/lib/icons";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard } from "@/lib/icons";
+import { OnscreenKeyboard } from "@/components/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
@@ -13,6 +14,17 @@ interface ValidatedUser {
   name: string;
   storeNumber?: string;
   role?: string;
+}
+
+interface ResolvedTenant {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  primaryColor: string;
+  accentColor: string | null;
+  faviconUrl: string | null;
+  appTitle: string | null;
 }
 
 export default function LoginPage() {
@@ -25,9 +37,152 @@ export default function LoginPage() {
   const [validating, setValidating] = useState(false);
   const [validatedUser, setValidatedUser] = useState<ValidatedUser | null>(null);
   const [isOnline] = useState(true);
+
+  // Org entry state
+  const [orgSlug, setOrgSlug] = useState<string | null>(null);
+  const [orgInput, setOrgInput] = useState("");
+  const [orgError, setOrgError] = useState("");
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [resolvedTenant, setResolvedTenant] = useState<ResolvedTenant | null>(null);
+  const [showOrgKeyboard, setShowOrgKeyboard] = useState(true);
+  const [orgChecked, setOrgChecked] = useState(false);
+
   const userIdRef = useRef("");
   const pinRef = useRef("");
   const keyboardInputRef = useRef<HTMLInputElement>(null);
+  const orgInputRef = useRef<HTMLInputElement>(null);
+
+  // Apply tenant branding to the page (CSS variables, title, favicon)
+  const applyBranding = useCallback((tenant: ResolvedTenant) => {
+    const root = document.documentElement;
+    const color = tenant.primaryColor || "#dc2626";
+    root.style.setProperty("--hub-red", color);
+    root.style.setProperty("--primary", color);
+    root.style.setProperty("--ring", color);
+    if (tenant.appTitle) {
+      document.title = tenant.appTitle;
+    }
+    if (tenant.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = tenant.faviconUrl;
+    }
+  }, []);
+
+  // Check IP association first, then localStorage for persisted org on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      // Step 1: Check IP-based org association (takes priority per Req 6.3)
+      try {
+        const ipRes = await fetch("/api/auth/resolve-org-by-ip");
+        if (!cancelled && ipRes.ok) {
+          const ipData = await ipRes.json();
+          if (ipData.ok && ipData.tenant) {
+            const tenant = ipData.tenant as ResolvedTenant;
+            setOrgSlug(tenant.slug);
+            setResolvedTenant(tenant);
+            applyBranding(tenant);
+            // Persist IP-resolved org to cookie + localStorage for consistency
+            localStorage.setItem("hub-org-id", tenant.slug);
+            document.cookie = `x-org-id=${tenant.slug}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+            setOrgChecked(true);
+            return;
+          }
+        }
+      } catch {
+        // IP check failed — fall through to localStorage
+      }
+
+      if (cancelled) return;
+
+      // Step 2: Fall through to localStorage check
+      const storedSlug = localStorage.getItem("hub-org-id");
+      if (!storedSlug) {
+        setOrgChecked(true);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/resolve-org", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: storedSlug }),
+        });
+
+        if (cancelled) return;
+
+        if (res.ok) {
+          const data = await res.json();
+          const tenant = data.tenant as ResolvedTenant;
+          setOrgSlug(tenant.slug);
+          setResolvedTenant(tenant);
+          applyBranding(tenant);
+        } else {
+          // Stored slug is no longer valid — clear it
+          localStorage.removeItem("hub-org-id");
+          document.cookie = "x-org-id=; path=/; max-age=0";
+        }
+      } catch {
+        // Network error — clear stored value and show org entry
+        localStorage.removeItem("hub-org-id");
+        document.cookie = "x-org-id=; path=/; max-age=0";
+      } finally {
+        if (!cancelled) {
+          setOrgChecked(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyBranding]);
+
+  // Submit org ID: validate, resolve tenant, persist, and apply branding
+  const handleOrgSubmit = useCallback(async () => {
+    const trimmed = orgInput.trim();
+    if (trimmed.length < 2) {
+      setOrgError("Organization ID must be at least 2 characters");
+      return;
+    }
+
+    setOrgError("");
+    setOrgLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/resolve-org", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: trimmed }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const tenant = data.tenant as ResolvedTenant;
+        setOrgSlug(tenant.slug);
+        setResolvedTenant(tenant);
+        localStorage.setItem("hub-org-id", tenant.slug);
+        document.cookie = `x-org-id=${tenant.slug}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+        applyBranding(tenant);
+      } else if (res.status === 404) {
+        setOrgError("Organization not found");
+      } else if (res.status === 429) {
+        setOrgError("Too many attempts. Please try again later.");
+      } else {
+        setOrgError("Something went wrong. Please try again.");
+      }
+    } catch {
+      setOrgError("Connection error. Please try again.");
+    } finally {
+      setOrgLoading(false);
+    }
+  }, [orgInput, applyBranding]);
 
   // Pending session for remote login
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -219,7 +374,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await login(uid, p);
+    const result = await login(uid, p, orgSlug || undefined);
 
     if (result.success) {
       if (result.userType === "location") {
@@ -264,6 +419,128 @@ export default function LoginPage() {
   });
 
   const padButtons = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "action", "0", "delete"];
+
+  // Loading state — waiting for localStorage check
+  if (!orgChecked) {
+    return (
+      <div className="min-h-screen min-h-dvh w-screen bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--hub-red)]" />
+      </div>
+    );
+  }
+
+  // Org Entry Screen — no org slug resolved yet
+  if (orgChecked && !orgSlug) {
+    return (
+      <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center py-6 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
+        >
+          {/* Hub branding */}
+          <motion.div
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="text-xl sm:text-2xl font-black text-white">H</span>
+          </motion.div>
+          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">Welcome to The Hub</h1>
+
+          <div className="mt-4 sm:mt-6 w-full">
+            <p className="text-sm font-semibold text-slate-600 text-center">Enter your Organization ID</p>
+
+            {/* Org input */}
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                ref={orgInputRef}
+                type="text"
+                value={orgInput}
+                readOnly={showOrgKeyboard}
+                maxLength={10}
+                placeholder="e.g. KAZI"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+                  setOrgInput(val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleOrgSubmit();
+                  }
+                }}
+                style={{ textTransform: "uppercase" }}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors"
+              />
+              <button
+                onClick={() => setShowOrgKeyboard((v) => !v)}
+                className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${
+                  showOrgKeyboard
+                    ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
+                    : "border-slate-200 bg-white text-slate-400 hover:text-slate-600"
+                }`}
+                title={showOrgKeyboard ? "Hide virtual keyboard" : "Show virtual keyboard"}
+              >
+                <Keyboard className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Error message */}
+            <div className="mt-3 h-9 flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {orgError ? (
+                  <motion.div
+                    key="org-err"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex w-full items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span>{orgError}</span>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+
+            {/* Loading spinner during validation */}
+            <div className="mt-1 h-6 flex items-center justify-center">
+              {orgLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2 text-xs text-slate-400"
+                >
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Validating organization...
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Virtual keyboard */}
+        <OnscreenKeyboard
+          isOpen={showOrgKeyboard}
+          onClose={() => setShowOrgKeyboard(false)}
+          onInput={(char) => {
+            setOrgInput((prev) => {
+              if (prev.length >= 10) return prev;
+              const filtered = char.replace(/[^a-zA-Z0-9]/g, "");
+              if (!filtered) return prev;
+              return (prev + filtered).slice(0, 10).toUpperCase();
+            });
+          }}
+          onDelete={() => {
+            setOrgInput((prev) => prev.slice(0, -1));
+          }}
+          onSubmit={handleOrgSubmit}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4">
@@ -435,14 +712,32 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Icon + Title */}
-        <motion.div
-          className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
-          whileHover={{ scale: 1.05 }}
-        >
-          <span className="text-xl sm:text-2xl font-black text-white">H</span>
-        </motion.div>
-        <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">The Hub</h1>
+        {/* Icon + Title — show tenant branding when resolved */}
+        {resolvedTenant?.logoUrl ? (
+          <motion.img
+            src={resolvedTenant.logoUrl}
+            alt={`${resolvedTenant.name} logo`}
+            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200"
+            whileHover={{ scale: 1.05 }}
+          />
+        ) : (
+          <motion.div
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="text-xl sm:text-2xl font-black text-white">H</span>
+          </motion.div>
+        )}
+        {resolvedTenant ? (
+          <h1
+            className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold"
+            style={{ color: resolvedTenant.primaryColor || undefined }}
+          >
+            {resolvedTenant.name}
+          </h1>
+        ) : (
+          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">The Hub</h1>
+        )}
 
         {/* Step label + dots + error */}
         <div className="mt-4 sm:mt-6 w-full">
@@ -583,6 +878,29 @@ export default function LoginPage() {
             </motion.div>
           )}
         </div>
+
+        {/* Change Organization link */}
+        {resolvedTenant && (
+          <button
+            onClick={() => {
+              document.cookie = "x-org-id=; path=/; max-age=0";
+              localStorage.removeItem("hub-org-id");
+              setOrgSlug(null);
+              setResolvedTenant(null);
+              setStep("userId");
+              setValidatedUser(null);
+              userIdRef.current = "";
+              setUserId("");
+              pinRef.current = "";
+              setPin("");
+              setError("");
+            }}
+            className="mt-4 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            Not {resolvedTenant.name}?{" "}
+            <span className="underline">Change organization</span>
+          </button>
+        )}
       </motion.div>
     </div>
   );

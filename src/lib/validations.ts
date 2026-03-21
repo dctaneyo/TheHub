@@ -47,6 +47,7 @@ export const updateTaskSchema = z.object({
 export const loginSchema = z.object({
   userId: z.string().length(4, "User ID must be 4 digits").regex(/^\d{4}$/, "User ID must be numeric"),
   pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
+  orgSlug: z.string().min(2).max(10).regex(/^[a-zA-Z0-9]+$/).optional(),
 });
 
 // ── Message schemas ──
