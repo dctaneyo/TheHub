@@ -350,19 +350,35 @@ export function FocusLayout({
         {/* ── Hero Card: Extremely Prominent ── */}
         <div className="shrink-0 px-5 pt-2 pb-3">
           {heroTask ? (
-            <div className="relative">
-              {/* Pulse overlay — outside overflow-hidden so boxShadow isn't clipped */}
+            <motion.div
+              className="relative"
+              animate={
+                heroTask.isOverdue
+                  ? { scale: [1, 1.015, 1] }
+                  : heroTask.isDueSoon
+                  ? { scale: [1, 1.01, 1] }
+                  : {}
+              }
+              transition={
+                heroTask.isOverdue
+                  ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
+                  : heroTask.isDueSoon
+                  ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                  : undefined
+              }
+            >
+              {/* Glow overlay — outside overflow-hidden so boxShadow isn't clipped */}
               {heroTask.isOverdue && (
                 <motion.div
                   className="absolute inset-0 rounded-2xl pointer-events-none z-10"
-                  animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 20px 8px rgba(239,68,68,0.4)", "0 0 0 0 rgba(239,68,68,0)"], scale: [1, 1.015, 1] }}
+                  animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 20px 8px rgba(239,68,68,0.4)", "0 0 0 0 rgba(239,68,68,0)"] }}
                   transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
                 />
               )}
               {heroTask.isDueSoon && !heroTask.isOverdue && (
                 <motion.div
                   className="absolute inset-0 rounded-2xl pointer-events-none z-10"
-                  animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 14px 5px rgba(245,158,11,0.35)", "0 0 0 0 rgba(245,158,11,0)"], scale: [1, 1.01, 1] }}
+                  animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 14px 5px rgba(245,158,11,0.35)", "0 0 0 0 rgba(245,158,11,0)"] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
               )}
@@ -444,7 +460,7 @@ export function FocusLayout({
                 </motion.button>
               </div>
             </motion.div>
-            </div>
+            </motion.div>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -468,7 +484,20 @@ export function FocusLayout({
                 {upNextTasks.map((task, i) => {
                   const Icon = typeIcons[task.type] || Clock;
                   return (
-                    <div key={task.id} className="relative">
+                    <motion.div key={task.id} className="relative"
+                      animate={
+                        task.isOverdue
+                          ? { scale: [1, 1.015, 1] }
+                          : task.isDueSoon
+                          ? { scale: [1, 1.01, 1] }
+                          : {}
+                      }
+                      transition={
+                        task.isOverdue || task.isDueSoon
+                          ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
+                          : undefined
+                      }
+                    >
                       {task.isOverdue && (
                         <motion.div
                           className="absolute inset-0 rounded-2xl pointer-events-none z-10"
@@ -523,7 +552,7 @@ export function FocusLayout({
                         </motion.button>
                       </div>
                     </motion.div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
