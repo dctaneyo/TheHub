@@ -449,7 +449,6 @@ export default function LoginPage() {
           <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">Welcome to The Hub</h1>
 
           <div className="mt-4 sm:mt-6 w-full">
-            <p className="text-sm font-semibold text-slate-600 text-center">Enter your Organization ID</p>
 
             {/* Org input */}
             <div className="mt-4 flex items-center gap-2">
@@ -459,7 +458,7 @@ export default function LoginPage() {
                 value={orgInput}
                 readOnly={showOrgKeyboard}
                 maxLength={10}
-                placeholder="e.g. KAZI"
+                placeholder="Organization ID"
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
                   setOrgInput(val);
@@ -471,11 +470,11 @@ export default function LoginPage() {
                   }
                 }}
                 style={{ textTransform: "uppercase" }}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors"
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
-                className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${
+                className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
                   showOrgKeyboard
                     ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
                     : "border-slate-200 bg-white text-slate-400 hover:text-slate-600"
@@ -531,7 +530,7 @@ export default function LoginPage() {
             }}
             onSubmit={handleOrgSubmit}
             onDismiss={() => setShowOrgKeyboard(false)}
-            placeholder="e.g. KAZI"
+            placeholder="Organization ID"
           />
         )}
       </div>
