@@ -40,6 +40,8 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [currentBuild, setCurrentBuild] = useState<string | null>(null);
+  const [newBuild, setNewBuild] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -87,6 +89,8 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
         if (lastReload && Date.now() - Number(lastReload) < 60000) return;
 
         reloadScheduled = true;
+        setCurrentBuild(sessionBuildId);
+        setNewBuild(buildId);
         setUpdating(true);
         sessionStorage.setItem("hub-last-reload", String(Date.now()));
         // Brief delay so the splash animation is visible before reload
@@ -163,12 +167,13 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
   return (
     <SocketContext.Provider value={{ socket, isConnected, updating, emit, joinConversation, leaveConversation, startTyping, stopTyping, updateActivity }}>
       {children}
-      <UpdateSplash visible={updating} />
+      <UpdateSplash visible={updating} currentBuild={currentBuild} newBuild={newBuild} />
     </SocketContext.Provider>
   );
 }
 
-function UpdateSplash({ visible }: { visible: boolean }) {
+function UpdateSplash({ visible, currentBuild, newBuild }: { visible: boolean; currentBuild: string | null; newBuild: string | null }) {
+  const fmt = (id: string | null) => id ? (id.length > 8 ? id.slice(0, 7) : id) : "—";
   return (
     <AnimatePresence>
       {visible && (
@@ -226,6 +231,17 @@ function UpdateSplash({ visible }: { visible: boolean }) {
                 </motion.div>
               ))}
             </div>
+
+            {/* Build version info */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="mt-6 font-mono text-[10px] text-muted-foreground/60 space-y-0.5"
+            >
+              <p>Current: {fmt(currentBuild)}</p>
+              <p>New: {fmt(newBuild)}</p>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}
