@@ -84,6 +84,19 @@ export function OnscreenKeyboard({
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Mobile detection (< 640px)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Double-tap shift for CAPS on mobile
+  const lastShiftTap = useRef(0);
+
   const isAlpha = mode === "alpha" || mode === "shift" || mode === "caps";
   const isUpper = mode === "shift" || mode === "caps";
   const isNumbers = mode === "numbers" || mode === "symbols";
@@ -102,6 +115,18 @@ export function OnscreenKeyboard({
     if (mode === "caps") setMode("shift");
     else if (mode === "shift") setMode("alpha");
     else setMode("shift");
+  };
+
+  const handleMobileShift = () => {
+    const now = Date.now();
+    const elapsed = now - lastShiftTap.current;
+    lastShiftTap.current = now;
+    if (elapsed < 400) {
+      // Double-tap → CAPS
+      setMode((m) => m === "caps" ? "alpha" : "caps");
+    } else {
+      handleShift();
+    }
   };
 
   const handleCaps = () => {
@@ -222,7 +247,7 @@ export function OnscreenKeyboard({
       <div className="space-y-1">
 
         {/* ── ALPHA MODE ── */}
-        {isAlpha && (
+        {isAlpha && !isMobile && (
           <>
             {/* Row 1: tab + q-p + delete */}
             <div className="flex gap-1">
@@ -286,6 +311,61 @@ export function OnscreenKeyboard({
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
                 className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
                 .?123
+              </button>
+              <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
+                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── ALPHA MODE — MOBILE ── */}
+        {isAlpha && isMobile && (
+          <>
+            {/* Row 1: q-p (no tab/delete — blank spacers keep uniform key size) */}
+            <div className="flex gap-1">
+              <div className="flex-[0.7] min-w-0" />
+              {ROW1.map(({ key, hint }) => charKey(key, hint))}
+              <div className="flex-[0.7] min-w-0" />
+            </div>
+
+            {/* Row 2: a-l (no caps/return — blank spacers) */}
+            <div className="flex gap-1">
+              <div className="flex-[1.2] min-w-0" />
+              {ROW2.map(({ key, hint }) => charKey(key, hint))}
+              <div className="flex-[1.2] min-w-0" />
+            </div>
+
+            {/* Row 3: shift + z-m + backspace (blank spacer on right to balance) */}
+            <div className="flex gap-1">
+              <button onPointerDown={(e) => { e.preventDefault(); handleMobileShift(); }}
+                className={cn(KDark, H, "flex-[1.8] min-w-0 text-[11px] font-semibold",
+                  mode === "shift" && "bg-slate-400",
+                  mode === "caps" && "ring-2 ring-[var(--hub-red)] ring-inset"
+                )}>
+                {mode === "caps" ? "CAPS" : "shift"}
+              </button>
+              {ROW3.map(({ key, hint }) => charKey(key, hint))}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); backspace(); }}
+                className={cn(KDark, H, "flex-[1.8] min-w-0", popClass("mdel"))}>
+                <Delete className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Row 4: .?123 + emoji + space + hide */}
+            <div className="flex gap-1">
+              <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
+                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
+                .?123
+              </button>
+              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
+                😊
+              </button>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mspc"); press(" "); }}
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
+                space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
                 className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
