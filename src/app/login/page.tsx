@@ -445,7 +445,7 @@ export default function LoginPage() {
   // Org Entry Screen — no org slug resolved yet
   if (orgChecked && !orgSlug) {
     return (
-      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4 ${showOrgKeyboard ? "justify-start pt-12" : "justify-center"}`}>
+      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4 justify-center ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
         {/* Prominent floating particles */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {orgParticles.map((p) => (
@@ -480,7 +480,7 @@ export default function LoginPage() {
         </div>
 
         {/* Spacer to push content above keyboard on mobile */}
-        {showOrgKeyboard && <div className="flex-1 min-h-4" />}
+        {showOrgKeyboard && <div className="flex-1 min-h-4 sm:hidden" />}
         {/* Hub icon — outside the card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
