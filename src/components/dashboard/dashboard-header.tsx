@@ -94,13 +94,10 @@ export function DashboardHeader({
         <div className="relative" ref={mobileMenuRef}>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm transition-transform active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm transition-transform active:scale-95"
           >
             <span className="text-base font-black text-white">{brandInitial}</span>
           </button>
-          <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-sm">
-            <span className="text-base font-black text-white">{brandInitial}</span>
-          </div>
 
           {/* Hub Menu - All Options */}
           <AnimatePresence>
