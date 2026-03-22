@@ -433,25 +433,28 @@ export default function LoginPage() {
   if (orgChecked && !orgSlug) {
     return (
       <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center py-6 px-4">
+        {/* Hub icon — outside the card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+        >
+          <span className="text-2xl sm:text-3xl font-black text-white">H</span>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
+          className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
-          {/* Hub branding */}
-          <motion.div
-            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
-            whileHover={{ scale: 1.05 }}
-          >
-            <span className="text-xl sm:text-2xl font-black text-white">H</span>
-          </motion.div>
-          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">Welcome to The Hub</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Welcome to The Hub</h1>
 
-          <div className="mt-4 sm:mt-6 w-full">
+          <div className="mt-3 sm:mt-4 w-full">
 
             {/* Org input */}
-            <div className="mt-4 flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <input
                 ref={orgInputRef}
                 type="text"
@@ -474,10 +477,10 @@ export default function LoginPage() {
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
                   showOrgKeyboard
-                    ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
-                    : "border-slate-200 bg-white text-slate-400 hover:text-slate-600"
+                    ? "bg-[var(--hub-red)] text-white shadow-md"
+                    : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
                 }`}
                 title={showOrgKeyboard ? "Hide virtual keyboard" : "Show virtual keyboard"}
               >
