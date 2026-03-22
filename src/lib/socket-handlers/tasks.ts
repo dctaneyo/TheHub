@@ -1,7 +1,7 @@
 import type { Server as SocketIOServer } from "socket.io";
 import { db, schema } from "../db";
 import { eq, and } from "drizzle-orm";
-import { createNotification, upgradeDueSoonToOverdue } from "../notifications";
+import { createNotification, upgradeDueSoonToOverdue, upgradeOverdueToMissed } from "../notifications";
 import { taskTimers } from "./state";
 import { taskAppliesToDate } from "../task-utils";
 import { getLocationTimezone, tzNow, tzTodayStr, tzDayOfWeek } from "../timezone";
@@ -120,6 +120,23 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
       }
     }
 
+    // Midnight timer: upgrade any remaining overdue notifications to "missed"
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+    if (msUntilMidnight > 0) {
+      timers.push(setTimeout(async () => {
+        try {
+          const count = await upgradeOverdueToMissed(locationId);
+          if (count > 0) {
+            io.to(`location:${locationId}`).emit("task:missed", { locationId, count });
+          }
+        } catch (err) {
+          console.error("upgradeOverdueToMissed error:", err);
+        }
+      }, msUntilMidnight));
+    }
+
     taskTimers.set(locationId, timers);
     console.log(`⏰ Scheduled ${timers.length} task notification timers for location ${locationId}`);
   } catch (err) {
@@ -134,4 +151,14 @@ export function cancelTaskTimers(locationId: string) {
   const timers = taskTimers.get(locationId) || [];
   timers.forEach(clearTimeout);
   taskTimers.delete(locationId);
+}
+
+/**
+ * Upgrade any leftover overdue notifications to missed on day change.
+ * Called from client:day-reset as a safety net in case the midnight timer didn't fire.
+ */
+export function upgradeOverdueOnDayReset(locationId: string) {
+  upgradeOverdueToMissed(locationId).catch((err) =>
+    console.error("upgradeOverdueOnDayReset error:", err)
+  );
 }

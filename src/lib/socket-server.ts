@@ -13,7 +13,7 @@ import { createNotificationBulk } from "./notifications";
 import { activeMeetings, pendingForceActions } from "./socket-handlers/state";
 import type { ForceAction } from "./socket-handlers/types";
 import { registerMeetingHandlers, handleMeetingDisconnect, findActiveMeetingByCode as _findActiveMeetingByCode } from "./socket-handlers/meetings";
-import { scheduleTaskNotifications, cancelTaskTimers } from "./socket-handlers/tasks";
+import { scheduleTaskNotifications, cancelTaskTimers, upgradeOverdueOnDayReset } from "./socket-handlers/tasks";
 import { registerTestHandlers } from "./socket-handlers/tests";
 import { registerRemoteViewHandlers, handleRemoteViewDisconnect } from "./socket-handlers/remote-view";
 import { registerBroadcastHandlers, handleBroadcastDisconnect, getActiveBroadcastForTenant } from "./socket-handlers/broadcasts";
@@ -305,6 +305,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     });
     socket.on("client:day-reset", () => {
       if (user?.userType === "location") {
+        upgradeOverdueOnDayReset(user.id);
         scheduleTaskNotifications(io, user.id);
         socket.emit("task:updated", { locationId: user.id });
       }

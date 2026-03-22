@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock, CheckSquareOffset, Settings } from "@/lib/icons";
+import { X, Bell, MessageCircle, ClipboardCheck, Radio, Trophy, Sparkles, AlertCircle, Clock, CheckSquareOffset, Settings, XCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { NotificationSettingsPanel } from "./arl/notification-settings-panel";
 import { format } from "date-fns";
@@ -61,6 +61,7 @@ const priorityColors = {
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   task_due_soon: ClipboardCheck,
   task_overdue: AlertCircle,
+  task_missed: XCircle,
   new_message: MessageCircle,
   emergency_broadcast: Radio,
   achievement_unlocked: Trophy,

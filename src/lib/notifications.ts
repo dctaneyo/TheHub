@@ -8,6 +8,7 @@ export type NotificationType =
   // For Locations
   | "task_due_soon"
   | "task_overdue"
+  | "task_missed"
   | "new_message"
   | "new_shoutout"
   | "achievement_unlocked"
@@ -391,4 +392,67 @@ export async function upgradeDueSoonToOverdue(
   broadcastNotification(userId, upgraded, counts);
 
   return upgraded;
+}
+
+/**
+ * Upgrade all "task_overdue" notifications for a location to "task_missed".
+ * Called at midnight (day change) for any overdue tasks that were never completed.
+ * Returns the number of notifications upgraded.
+ */
+export async function upgradeOverdueToMissed(
+  userId: string,
+): Promise<number> {
+  // Find today's unread overdue notifications (these are from the day that just ended)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayISO = todayStart.toISOString();
+
+  // Get overdue notifications from before midnight (the previous day)
+  const rows = db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.type, "task_overdue"),
+        sql`${notifications.createdAt} < ${todayISO}`
+      )
+    )
+    .all();
+
+  if (rows.length === 0) return 0;
+
+  for (const existing of rows) {
+    const taskId = existing.metadata ? JSON.parse(existing.metadata)?.taskId : null;
+    const taskTitle = existing.title?.replace(/^Overdue:\s*/, "") || "Task";
+    const missedTitle = `Missed: ${taskTitle}`;
+    const missedMsg = `Task "${taskTitle}" was not completed yesterday`;
+
+    db.update(notifications)
+      .set({
+        type: "task_missed",
+        title: missedTitle,
+        message: missedMsg,
+        priority: "urgent",
+        isRead: false,
+        readAt: null,
+      })
+      .where(eq(notifications.id, existing.id))
+      .run();
+
+    const upgraded = {
+      ...existing,
+      type: "task_missed",
+      title: missedTitle,
+      message: missedMsg,
+      priority: "urgent",
+      isRead: false,
+      readAt: null,
+    } as Notification;
+
+    const counts = await getNotificationCounts(userId);
+    broadcastNotification(userId, upgraded, counts);
+  }
+
+  return rows.length;
 }
