@@ -78,6 +78,9 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
       // Ignore fallback/dev values — they don't represent real builds
       if (!buildId || buildId === "dev") return;
 
+      // Never auto-reload on the login page — it disrupts the login flow
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/login")) return;
+
       if (sessionBuildId === null) {
         // First connect — record baseline, no reload
         sessionBuildId = buildId;
