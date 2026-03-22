@@ -220,6 +220,22 @@ export function OnscreenKeyboard({
     haptic();
   }, [value.length]);
 
+  // Tap on input display to position cursor
+  const handleInputTap = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (hasSelection) {
+      setSelStart(null);
+      setSelEnd(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - 12;
+    if (value.length === 0) return;
+    const charWidth = 8;
+    const approxPos = Math.round(x / charWidth);
+    setCursor(Math.max(0, Math.min(approxPos, value.length)));
+    haptic();
+  }, [value, hasSelection]);
+
   const handleShift = () => {
     if (mode === "caps") setMode("shift");
     else if (mode === "shift") setMode("alpha");
@@ -340,12 +356,35 @@ export function OnscreenKeyboard({
       {/* Text input display (hideable) */}
       {!hideInput && (
         <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
-          <div className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 shadow-inner overflow-x-auto whitespace-nowrap">
-            {value
-              ? <span>{value}</span>
-              : <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
+          <div
+            className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 shadow-inner overflow-x-auto whitespace-nowrap"
+            onPointerDown={handleInputTap}
+          >
+            {value.length === 0
+              ? <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
+              : hasSelection ? (
+                <>
+                  {value.slice(0, Math.min(selStart!, selEnd!))}
+                  <span className="bg-blue-300/50 dark:bg-blue-500/40">
+                    {value.slice(Math.min(selStart!, selEnd!), Math.max(selStart!, selEnd!))}
+                  </span>
+                  {value.slice(Math.max(selStart!, selEnd!))}
+                </>
+              ) : (
+                <>
+                  {value.slice(0, cursor)}
+                  <span className="inline-block w-[2px] h-[1.1em] bg-blue-500 dark:bg-blue-400 align-text-bottom animate-pulse" />
+                  {value.slice(cursor)}
+                </>
+              )
             }
           </div>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); selectAll(); }}
+            className="shrink-0 rounded-md bg-slate-200 dark:bg-slate-600 px-2 h-[38px] text-[10px] font-semibold text-slate-500 dark:text-slate-400 active:bg-slate-300 dark:active:bg-slate-500 hidden sm:flex items-center"
+          >
+            Sel All
+          </button>
           {onSubmit && (
             <button
               onPointerDown={(e) => { e.preventDefault(); onSubmit(); }}
