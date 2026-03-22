@@ -4,7 +4,7 @@ An all-in-one dashboard solution for franchise restaurant operations. Designed t
 
 ## Features
 
-- **PinPad Login** — 6-digit User ID + 6-digit PIN, auto-detects restaurant vs ARL
+- **PinPad Login** — 4-digit User ID + 4-digit PIN, auto-detects restaurant vs ARL
 - **Restaurant Dashboard** — Fullscreen, no-scroll layout with vertical task timeline, mini calendar (7-day lookahead), completed/missed tasks, and points tracker
 - **Task Management** — Create, edit, and assign recurring or one-time tasks/reminders/cleaning tasks to locations
 - **Instant Messaging** — Real-time chat between restaurants and ARLs with read receipts
