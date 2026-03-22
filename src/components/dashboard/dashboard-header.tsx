@@ -13,6 +13,8 @@ import {
   LayoutGrid,
   Sun,
   Moon,
+  Monitor,
+  MonitorOff,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -138,6 +140,32 @@ export function DashboardHeader({
                       <div className={cn(
                         "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
                         soundEnabled ? "translate-x-4" : "translate-x-0.5"
+                      )} />
+                    </div>
+                  </button>
+
+                  {/* Screensaver toggle */}
+                  <button
+                    onClick={onToggleScreensaver}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                  >
+                    <div className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                      screensaverEnabled ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "bg-muted text-muted-foreground"
+                    )}>
+                      {screensaverEnabled ? <Monitor className="h-4 w-4" /> : <MonitorOff className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">Screensaver</p>
+                      <p className="text-[11px] text-muted-foreground">{screensaverEnabled ? "Auto after 2 min" : "Disabled"}</p>
+                    </div>
+                    <div className={cn(
+                      "h-5 w-9 rounded-full transition-colors relative",
+                      screensaverEnabled ? "bg-blue-500" : "bg-slate-200 dark:bg-slate-700"
+                    )}>
+                      <div className={cn(
+                        "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                        screensaverEnabled ? "translate-x-4" : "translate-x-0.5"
                       )} />
                     </div>
                   </button>
