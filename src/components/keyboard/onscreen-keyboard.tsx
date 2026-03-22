@@ -335,7 +335,7 @@ export function OnscreenKeyboard({
               <div className="flex-[0.5] min-w-0" />
             </div>
 
-            {/* Row 3: shift + z-m + emoji */}
+            {/* Row 3: shift + z-m + delete */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleMobileShift(); }}
                 className={cn(KDark, H, "flex-[1.3] min-w-0 text-[11px] font-semibold",
@@ -345,13 +345,13 @@ export function OnscreenKeyboard({
                 {mode === "caps" ? "CAPS" : "shift"}
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
-              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "flex-[1.3] min-w-0 text-base")}>
-                😊
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); backspace(); }}
+                className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mdel"))}>
+                <Delete className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Row 4: .?123 + space + delete */}
+            {/* Row 4: .?123 + space + emoji */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
@@ -361,9 +361,9 @@ export function OnscreenKeyboard({
                 className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
                 space
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel2"); backspace(); }}
-                className={cn(KDark, H, "flex-[1.2] min-w-0", popClass("mdel2"))}>
-                <Delete className="h-4 w-4" />
+              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                className={cn(KDark, H, "flex-[1.2] min-w-0 text-base")}>
+                😊
               </button>
             </div>
           </>
