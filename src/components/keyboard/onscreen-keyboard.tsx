@@ -71,6 +71,16 @@ const EMOJI_CATEGORIES = [
 
 /** Long-press threshold in ms */
 const LONG_PRESS_MS = 400;
+const BACKSPACE_INITIAL_MS = 400;
+const BACKSPACE_REPEAT_MS = 80;
+const DOUBLE_SPACE_MS = 300;
+
+/** Haptic feedback helper */
+const haptic = (ms = 10) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(ms);
+  }
+};
 
 export function OnscreenKeyboard({
   value, onChange, onSubmit, onDismiss, placeholder, className,
@@ -83,6 +93,30 @@ export function OnscreenKeyboard({
   const [emojiCat, setEmojiCat] = useState(0);
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cursor & selection state
+  const [cursor, setCursor] = useState(value.length);
+  const [selStart, setSelStart] = useState<number | null>(null);
+  const [selEnd, setSelEnd] = useState<number | null>(null);
+  const hasSelection = selStart !== null && selEnd !== null && selStart !== selEnd;
+
+  // Keep refs in sync for use inside intervals/timeouts
+  const valueRef = useRef(value);
+  const cursorRef = useRef(cursor);
+  useEffect(() => { valueRef.current = value; }, [value]);
+  useEffect(() => { cursorRef.current = cursor; }, [cursor]);
+
+  // Keep cursor at end when value changes externally (e.g. cleared)
+  useEffect(() => {
+    if (cursor > value.length) setCursor(value.length);
+  }, [value, cursor]);
+
+  // Hold-to-repeat backspace refs
+  const bsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bsInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Double-space tracking
+  const lastSpaceTap = useRef(0);
 
   // Mobile detection (< 640px)
   const [isMobile, setIsMobile] = useState(false);
@@ -102,19 +136,108 @@ export function OnscreenKeyboard({
   const isNumbers = mode === "numbers" || mode === "symbols";
   const isEmoji = mode === "emoji";
 
-  const press = useCallback((char: string) => {
-    onChange(value + char);
-    if (mode === "shift") setMode("alpha");
-  }, [value, onChange, mode]);
+  // Cursor-aware insert: replaces selection or inserts at cursor
+  const insertAtCursor = useCallback((char: string) => {
+    const v = valueRef.current;
+    const c = cursorRef.current;
+    let newVal: string;
+    let newCursor: number;
+    if (selStart !== null && selEnd !== null && selStart !== selEnd) {
+      const lo = Math.min(selStart, selEnd);
+      const hi = Math.max(selStart, selEnd);
+      newVal = v.slice(0, lo) + char + v.slice(hi);
+      newCursor = lo + char.length;
+    } else {
+      newVal = v.slice(0, c) + char + v.slice(c);
+      newCursor = c + char.length;
+    }
+    setSelStart(null);
+    setSelEnd(null);
+    onChange(newVal);
+    setCursor(newCursor);
+    haptic();
+  }, [onChange, selStart, selEnd]);
 
+  const press = useCallback((char: string) => {
+    insertAtCursor(char);
+    if (mode === "shift") setMode("alpha");
+  }, [insertAtCursor, mode]);
+
+  // Cursor-aware backspace
   const backspace = useCallback(() => {
-    onChange(value.slice(0, -1));
-  }, [value, onChange]);
+    const v = valueRef.current;
+    const c = cursorRef.current;
+    if (selStart !== null && selEnd !== null && selStart !== selEnd) {
+      const lo = Math.min(selStart, selEnd);
+      const hi = Math.max(selStart, selEnd);
+      onChange(v.slice(0, lo) + v.slice(hi));
+      setCursor(lo);
+      setSelStart(null);
+      setSelEnd(null);
+    } else if (c > 0) {
+      onChange(v.slice(0, c - 1) + v.slice(c));
+      setCursor(c - 1);
+    }
+    haptic(12);
+  }, [onChange, selStart, selEnd]);
+
+  // Hold-to-repeat backspace
+  const startBackspaceRepeat = useCallback(() => {
+    backspace();
+    bsTimeout.current = setTimeout(() => {
+      bsInterval.current = setInterval(() => {
+        const v = valueRef.current;
+        const c = cursorRef.current;
+        if (c > 0) {
+          const newVal = v.slice(0, c - 1) + v.slice(c);
+          valueRef.current = newVal;
+          cursorRef.current = c - 1;
+          onChange(newVal);
+          setCursor(c - 1);
+          haptic(6);
+        }
+      }, BACKSPACE_REPEAT_MS);
+    }, BACKSPACE_INITIAL_MS);
+  }, [backspace, onChange]);
+
+  const stopBackspaceRepeat = useCallback(() => {
+    if (bsTimeout.current) { clearTimeout(bsTimeout.current); bsTimeout.current = null; }
+    if (bsInterval.current) { clearInterval(bsInterval.current); bsInterval.current = null; }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => () => stopBackspaceRepeat(), [stopBackspaceRepeat]);
+
+  // Double-space → period shortcut
+  const handleSpace = useCallback(() => {
+    const now = Date.now();
+    const elapsed = now - lastSpaceTap.current;
+    lastSpaceTap.current = now;
+    const v = valueRef.current;
+    const c = cursorRef.current;
+    if (elapsed < DOUBLE_SPACE_MS && c > 0 && v[c - 1] === " ") {
+      const newVal = v.slice(0, c - 1) + ". " + v.slice(c);
+      onChange(newVal);
+      setCursor(c + 1);
+      haptic();
+    } else {
+      insertAtCursor(" ");
+    }
+    if (mode === "shift") setMode("alpha");
+  }, [insertAtCursor, onChange, mode]);
+
+  // Select all
+  const selectAll = useCallback(() => {
+    setSelStart(0);
+    setSelEnd(value.length);
+    haptic();
+  }, [value.length]);
 
   const handleShift = () => {
     if (mode === "caps") setMode("shift");
     else if (mode === "shift") setMode("alpha");
     else setMode("shift");
+    haptic();
   };
 
   const handleMobileShift = () => {
@@ -131,6 +254,7 @@ export function OnscreenKeyboard({
 
   const handleCaps = () => {
     setMode((m) => m === "caps" ? "alpha" : "caps");
+    haptic();
   };
 
   const handleNumToggle = () => {
@@ -140,6 +264,7 @@ export function OnscreenKeyboard({
       setPrevAlphaMode(mode as "alpha" | "shift" | "caps");
       setMode("numbers");
     }
+    haptic();
   };
 
   const handleEmojiToggle = () => {
@@ -149,16 +274,33 @@ export function OnscreenKeyboard({
       if (isAlpha) setPrevAlphaMode(mode as "alpha" | "shift" | "caps");
       setMode("emoji");
     }
+    haptic();
   };
+
+  // Tap on input display to position cursor
+  const handleInputTap = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (hasSelection) {
+      setSelStart(null);
+      setSelEnd(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - 12;
+    if (value.length === 0) return;
+    const charWidth = 8;
+    const approxPos = Math.round(x / charWidth);
+    setCursor(Math.max(0, Math.min(approxPos, value.length)));
+    haptic();
+  }, [value, hasSelection]);
 
   // Long-press handlers for hint characters
   const startLongPress = useCallback((hint: string) => {
     longPressTimer.current = setTimeout(() => {
-      onChange(value + hint);
+      insertAtCursor(hint);
       if (mode === "shift") setMode("alpha");
       longPressTimer.current = null;
     }, LONG_PRESS_MS);
-  }, [value, onChange, mode]);
+  }, [insertAtCursor, mode]);
 
   const cancelLongPress = useCallback(() => {
     if (longPressTimer.current) {
@@ -227,12 +369,35 @@ export function OnscreenKeyboard({
       {/* Text input display (hideable) */}
       {!hideInput && (
         <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
-          <div className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 shadow-inner overflow-x-auto whitespace-nowrap">
-            {value
-              ? <span>{value}</span>
-              : <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
+          <div
+            className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 shadow-inner overflow-x-auto whitespace-nowrap cursor-text"
+            onPointerDown={handleInputTap}
+          >
+            {value.length === 0
+              ? <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
+              : hasSelection ? (
+                <>
+                  {value.slice(0, Math.min(selStart!, selEnd!))}
+                  <span className="bg-blue-300/50 dark:bg-blue-500/40">
+                    {value.slice(Math.min(selStart!, selEnd!), Math.max(selStart!, selEnd!))}
+                  </span>
+                  {value.slice(Math.max(selStart!, selEnd!))}
+                </>
+              ) : (
+                <>
+                  {value.slice(0, cursor)}
+                  <span className="inline-block w-[2px] h-[1.1em] bg-blue-500 dark:bg-blue-400 align-text-bottom animate-pulse" />
+                  {value.slice(cursor)}
+                </>
+              )
             }
           </div>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); selectAll(); }}
+            className="shrink-0 rounded-md bg-slate-200 dark:bg-slate-600 px-2 h-[38px] text-[10px] font-semibold text-slate-500 dark:text-slate-400 active:bg-slate-300 dark:active:bg-slate-500"
+          >
+            Sel All
+          </button>
           {onSubmit && (
             <button
               onPointerDown={(e) => { e.preventDefault(); onSubmit(); }}
@@ -256,7 +421,8 @@ export function OnscreenKeyboard({
                 tab
               </button>
               {ROW1.map(({ key, hint }) => charKey(key, hint))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("del1"); backspace(); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("del1"); startBackspaceRepeat(); }}
+                onPointerUp={stopBackspaceRepeat} onPointerLeave={stopBackspaceRepeat}
                 className={cn(KDarkR, H, "flex-[1.4] min-w-0", popClass("del1"))}>
                 delete
               </button>
@@ -281,14 +447,14 @@ export function OnscreenKeyboard({
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleShift(); }}
                 className={cn(KDarkL, H, "flex-[1.8] min-w-0",
-                  mode === "shift" && "bg-slate-400"
+                  mode === "shift" && "bg-slate-400 dark:bg-slate-500 text-white dark:text-white"
                 )}>
                 shift
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); handleShift(); }}
                 className={cn(KDarkR, H, "flex-[1.8] min-w-0",
-                  mode === "shift" && "bg-slate-400"
+                  mode === "shift" && "bg-slate-400 dark:bg-slate-500 text-white dark:text-white"
                 )}>
                 shift
               </button>
@@ -304,7 +470,7 @@ export function OnscreenKeyboard({
                 className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("spc"); press(" "); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("spc"); handleSpace(); }}
                 className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("spc"))}>
                 space
               </button>
@@ -339,13 +505,14 @@ export function OnscreenKeyboard({
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleMobileShift(); }}
                 className={cn(KDark, H, "flex-[1.3] min-w-0 text-[11px] font-semibold",
-                  mode === "shift" && "bg-slate-400",
+                  mode === "shift" && "bg-slate-400 dark:bg-slate-500 text-white dark:text-white",
                   mode === "caps" && "ring-2 ring-[var(--hub-red)] ring-inset"
                 )}>
                 {mode === "caps" ? "CAPS" : "shift"}
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); backspace(); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); startBackspaceRepeat(); }}
+                onPointerUp={stopBackspaceRepeat} onPointerLeave={stopBackspaceRepeat}
                 className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mdel"))}>
                 <Delete className="h-5 w-5" />
               </button>
@@ -357,7 +524,7 @@ export function OnscreenKeyboard({
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 .?123
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mspc"); press(" "); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mspc"); handleSpace(); }}
                 className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
                 space
               </button>
@@ -379,7 +546,8 @@ export function OnscreenKeyboard({
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel1"); backspace(); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel1"); startBackspaceRepeat(); }}
+                onPointerUp={stopBackspaceRepeat} onPointerLeave={stopBackspaceRepeat}
                 className={cn(KDarkR, H, "flex-[1.4] min-w-0", popClass("ndel1"))}>
                 delete
               </button>
@@ -407,7 +575,8 @@ export function OnscreenKeyboard({
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel2"); backspace(); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel2"); startBackspaceRepeat(); }}
+                onPointerUp={stopBackspaceRepeat} onPointerLeave={stopBackspaceRepeat}
                 className={cn(KDarkR, H, "flex-[1.4] min-w-0 text-[11px] font-semibold", popClass("ndel2"))}>
                 delete
               </button>
@@ -421,7 +590,7 @@ export function OnscreenKeyboard({
                 className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("nspc"); press(" "); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("nspc"); handleSpace(); }}
                 className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("nspc"))}>
                 space
               </button>
@@ -470,7 +639,8 @@ export function OnscreenKeyboard({
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mndel"); backspace(); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mndel"); startBackspaceRepeat(); }}
+                onPointerUp={stopBackspaceRepeat} onPointerLeave={stopBackspaceRepeat}
                 className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mndel"))}>
                 <Delete className="h-5 w-5" />
               </button>
@@ -481,7 +651,7 @@ export function OnscreenKeyboard({
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 ABC
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mnspc"); press(" "); }}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mnspc"); handleSpace(); }}
                 className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400", popClass("mnspc"))}>
                 space
               </button>
@@ -522,28 +692,48 @@ export function OnscreenKeyboard({
                 </button>
               ))}
             </div>
-            <div className="flex gap-1 mt-1">
-              <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
-                .?123
-              </button>
-              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "flex-1 min-w-0 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
-                😊
-              </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("espc"); press(" "); }}
-                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("espc"))}>
-                space
-              </button>
-              <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
-                .?123
-              </button>
-              <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
-                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
+            {/* Bottom row — mobile */}
+            {isMobile && (
+              <div className="flex gap-1 mt-1">
+                <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
+                  className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
+                  .?123
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); animateKey("mespc"); handleSpace(); }}
+                  className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mespc"))}>
+                  space
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                  className={cn(KDark, H, "flex-[1.2] min-w-0 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
+                  😊
+                </button>
+              </div>
+            )}
+            {/* Bottom row — desktop */}
+            {!isMobile && (
+              <div className="flex gap-1 mt-1">
+                <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
+                  className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
+                  .?123
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                  className={cn(KDark, H, "flex-1 min-w-0 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
+                  😊
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); animateKey("espc"); handleSpace(); }}
+                  className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("espc"))}>
+                  space
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
+                  className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
+                  .?123
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
+                  className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </>
         )}
 
