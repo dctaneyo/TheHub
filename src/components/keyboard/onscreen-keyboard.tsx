@@ -227,12 +227,12 @@ export function OnscreenKeyboard({
             {/* Row 1: tab + q-p + delete */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => e.preventDefault()}
-                className={cn(KDarkL, H, "w-16")}>
+                className={cn(KDarkL, H, "flex-[1.4] min-w-0")}>
                 tab
               </button>
               {ROW1.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("del1"); backspace(); }}
-                className={cn(KDarkR, H, "w-16", popClass("del1"))}>
+                className={cn(KDarkR, H, "flex-[1.4] min-w-0", popClass("del1"))}>
                 delete
               </button>
             </div>
@@ -240,14 +240,14 @@ export function OnscreenKeyboard({
             {/* Row 2: caps + a-l + return */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleCaps(); }}
-                className={cn(KDarkL, H, "w-20",
+                className={cn(KDarkL, H, "flex-[1.6] min-w-0",
                   mode === "caps" && "ring-2 ring-[var(--hub-red)] ring-inset"
                 )}>
                 caps
               </button>
               {ROW2.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("ret"); press("\n"); }}
-                className={cn(KDarkR, H, "w-20", popClass("ret"))}>
+                className={cn(KDarkR, H, "flex-[1.6] min-w-0", popClass("ret"))}>
                 return
               </button>
             </div>
@@ -255,14 +255,14 @@ export function OnscreenKeyboard({
             {/* Row 3: shift + z-m + shift */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleShift(); }}
-                className={cn(KDarkL, H, "w-24",
+                className={cn(KDarkL, H, "flex-[1.8] min-w-0",
                   mode === "shift" && "bg-slate-400"
                 )}>
                 shift
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); handleShift(); }}
-                className={cn(KDarkR, H, "w-24",
+                className={cn(KDarkR, H, "flex-[1.8] min-w-0",
                   mode === "shift" && "bg-slate-400"
                 )}>
                 shift
@@ -272,23 +272,23 @@ export function OnscreenKeyboard({
             {/* Row 4: .?123 + emoji + space + .?123 + hide */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkL, H, "w-20")}>
+                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
                 .?123
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "w-12 text-base")}>
+                className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("spc"); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400 font-medium", popClass("spc"))}>
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("spc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkR, H, "w-20")}>
+                className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
                 .?123
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
-                className={cn(KRed, H, "w-16 gap-1")}>
+                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
                 <ChevronDown className="h-4 w-4" />
               </button>
             </div>
@@ -301,62 +301,62 @@ export function OnscreenKeyboard({
             <div className="flex gap-1">
               {(mode === "numbers" ? NUM_ROW1 : SYM_ROW1).map((key) => (
                 <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n-${key}`); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n-${key}`))}>
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n-${key}`))}>
                   {key}
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel1"); backspace(); }}
-                className={cn(KDarkR, H, "w-16", popClass("ndel1"))}>
+                className={cn(KDarkR, H, "flex-[1.4] min-w-0", popClass("ndel1"))}>
                 delete
               </button>
             </div>
             <div className="flex gap-1">
               {(mode === "numbers" ? NUM_ROW2 : SYM_ROW2).map((key) => (
                 <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n2-${key}`); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n2-${key}`))}>
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n2-${key}`))}>
                   {key}
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("nret"); press("\n"); }}
-                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold gap-1", popClass("nret"))}>
+                className={cn(KDarkR, H, "flex-[1.4] min-w-0 text-[11px] font-semibold gap-1", popClass("nret"))}>
                 return
               </button>
             </div>
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); setMode(mode === "numbers" ? "symbols" : "numbers"); }}
-                className={cn(KDarkL, H, "w-16 text-[11px] font-bold")}>
+                className={cn(KDarkL, H, "flex-[1.4] min-w-0 text-[11px] font-bold")}>
                 {mode === "numbers" ? "#+=" : ".?123"}
               </button>
               {(mode === "numbers" ? NUM_ROW3 : SYM_ROW3).map((key) => (
                 <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n3-${key}`); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n3-${key}`))}>
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n3-${key}`))}>
                   {key}
                 </button>
               ))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel2"); backspace(); }}
-                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold", popClass("ndel2"))}>
+                className={cn(KDarkR, H, "flex-[1.4] min-w-0 text-[11px] font-semibold", popClass("ndel2"))}>
                 delete
               </button>
             </div>
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkL, H, "w-20")}>
+                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
                 ABC
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "w-12 text-base")}>
+                className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("nspc"); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400", popClass("nspc"))}>
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("nspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkR, H, "w-20")}>
+                className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
                 ABC
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
-                className={cn(KRed, H, "w-16 gap-1")}>
+                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
                 <ChevronDown className="h-4 w-4" />
               </button>
             </div>
@@ -394,23 +394,23 @@ export function OnscreenKeyboard({
             </div>
             <div className="flex gap-1 mt-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkL, H, "w-20")}>
+                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
                 .?123
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "w-12 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
+                className={cn(KDark, H, "flex-1 min-w-0 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
                 😊
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("espc"); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400", popClass("espc"))}>
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("espc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkR, H, "w-20")}>
+                className={cn(KDarkR, H, "flex-[1.6] min-w-0")}>
                 .?123
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
-                className={cn(KRed, H, "w-16 gap-1")}>
+                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
                 <ChevronDown className="h-4 w-4" />
               </button>
             </div>
