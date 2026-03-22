@@ -16,17 +16,20 @@ export async function getAuthSession(): Promise<(AuthPayload & { tenantId: strin
   // Get tenant from header (set by middleware) — fallback to session's tenantId
   const h = await headers();
   const headerTenantId = h.get("x-tenant-id");
-  const tenantId = headerTenantId || session.tenantId || "kazi";
+  const tenantId = headerTenantId || session.tenantId;
+
+  if (!tenantId) return null; // No tenant context — treat as unauthenticated
 
   return { ...session, tenantId };
 }
 
 /**
  * Get tenantId from request headers (for routes that don't need full auth).
+ * Returns null if no tenant context is available.
  */
-export async function getTenantIdFromHeaders(): Promise<string> {
+export async function getTenantIdFromHeaders(): Promise<string | null> {
   const h = await headers();
-  return h.get("x-tenant-id") || "kazi";
+  return h.get("x-tenant-id") || null;
 }
 
 /**

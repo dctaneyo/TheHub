@@ -30,7 +30,6 @@ export function buildCspHeader(nonce: string): string {
 
 const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token"];
 const hubDomains = ["meetthehub.com", "meethehub.com"];
-const systemSubdomains = ["join", "www", "admin"];
 
 // Edge-compatible JWT decode (no crypto verification — cookie is httpOnly,
 // full verification happens in API routes via jsonwebtoken)
@@ -46,24 +45,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * Extract subdomain from hostname. Returns null for bare domain or system subdomains.
- */
-function extractTenantSlug(hostname: string): string | null {
-  const host = hostname.split(":")[0]; // strip port
-  for (const domain of hubDomains) {
-    if (host === domain || host === `www.${domain}`) return null; // bare / www = landing page
-    if (host.endsWith(`.${domain}`)) {
-      const sub = host.replace(`.${domain}`, "");
-      if (systemSubdomains.includes(sub)) return null;
-      return sub;
-    }
-  }
-  return null; // unknown domain — could be custom domain, resolved server-side
-}
-
 function isRootDomain(hostname: string): boolean {
   const host = hostname.split(":")[0];
+  // Treat localhost/dev as root domain — org-ID cookie flow handles tenant resolution
+  if (host === "localhost" || host === "127.0.0.1") return true;
   return hubDomains.includes(host) || hubDomains.some((d) => host === `www.${d}`);
 }
 
@@ -81,12 +66,11 @@ function isJoinDomain(hostname: string): boolean {
  * Read the x-org-id cookie and return the slug if it looks valid.
  * Edge-compatible — no DB access. The slug was already validated by
  * /api/auth/resolve-org when the cookie was set; the middleware just
- * passes it through as tenant context (same pattern as subdomain slugs).
+ * passes it through as tenant context.
  */
 function resolveOrgFromCookie(request: NextRequest): string | null {
   const slug = request.cookies.get("x-org-id")?.value;
   if (!slug || typeof slug !== "string") return null;
-  // Basic sanity: 2-10 alphanumeric chars (matches resolve-org API validation)
   if (!/^[a-zA-Z0-9]{2,10}$/.test(slug)) return null;
   return slug.toLowerCase();
 }
@@ -142,102 +126,10 @@ export function middleware(request: NextRequest) {
     return applyCsp(NextResponse.next());
   }
 
-  // ── Root domain → cookie-based tenant resolution or public access ──
-  if (isRootDomain(hostname)) {
-    // Redirect landing page to /login (org entry is the new front door)
-    if (pathname === "/" || pathname.startsWith("/landing")) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Static assets always accessible
-    if (pathname.startsWith("/_next") || pathname.includes(".")) {
-      return applyCsp(NextResponse.next());
-    }
-
-    const rawOrgCookie = request.cookies.get("x-org-id")?.value;
-    const orgSlug = resolveOrgFromCookie(request);
-
-    // Cookie exists but slug is invalid format — clear it and redirect to /login
-    if (rawOrgCookie && !orgSlug) {
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.set("x-org-id", "", { maxAge: 0, path: "/" });
-      return response;
-    }
-
-    if (orgSlug) {
-      // Cookie exists and slug format is valid — inject tenant headers
-      // and continue with the same auth/routing logic as the subdomain flow.
-      // The slug was validated by /api/auth/resolve-org when the cookie was set;
-      // the middleware trusts it (same pattern as subdomain slugs).
-      const headers = new Headers(request.headers);
-      headers.set("x-tenant-id", orgSlug);
-      headers.set("x-tenant-slug", orgSlug);
-
-      // Allow public paths and static assets with tenant context
-      if (
-        publicPaths.some((p) => pathname.startsWith(p)) ||
-        pathname.startsWith("/api/auth") ||
-        pathname.startsWith("/api/session/pending") ||
-        pathname.startsWith("/api/tenants")
-      ) {
-        return applyCsp(NextResponse.next({ request: { headers } }));
-      }
-
-      // Protected paths — check for auth token
-      const token = request.cookies.get("hub-token")?.value;
-
-      if (!token) {
-        return NextResponse.redirect(new URL("/login", request.url));
-      }
-
-      const payload = decodeJwtPayload(token);
-      if (!payload) {
-        const response = NextResponse.redirect(new URL("/login", request.url));
-        response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
-        return response;
-      }
-
-      // Verify token tenant matches cookie tenant
-      if (payload.tenantId && payload.tenantId !== orgSlug) {
-        const response = NextResponse.redirect(new URL("/login", request.url));
-        response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
-        return response;
-      }
-
-      // Route protection: locations go to /dashboard, ARLs go to /arl
-      if (payload.userType === "location" && pathname.startsWith("/arl")) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-
-      if (payload.userType === "arl" && pathname === "/dashboard") {
-        const hasMirrorParam = request.nextUrl.searchParams.has("mirror");
-        if (!hasMirrorParam) {
-          return NextResponse.redirect(new URL("/arl", request.url));
-        }
-      }
-
-      return applyCsp(NextResponse.next({ request: { headers } }));
-    }
-
-    // No valid cookie — allow public paths without tenant context
-    if (
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/api/auth") ||
-      pathname.startsWith("/_next") ||
-      pathname.includes(".")
-    ) {
-      return applyCsp(NextResponse.next());
-    }
-
-    // No cookie and protected path → redirect to /login
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
   // ── Admin subdomain → super admin portal ──
   if (isAdminDomain(hostname)) {
     const headers = new Headers(request.headers);
     headers.set("x-admin-portal", "true");
-    // Admin portal has its own auth flow
     if (
       pathname.startsWith("/admin") ||
       pathname.startsWith("/api/admin") ||
@@ -247,76 +139,126 @@ export function middleware(request: NextRequest) {
     ) {
       return applyCsp(NextResponse.next({ request: { headers } }));
     }
-    // Redirect to /admin
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
-  // ── Tenant subdomain (e.g. kazi.meetthehub.com) ──
-  const tenantSlug = extractTenantSlug(hostname);
-  // For localhost / dev, treat as the default tenant
-  const effectiveTenantId = tenantSlug || "kazi";
+  // ── Root domain + localhost → org-ID cookie-based tenant resolution ──
+  // (All non-join, non-admin traffic lands here)
 
-  // Inject tenant context into all requests
-  const headers = new Headers(request.headers);
-  headers.set("x-tenant-id", effectiveTenantId);
-  headers.set("x-tenant-slug", effectiveTenantId);
-
-  // Allow public paths and static assets
-  if (
-    publicPaths.some((p) => pathname.startsWith(p)) ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/session/pending") ||
-    pathname.startsWith("/api/tenants") ||
-    pathname.includes(".")
-  ) {
-    return applyCsp(NextResponse.next({ request: { headers } }));
-  }
-
-  const token = request.cookies.get("hub-token")?.value;
-
-  if (!token) {
+  // Redirect landing page to /login (org entry is the front door)
+  if (isRootDomain(hostname) && (pathname === "/" || pathname.startsWith("/landing"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const payload = decodeJwtPayload(token);
-  if (!payload) {
+  // Static assets always accessible
+  if (pathname.startsWith("/_next") || pathname.includes(".")) {
+    return applyCsp(NextResponse.next());
+  }
+
+  const rawOrgCookie = request.cookies.get("x-org-id")?.value;
+  const orgSlug = resolveOrgFromCookie(request);
+
+  // Cookie exists but slug is invalid format — clear it and redirect to /login
+  if (rawOrgCookie && !orgSlug) {
     const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
+    response.cookies.set("x-org-id", "", { maxAge: 0, path: "/" });
     return response;
   }
 
-  // Verify token tenant matches subdomain tenant
-  if (payload.tenantId && payload.tenantId !== effectiveTenantId) {
-    // User is logged into a different tenant — clear cookie and redirect to login
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
-    return response;
-  }
+  if (orgSlug) {
+    // Cookie exists and slug format is valid — inject tenant headers
+    const headers = new Headers(request.headers);
+    headers.set("x-tenant-id", orgSlug);
+    headers.set("x-tenant-slug", orgSlug);
 
-  // Route protection: locations go to /dashboard, ARLs go to /arl
-  if (payload.userType === "location" && pathname.startsWith("/arl")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (payload.userType === "arl" && pathname === "/dashboard") {
-    // Allow ARLs to access /dashboard in mirror mode (with ?mirror= param)
-    const hasMirrorParam = request.nextUrl.searchParams.has("mirror");
-    if (!hasMirrorParam) {
-      return NextResponse.redirect(new URL("/arl", request.url));
+    // If user is already authenticated and hits /login, redirect to their home page
+    if (pathname.startsWith("/login")) {
+      const existingToken = request.cookies.get("hub-token")?.value;
+      if (existingToken) {
+        const existingPayload = decodeJwtPayload(existingToken);
+        if (existingPayload && (!existingPayload.tenantId || existingPayload.tenantId === orgSlug)) {
+          const dest = existingPayload.userType === "location" ? "/dashboard" : "/arl";
+          return NextResponse.redirect(new URL(dest, request.url));
+        }
+      }
     }
-  }
 
-  // Redirect root to appropriate page
-  if (pathname === "/") {
-    if (payload.userType === "location") {
+    // Allow public paths and static assets with tenant context
+    if (
+      publicPaths.some((p) => pathname.startsWith(p)) ||
+      pathname.startsWith("/api/auth") ||
+      pathname.startsWith("/api/session/pending") ||
+      pathname.startsWith("/api/tenants")
+    ) {
+      return applyCsp(NextResponse.next({ request: { headers } }));
+    }
+
+    // Protected paths — check for auth token
+    const token = request.cookies.get("hub-token")?.value;
+
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const payload = decodeJwtPayload(token);
+    if (!payload) {
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
+      return response;
+    }
+
+    // Verify token tenant matches cookie tenant
+    if (payload.tenantId && payload.tenantId !== orgSlug) {
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.set("hub-token", "", { maxAge: 0, path: "/" });
+      return response;
+    }
+
+    // Route protection: locations go to /dashboard, ARLs go to /arl
+    if (payload.userType === "location" && pathname.startsWith("/arl")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
-    } else {
-      return NextResponse.redirect(new URL("/arl", request.url));
+    }
+
+    if (payload.userType === "arl" && pathname === "/dashboard") {
+      const hasMirrorParam = request.nextUrl.searchParams.has("mirror");
+      if (!hasMirrorParam) {
+        return NextResponse.redirect(new URL("/arl", request.url));
+      }
+    }
+
+    // Redirect root to appropriate page
+    if (pathname === "/") {
+      const dest = payload.userType === "location" ? "/dashboard" : "/arl";
+      return NextResponse.redirect(new URL(dest, request.url));
+    }
+
+    return applyCsp(NextResponse.next({ request: { headers } }));
+  }
+
+  // No valid org cookie — check if user is authenticated before allowing /login
+  if (pathname.startsWith("/login")) {
+    const existingToken = request.cookies.get("hub-token")?.value;
+    if (existingToken) {
+      const existingPayload = decodeJwtPayload(existingToken);
+      if (existingPayload) {
+        const dest = existingPayload.userType === "location" ? "/dashboard" : "/arl";
+        return NextResponse.redirect(new URL(dest, request.url));
+      }
     }
   }
 
-  return applyCsp(NextResponse.next({ request: { headers } }));
+  // No valid cookie — allow public paths without tenant context
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
+  ) {
+    return applyCsp(NextResponse.next());
+  }
+
+  // No cookie and protected path → redirect to /login
+  return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {

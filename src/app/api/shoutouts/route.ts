@@ -14,7 +14,7 @@ function ensureShoutoutsTable() {
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS shoutouts (
         id TEXT PRIMARY KEY,
-        tenant_id TEXT NOT NULL DEFAULT 'kazi',
+        tenant_id TEXT NOT NULL,
         from_user_id TEXT NOT NULL,
         from_user_type TEXT NOT NULL,
         from_user_name TEXT NOT NULL,

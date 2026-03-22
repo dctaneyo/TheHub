@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
         id: crypto.randomUUID(),
         userId: session.id,
         userType: session.userType as "arl" | "admin" | "location",
-        tenantId: session.tenantId || "kazi",
+        tenantId: session.tenantId,
         ...defaults,
         ...updates,
       });

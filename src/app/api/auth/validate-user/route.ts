@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
       return ApiErrors.badRequest("Invalid User ID");
     }
 
-    const tenantId = req.headers.get("x-tenant-id") || "kazi";
+    const tenantId = req.headers.get("x-tenant-id");
+    if (!tenantId) {
+      return ApiErrors.badRequest("Organization context required");
+    }
 
     const location = db.select().from(schema.locations)
       .where(and(eq(schema.locations.userId, userId), eq(schema.locations.tenantId, tenantId))).get();

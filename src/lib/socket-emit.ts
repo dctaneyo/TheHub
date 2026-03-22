@@ -145,6 +145,11 @@ export function broadcastSessionActivated(pendingId: string, tenantId?: string) 
   emitToArls("session:pending:refresh", {}, tenantId);
 }
 
+export function broadcastPendingSessionCancelled(pendingId: string, tenantId?: string) {
+  if (!isAvailable()) return;
+  emitToArls("session:pending:cancelled", { pendingId }, tenantId);
+}
+
 export function broadcastPing(pendingId: string) {
   if (!isAvailable()) return;
   emitToLoginWatchers("session:ping", { pendingId });

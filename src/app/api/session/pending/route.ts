@@ -4,7 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and, gt } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastPendingSession } from "@/lib/socket-emit";
+import { broadcastPendingSession, broadcastPendingSessionCancelled } from "@/lib/socket-emit";
 
 function genCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -99,3 +99,26 @@ export async function GET() {
     return ApiErrors.internal();
   }
 }
+
+// DELETE - Cancel a pending session (called by login page when refreshing session ID)
+export async function DELETE(req: NextRequest) {
+  try {
+    const { id } = await req.json();
+    if (!id) return ApiErrors.badRequest("id is required");
+
+    // Mark as cancelled so it no longer shows up
+    db.update(schema.pendingSessions)
+      .set({ status: "cancelled" })
+      .where(and(eq(schema.pendingSessions.id, id), eq(schema.pendingSessions.status, "pending")))
+      .run();
+
+    // Notify ARLs to remove it from their list instantly
+    broadcastPendingSessionCancelled(id);
+
+    return apiSuccess({ cancelled: true });
+  } catch (error) {
+    console.error("Cancel pending session error:", error);
+    return ApiErrors.internal();
+  }
+}
+

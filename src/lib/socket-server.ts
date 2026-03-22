@@ -100,7 +100,12 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
     if (user) {
       // ── Tenant-scoped room prefix ──
-      const tenantId = user.tenantId || "kazi";
+      const tenantId = user.tenantId;
+      if (!tenantId && !(socket as any)._isGuest) {
+        // No tenant context and not a guest — reject
+        socket.disconnect(true);
+        return;
+      }
       const tp = `tenant:${tenantId}`; // tenant prefix for rooms
       (socket as any)._tenantPrefix = tp;
       (socket as any)._tenantId = tenantId;

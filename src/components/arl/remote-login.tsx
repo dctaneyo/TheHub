@@ -100,9 +100,14 @@ export function RemoteLogin() {
     if (!socket) return;
     socket.on("session:pending", refreshSessions);
     socket.on("session:pending:refresh", refreshSessions);
+    const handleCancelled = (data: { pendingId: string }) => {
+      setPendingSessions((prev) => prev.filter((s) => s.id !== data.pendingId));
+    };
+    socket.on("session:pending:cancelled", handleCancelled);
     return () => {
       socket.off("session:pending", refreshSessions);
       socket.off("session:pending:refresh", refreshSessions);
+      socket.off("session:pending:cancelled", handleCancelled);
     };
   }, [socket, refreshSessions]);
 

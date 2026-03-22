@@ -11,6 +11,7 @@ import { emitTickerMessage, emitTickerDelete } from "@/lib/socket-emit";
 export async function GET() {
   try {
     const tenantId = await getTenantIdFromHeaders();
+    if (!tenantId) return ApiErrors.badRequest("Organization context required");
     const now = new Date().toISOString();
     const messages = db
       .select()

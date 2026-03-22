@@ -520,7 +520,7 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
 
     if (permission === "granted") {
       if ("serviceWorker" in navigator && "PushManager" in window) {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.ready;
         try {
           const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
           if (!vapidKey) {
@@ -555,7 +555,7 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
       setNotificationPermission(Notification.permission);
     }
     if ("serviceWorker" in navigator && "PushManager" in window) {
-      navigator.serviceWorker.register("/sw.js").then((registration) => {
+      navigator.serviceWorker.ready.then((registration) => {
         registration.pushManager.getSubscription().then((subscription) => {
           if (subscription) {
             setPushSubscription(subscription);

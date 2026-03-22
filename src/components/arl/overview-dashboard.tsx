@@ -87,21 +87,40 @@ export function OverviewDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Refresh on key socket events
+  // Refresh on key socket events (but NOT presence:update — that fires every
+  // 30s per connected client and would cause excessive HTTP re-fetches.
+  // Presence changes are handled inline below.)
   useEffect(() => {
     if (!socket) return;
     const refresh = () => fetchData();
     socket.on("task:completed", refresh);
     socket.on("task:updated", refresh);
-    socket.on("presence:update", refresh);
     socket.on("emergency:broadcast", refresh);
     socket.on("emergency:dismissed", refresh);
+
+    // Handle presence updates in-memory instead of re-fetching everything
+    const handlePresence = (presenceData: { userId: string; isOnline: boolean; name?: string; storeNumber?: string }) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        const updated = prev.locationPerformance.map((loc) =>
+          loc.id === presenceData.userId ? { ...loc, isOnline: presenceData.isOnline } : loc
+        );
+        const onlineCount = updated.filter((l) => l.isOnline).length;
+        return {
+          ...prev,
+          locationPerformance: updated,
+          locationsOnline: onlineCount,
+        };
+      });
+    };
+    socket.on("presence:update", handlePresence);
+
     return () => {
       socket.off("task:completed", refresh);
       socket.off("task:updated", refresh);
-      socket.off("presence:update", refresh);
       socket.off("emergency:broadcast", refresh);
       socket.off("emergency:dismissed", refresh);
+      socket.off("presence:update", handlePresence);
     };
   }, [socket, fetchData]);
 

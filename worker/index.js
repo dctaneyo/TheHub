@@ -1,5 +1,20 @@
 // Custom service worker code injected into next-pwa's generated SW
 // This file is compiled and merged by next-pwa via customWorkerDir
+//
+// NOTE: Do NOT put install/activate/fetch handlers here — next-pwa's
+// Workbox-generated SW handles caching and routing. Only add event
+// listeners for push, notificationclick, sync, etc.
+
+// Background Sync — relay to client for offline queue processing
+self.addEventListener("sync", (event) => {
+  if (event.tag === "hub-offline-sync") {
+    event.waitUntil(
+      clients.matchAll().then((allClients) => {
+        allClients.forEach((client) => client.postMessage({ type: "SYNC_REQUESTED" }));
+      })
+    );
+  }
+});
 
 // Push notification handling
 self.addEventListener("push", (event) => {

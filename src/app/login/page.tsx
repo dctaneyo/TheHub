@@ -217,6 +217,14 @@ export default function LoginPage() {
   const generateSession = useCallback(async () => {
     setRefreshing(true);
     try {
+      // Cancel the old pending session so it disappears from ARL Hub
+      if (pendingId) {
+        fetch("/api/session/pending", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: pendingId }),
+        }).catch(() => {});
+      }
       const r = await fetch("/api/session/pending", { method: "POST" });
       if (r.ok) {
         const data = await r.json();
@@ -225,7 +233,7 @@ export default function LoginPage() {
       }
     } catch {}
     setRefreshing(false);
-  }, []);
+  }, [pendingId]);
 
   // Generate pending session on mount
   useEffect(() => {

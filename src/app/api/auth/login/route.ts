@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const { userId, pin, orgSlug } = parsed.data;
 
     // Resolve tenant: prefer explicit orgSlug from body, fall back to middleware header
-    let tenantId = req.headers.get("x-tenant-id") || "kazi";
+    let tenantId = req.headers.get("x-tenant-id");
     if (orgSlug) {
       // Look up tenant by slug to get the tenant ID
       const tenant = db
@@ -41,6 +41,10 @@ export async function POST(req: NextRequest) {
       if (tenant) {
         tenantId = tenant.id;
       }
+    }
+
+    if (!tenantId) {
+      return ApiErrors.badRequest("Organization context required");
     }
 
     // Try to find as location first (scoped to tenant)

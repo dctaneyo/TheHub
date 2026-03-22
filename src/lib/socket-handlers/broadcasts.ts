@@ -39,7 +39,8 @@ export function registerBroadcastHandlers(
   socket.on("broadcast:start", (data: { title: string; meetingId: string; meetingCode?: string }) => {
     if (user.userType !== "arl") return;
 
-    const tenantId = user.tenantId || "kazi";
+    const tenantId = user.tenantId;
+    if (!tenantId) return; // No tenant context
     const broadcastId = uuid();
 
     const state: ActiveBroadcastState = {
@@ -97,7 +98,7 @@ export function registerBroadcastHandlers(
     const state = activeBroadcasts.get(data.broadcastId);
     if (!state) return;
     // Only the ARL who started it (or any ARL from same tenant) can end it
-    if (state.arlId !== user.id && state.tenantId !== (user.tenantId || "kazi")) return;
+    if (state.arlId !== user.id && state.tenantId !== user.tenantId) return;
 
     activeBroadcasts.delete(data.broadcastId);
 
