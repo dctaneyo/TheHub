@@ -489,37 +489,33 @@ export default function LoginPage() {
             </div>
 
             {/* Error message */}
-            <div className="mt-3 h-9 flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                {orgError ? (
-                  <motion.div
-                    key="org-err"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex w-full items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600"
-                  >
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                    <span>{orgError}</span>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
-
-            {/* Loading spinner during validation */}
-            <div className="mt-1 h-6 flex items-center justify-center">
-              {orgLoading && (
+            <AnimatePresence mode="wait">
+              {orgError && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-2 text-xs text-slate-400"
+                  key="org-err"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="mt-3 flex w-full items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600"
                 >
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Validating organization...
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{orgError}</span>
                 </motion.div>
               )}
-            </div>
+            </AnimatePresence>
+
+            {/* Loading spinner during validation */}
+            {orgLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-400"
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Validating organization...
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
