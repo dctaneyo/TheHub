@@ -111,12 +111,16 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
 
     // Force session management — ARL can remotely logout or reassign this device
     s.on("session:force-logout", () => {
+      // Already on login — nothing to do
+      if (window.location.pathname.startsWith("/login")) return;
       fetch("/api/auth/logout", { method: "POST" }).finally(() => {
         window.location.href = "/login";
       });
     });
 
     s.on("session:force-redirect", async (data: { token: string; redirectTo: string }) => {
+      // Don't redirect away from login unless explicitly going somewhere else
+      if (window.location.pathname.startsWith("/login") && data.redirectTo === "/login") return;
       try {
         await fetch("/api/auth/force-apply", {
           method: "POST",
