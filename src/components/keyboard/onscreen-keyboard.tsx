@@ -335,7 +335,7 @@ export function OnscreenKeyboard({
               <div className="flex-[0.5] min-w-0" />
             </div>
 
-            {/* Row 3: shift + z-m + backspace */}
+            {/* Row 3: shift + z-m + emoji */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleMobileShift(); }}
                 className={cn(KDark, H, "flex-[1.3] min-w-0 text-[11px] font-semibold",
@@ -345,24 +345,20 @@ export function OnscreenKeyboard({
                 {mode === "caps" ? "CAPS" : "shift"}
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); backspace(); }}
-                className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mdel"))}>
-                <Delete className="h-5 w-5" />
+              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                className={cn(KDark, H, "flex-[1.3] min-w-0 text-base")}>
+                😊
               </button>
             </div>
 
-            {/* Row 4: .?123 + emoji + space + delete */}
+            {/* Row 4: .?123 + space + delete */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 .?123
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
-                className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
-                😊
-              </button>
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("mspc"); press(" "); }}
-                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
+                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel2"); backspace(); }}
@@ -374,7 +370,7 @@ export function OnscreenKeyboard({
         )}
 
         {/* ── NUMBERS / SYMBOLS MODE ── */}
-        {isNumbers && (
+        {isNumbers && !isMobile && (
           <>
             <div className="flex gap-1">
               {(mode === "numbers" ? NUM_ROW1 : SYM_ROW1).map((key) => (
@@ -436,6 +432,62 @@ export function OnscreenKeyboard({
               <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
                 className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
                 <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── NUMBERS / SYMBOLS MODE — MOBILE ── */}
+        {isNumbers && isMobile && (
+          <>
+            {/* Row 1: 10 number/symbol keys (no delete) */}
+            <div className="flex gap-1">
+              {(mode === "numbers" ? NUM_ROW1 : SYM_ROW1).map((key) => (
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n-${key}`))}>
+                  {key}
+                </button>
+              ))}
+            </div>
+            {/* Row 2: 10 number/symbol keys (no return) */}
+            <div className="flex gap-1">
+              {(mode === "numbers" ? NUM_ROW2 : SYM_ROW2).map((key) => (
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n2-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n2-${key}`))}>
+                  {key}
+                </button>
+              ))}
+            </div>
+            {/* Row 3: #+= toggle + punctuation + delete */}
+            <div className="flex gap-1">
+              <button onPointerDown={(e) => { e.preventDefault(); setMode(mode === "numbers" ? "symbols" : "numbers"); }}
+                className={cn(KDarkL, H, "flex-[1.3] min-w-0 text-[10px] font-bold")}>
+                {mode === "numbers" ? "#+=" : ".?123"}
+              </button>
+              {(mode === "numbers" ? NUM_ROW3 : SYM_ROW3).map((key) => (
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n3-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 min-w-0 text-[15px] font-medium", popClass(`n3-${key}`))}>
+                  {key}
+                </button>
+              ))}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mndel"); backspace(); }}
+                className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mndel"))}>
+                <Delete className="h-5 w-5" />
+              </button>
+            </div>
+            {/* Row 4: ABC + space + emoji */}
+            <div className="flex gap-1">
+              <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
+                className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
+                ABC
+              </button>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mnspc"); press(" "); }}
+                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400", popClass("mnspc"))}>
+                space
+              </button>
+              <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
+                className={cn(KDark, H, "flex-[1.2] min-w-0 text-base")}>
+                😊
               </button>
             </div>
           </>
