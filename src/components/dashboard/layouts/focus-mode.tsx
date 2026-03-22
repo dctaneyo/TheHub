@@ -102,7 +102,20 @@ export function FocusModeLayout({
           <motion.div
             key={heroTask.id}
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={
+              heroTask.isOverdue
+                ? { opacity: 1, y: 0, scale: [1, 1.015, 1], boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 16px 6px rgba(239,68,68,0.35)", "0 0 0 0 rgba(239,68,68,0)"] }
+                : heroTask.isDueSoon
+                ? { opacity: 1, y: 0, scale: [1, 1.01, 1], boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 12px 4px rgba(245,158,11,0.3)", "0 0 0 0 rgba(245,158,11,0)"] }
+                : { opacity: 1, y: 0 }
+            }
+            transition={
+              heroTask.isOverdue
+                ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
+                : heroTask.isDueSoon
+                ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                : undefined
+            }
             className={cn(
               "rounded-2xl border-2 p-5 shadow-lg",
               heroTask.isOverdue
@@ -164,6 +177,18 @@ export function FocusModeLayout({
                     key={task.id}
                     onClick={() => onComplete(task.id)}
                     whileTap={{ scale: 0.97 }}
+                    animate={
+                      task.isOverdue
+                        ? { boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }
+                        : task.isDueSoon
+                        ? { boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }
+                        : {}
+                    }
+                    transition={
+                      task.isOverdue || task.isDueSoon
+                        ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
+                        : undefined
+                    }
                     className={cn(
                       "rounded-xl border p-3 text-left transition-colors hover:bg-muted/50",
                       task.isOverdue ? "border-red-300 dark:border-red-800" : task.isDueSoon ? "border-amber-300 dark:border-amber-800" : "border-border"

@@ -48,11 +48,7 @@ const priorityColors: Record<string, { bg: string; border: string; text: string 
   low: { bg: "bg-muted", border: "border-border", text: "text-muted-foreground" },
 };
 
-// Animated color transitions for due-soon tasks
-const colorTransitionColors = [
-  "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500", 
-  "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-gray-500"
-];
+// Animated color transitions for due-soon tasks — not used, replaced by pulse animations
 
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -289,19 +285,27 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                             {/* Task card */}
                             <motion.div
                               className={cn(
-                                "w-full rounded-2xl border-2 p-4 text-left transition-all",
+                                "w-full rounded-2xl border-2 p-4 text-left transition-all relative overflow-hidden",
                                 task.isCompleted || isCompleting
                                   ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30 opacity-60"
                                   : task.isOverdue
-                                  ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/50 shadow-sm shadow-red-100"
+                                  ? "border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/50 shadow-md shadow-red-200 dark:shadow-red-900/40"
                                   : task.isDueSoon
-                                  ? "border-amber-300 dark:border-amber-800 shadow-sm"
+                                  ? "border-amber-400 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/30 shadow-md shadow-amber-200 dark:shadow-amber-900/40"
                                   : cn(colors.border, colors.bg, "shadow-sm")
                               )}
-                              animate={task.isDueSoon && !task.isCompleted ? {
-                                backgroundColor: colorTransitionColors,
-                                transition: { duration: 3, repeat: Infinity, ease: "linear" }
-                              } : {}}
+                              animate={
+                                task.isOverdue && !task.isCompleted
+                                  ? { scale: [1, 1.015, 1], boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 12px 4px rgba(239,68,68,0.3)", "0 0 0 0 rgba(239,68,68,0)"] }
+                                  : task.isDueSoon && !task.isCompleted
+                                  ? { scale: [1, 1.01, 1], boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 8px 3px rgba(245,158,11,0.25)", "0 0 0 0 rgba(245,158,11,0)"] }
+                                  : {}
+                              }
+                              transition={
+                                (task.isOverdue || task.isDueSoon) && !task.isCompleted
+                                  ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
+                                  : undefined
+                              }
                             >
                               <div className="flex items-start gap-3">
                                 <div className={cn(

@@ -97,7 +97,18 @@ export function SplitHeroLayout({
               <motion.div
                 key={task.id}
                 initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
+                animate={
+                  task.isOverdue
+                    ? { opacity: 1, x: 0, boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }
+                    : task.isDueSoon
+                    ? { opacity: 1, x: 0, boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }
+                    : { opacity: 1, x: 0 }
+                }
+                transition={
+                  task.isOverdue || task.isDueSoon
+                    ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
+                    : undefined
+                }
                 className={cn(
                   "flex items-center gap-3 rounded-xl border-l-4 border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/30",
                   priorityColors[task.priority] || "border-l-blue-500",
