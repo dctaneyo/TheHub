@@ -82,6 +82,24 @@ const haptic = (ms = 10) => {
   }
 };
 
+/** Subtle key click sound via Web Audio API */
+let _audioCtx: AudioContext | null = null;
+const keyClick = () => {
+  try {
+    if (!_audioCtx) _audioCtx = new AudioContext();
+    const ctx = _audioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 1200;
+    gain.gain.setValueAtTime(0.03, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.05);
+  } catch {}
+};
+
 export function OnscreenKeyboard({
   value, onChange, onSubmit, onDismiss, placeholder, className,
   hideInput = false, submitLabel = "Send",
@@ -127,6 +145,9 @@ export function OnscreenKeyboard({
   // Double-tap shift for CAPS on mobile
   const lastShiftTap = useRef(0);
 
+  // Space-bar cursor drag state
+  const spaceDragRef = useRef<{ startX: number; dragging: boolean; moved: boolean } | null>(null);
+
   const isAlpha = mode === "alpha" || mode === "shift" || mode === "caps";
   const isUpper = mode === "shift" || mode === "caps";
   const isNumbers = mode === "numbers" || mode === "symbols";
@@ -152,6 +173,7 @@ export function OnscreenKeyboard({
     onChange(newVal);
     setCursor(newCursor);
     haptic();
+    keyClick();
   }, [onChange, selStart, selEnd]);
 
   const press = useCallback((char: string) => {
@@ -174,6 +196,7 @@ export function OnscreenKeyboard({
       setCursor(c - 1);
     }
     haptic(12);
+    keyClick();
   }, [onChange, selStart, selEnd]);
 
   const startBackspaceRepeat = useCallback(() => {
@@ -308,6 +331,48 @@ export function OnscreenKeyboard({
     setTimeout(() => setPressedKey(null), 100);
   }, []);
 
+  // Space-bar drag-to-move-cursor handlers
+  const DRAG_THRESHOLD = 10; // px before drag activates
+  const DRAG_STEP = 16; // px per cursor move
+  const handleSpacePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    spaceDragRef.current = { startX: e.clientX, dragging: false, moved: false };
+  }, []);
+
+  const handleSpacePointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = spaceDragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.startX;
+    if (!drag.dragging && Math.abs(dx) > DRAG_THRESHOLD) {
+      drag.dragging = true;
+    }
+    if (drag.dragging) {
+      drag.moved = true;
+      const steps = Math.trunc(dx / DRAG_STEP);
+      if (steps !== 0) {
+        const v = valueRef.current;
+        const c = cursorRef.current;
+        const newCursor = Math.max(0, Math.min(c + steps, v.length));
+        if (newCursor !== c) {
+          setCursor(newCursor);
+          haptic(4);
+        }
+        drag.startX += steps * DRAG_STEP;
+      }
+    }
+  }, []);
+
+  const handleSpacePointerUp = useCallback((e: React.PointerEvent) => {
+    const drag = spaceDragRef.current;
+    spaceDragRef.current = null;
+    if (!drag || !drag.moved) {
+      // Normal tap — insert space
+      animateKey(isMobile ? "mspc" : "spc");
+      handleSpace();
+    }
+  }, [animateKey, handleSpace, isMobile]);
+
   // Character preview helpers
   const showPreview = useCallback((char: string, btn: HTMLElement) => {
     const rect = btn.getBoundingClientRect();
@@ -320,14 +385,15 @@ export function OnscreenKeyboard({
     previewTimer.current = setTimeout(() => setPreview(null), 60);
   }, []);
 
-  // Key styles
-  const K = "flex items-center justify-center select-none rounded-[6px] bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-200 dark:active:bg-slate-600 transition-all cursor-pointer text-[15px] font-medium";
-  const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer";
-  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer text-[11px] font-semibold pb-2";
-  const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer text-[11px] font-semibold pb-2";
-  const KRed = "flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] transition-all cursor-pointer";
+  // Key styles — spring-like cubic-bezier for tactile press feel
+  const kTransition = "transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
+  const K = `flex items-center justify-center select-none rounded-[6px] bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-200 dark:active:bg-slate-600 cursor-pointer text-[15px] font-medium ${kTransition}`;
+  const KDark = `flex items-center justify-center select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 cursor-pointer ${kTransition}`;
+  const KDarkL = `flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 cursor-pointer text-[11px] font-semibold pb-2 ${kTransition}`;
+  const KDarkR = `flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 cursor-pointer text-[11px] font-semibold pb-2 ${kTransition}`;
+  const KRed = `flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] cursor-pointer ${kTransition}`;
   const H = "h-[46px]";
-  const popClass = (id: string) => pressedKey === id ? "scale-[1.12] shadow-lg z-10" : "";
+  const popClass = (id: string) => pressedKey === id ? "scale-[1.14] -translate-y-[2px] shadow-lg z-10" : "";
 
   if (!mounted) return null;
 
@@ -369,7 +435,7 @@ export function OnscreenKeyboard({
       className={cn(
         "fixed bottom-0 left-1/2 z-[9999] -translate-x-1/2",
         "w-[min(700px,100vw)]",
-        "select-none bg-slate-300 dark:bg-slate-800 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-3",
+        "select-none bg-slate-300 dark:bg-slate-800 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
         className
       )}
     >
@@ -482,8 +548,8 @@ export function OnscreenKeyboard({
                 className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("spc"); handleSpace(); }}
-                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("spc"))}>
+              <button onPointerDown={handleSpacePointerDown} onPointerMove={handleSpacePointerMove} onPointerUp={handleSpacePointerUp}
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium touch-none", popClass("spc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
@@ -536,8 +602,8 @@ export function OnscreenKeyboard({
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 .?123
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mspc"); handleSpace(); }}
-                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
+              <button onPointerDown={handleSpacePointerDown} onPointerMove={handleSpacePointerMove} onPointerUp={handleSpacePointerUp}
+                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 font-medium touch-none", popClass("mspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
@@ -605,8 +671,8 @@ export function OnscreenKeyboard({
                 className={cn(KDark, H, "flex-1 min-w-0 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("nspc"); handleSpace(); }}
-                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("nspc"))}>
+              <button onPointerDown={handleSpacePointerDown} onPointerMove={handleSpacePointerMove} onPointerUp={handleSpacePointerUp}
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 touch-none", popClass("nspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
@@ -669,8 +735,8 @@ export function OnscreenKeyboard({
                 className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 ABC
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mnspc"); handleSpace(); }}
-                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400", popClass("mnspc"))}>
+              <button onPointerDown={handleSpacePointerDown} onPointerMove={handleSpacePointerMove} onPointerUp={handleSpacePointerUp}
+                className={cn(K, H, "flex-[5] min-w-0 text-[11px] text-slate-400 touch-none", popClass("mnspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
@@ -720,8 +786,8 @@ export function OnscreenKeyboard({
                 className={cn(KDark, H, "flex-1 min-w-0 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); animateKey("espc"); handleSpace(); }}
-                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400", popClass("espc"))}>
+              <button onPointerDown={handleSpacePointerDown} onPointerMove={handleSpacePointerMove} onPointerUp={handleSpacePointerUp}
+                className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 touch-none", popClass("espc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
@@ -745,30 +811,66 @@ export function OnscreenKeyboard({
     <>
       {keyboard}
       {/* iOS-style character preview bubble */}
-      {preview && (
-        <div
-          className="fixed z-[10000] pointer-events-none"
-          style={{ left: preview.x, top: preview.y }}
-        >
+      {preview && (() => {
+        const bw = Math.max(preview.w + 16, 48); // bubble width
+        const bh = 56; // bubble height
+        const stemH = 14; // stem height
+        const stemW = preview.w * 0.7; // stem base matches key width roughly
+        const totalH = bh + stemH;
+        const r = 10; // corner radius
+        return (
           <div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
+            className="fixed z-[10000] pointer-events-none"
+            style={{ left: preview.x, top: preview.y }}
           >
-            {/* Bubble */}
             <div
-              className="flex items-center justify-center rounded-lg bg-white dark:bg-slate-600 shadow-[0_2px_12px_rgba(0,0,0,0.25)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.6)] text-slate-900 dark:text-white text-2xl font-medium"
-              style={{ width: Math.max(preview.w + 12, 44), height: 52 }}
+              className="absolute bottom-0 left-1/2 flex items-center justify-center"
+              style={{ width: bw, height: totalH, marginLeft: -bw / 2 }}
             >
-              {preview.char}
-            </div>
-            {/* Stem / tail */}
-            <div
-              className="w-[20px] h-[10px] overflow-hidden"
-            >
-              <div className="w-[20px] h-[20px] bg-white dark:bg-slate-600 rotate-45 transform origin-top-left translate-x-[4px] -translate-y-[6px] rounded-[2px] shadow-[2px_2px_4px_rgba(0,0,0,0.12)]" />
+              {/* SVG shape: rounded rect bubble + smooth tapered stem */}
+              <svg
+                className="absolute inset-0"
+                width={bw}
+                height={totalH}
+                viewBox={`0 0 ${bw} ${totalH}`}
+                fill="none"
+              >
+                <path
+                  d={`
+                    M ${r} 0
+                    H ${bw - r}
+                    Q ${bw} 0 ${bw} ${r}
+                    V ${bh - r}
+                    Q ${bw} ${bh} ${bw - r} ${bh}
+                    H ${(bw + stemW) / 2}
+                    Q ${(bw + stemW * 0.3) / 2} ${bh} ${bw / 2} ${totalH}
+                    Q ${(bw - stemW * 0.3) / 2} ${bh} ${(bw - stemW) / 2} ${bh}
+                    H ${r}
+                    Q 0 ${bh} 0 ${bh - r}
+                    V ${r}
+                    Q 0 0 ${r} 0
+                    Z
+                  `}
+                  className="fill-white dark:fill-slate-600"
+                  filter="url(#preview-shadow)"
+                />
+                <defs>
+                  <filter id="preview-shadow" x="-4" y="-2" width={bw + 8} height={totalH + 8} filterUnits="userSpaceOnUse">
+                    <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.25" />
+                  </filter>
+                </defs>
+              </svg>
+              {/* Character label */}
+              <span
+                className="relative text-2xl font-medium text-slate-900 dark:text-white"
+                style={{ marginTop: -(stemH / 2) }}
+              >
+                {preview.char}
+              </span>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>,
     document.body
   );
