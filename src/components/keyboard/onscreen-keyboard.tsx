@@ -361,7 +361,12 @@ export function OnscreenKeyboard({
             onPointerDown={handleInputTap}
           >
             {value.length === 0
-              ? <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
+              ? (
+                <>
+                  <span className="inline-block w-[2px] h-[1.1em] bg-blue-500 dark:bg-blue-400 align-text-bottom animate-pulse" />
+                  <span className="text-slate-400 dark:text-slate-500 ml-0.5">{placeholder || "Type a message..."}</span>
+                </>
+              )
               : hasSelection ? (
                 <>
                   {value.slice(0, Math.min(selStart!, selEnd!))}
