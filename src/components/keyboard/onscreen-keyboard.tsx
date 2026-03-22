@@ -288,6 +288,8 @@ export function OnscreenKeyboard({
   const startLongPress = useCallback((hint: string) => {
     longPressTimer.current = setTimeout(() => {
       insertAtCursor(hint);
+      // Swap the preview bubble to show the hint character
+      setPreview((prev) => prev ? { ...prev, char: hint } : null);
       if (mode === "shift") setMode("alpha");
       longPressTimer.current = null;
     }, LONG_PRESS_MS);
