@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { CsrfInit } from "@/components/csrf-init";
 import { LayoutProvider } from "@/lib/layout-context";
 import { TenantProvider } from "@/lib/tenant-context";
+import { BuildBadge } from "@/components/build-badge";
 
 const inter = localFont({
   src: [
@@ -105,6 +106,7 @@ export default async function RootLayout({
                     <main id="main-content">
                       {children}
                     </main>
+                    <BuildBadge />
                   </ErrorBoundary>
                 </LayoutProvider>
               </TenantProvider>
