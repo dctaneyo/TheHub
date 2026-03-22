@@ -71,14 +71,24 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     // from the baseline the server has redeployed — show the update splash
     // then reload to pick up the new bundle.
     let sessionBuildId: string | null = null;
+    let reloadScheduled = false;
     s.on("build:id", ({ buildId }: { buildId: string }) => {
+      // Ignore fallback/dev values — they don't represent real builds
+      if (!buildId || buildId === "dev") return;
+
       if (sessionBuildId === null) {
         // First connect — record baseline, no reload
         sessionBuildId = buildId;
         return;
       }
-      if (buildId !== sessionBuildId) {
+      if (buildId !== sessionBuildId && !reloadScheduled) {
+        // Guard against rapid repeated reloads (e.g. within 60s of last page load)
+        const lastReload = sessionStorage.getItem("hub-last-reload");
+        if (lastReload && Date.now() - Number(lastReload) < 60000) return;
+
+        reloadScheduled = true;
         setUpdating(true);
+        sessionStorage.setItem("hub-last-reload", String(Date.now()));
         // Brief delay so the splash animation is visible before reload
         setTimeout(() => window.location.reload(), 3500);
       }

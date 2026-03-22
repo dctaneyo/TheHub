@@ -22,7 +22,9 @@ function readBuildId(): string {
   try {
     return fs.readFileSync(path.join(process.cwd(), "build-id.txt"), "utf8").trim();
   } catch {
-    return "dev";
+    // Fallback: use RAILWAY_GIT_COMMIT_SHA if available, otherwise a stable "dev" marker.
+    // "dev" is ignored by the client to prevent false-positive reloads.
+    return process.env.RAILWAY_GIT_COMMIT_SHA || "dev";
   }
 }
 
