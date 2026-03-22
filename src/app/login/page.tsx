@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard } from "@/lib/icons";
@@ -46,6 +46,19 @@ export default function LoginPage() {
   const [resolvedTenant, setResolvedTenant] = useState<ResolvedTenant | null>(null);
   const [showOrgKeyboard, setShowOrgKeyboard] = useState(false);
   const [orgChecked, setOrgChecked] = useState(false);
+
+  // Prominent floating particles for the org entry screen
+  const orgParticles = useMemo(() =>
+    Array.from({ length: 35 }, (_, i) => ({
+      id: i,
+      x: (i * 37.7 + 13) % 100,
+      y: (i * 53.1 + 7) % 100,
+      size: 6 + (i % 5) * 4,
+      duration: 12 + (i % 7) * 3,
+      delay: (i * 1.3) % 6,
+      drift: ((i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 8)),
+    })),
+  []);
 
   const userIdRef = useRef("");
   const pinRef = useRef("");
@@ -433,6 +446,39 @@ export default function LoginPage() {
   if (orgChecked && !orgSlug) {
     return (
       <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4 ${showOrgKeyboard ? "justify-start pt-12" : "justify-center"}`}>
+        {/* Prominent floating particles */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          {orgParticles.map((p) => (
+            <motion.div
+              key={p.id}
+              className="absolute rounded-full"
+              style={{
+                left: `${p.x}%`,
+                top: `${p.y}%`,
+                width: p.size,
+                height: p.size,
+                background: p.id % 3 === 0
+                  ? "radial-gradient(circle, rgba(239,68,68,0.35), rgba(239,68,68,0.08))"
+                  : p.id % 3 === 1
+                  ? "radial-gradient(circle, rgba(249,115,22,0.3), rgba(249,115,22,0.06))"
+                  : "radial-gradient(circle, rgba(234,179,8,0.25), rgba(234,179,8,0.05))",
+              }}
+              animate={{
+                y: [0, -(20 + p.size * 2), 0],
+                x: [0, p.drift, 0],
+                opacity: [0.4, 0.8, 0.4],
+                scale: [1, 1.3, 1],
+              }}
+              transition={{
+                duration: p.duration,
+                repeat: Infinity,
+                delay: p.delay,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </div>
+
         {/* Spacer to push content above keyboard on mobile */}
         {showOrgKeyboard && <div className="flex-1 min-h-4" />}
         {/* Hub icon — outside the card */}
