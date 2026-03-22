@@ -350,20 +350,8 @@ export function FocusLayout({
         {/* ── Hero Card: Extremely Prominent ── */}
         <div className="shrink-0 px-5 pt-2 pb-3">
           {heroTask ? (
-            <motion.div
-              key={heroTask.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                "relative rounded-2xl overflow-hidden",
-                heroTask.isOverdue
-                  ? "bg-gradient-to-br from-red-600 via-red-500 to-rose-600 shadow-2xl shadow-red-500/30"
-                  : heroTask.isDueSoon
-                    ? "bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-2xl shadow-amber-500/30"
-                    : "bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 shadow-2xl shadow-slate-900/40"
-              )}
-            >
-              {/* Pulse overlay for overdue/due-soon */}
+            <div className="relative">
+              {/* Pulse overlay — outside overflow-hidden so boxShadow isn't clipped */}
               {heroTask.isOverdue && (
                 <motion.div
                   className="absolute inset-0 rounded-2xl pointer-events-none z-10"
@@ -378,6 +366,19 @@ export function FocusLayout({
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
               )}
+            <motion.div
+              key={heroTask.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "relative rounded-2xl overflow-hidden",
+                heroTask.isOverdue
+                  ? "bg-gradient-to-br from-red-600 via-red-500 to-rose-600 shadow-2xl shadow-red-500/30"
+                  : heroTask.isDueSoon
+                    ? "bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 shadow-2xl shadow-amber-500/30"
+                    : "bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 shadow-2xl shadow-slate-900/40"
+              )}
+            >
               {/* Decorative glow circle */}
               <div className={cn(
                 "absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-20 blur-2xl",
@@ -443,6 +444,7 @@ export function FocusLayout({
                 </motion.button>
               </div>
             </motion.div>
+            </div>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -466,8 +468,22 @@ export function FocusLayout({
                 {upNextTasks.map((task, i) => {
                   const Icon = typeIcons[task.type] || Clock;
                   return (
+                    <div key={task.id} className="relative">
+                      {task.isOverdue && (
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none z-10"
+                          animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                      )}
+                      {task.isDueSoon && !task.isOverdue && (
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl pointer-events-none z-10"
+                          animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                      )}
                     <motion.div
-                      key={task.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
@@ -478,20 +494,6 @@ export function FocusLayout({
                         task.isDueSoon && !task.isOverdue && "border-amber-200 dark:border-amber-800/40"
                       )}
                     >
-                      {task.isOverdue && (
-                        <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }}
-                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      )}
-                      {task.isDueSoon && !task.isOverdue && (
-                        <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      )}
                       <div className="flex items-center justify-between">
                         <span className={cn(
                           "text-[9px] font-bold uppercase tracking-wider",
@@ -521,6 +523,7 @@ export function FocusLayout({
                         </motion.button>
                       </div>
                     </motion.div>
+                    </div>
                   );
                 })}
               </div>
