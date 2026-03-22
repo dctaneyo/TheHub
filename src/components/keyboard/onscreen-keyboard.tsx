@@ -323,24 +323,22 @@ export function OnscreenKeyboard({
         {/* ── ALPHA MODE — MOBILE ── */}
         {isAlpha && isMobile && (
           <>
-            {/* Row 1: q-p (no tab/delete — blank spacers keep uniform key size) */}
+            {/* Row 1: q-p (full width, no spacers — sets the key size baseline) */}
             <div className="flex gap-1">
-              <div className="flex-[0.7] min-w-0" />
               {ROW1.map(({ key, hint }) => charKey(key, hint))}
-              <div className="flex-[0.7] min-w-0" />
             </div>
 
-            {/* Row 2: a-l (no caps/return — blank spacers) */}
+            {/* Row 2: a-l (spacers sized so letter keys match row 1) */}
             <div className="flex gap-1">
-              <div className="flex-[1.2] min-w-0" />
+              <div className="flex-[0.5] min-w-0" />
               {ROW2.map(({ key, hint }) => charKey(key, hint))}
-              <div className="flex-[1.2] min-w-0" />
+              <div className="flex-[0.5] min-w-0" />
             </div>
 
-            {/* Row 3: shift + z-m + backspace (blank spacer on right to balance) */}
+            {/* Row 3: shift + z-m + backspace */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleMobileShift(); }}
-                className={cn(KDark, H, "flex-[1.8] min-w-0 text-[11px] font-semibold",
+                className={cn(KDark, H, "flex-[1.3] min-w-0 text-[11px] font-semibold",
                   mode === "shift" && "bg-slate-400",
                   mode === "caps" && "ring-2 ring-[var(--hub-red)] ring-inset"
                 )}>
@@ -348,15 +346,15 @@ export function OnscreenKeyboard({
               </button>
               {ROW3.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel"); backspace(); }}
-                className={cn(KDark, H, "flex-[1.8] min-w-0", popClass("mdel"))}>
+                className={cn(KDark, H, "flex-[1.3] min-w-0", popClass("mdel"))}>
                 <Delete className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Row 4: .?123 + emoji + space + hide */}
+            {/* Row 4: .?123 + emoji + space + delete */}
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
-                className={cn(KDarkL, H, "flex-[1.6] min-w-0")}>
+                className={cn(KDarkL, H, "flex-[1.2] min-w-0 text-[10px]")}>
                 .?123
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleEmojiToggle(); }}
@@ -367,9 +365,9 @@ export function OnscreenKeyboard({
                 className={cn(K, H, "flex-[4] min-w-0 text-[11px] text-slate-400 font-medium", popClass("mspc"))}>
                 space
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
-                className={cn(KRed, H, "flex-[1.2] min-w-0 gap-1")}>
-                <ChevronDown className="h-4 w-4" />
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("mdel2"); backspace(); }}
+                className={cn(KDark, H, "flex-[1.2] min-w-0", popClass("mdel2"))}>
+                <Delete className="h-4 w-4" />
               </button>
             </div>
           </>
