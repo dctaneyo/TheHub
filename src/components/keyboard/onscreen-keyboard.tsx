@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Delete, ChevronDown } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -12,11 +12,15 @@ interface OnscreenKeyboardProps {
   onDismiss?: () => void;
   placeholder?: string;
   className?: string;
+  /** Hide the built-in text input display at the top */
+  hideInput?: boolean;
+  /** Customize the submit button label (default: "Send") */
+  submitLabel?: string;
 }
 
 type KeyboardMode = "alpha" | "shift" | "caps" | "numbers" | "symbols" | "emoji";
 
-// Row 1: q-p with number hints above each key
+// Row 1: q-p with number hints
 const ROW1 = [
   { key: "q", hint: "1" }, { key: "w", hint: "2" }, { key: "e", hint: "3" },
   { key: "r", hint: "4" }, { key: "t", hint: "5" }, { key: "y", hint: "6" },
@@ -42,17 +46,43 @@ const SYM_ROW1 = ["[","]","{","}","#","%","^","*","+","="];
 const SYM_ROW2 = ["_","\\","|","~","<",">","€","£","¥","•"];
 const SYM_ROW3 = [".",",","?","!","'"];
 
-const EMOJI_ROWS = [
-  ["😀","😂","😍","🥰","😎","🤔","😅","🙏","👍","👎"],
-  ["❤️","🔥","✅","⚠️","🎉","💯","⭐","🚀","💪","🤝"],
-  ["😤","😬","🤦","🙌","👀","💬","📋","📌","🔔","⏰"],
+const EMOJI_CATEGORIES = [
+  {
+    label: "😀",
+    emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","😊","😇","🥰","😍","🤩","😘","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","😐","😑","😶","😏","😒"],
+  },
+  {
+    label: "👍",
+    emojis: ["👍","👎","👊","✊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✌️","🤞","🤟","🤘","👌","🤌","🤏","👈","👉","👆","👇","☝️","✋","🤚","🖐️","🖖","👋","🤙"],
+  },
+  {
+    label: "❤️",
+    emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","⭐","🌟","✨","💫","🔥","💯","✅","❌","⚠️","🚫","♻️","💤"],
+  },
+  {
+    label: "🎉",
+    emojis: ["🎉","🎊","🏆","🥇","🥈","🥉","🎯","🎮","🎲","🎭","🎨","🎬","🎤","🎧","🎵","🎶","🔔","📣","💬","💭","🗯️","📋","📌","📎","🖊️","✏️","📝","📅","📊","🚀"],
+  },
+  {
+    label: "🍔",
+    emojis: ["🍔","🍟","🍕","🌭","🥪","🌮","🌯","🥙","🍳","🥘","🍲","🥗","🍿","🍱","🍣","🍤","🍦","🍧","🍨","🍩","🍪","🎂","🍰","☕","🍵","🥤","🍺","🍷","🥂","🧃"],
+  },
 ];
 
-export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeholder, className }: OnscreenKeyboardProps) {
+/** Long-press threshold in ms */
+const LONG_PRESS_MS = 400;
+
+export function OnscreenKeyboard({
+  value, onChange, onSubmit, onDismiss, placeholder, className,
+  hideInput = false, submitLabel = "Send",
+}: OnscreenKeyboardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const [mode, setMode] = useState<KeyboardMode>("alpha");
   const [prevAlphaMode, setPrevAlphaMode] = useState<"alpha" | "shift" | "caps">("alpha");
+  const [emojiCat, setEmojiCat] = useState(0);
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAlpha = mode === "alpha" || mode === "shift" || mode === "caps";
   const isUpper = mode === "shift" || mode === "caps";
@@ -96,42 +126,98 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
     }
   };
 
-  // Shared key style — light, rectangular, subtle shadow like iPadOS light theme
-  const K = "flex items-center justify-center select-none rounded-[6px] bg-white text-slate-800 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-200 transition-colors cursor-pointer text-[15px] font-medium";
-  const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer";
-  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer text-[11px] font-semibold pb-2";
-  const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-colors cursor-pointer text-[11px] font-semibold pb-2";
-  const KRed = "flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] transition-colors cursor-pointer";
+  // Long-press handlers for hint characters
+  const startLongPress = useCallback((hint: string) => {
+    longPressTimer.current = setTimeout(() => {
+      onChange(value + hint);
+      if (mode === "shift") setMode("alpha");
+      longPressTimer.current = null;
+    }, LONG_PRESS_MS);
+  }, [value, onChange, mode]);
 
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  // Animate key press
+  const animateKey = useCallback((id: string) => {
+    setPressedKey(id);
+    setTimeout(() => setPressedKey(null), 100);
+  }, []);
+
+  // Key styles
+  const K = "flex items-center justify-center select-none rounded-[6px] bg-white text-slate-800 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-200 transition-all cursor-pointer text-[15px] font-medium";
+  const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer";
+  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer text-[11px] font-semibold pb-2";
+  const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer text-[11px] font-semibold pb-2";
+  const KRed = "flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] transition-all cursor-pointer";
   const H = "h-[46px]";
+  const popClass = (id: string) => pressedKey === id ? "scale-[1.12] shadow-lg z-10" : "";
 
   if (!mounted) return null;
+
+  /** Render a character key with optional long-press hint */
+  const charKey = (key: string, hint?: string) => {
+    const display = isUpper ? key.toUpperCase() : key;
+    const id = `char-${key}`;
+    return (
+      <button
+        key={key}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          animateKey(id);
+          if (hint) startLongPress(hint);
+        }}
+        onPointerUp={() => {
+          if (longPressTimer.current) {
+            cancelLongPress();
+            press(display);
+          }
+        }}
+        onPointerLeave={cancelLongPress}
+        className={cn(K, H, "flex-1 relative", popClass(id))}
+      >
+        {hint && (
+          <span className="absolute top-0.5 right-1.5 text-[9px] text-slate-400 font-normal leading-none">
+            {hint}
+          </span>
+        )}
+        {display}
+      </button>
+    );
+  };
 
   const keyboard = (
     <div
       className={cn(
-        "fixed bottom-0 left-1/2 z-[9999] -translate-x-1/2 w-[700px] max-w-[100vw]",
+        "fixed bottom-0 left-1/2 z-[9999] -translate-x-1/2",
+        "w-[min(700px,100vw)]",
         "select-none bg-slate-300 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] pb-3",
         className
       )}
     >
-      {/* Text input display */}
-      <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
-        <div className="flex-1 min-h-[38px] rounded-lg bg-white border border-slate-300 px-3 py-2 text-sm text-slate-800 shadow-inner overflow-x-auto whitespace-nowrap">
-          {value
-            ? <span>{value}</span>
-            : <span className="text-slate-400">{placeholder || "Type a message..."}</span>
-          }
+      {/* Text input display (hideable) */}
+      {!hideInput && (
+        <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
+          <div className="flex-1 min-h-[38px] rounded-lg bg-white border border-slate-300 px-3 py-2 text-sm text-slate-800 shadow-inner overflow-x-auto whitespace-nowrap">
+            {value
+              ? <span>{value}</span>
+              : <span className="text-slate-400">{placeholder || "Type a message..."}</span>
+            }
+          </div>
+          {onSubmit && (
+            <button
+              onPointerDown={(e) => { e.preventDefault(); onSubmit(); }}
+              className="shrink-0 rounded-lg bg-[var(--hub-red)] px-4 h-[38px] text-xs font-bold text-white shadow active:bg-[#c4001f]"
+            >
+              {submitLabel}
+            </button>
+          )}
         </div>
-        {onSubmit && (
-          <button
-            onPointerDown={(e) => { e.preventDefault(); onSubmit(); }}
-            className="shrink-0 rounded-lg bg-[var(--hub-red)] px-4 h-[38px] text-xs font-bold text-white shadow active:bg-[#c4001f]"
-          >
-            Send
-          </button>
-        )}
-      </div>
+      )}
       <div className="px-1.5">
       <div className="space-y-1">
 
@@ -144,14 +230,9 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 className={cn(KDarkL, H, "w-16")}>
                 tab
               </button>
-              {ROW1.map(({ key }) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(isUpper ? key.toUpperCase() : key); }}
-                  className={cn(K, H, "flex-1")}>
-                  {isUpper ? key.toUpperCase() : key}
-                </button>
-              ))}
-              <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
-                className={cn(KDarkR, H, "w-16")}>
+              {ROW1.map(({ key, hint }) => charKey(key, hint))}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("del1"); backspace(); }}
+                className={cn(KDarkR, H, "w-16", popClass("del1"))}>
                 delete
               </button>
             </div>
@@ -164,14 +245,9 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 )}>
                 caps
               </button>
-              {ROW2.map(({ key }) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(isUpper ? key.toUpperCase() : key); }}
-                  className={cn(K, H, "flex-1")}>
-                  {isUpper ? key.toUpperCase() : key}
-                </button>
-              ))}
-              <button onPointerDown={(e) => { e.preventDefault(); press("\n"); }}
-                className={cn(KDarkR, H, "w-20")}>
+              {ROW2.map(({ key, hint }) => charKey(key, hint))}
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ret"); press("\n"); }}
+                className={cn(KDarkR, H, "w-20", popClass("ret"))}>
                 return
               </button>
             </div>
@@ -184,12 +260,7 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 )}>
                 shift
               </button>
-              {ROW3.map(({ key }) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(isUpper ? key.toUpperCase() : key); }}
-                  className={cn(K, H, "flex-1")}>
-                  {isUpper ? key.toUpperCase() : key}
-                </button>
-              ))}
+              {ROW3.map(({ key, hint }) => charKey(key, hint))}
               <button onPointerDown={(e) => { e.preventDefault(); handleShift(); }}
                 className={cn(KDarkR, H, "w-24",
                   mode === "shift" && "bg-slate-400"
@@ -208,8 +279,8 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 className={cn(KDark, H, "w-12 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400 font-medium")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("spc"); press(" "); }}
+                className={cn(K, H, "flex-1 text-[11px] text-slate-400 font-medium", popClass("spc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
@@ -229,41 +300,41 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
           <>
             <div className="flex gap-1">
               {(mode === "numbers" ? NUM_ROW1 : SYM_ROW1).map((key) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium")}>
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n-${key}`))}>
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
-                className={cn(KDarkR, H, "w-16")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel1"); backspace(); }}
+                className={cn(KDarkR, H, "w-16", popClass("ndel1"))}>
                 delete
               </button>
             </div>
             <div className="flex gap-1">
               {(mode === "numbers" ? NUM_ROW2 : SYM_ROW2).map((key) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium")}>
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n2-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n2-${key}`))}>
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); press("\n"); }}
-                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold gap-1")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("nret"); press("\n"); }}
+                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold gap-1", popClass("nret"))}>
                 return
               </button>
             </div>
             <div className="flex gap-1">
               <button onPointerDown={(e) => { e.preventDefault(); setMode(mode === "numbers" ? "symbols" : "numbers"); }}
                 className={cn(KDarkL, H, "w-16 text-[11px] font-bold")}>
-                {mode === "numbers" ? "#+="  : ".?123"}
+                {mode === "numbers" ? "#+=" : ".?123"}
               </button>
               {(mode === "numbers" ? NUM_ROW3 : SYM_ROW3).map((key) => (
-                <button key={key} onPointerDown={(e) => { e.preventDefault(); press(key); }}
-                  className={cn(K, H, "flex-1 text-[15px] font-medium")}>
+                <button key={key} onPointerDown={(e) => { e.preventDefault(); animateKey(`n3-${key}`); press(key); }}
+                  className={cn(K, H, "flex-1 text-[15px] font-medium", popClass(`n3-${key}`))}>
                   {key}
                 </button>
               ))}
-              <button onPointerDown={(e) => { e.preventDefault(); backspace(); }}
-                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("ndel2"); backspace(); }}
+                className={cn(KDarkR, H, "w-16 text-[11px] font-semibold", popClass("ndel2"))}>
                 delete
               </button>
             </div>
@@ -276,8 +347,8 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 className={cn(KDark, H, "w-12 text-base")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("nspc"); press(" "); }}
+                className={cn(K, H, "flex-1 text-[11px] text-slate-400", popClass("nspc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
@@ -295,17 +366,33 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
         {/* ── EMOJI MODE ── */}
         {isEmoji && (
           <>
-            {EMOJI_ROWS.map((row, ri) => (
-              <div key={ri} className="flex gap-1 justify-center">
-                {row.map((emoji) => (
-                  <button key={emoji} onPointerDown={(e) => { e.preventDefault(); press(emoji); }}
-                    className={cn(K, H, "w-10 text-xl")}>
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            ))}
-            <div className="flex gap-1">
+            {/* Category tabs */}
+            <div className="flex gap-1 px-1 pb-1">
+              {EMOJI_CATEGORIES.map((cat, i) => (
+                <button
+                  key={i}
+                  onPointerDown={(e) => { e.preventDefault(); setEmojiCat(i); }}
+                  className={cn(
+                    "flex-1 rounded-md py-1 text-base transition-colors",
+                    emojiCat === i
+                      ? "bg-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            {/* Emoji grid — 10 columns, scrollable */}
+            <div className="grid grid-cols-10 gap-1 px-1 max-h-[184px] overflow-y-auto">
+              {EMOJI_CATEGORIES[emojiCat].emojis.map((emoji) => (
+                <button key={emoji} onPointerDown={(e) => { e.preventDefault(); animateKey(`e-${emoji}`); press(emoji); }}
+                  className={cn(K, H, "text-xl", popClass(`e-${emoji}`))}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 mt-1">
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
                 className={cn(KDarkL, H, "w-20")}>
                 .?123
@@ -314,8 +401,8 @@ export function OnscreenKeyboard({ value, onChange, onSubmit, onDismiss, placeho
                 className={cn(KDark, H, "w-12 text-base ring-2 ring-[var(--hub-red)] ring-inset")}>
                 😊
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); press(" "); }}
-                className={cn(K, H, "flex-1 text-[11px] text-slate-400")}>
+              <button onPointerDown={(e) => { e.preventDefault(); animateKey("espc"); press(" "); }}
+                className={cn(K, H, "flex-1 text-[11px] text-slate-400", popClass("espc"))}>
                 space
               </button>
               <button onPointerDown={(e) => { e.preventDefault(); handleNumToggle(); }}
