@@ -44,7 +44,7 @@ export default function LoginPage() {
   const [orgError, setOrgError] = useState("");
   const [orgLoading, setOrgLoading] = useState(false);
   const [resolvedTenant, setResolvedTenant] = useState<ResolvedTenant | null>(null);
-  const [showOrgKeyboard, setShowOrgKeyboard] = useState(true);
+  const [showOrgKeyboard, setShowOrgKeyboard] = useState(false);
   const [orgChecked, setOrgChecked] = useState(false);
 
   const userIdRef = useRef("");
@@ -432,7 +432,9 @@ export default function LoginPage() {
   // Org Entry Screen — no org slug resolved yet
   if (orgChecked && !orgSlug) {
     return (
-      <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center py-6 px-4">
+      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4 ${showOrgKeyboard ? "justify-start pt-12" : "justify-center"}`}>
+        {/* Spacer to push content above keyboard on mobile */}
+        {showOrgKeyboard && <div className="flex-1 min-h-4" />}
         {/* Hub icon — outside the card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -521,16 +523,20 @@ export default function LoginPage() {
 
         {/* Virtual keyboard */}
         {showOrgKeyboard && (
-          <OnscreenKeyboard
-            value={orgInput}
-            onChange={(val) => {
-              const filtered = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase();
-              setOrgInput(filtered);
-            }}
-            onSubmit={handleOrgSubmit}
-            onDismiss={() => setShowOrgKeyboard(false)}
-            placeholder="Organization ID"
-          />
+          <>
+            <OnscreenKeyboard
+              value={orgInput}
+              onChange={(val) => {
+                const filtered = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase();
+                setOrgInput(filtered);
+              }}
+              onSubmit={handleOrgSubmit}
+              onDismiss={() => setShowOrgKeyboard(false)}
+              placeholder="Organization ID"
+            />
+            {/* Reserve space so content isn't hidden behind the fixed keyboard */}
+            <div className="h-[320px] sm:h-0 shrink-0" />
+          </>
         )}
       </div>
     );
