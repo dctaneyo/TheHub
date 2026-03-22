@@ -454,7 +454,7 @@ export default function LoginPage() {
           <div className="mt-3 sm:mt-4 w-full">
 
             {/* Org input */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2 px-2 sm:px-4">
               <input
                 ref={orgInputRef}
                 type="text"
@@ -473,7 +473,7 @@ export default function LoginPage() {
                   }
                 }}
                 style={{ textTransform: "uppercase" }}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
+                className="w-full max-w-[240px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
