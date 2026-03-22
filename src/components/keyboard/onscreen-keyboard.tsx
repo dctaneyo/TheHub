@@ -174,10 +174,10 @@ export function OnscreenKeyboard({
   }, []);
 
   // Key styles
-  const K = "flex items-center justify-center select-none rounded-[6px] bg-white text-slate-800 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-200 transition-all cursor-pointer text-[15px] font-medium";
-  const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer";
-  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer text-[11px] font-semibold pb-2";
-  const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 text-slate-700 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] active:bg-slate-300 transition-all cursor-pointer text-[11px] font-semibold pb-2";
+  const K = "flex items-center justify-center select-none rounded-[6px] bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-200 dark:active:bg-slate-600 transition-all cursor-pointer text-[15px] font-medium";
+  const KDark = "flex items-center justify-center select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer";
+  const KDarkL = "flex items-end justify-start pl-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer text-[11px] font-semibold pb-2";
+  const KDarkR = "flex items-end justify-end pr-2 select-none rounded-[6px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-[0_1px_0_1px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_1px_rgba(0,0,0,0.4)] active:bg-slate-300 dark:active:bg-slate-500 transition-all cursor-pointer text-[11px] font-semibold pb-2";
   const KRed = "flex items-center justify-center select-none rounded-[6px] bg-[var(--hub-red)] text-white shadow-[0_1px_0_1px_rgba(0,0,0,0.25)] active:bg-[#c4001f] transition-all cursor-pointer";
   const H = "h-[46px]";
   const popClass = (id: string) => pressedKey === id ? "scale-[1.12] shadow-lg z-10" : "";
@@ -206,7 +206,7 @@ export function OnscreenKeyboard({
         className={cn(K, H, "flex-1 relative", popClass(id))}
       >
         {hint && (
-          <span className="absolute top-0.5 right-1.5 text-[9px] text-slate-400 font-normal leading-none">
+          <span className="absolute top-0.5 right-1.5 text-[9px] text-slate-400 dark:text-slate-500 font-normal leading-none">
             {hint}
           </span>
         )}
@@ -220,17 +220,17 @@ export function OnscreenKeyboard({
       className={cn(
         "fixed bottom-0 left-1/2 z-[9999] -translate-x-1/2",
         "w-[min(700px,100vw)]",
-        "select-none bg-slate-300 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] pb-3",
+        "select-none bg-slate-300 dark:bg-slate-800 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-3",
         className
       )}
     >
       {/* Text input display (hideable) */}
       {!hideInput && (
         <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
-          <div className="flex-1 min-h-[38px] rounded-lg bg-white border border-slate-300 px-3 py-2 text-sm text-slate-800 shadow-inner overflow-x-auto whitespace-nowrap">
+          <div className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 shadow-inner overflow-x-auto whitespace-nowrap">
             {value
               ? <span>{value}</span>
-              : <span className="text-slate-400">{placeholder || "Type a message..."}</span>
+              : <span className="text-slate-400 dark:text-slate-500">{placeholder || "Type a message..."}</span>
             }
           </div>
           {onSubmit && (
@@ -505,8 +505,8 @@ export function OnscreenKeyboard({
                   className={cn(
                     "flex-1 rounded-md py-1 text-base transition-colors",
                     emojiCat === i
-                      ? "bg-white shadow-sm"
-                      : "text-slate-500 hover:bg-slate-200"
+                      ? "bg-white dark:bg-slate-700 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                   )}
                 >
                   {cat.label}
