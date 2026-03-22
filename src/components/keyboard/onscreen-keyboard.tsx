@@ -435,7 +435,7 @@ export function OnscreenKeyboard({
       className={cn(
         "fixed bottom-0 left-1/2 z-[9999] -translate-x-1/2",
         "w-[min(700px,100vw)]",
-        "select-none bg-slate-300 dark:bg-slate-800 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+        "select-none bg-slate-300 dark:bg-slate-800 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.18)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-3",
         className
       )}
     >
@@ -810,67 +810,20 @@ export function OnscreenKeyboard({
   return createPortal(
     <>
       {keyboard}
-      {/* iOS-style character preview bubble */}
-      {preview && (() => {
-        const bw = Math.max(preview.w + 16, 48); // bubble width
-        const bh = 56; // bubble height
-        const stemH = 14; // stem height
-        const stemW = preview.w * 0.7; // stem base matches key width roughly
-        const totalH = bh + stemH;
-        const r = 10; // corner radius
-        return (
+      {/* Character preview bubble */}
+      {preview && (
+        <div
+          className="fixed z-[10000] pointer-events-none"
+          style={{ left: preview.x, top: preview.y }}
+        >
           <div
-            className="fixed z-[10000] pointer-events-none"
-            style={{ left: preview.x, top: preview.y }}
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center rounded-lg bg-white dark:bg-slate-600 shadow-[0_2px_12px_rgba(0,0,0,0.25)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.6)] text-slate-900 dark:text-white text-2xl font-medium"
+            style={{ width: Math.max(preview.w + 12, 44), height: 52 }}
           >
-            <div
-              className="absolute bottom-0 left-1/2 flex items-center justify-center"
-              style={{ width: bw, height: totalH, marginLeft: -bw / 2 }}
-            >
-              {/* SVG shape: rounded rect bubble + smooth tapered stem */}
-              <svg
-                className="absolute inset-0"
-                width={bw}
-                height={totalH}
-                viewBox={`0 0 ${bw} ${totalH}`}
-                fill="none"
-              >
-                <path
-                  d={`
-                    M ${r} 0
-                    H ${bw - r}
-                    Q ${bw} 0 ${bw} ${r}
-                    V ${bh - r}
-                    Q ${bw} ${bh} ${bw - r} ${bh}
-                    H ${(bw + stemW) / 2}
-                    Q ${(bw + stemW * 0.3) / 2} ${bh} ${bw / 2} ${totalH}
-                    Q ${(bw - stemW * 0.3) / 2} ${bh} ${(bw - stemW) / 2} ${bh}
-                    H ${r}
-                    Q 0 ${bh} 0 ${bh - r}
-                    V ${r}
-                    Q 0 0 ${r} 0
-                    Z
-                  `}
-                  className="fill-white dark:fill-slate-600"
-                  filter="url(#preview-shadow)"
-                />
-                <defs>
-                  <filter id="preview-shadow" x="-4" y="-2" width={bw + 8} height={totalH + 8} filterUnits="userSpaceOnUse">
-                    <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.25" />
-                  </filter>
-                </defs>
-              </svg>
-              {/* Character label */}
-              <span
-                className="relative text-2xl font-medium text-slate-900 dark:text-white"
-                style={{ marginTop: -(stemH / 2) }}
-              >
-                {preview.char}
-              </span>
-            </div>
+            {preview.char}
           </div>
-        );
-      })()}
+        </div>
+      )}
     </>,
     document.body
   );
