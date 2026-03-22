@@ -97,25 +97,28 @@ export function SplitHeroLayout({
               <motion.div
                 key={task.id}
                 initial={{ opacity: 0, x: -10 }}
-                animate={
-                  task.isOverdue
-                    ? { opacity: 1, x: 0, boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }
-                    : task.isDueSoon
-                    ? { opacity: 1, x: 0, boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }
-                    : { opacity: 1, x: 0 }
-                }
-                transition={
-                  task.isOverdue || task.isDueSoon
-                    ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
-                    : undefined
-                }
+                animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl border-l-4 border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/30",
+                  "flex items-center gap-3 rounded-xl border-l-4 border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/30 relative overflow-hidden",
                   priorityColors[task.priority] || "border-l-blue-500",
                   task.isOverdue && "bg-red-50/50 dark:bg-red-950/20 border-l-red-500",
                   task.isDueSoon && !task.isOverdue && "bg-amber-50/50 dark:bg-amber-950/20 border-l-amber-500"
                 )}
               >
+                {task.isOverdue && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
+                {task.isDueSoon && !task.isOverdue && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
                 <div className="shrink-0">
                   <Icon className="h-4 w-4 text-muted-foreground" />
                 </div>

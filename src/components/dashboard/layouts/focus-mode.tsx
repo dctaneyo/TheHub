@@ -102,22 +102,9 @@ export function FocusModeLayout({
           <motion.div
             key={heroTask.id}
             initial={{ opacity: 0, y: 10 }}
-            animate={
-              heroTask.isOverdue
-                ? { opacity: 1, y: 0, scale: [1, 1.015, 1], boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 16px 6px rgba(239,68,68,0.35)", "0 0 0 0 rgba(239,68,68,0)"] }
-                : heroTask.isDueSoon
-                ? { opacity: 1, y: 0, scale: [1, 1.01, 1], boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 12px 4px rgba(245,158,11,0.3)", "0 0 0 0 rgba(245,158,11,0)"] }
-                : { opacity: 1, y: 0 }
-            }
-            transition={
-              heroTask.isOverdue
-                ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
-                : heroTask.isDueSoon
-                ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                : undefined
-            }
+            animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "rounded-2xl border-2 p-5 shadow-lg",
+              "rounded-2xl border-2 p-5 shadow-lg relative overflow-hidden",
               heroTask.isOverdue
                 ? "border-red-400 bg-red-50 dark:bg-red-950/30"
                 : heroTask.isDueSoon
@@ -125,6 +112,20 @@ export function FocusModeLayout({
                 : "border-border bg-card"
             )}
           >
+            {heroTask.isOverdue && (
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none z-10"
+                animate={{ scale: [1, 1.015, 1], boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 16px 6px rgba(239,68,68,0.35)", "0 0 0 0 rgba(239,68,68,0)"] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+            {heroTask.isDueSoon && !heroTask.isOverdue && (
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none z-10"
+                animate={{ scale: [1, 1.01, 1], boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 12px 4px rgba(245,158,11,0.3)", "0 0 0 0 rgba(245,158,11,0)"] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
             <div className="flex items-start justify-between mb-3">
               <div>
                 {heroTask.isOverdue && (
@@ -177,23 +178,25 @@ export function FocusModeLayout({
                     key={task.id}
                     onClick={() => onComplete(task.id)}
                     whileTap={{ scale: 0.97 }}
-                    animate={
-                      task.isOverdue
-                        ? { boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }
-                        : task.isDueSoon
-                        ? { boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }
-                        : {}
-                    }
-                    transition={
-                      task.isOverdue || task.isDueSoon
-                        ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
-                        : undefined
-                    }
                     className={cn(
-                      "rounded-xl border p-3 text-left transition-colors hover:bg-muted/50",
+                      "rounded-xl border p-3 text-left transition-colors hover:bg-muted/50 relative overflow-hidden",
                       task.isOverdue ? "border-red-300 dark:border-red-800" : task.isDueSoon ? "border-amber-300 dark:border-amber-800" : "border-border"
                     )}
                   >
+                    {task.isOverdue && (
+                      <motion.div
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        animate={{ boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 8px 3px rgba(239,68,68,0.25)", "0 0 0 0 rgba(239,68,68,0)"] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    )}
+                    {task.isDueSoon && !task.isOverdue && (
+                      <motion.div
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 6px 2px rgba(245,158,11,0.2)", "0 0 0 0 rgba(245,158,11,0)"] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    )}
                     <div className="flex items-center gap-2 mb-1.5">
                       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-[10px] font-medium text-muted-foreground">{formatTime12(task.dueTime)}</span>
