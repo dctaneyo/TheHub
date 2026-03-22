@@ -394,7 +394,7 @@ export function OnscreenKeyboard({
           </div>
           <button
             onPointerDown={(e) => { e.preventDefault(); selectAll(); }}
-            className="shrink-0 rounded-md bg-slate-200 dark:bg-slate-600 px-2 h-[38px] text-[10px] font-semibold text-slate-500 dark:text-slate-400 active:bg-slate-300 dark:active:bg-slate-500"
+            className="shrink-0 rounded-md bg-slate-200 dark:bg-slate-600 px-2 h-[38px] text-[10px] font-semibold text-slate-500 dark:text-slate-400 active:bg-slate-300 dark:active:bg-slate-500 hidden sm:flex items-center"
           >
             Sel All
           </button>
