@@ -252,3 +252,42 @@ export function broadcastNotificationDeleted(userId: string) {
   
   io.to(`notifications:${userId}`).emit("notification:deleted", {});
 }
+
+// ── Mood check-in events ──
+export function broadcastMoodUpdated(locationId: string, date: string, avgMoodScore: number, tenantId?: string) {
+  if (!isAvailable()) return;
+  emitToArls("mood:updated", { locationId, date, avgMoodScore }, tenantId);
+}
+
+// ── Challenge events ──
+export function broadcastChallengeProgress(challengeId: string, locationId: string, progressValue: number, rank: number, tenantId?: string) {
+  if (!isAvailable()) return;
+  emitToAll("challenge:progress", { challengeId, locationId, progressValue, rank }, tenantId);
+}
+
+// ── Shift handoff events ──
+export function broadcastShiftHandoff(
+  locationId: string,
+  locationName: string,
+  shiftPeriod: string,
+  completedCount: number,
+  remainingCount: number,
+  tenantId?: string
+) {
+  if (!isAvailable()) return;
+  const payload = { locationId, locationName, shiftPeriod, completedCount, remainingCount };
+  emitToArls("shift:handoff", payload, tenantId);
+  emitToLocation(locationId, "shift:handoff", payload, tenantId);
+}
+
+// ── Mentorship events ──
+export function broadcastMentorshipXpAwarded(mentorLocationId: string, bonusXP: number, menteeImprovement: number, tenantId?: string) {
+  if (!isAvailable()) return;
+  emitToLocation(mentorLocationId, "mentorship:xp-awarded", { mentorLocationId, bonusXP, menteeImprovement }, tenantId);
+}
+
+// ── Health score events ──
+export function broadcastHealthChanged(locationId: string, healthScore: number, alertCount: number, tenantId?: string) {
+  if (!isAvailable()) return;
+  emitToAll("health:changed", { locationId, healthScore, alertCount }, tenantId);
+}

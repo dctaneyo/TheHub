@@ -8,10 +8,12 @@ import {
 import {
   TrendingUp, TrendingDown, CheckCircle2, MessageCircle, Trophy,
   Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Zap, Target,
-  Clock, Star, Award,
+  Clock, Star, Award, Heart, Smile, Activity,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { useSocket } from "@/lib/socket-context";
+import { SmartSummaryPanel } from "@/components/dashboard/smart-summary";
 
 type DateRange = "7d" | "30d" | "90d" | "thisMonth" | "lastMonth" | "custom";
 
@@ -37,7 +39,34 @@ interface GamificationAnalytics {
   locationSummary: Array<{ locationId: string; locationName: string; achievementCount: number }>;
 }
 
+interface MoodDataPoint {
+  date: string;
+  locationId: string;
+  locationName: string;
+  avgMood: number;
+  checkinCount: number;
+}
+
 const CHART_COLORS = ["#dc2626", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
+const MOOD_LOCATION_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#ef4444", "#6366f1"];
+
+function detectBurnout(data: MoodDataPoint[], locationId: string): boolean {
+  const locationData = data
+    .filter((d) => d.locationId === locationId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (locationData.length < 3) return false;
+  // Check last entries for 3+ consecutive days with avg mood < 2.5
+  let consecutive = 0;
+  for (let i = locationData.length - 1; i >= 0; i--) {
+    if (locationData[i].avgMood < 2.5) {
+      consecutive++;
+      if (consecutive >= 3) return true;
+    } else {
+      break;
+    }
+  }
+  return false;
+}
 
 function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }: {
   label: string; value: string | number; icon: any; trend?: number; trendLabel?: string; color?: string;
@@ -83,12 +112,18 @@ function ChartCard({ title, children, className }: { title: string; children: Re
 }
 
 export function AnalyticsDashboard() {
-  const [activeTab, setActiveTab] = useState<"tasks" | "messaging" | "gamification">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "messaging" | "gamification" | "mood" | "shifts">("tasks");
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [loading, setLoading] = useState(true);
   const [taskData, setTaskData] = useState<TaskAnalytics | null>(null);
   const [msgData, setMsgData] = useState<MessagingAnalytics | null>(null);
   const [gamData, setGamData] = useState<GamificationAnalytics | null>(null);
+  const [moodData, setMoodData] = useState<MoodDataPoint[]>([]);
+  const [moodDays, setMoodDays] = useState<7 | 14 | 30>(7);
+  const [moodLoading, setMoodLoading] = useState(false);
+  const [selectedMoodLocation, setSelectedMoodLocation] = useState<string | null>(null);
+  const [taskCompletionData, setTaskCompletionData] = useState<Array<{ date: string; completionPct: number }>>([]);
+  const { socket } = useSocket();
 
   const dateParams = useMemo(() => {
     const now = new Date();
@@ -126,6 +161,67 @@ export function AnalyticsDashboard() {
   }, [dateParams]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Mood data fetching ──
+  const fetchMoodData = useCallback(async () => {
+    setMoodLoading(true);
+    try {
+      const res = await fetch(`/api/analytics/mood?days=${moodDays}`);
+      if (res.ok) {
+        const json = await res.json();
+        setMoodData(json.data || []);
+      }
+    } catch (err) {
+      console.error("Mood analytics fetch error:", err);
+    } finally {
+      setMoodLoading(false);
+    }
+  }, [moodDays]);
+
+  useEffect(() => {
+    if (activeTab === "mood") fetchMoodData();
+  }, [activeTab, fetchMoodData]);
+
+  // Fetch task completion data when a location is selected for dual-axis chart
+  useEffect(() => {
+    if (!selectedMoodLocation || activeTab !== "mood") {
+      setTaskCompletionData([]);
+      return;
+    }
+    const fetchTaskCompletion = async () => {
+      try {
+        const now = new Date();
+        const start = format(subDays(now, moodDays), "yyyy-MM-dd");
+        const end = format(now, "yyyy-MM-dd");
+        const res = await fetch(`/api/analytics/tasks?startDate=${start}&endDate=${end}&locationId=${selectedMoodLocation}`);
+        if (res.ok) {
+          const json = await res.json();
+          const byDate = (json.completionsByDate || []) as Array<{ date: string; count: number }>;
+          // Approximate completion % — use count as a proxy (normalized to max)
+          const maxCount = Math.max(...byDate.map((d: { count: number }) => d.count), 1);
+          setTaskCompletionData(
+            byDate.map((d: { date: string; count: number }) => ({
+              date: d.date,
+              completionPct: Math.round((d.count / maxCount) * 100),
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Task completion fetch error:", err);
+      }
+    };
+    fetchTaskCompletion();
+  }, [selectedMoodLocation, moodDays, activeTab]);
+
+  // ── Real-time mood updates via socket ──
+  useEffect(() => {
+    if (!socket || activeTab !== "mood") return;
+    const handleMoodUpdated = () => {
+      fetchMoodData();
+    };
+    socket.on("mood:updated", handleMoodUpdated);
+    return () => { socket.off("mood:updated", handleMoodUpdated); };
+  }, [socket, activeTab, fetchMoodData]);
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
@@ -248,6 +344,8 @@ export function AnalyticsDashboard() {
     { id: "tasks" as const, label: "Tasks", icon: CheckCircle2 },
     { id: "messaging" as const, label: "Messaging", icon: MessageCircle },
     { id: "gamification" as const, label: "Gamification", icon: Trophy },
+    { id: "mood" as const, label: "Crew Mood", icon: Heart },
+    { id: "shifts" as const, label: "Shift Summary", icon: Clock },
   ];
 
   const dateRanges: { id: DateRange; label: string }[] = [
@@ -528,7 +626,308 @@ export function AnalyticsDashboard() {
               </div>
             </div>
           )}
+
+          {/* ── CREW MOOD TAB ── */}
+          {activeTab === "mood" && (
+            <CrewMoodSection
+              data={moodData}
+              loading={moodLoading}
+              days={moodDays}
+              onDaysChange={setMoodDays}
+              selectedLocation={selectedMoodLocation}
+              onSelectLocation={setSelectedMoodLocation}
+              taskCompletionData={taskCompletionData}
+            />
+          )}
+
+          {/* ── SHIFT SUMMARY TAB ── */}
+          {activeTab === "shifts" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Shift Summary</h2>
+                <p className="text-sm text-muted-foreground">View shift performance for any location and date</p>
+              </div>
+              <SmartSummaryPanel />
+            </div>
+          )}
         </>
+      )}
+    </div>
+  );
+}
+
+
+// ── Crew Mood Analytics Section ──
+
+function CrewMoodSection({
+  data,
+  loading,
+  days,
+  onDaysChange,
+  selectedLocation,
+  onSelectLocation,
+  taskCompletionData,
+}: {
+  data: MoodDataPoint[];
+  loading: boolean;
+  days: 7 | 14 | 30;
+  onDaysChange: (d: 7 | 14 | 30) => void;
+  selectedLocation: string | null;
+  onSelectLocation: (id: string | null) => void;
+  taskCompletionData: Array<{ date: string; completionPct: number }>;
+}) {
+  // Derive unique locations from data
+  const locations = useMemo(() => {
+    const map = new Map<string, string>();
+    data.forEach((d) => map.set(d.locationId, d.locationName));
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [data]);
+
+  // Overall average mood
+  const overallAvg = useMemo(() => {
+    if (data.length === 0) return 0;
+    const sum = data.reduce((acc, d) => acc + d.avgMood, 0);
+    return Math.round((sum / data.length) * 10) / 10;
+  }, [data]);
+
+  // Total check-ins
+  const totalCheckins = useMemo(() => data.reduce((acc, d) => acc + d.checkinCount, 0), [data]);
+
+  // Locations with burnout warnings
+  const burnoutLocations = useMemo(() => {
+    return locations.filter((loc) => detectBurnout(data, loc.id));
+  }, [data, locations]);
+
+  // Line chart data: pivot by date with one series per location
+  const lineChartData = useMemo(() => {
+    const dateMap = new Map<string, Record<string, number>>();
+    data.forEach((d) => {
+      if (!dateMap.has(d.date)) dateMap.set(d.date, {});
+      dateMap.get(d.date)![d.locationId] = d.avgMood;
+    });
+    return Array.from(dateMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, values]) => ({ date, ...values }));
+  }, [data]);
+
+  // Dual-axis chart data: merge mood + task completion for selected location
+  const dualAxisData = useMemo(() => {
+    if (!selectedLocation) return [];
+    const locationMood = data
+      .filter((d) => d.locationId === selectedLocation)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const completionMap = new Map(taskCompletionData.map((d) => [d.date, d.completionPct]));
+    return locationMood.map((d) => ({
+      date: d.date,
+      mood: d.avgMood,
+      completion: completionMap.get(d.date) ?? null,
+    }));
+  }, [data, selectedLocation, taskCompletionData]);
+
+  const selectedLocationName = locations.find((l) => l.id === selectedLocation)?.name || "";
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+        <div className="h-72 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Day range selector */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Period:</span>
+        <div className="flex gap-1 rounded-xl bg-muted p-1">
+          {([7, 14, 30] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => onDaysChange(d)}
+              className={cn(
+                "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
+                days === d
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {d} Days
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Avg Mood Score" value={overallAvg || "—"} icon={Smile} color="yellow" />
+        <StatCard label="Total Check-ins" value={totalCheckins} icon={Activity} color="blue" />
+        <StatCard label="Locations Reporting" value={locations.length} icon={Users} color="green" />
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", burnoutLocations.length > 0 ? "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400" : "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400")}>
+              <Heart className="h-5 w-5" />
+            </div>
+            {burnoutLocations.length > 0 && (
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+              </span>
+            )}
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold text-foreground">{burnoutLocations.length}</p>
+            <p className="text-xs text-muted-foreground">Burnout Warnings</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Burnout warnings list */}
+      {burnoutLocations.length > 0 && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/50">
+          <h3 className="mb-2 text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Burnout Warnings</h3>
+          <div className="flex flex-wrap gap-2">
+            {burnoutLocations.map((loc) => (
+              <span
+                key={loc.id}
+                className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+                {loc.name}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-red-600/70 dark:text-red-400/70">
+            Avg mood below 2.5 for 3+ consecutive days
+          </p>
+        </div>
+      )}
+
+      {/* Line chart: daily mood trends per location */}
+      <ChartCard title="Daily Mood Trends by Location">
+        {lineChartData.length === 0 ? (
+          <p className="py-12 text-center text-sm text-muted-foreground">No mood data for this period</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={lineChartData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+                tickFormatter={(v) => {
+                  try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; }
+                }}
+              />
+              <YAxis domain={[0, 5]} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+              <Tooltip
+                contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }}
+                formatter={(value: number | undefined) => [value != null ? value.toFixed(1) : "—", "Avg Mood"]}
+              />
+              {locations.map((loc, i) => (
+                <Line
+                  key={loc.id}
+                  type="monotone"
+                  dataKey={loc.id}
+                  stroke={MOOD_LOCATION_COLORS[i % MOOD_LOCATION_COLORS.length]}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  name={loc.name}
+                  connectNulls
+                />
+              ))}
+              <Legend />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </ChartCard>
+
+      {/* Location selector for dual-axis chart */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-foreground">Select location for detailed view:</span>
+        <select
+          value={selectedLocation || ""}
+          onChange={(e) => onSelectLocation(e.target.value || null)}
+          className="rounded-xl border border-border bg-card px-3 py-1.5 text-sm text-foreground"
+        >
+          <option value="">All locations</option>
+          {locations.map((loc) => (
+            <option key={loc.id} value={loc.id}>{loc.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Dual-axis chart: mood + task completion */}
+      {selectedLocation && (
+        <ChartCard title={`${selectedLocationName} — Mood vs Task Completion`}>
+          {dualAxisData.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">No data for this location</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={dualAxisData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11 }}
+                  className="fill-muted-foreground"
+                  tickFormatter={(v) => {
+                    try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; }
+                  }}
+                />
+                <YAxis
+                  yAxisId="mood"
+                  domain={[0, 5]}
+                  tick={{ fontSize: 11 }}
+                  className="fill-muted-foreground"
+                  label={{ value: "Mood", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
+                />
+                <YAxis
+                  yAxisId="completion"
+                  orientation="right"
+                  domain={[0, 100]}
+                  tick={{ fontSize: 11 }}
+                  className="fill-muted-foreground"
+                  label={{ value: "Completion %", angle: 90, position: "insideRight", style: { fontSize: 11 } }}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }}
+                  formatter={(value: number | undefined, name?: string) => [
+                    name === "Mood Score" ? (value != null ? value.toFixed(1) : "—") : `${value ?? 0}%`,
+                    name || "",
+                  ]}
+                />
+                <Line
+                  yAxisId="mood"
+                  type="monotone"
+                  dataKey="mood"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  name="Mood Score"
+                  connectNulls
+                />
+                <Line
+                  yAxisId="completion"
+                  type="monotone"
+                  dataKey="completion"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  name="Task Completion %"
+                  connectNulls
+                />
+                <Legend />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
       )}
     </div>
   );

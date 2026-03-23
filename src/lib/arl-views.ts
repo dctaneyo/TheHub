@@ -21,7 +21,10 @@ export type ArlView =
   | "broadcast"
   | "meetings"
   | "analytics"
-  | "tenant-settings";
+  | "tenant-settings"
+  | "war-room"
+  | "challenges"
+  | "mentorship";
 
 /** Maps every ARL view ID to its route pathname. */
 export const VIEW_ROUTE_MAP: Record<ArlView, string> = {
@@ -40,6 +43,9 @@ export const VIEW_ROUTE_MAP: Record<ArlView, string> = {
   meetings: "/arl/meetings",
   analytics: "/arl/analytics",
   "tenant-settings": "/arl/tenant-settings",
+  "war-room": "/arl/war-room",
+  challenges: "/arl/challenges",
+  mentorship: "/arl/mentorship",
 };
 
 /**

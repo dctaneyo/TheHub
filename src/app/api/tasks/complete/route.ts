@@ -4,7 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
+import { broadcastTaskCompleted, broadcastLeaderboardUpdate, broadcastHealthChanged } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
 import { createNotificationBulk } from "@/lib/notifications";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
@@ -98,6 +98,37 @@ export async function POST(req: NextRequest) {
     );
 
     refreshTaskTimers();
+
+    // Compute health score and emit health:changed if delta >= 10
+    try {
+      const now = new Date();
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      // Get today's tasks for this location
+      const allTasks = db.select().from(schema.tasks).where(eq(schema.tasks.tenantId, session.tenantId)).all()
+        .filter(t => !t.locationId || t.locationId === effectiveLocationId);
+      const completions = db.select().from(schema.taskCompletions).where(
+        and(eq(schema.taskCompletions.locationId, effectiveLocationId), eq(schema.taskCompletions.completedDate, targetDate))
+      ).all();
+      const completedTaskIds = new Set(completions.map(c => c.taskId));
+      let overdueCount = 0;
+      let dueSoonCount = 0;
+      for (const t of allTasks) {
+        if (completedTaskIds.has(t.id)) continue;
+        if (t.dueTime < hhmm) overdueCount++;
+        else if (t.dueTime >= hhmm && t.dueTime <= `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes() + 30).padStart(2, "0")}`) dueSoonCount++;
+      }
+      const afterScore = Math.max(0, Math.min(100, 100 - (overdueCount * 15) - (dueSoonCount * 5)));
+      // Before completing this task, it would have been overdue (or not), so estimate before score
+      const beforeOverdue = overdueCount + (task.dueTime < hhmm ? 1 : 0);
+      const beforeScore = Math.max(0, Math.min(100, 100 - (beforeOverdue * 15) - (dueSoonCount * 5)));
+      const delta = Math.abs(afterScore - beforeScore);
+      if (delta >= 10) {
+        broadcastHealthChanged(effectiveLocationId, afterScore, overdueCount, session.tenantId);
+      }
+    } catch (healthErr) {
+      // Non-critical — don't fail the request
+      console.error("Health score computation error:", healthErr);
+    }
 
     return apiSuccess({
       pointsEarned: task.points,

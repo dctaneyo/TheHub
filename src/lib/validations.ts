@@ -46,9 +46,22 @@ export const updateTaskSchema = z.object({
 
 export const loginSchema = z.object({
   userId: z.string().length(4, "User ID must be 4 digits").regex(/^\d{4}$/, "User ID must be numeric"),
-  pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric"),
+  pin: z.string().length(4, "PIN must be 4 digits").regex(/^\d{4}$/, "PIN must be numeric").optional(),
+  pattern: z.array(z.number().int().min(0).max(8)).min(4).max(9).optional(),
   orgSlug: z.string().min(2).max(10).regex(/^[a-zA-Z0-9]+$/).optional(),
+}).refine((data) => data.pin || data.pattern, {
+  message: "Either pin or pattern is required",
 });
+
+export const setPatternSchema = z.object({
+  pattern: z.array(z.number().int().min(0).max(8)).min(4, "Pattern must have at least 4 nodes").max(9, "Pattern must have at most 9 nodes"),
+}).refine((data) => {
+  // No consecutive duplicates
+  for (let i = 1; i < data.pattern.length; i++) {
+    if (data.pattern[i] === data.pattern[i - 1]) return false;
+  }
+  return true;
+}, { message: "Pattern must not have consecutive duplicate nodes" });
 
 // ── Message schemas ──
 

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       if (!location.isActive) {
         return ApiErrors.notFound("User ID");
       }
-      return apiSuccess({ found: true, userType: "location", name: location.name, storeNumber: location.storeNumber });
+      return apiSuccess({ found: true, userType: "location", name: location.name, storeNumber: location.storeNumber, hasPattern: !!location.patternHash });
     }
 
     const arl = db.select().from(schema.arls)
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       if (!arl.isActive) {
         return ApiErrors.notFound("User ID");
       }
-      return apiSuccess({ found: true, userType: "arl", name: arl.name, role: arl.role });
+      return apiSuccess({ found: true, userType: "arl", name: arl.name, role: arl.role, hasPattern: !!arl.patternHash });
     }
 
     return ApiErrors.notFound("User ID");

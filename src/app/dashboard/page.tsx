@@ -37,11 +37,15 @@ import { ArlCursorOverlay } from "@/components/dashboard/arl-cursor-overlay";
 import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import { useLayout } from "@/lib/layout-context";
 import { FocusLayout } from "@/components/dashboard/layouts/focus";
+import { PulseLayout } from "@/components/dashboard/pulse-layout";
 import { useSearchParams } from "next/navigation";
 import { MirrorProvider, useMirror } from "@/lib/mirror-context";
+import { DayPhaseProvider } from "@/lib/day-phase-context";
 import { CursorOverlay } from "@/components/remote/cursor-overlay";
 import { MirrorToolbar } from "@/components/remote/mirror-toolbar";
 import { useTheme } from "next-themes";
+import { MoodCheckinPrompt } from "@/components/dashboard/mood-checkin";
+import { ShiftHandoffOverlay, ShiftBriefingCard, getShiftPeriod } from "@/components/dashboard/shift-handoff";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -55,7 +59,9 @@ export default function DashboardPageWrapper() {
   return (
     <Suspense fallback={null}>
       <MirrorProvider>
-        <DashboardRouter />
+        <DayPhaseProvider>
+          <DashboardRouter />
+        </DayPhaseProvider>
       </MirrorProvider>
     </Suspense>
   );
@@ -627,6 +633,7 @@ function DashboardPage() {
     const handleTaskUpdate = () => fetchTasks();
     socket.on("task:updated", handleTaskUpdate);
     socket.on("task:completed", handleTaskUpdate);
+    socket.on("health:changed", handleTaskUpdate);
     
     // Listen for broadcast events — auto-open on locations
     const handleBroadcastStarted = (data: { broadcastId: string; meetingId: string; arlName: string; title: string }) => {
@@ -651,6 +658,7 @@ function DashboardPage() {
     return () => {
       socket.off("task:updated", handleTaskUpdate);
       socket.off("task:completed", handleTaskUpdate);
+      socket.off("health:changed", handleTaskUpdate);
       socket.off("broadcast:started", handleBroadcastStarted);
       socket.off("broadcast:ended", handleBroadcastEnded);
     };
@@ -907,6 +915,73 @@ function DashboardPage() {
   const completedTasks = data?.tasks.filter((t) => t.isCompleted) || [];
   const allTasks = data?.tasks || [];
 
+  // ── Shift Handoff state ──
+  const [handoffOverlayData, setHandoffOverlayData] = useState<{
+    completedTaskCount: number;
+    remainingTaskCount: number;
+    remainingTasks: { id: string; title: string; dueTime: string }[];
+    arlMessages: { senderName: string; content: string; sentAt: string }[];
+    moodScoreAvg: number | null;
+    shiftPeriod: "morning" | "afternoon" | "evening";
+  } | null>(null);
+  const [shiftBriefing, setShiftBriefing] = useState<{
+    shiftPeriod: string;
+    completedTaskCount: number;
+    remainingTaskCount: number;
+    moodScoreAvg: number | null;
+    handedOffAt: string;
+  } | null>(null);
+
+  // Check for recent handoff on mount (shift briefing)
+  useEffect(() => {
+    if (user?.userType !== "location") return;
+    if (sessionStorage.getItem("hub-shift-briefing-dismissed")) return;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const period = getShiftPeriod(now.getHours());
+    fetch(`/api/shift-handoffs?date=${today}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (!d?.handoffs?.length) return;
+        const recent = d.handoffs.find((h: any) => h.shiftPeriod === period);
+        if (recent) {
+          setShiftBriefing({
+            shiftPeriod: recent.shiftPeriod,
+            completedTaskCount: recent.completedTaskCount,
+            remainingTaskCount: recent.remainingTaskCount,
+            moodScoreAvg: recent.moodScoreAvg,
+            handedOffAt: recent.handedOffAt,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user?.userType]);
+
+  const handleHandOffShift = useCallback(async () => {
+    try {
+      const res = await fetch("/api/shift-handoffs", { method: "POST" });
+      const result = await res.json();
+      if (!res.ok) {
+        if (res.status === 409) {
+          alert("A handoff already exists for this shift period.");
+        }
+        return;
+      }
+      // Build overlay data from current tasks + API response
+      const remaining = allTasks.filter((t) => !t.isCompleted);
+      setHandoffOverlayData({
+        completedTaskCount: result.completedTaskCount ?? 0,
+        remainingTaskCount: result.remainingTaskCount ?? 0,
+        remainingTasks: remaining.map((t) => ({ id: t.id, title: t.title, dueTime: t.dueTime })),
+        arlMessages: [], // ARL messages would come from the API if stored
+        moodScoreAvg: result.moodScoreAvg ?? null,
+        shiftPeriod: result.shiftPeriod ?? getShiftPeriod(new Date().getHours()),
+      });
+    } catch (err) {
+      console.error("Shift handoff failed:", err);
+    }
+  }, [allTasks]);
+
   // In mirror mode, use the target location ID for location-specific components
   const effectiveLocationId = mirrorLocationId || user?.id;
 
@@ -1064,7 +1139,7 @@ function DashboardPage() {
 
       {/* Header — All layouts use MinimalHeader */}
       <MinimalHeader
-        user={user}
+        user={user ? { ...user, userType: user.userType } : null}
         displayTime={displayTime}
         allTasks={allTasks}
         currentTime={currentTime}
@@ -1079,6 +1154,7 @@ function DashboardPage() {
         onOpenForms={() => setFormsOpen(true)}
         onOpenCalendar={() => setCalOpen(true)}
         onLogout={logout}
+        onHandOffShift={handleHandOffShift}
         effectiveLocationId={effectiveLocationId}
       />
 
@@ -1203,6 +1279,17 @@ function DashboardPage() {
         />
       )}
 
+      {effectiveLayout === "pulse" && (
+        <PulseLayout
+          tasks={allTasks}
+          currentTime={currentTime}
+          pointsToday={data?.pointsToday || 0}
+          streak={0}
+          onComplete={handleCompleteTask}
+          onUncomplete={handleUncompleteTask}
+        />
+      )}
+
       {/* Live Activity Ticker — hidden during remote view to reduce capture noise */}
       {!remoteViewActive && !isMirroring && <LiveTicker currentLocationId={effectiveLocationId} />}
 
@@ -1248,6 +1335,32 @@ function DashboardPage() {
               <X className="h-3.5 w-3.5" />
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mood Check-in Prompt */}
+      <MoodCheckinPrompt />
+
+      {/* Shift Handoff Overlay */}
+      <AnimatePresence>
+        {handoffOverlayData && (
+          <ShiftHandoffOverlay
+            data={handoffOverlayData}
+            onDismiss={() => setHandoffOverlayData(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Shift Briefing Card */}
+      <AnimatePresence>
+        {shiftBriefing && (
+          <ShiftBriefingCard
+            data={shiftBriefing}
+            onDismiss={() => {
+              setShiftBriefing(null);
+              sessionStorage.setItem("hub-shift-briefing-dismissed", "true");
+            }}
+          />
         )}
       </AnimatePresence>
 

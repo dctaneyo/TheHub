@@ -3,11 +3,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 
-export type DashboardLayout = "classic" | "focus";
+export type DashboardLayout = "classic" | "focus" | "pulse";
 
 export const LAYOUT_OPTIONS: { id: DashboardLayout; name: string; description: string }[] = [
   { id: "classic", name: "Classic", description: "Original 3-column layout" },
   { id: "focus", name: "Focus", description: "Hero task card, up-next grid, collapsible sidebar" },
+  { id: "pulse", name: "Pulse", description: "Heartbeat + floating task orbs" },
 ];
 
 interface LayoutContextType {

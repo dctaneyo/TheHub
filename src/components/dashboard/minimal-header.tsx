@@ -22,9 +22,10 @@ import { type TaskItem } from "@/components/dashboard/timeline";
 import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SoundscapeIntensitySelector } from "@/components/dashboard/soundscape-intensity-selector";
 
 interface MinimalHeaderProps {
-  user: { id?: string; name?: string; storeNumber?: string } | null;
+  user: { id?: string; name?: string; storeNumber?: string; userType?: string } | null;
   displayTime: string;
   allTasks: TaskItem[];
   currentTime: string;
@@ -39,6 +40,7 @@ interface MinimalHeaderProps {
   onOpenForms: () => void;
   onOpenCalendar: () => void;
   onLogout: () => void;
+  onHandOffShift?: () => void;
   effectiveLocationId?: string;
 }
 
@@ -58,6 +60,7 @@ export function MinimalHeader({
   onOpenForms,
   onOpenCalendar,
   onLogout,
+  onHandOffShift,
   effectiveLocationId,
 }: MinimalHeaderProps) {
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
@@ -129,6 +132,9 @@ export function MinimalHeader({
                   )} />
                 </div>
               </button>
+
+              {/* Soundscape intensity */}
+              <SoundscapeIntensitySelector />
 
               {/* Screensaver toggle */}
               <button
@@ -232,6 +238,22 @@ export function MinimalHeader({
               </button>
 
               <div className="border-t border-border mx-2 my-1 sm:hidden" />
+
+              {/* Hand Off Shift - location users only */}
+              {onHandOffShift && user?.userType === "location" && (
+                <button
+                  onClick={() => { onHandOffShift(); setLayoutDropdownOpen(false); }}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors text-left"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                    <Play className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">Hand Off Shift</p>
+                    <p className="text-[11px] text-muted-foreground">End shift &amp; brief next crew</p>
+                  </div>
+                </button>
+              )}
 
               {/* Logout */}
               <button

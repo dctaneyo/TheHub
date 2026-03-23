@@ -35,6 +35,9 @@ export const locations = sqliteTable("locations", {
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
   dashboardLayout: text("dashboard_layout").notNull().default("classic"),
+  patternHash: text("pattern_hash"), // bcrypt hash of constellation pattern
+  latitude: real("latitude"), // War Room map positioning
+  longitude: real("longitude"), // War Room map positioning
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -53,6 +56,7 @@ export const arls = sqliteTable("arls", {
   assignedLocationIds: text("assigned_location_ids"), // JSON array of location IDs — null = all locations
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   dashboardLayout: text("dashboard_layout").notNull().default("classic"),
+  patternHash: text("pattern_hash"), // bcrypt hash of constellation pattern
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -531,4 +535,77 @@ export const meetingParticipants = sqliteTable("meeting_participants", {
   wasMutedByHost: integer("was_muted_by_host", { mode: "boolean" }).notNull().default(false),
   connectionQuality: text("connection_quality"), // 'excellent' | 'good' | 'poor'
   deviceType: text("device_type"), // 'desktop' | 'mobile' | 'tablet'
+});
+
+// Mood check-ins — anonymous mood ratings per location per day
+export const moodCheckins = sqliteTable("mood_checkins", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
+  date: text("date").notNull(), // YYYY-MM-DD
+  moodScore: integer("mood_score").notNull(), // 1-5
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Shift handoffs — structured shift transition records
+export const shiftHandoffs = sqliteTable("shift_handoffs", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
+  shiftDate: text("shift_date").notNull(), // YYYY-MM-DD
+  shiftPeriod: text("shift_period").notNull(), // 'morning' | 'afternoon' | 'evening'
+  completedTaskCount: integer("completed_task_count").notNull(),
+  remainingTaskCount: integer("remaining_task_count").notNull(),
+  remainingTaskIds: text("remaining_task_ids"), // JSON array
+  arlMessages: text("arl_messages"), // JSON array of { senderName, content, sentAt }
+  moodScoreAvg: real("mood_score_avg"),
+  handedOffAt: text("handed_off_at"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Challenges — cross-location competition definitions
+export const challenges = sqliteTable("challenges", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  goalType: text("goal_type").notNull(), // 'consecutive_perfect_days' | 'total_points' | 'completion_rate' | 'fastest_completion'
+  targetValue: integer("target_value").notNull(),
+  startDate: text("start_date").notNull(), // YYYY-MM-DD
+  endDate: text("end_date").notNull(), // YYYY-MM-DD
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'cancelled'
+  createdBy: text("created_by").notNull(), // ARL id
+  winnerLocationId: text("winner_location_id"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Challenge participants — which locations joined which challenges
+export const challengeParticipants = sqliteTable("challenge_participants", {
+  id: text("id").primaryKey(), // UUID
+  challengeId: text("challenge_id").notNull().references(() => challenges.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
+  joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Challenge progress — daily progress tracking per location per challenge
+export const challengeProgress = sqliteTable("challenge_progress", {
+  id: text("id").primaryKey(), // UUID
+  challengeId: text("challenge_id").notNull().references(() => challenges.id),
+  locationId: text("location_id").notNull().references(() => locations.id),
+  date: text("date").notNull(), // YYYY-MM-DD
+  progressValue: integer("progress_value").notNull(),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Mentorship pairs — mentor/mentee location pairings
+export const mentorshipPairs = sqliteTable("mentorship_pairs", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
+  mentorLocationId: text("mentor_location_id").notNull().references(() => locations.id),
+  menteeLocationId: text("mentee_location_id").notNull().references(() => locations.id),
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'dissolved'
+  createdBy: text("created_by").notNull(), // ARL id
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  endedAt: text("ended_at"),
 });

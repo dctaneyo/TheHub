@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return ApiErrors.badRequest("Invalid credentials");
     }
-    const { userId, pin, orgSlug } = parsed.data;
+    const { userId, pin, pattern, orgSlug } = parsed.data;
 
     // Resolve tenant: prefer explicit orgSlug from body, fall back to middleware header
     let tenantId = req.headers.get("x-tenant-id");
@@ -59,8 +59,21 @@ export async function POST(req: NextRequest) {
         return ApiErrors.unauthorized();
       }
 
-      if (!compareSync(pin, location.pinHash)) {
-        return ApiErrors.unauthorized();
+      // Authenticate via PIN or pattern
+      if (pattern) {
+        if (!location.patternHash) {
+          return ApiErrors.unauthorized();
+        }
+        const patternStr = pattern.join("");
+        if (!compareSync(patternStr, location.patternHash)) {
+          return ApiErrors.unauthorized();
+        }
+      } else if (pin) {
+        if (!compareSync(pin, location.pinHash)) {
+          return ApiErrors.unauthorized();
+        }
+      } else {
+        return ApiErrors.badRequest("Either pin or pattern is required");
       }
 
       const sessionCode = genSessionCode();
@@ -137,8 +150,21 @@ export async function POST(req: NextRequest) {
         return ApiErrors.unauthorized();
       }
 
-      if (!compareSync(pin, arl.pinHash)) {
-        return ApiErrors.unauthorized();
+      // Authenticate via PIN or pattern
+      if (pattern) {
+        if (!arl.patternHash) {
+          return ApiErrors.unauthorized();
+        }
+        const patternStr = pattern.join("");
+        if (!compareSync(patternStr, arl.patternHash)) {
+          return ApiErrors.unauthorized();
+        }
+      } else if (pin) {
+        if (!compareSync(pin, arl.pinHash)) {
+          return ApiErrors.unauthorized();
+        }
+      } else {
+        return ApiErrors.badRequest("Either pin or pattern is required");
       }
 
       resetRateLimit(`login:${ip}`);

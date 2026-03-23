@@ -18,6 +18,9 @@ import {
   TrendingUp,
   BarChart3,
   Settings,
+  MapPin,
+  Target,
+  Heart,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
@@ -46,6 +49,9 @@ export const navItems = [
   { id: "remote" as const, label: "Remote", icon: Monitor },
   { id: "data-management" as const, label: "Data Management", icon: Database },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
+  { id: "war-room" as const, label: "War Room", icon: MapPin },
+  { id: "challenges" as const, label: "Challenges", icon: Target },
+  { id: "mentorship" as const, label: "Mentorship", icon: Heart },
   { id: "tenant-settings" as const, label: "Organization", icon: Settings },
 ];
 

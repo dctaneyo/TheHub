@@ -17,7 +17,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (userId: string, pin: string, orgSlug?: string) => Promise<{ success: boolean; userType?: string; error?: string }>;
+  login: (userId: string, pin: string, orgSlug?: string, pattern?: number[]) => Promise<{ success: boolean; userType?: string; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -47,9 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (userId: string, pin: string, orgSlug?: string) => {
+  const login = async (userId: string, pin: string, orgSlug?: string, pattern?: number[]) => {
     try {
-      const payload: Record<string, string> = { userId, pin };
+      const payload: Record<string, unknown> = { userId };
+      if (pattern) {
+        payload.pattern = pattern;
+      } else {
+        payload.pin = pin;
+      }
       if (orgSlug) payload.orgSlug = orgSlug;
 
       const res = await fetch("/api/auth/login", {

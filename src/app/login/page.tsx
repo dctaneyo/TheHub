@@ -3,17 +3,21 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard } from "@/lib/icons";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Star } from "@/lib/icons";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
+import { ConstellationGrid } from "@/components/auth/constellation-grid";
 
-type LoginStep = "userId" | "pin";
+type LoginStep = "userId" | "pin" | "pattern";
+
+type AuthMode = "pin" | "pattern";
 
 interface ValidatedUser {
   userType: "location" | "arl";
   name: string;
   storeNumber?: string;
   role?: string;
+  hasPattern?: boolean;
 }
 
 interface ResolvedTenant {
@@ -37,6 +41,8 @@ export default function LoginPage() {
   const [validating, setValidating] = useState(false);
   const [validatedUser, setValidatedUser] = useState<ValidatedUser | null>(null);
   const [isOnline] = useState(true);
+  const [authMode, setAuthMode] = useState<AuthMode>("pin");
+  const [patternError, setPatternError] = useState(false);
 
   // Org entry state
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
@@ -317,9 +323,11 @@ export default function LoginPage() {
   const goBackToUserId = () => {
     setStep("userId");
     setValidatedUser(null);
+    setAuthMode("pin");
     pinRef.current = "";
     setPin("");
     setError("");
+    setPatternError(false);
   };
 
   const handleDigit = async (digit: string) => {
@@ -340,9 +348,25 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (res.ok && data.found) {
-              setValidatedUser(data);
+              const user: ValidatedUser = { ...data, hasPattern: !!data.hasPattern };
+              setValidatedUser(user);
               setError("");
-              setStep("pin");
+              // Determine auth mode based on what the user has configured
+              const hasPinHash = true; // Users always have pinHash (required field)
+              const hasPatternHash = !!data.hasPattern;
+              if (hasPatternHash && !hasPinHash) {
+                // Only pattern — go directly to pattern
+                setAuthMode("pattern");
+                setStep("pattern");
+              } else if (hasPatternHash) {
+                // Has both — default to PIN, user can toggle
+                setAuthMode("pin");
+                setStep("pin");
+              } else {
+                // PIN only
+                setAuthMode("pin");
+                setStep("pin");
+              }
             } else {
               setError(data.error?.message || data.error || "User ID not found");
               // Reset so they can try again
@@ -408,6 +432,27 @@ export default function LoginPage() {
       setShakeKey((k) => k + 1);
       pinRef.current = "";
       setPin("");
+      setLoading(false);
+    }
+  };
+
+  const handlePatternSubmit = async (pattern: number[]) => {
+    setLoading(true);
+    setError("");
+    setPatternError(false);
+
+    const result = await login(userIdRef.current, "", orgSlug || undefined, pattern);
+
+    if (result.success) {
+      if (result.userType === "location") {
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/arl";
+      }
+    } else {
+      setError(result.error || "Incorrect pattern. Please try again.");
+      setPatternError(true);
+      setShakeKey((k) => k + 1);
       setLoading(false);
     }
   };
@@ -797,7 +842,7 @@ export default function LoginPage() {
         <div className="mt-4 sm:mt-6 w-full">
           <AnimatePresence mode="wait">
             <motion.div
-              key={step}
+              key={`${step}-${authMode}`}
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -16 }}
@@ -805,9 +850,9 @@ export default function LoginPage() {
               className="text-center"
             >
               <p className="text-sm font-semibold text-slate-600">
-                {step === "userId" ? "Enter your User ID" : "Enter your PIN"}
+                {step === "userId" ? "Enter your User ID" : step === "pattern" ? "Draw your pattern" : "Enter your PIN"}
               </p>
-              {step === "pin" && validatedUser && (
+              {(step === "pin" || step === "pattern") && validatedUser && (
                 <div className="mt-1.5 flex items-center justify-center gap-1.5">
                   {validatedUser.userType === "location"
                     ? <Store className="h-3.5 w-3.5 text-slate-400" />
@@ -825,13 +870,53 @@ export default function LoginPage() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Dots — shake on wrong PIN */}
-          <motion.div
-            key={shakeKey}
-            className="mt-4 flex justify-center gap-3"
-            animate={shakeKey > 0 ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : {}}
-            transition={{ duration: 0.45, ease: "easeInOut" }}
-          >{dots}</motion.div>
+          {/* Toggle tabs: PIN | ★ Pattern — only when user has both methods */}
+          {(step === "pin" || step === "pattern") && validatedUser?.hasPattern && (
+            <div className="mt-3 flex items-center justify-center gap-1">
+              <button
+                onClick={() => { setAuthMode("pin"); setStep("pin"); setError(""); setPatternError(false); pinRef.current = ""; setPin(""); }}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  authMode === "pin"
+                    ? "bg-[var(--hub-red)] text-white shadow-sm"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                PIN
+              </button>
+              <button
+                onClick={() => { setAuthMode("pattern"); setStep("pattern"); setError(""); pinRef.current = ""; setPin(""); }}
+                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  authMode === "pattern"
+                    ? "bg-[var(--hub-red)] text-white shadow-sm"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                <Star className="h-3 w-3" />
+                Pattern
+              </button>
+            </div>
+          )}
+
+          {/* Constellation Grid (pattern mode) */}
+          {step === "pattern" && (
+            <div className="mt-4 flex flex-col items-center">
+              <ConstellationGrid
+                onSubmit={handlePatternSubmit}
+                error={patternError}
+                disabled={loading}
+              />
+            </div>
+          )}
+
+          {/* Dots — shake on wrong PIN (only for userId and pin steps) */}
+          {step !== "pattern" && (
+            <motion.div
+              key={shakeKey}
+              className="mt-4 flex justify-center gap-3"
+              animate={shakeKey > 0 ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : {}}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
+            >{dots}</motion.div>
+          )}
 
           {/* Error */}
           <div className="mt-3 h-9 flex items-center justify-center">
@@ -853,7 +938,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* PinPad */}
+        {/* PinPad — hidden in pattern mode */}
+        {step !== "pattern" && (
         <div className="grid w-full grid-cols-3 gap-2 sm:gap-3 mt-1">
           {padButtons.map((btn) => {
             if (btn === "action") {
@@ -918,6 +1004,22 @@ export default function LoginPage() {
             );
           })}
         </div>
+        )}
+
+        {/* Back button for pattern mode */}
+        {step === "pattern" && (
+          <div className="mt-2 flex justify-center">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={goBackToUserId}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-200 disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </motion.button>
+          </div>
+        )}
 
         {/* Loading state below pad */}
         <div className="mt-3 h-6 flex items-center justify-center">
