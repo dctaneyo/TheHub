@@ -39,15 +39,31 @@ try {
   }
 
   // Backfill: if the tracking table is brand new but the DB already has tables
-  // from previous migrations, mark those old migrations as already applied.
+  // from the seed script (which creates the full current schema), mark ALL
+  // migrations as applied so ALTER TABLE statements don't fail on columns
+  // that already exist.
   const trackingCount = db.prepare('SELECT COUNT(*) as c FROM _migrations').get().c;
   if (trackingCount === 0) {
-    // Check if the DB has tables from the original schema (migration 0000)
+    // Check if the DB was seeded (tenants table only exists from seed, not from migration 0000)
+    const hasTenants = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='tenants'"
+    ).get();
     const hasLocations = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='locations'"
     ).get();
-    if (hasLocations) {
-      // DB was set up before tracking existed — mark old migrations as applied
+    if (hasTenants && hasLocations) {
+      // Seed created the full schema — mark ALL migrations as applied
+      const migrationsDir = path.join(__dirname, '../drizzle');
+      const allFiles = fs.readdirSync(migrationsDir)
+        .filter(f => f.endsWith('.sql'))
+        .sort();
+      const insert = db.prepare('INSERT OR IGNORE INTO _migrations (name) VALUES (?)');
+      for (const m of allFiles) {
+        insert.run(m);
+      }
+      console.log(`  ℹ️  Seed-created DB detected — marked all ${allFiles.length} migrations as applied`);
+    } else if (hasLocations) {
+      // DB was set up before tracking existed (pre-seed era) — mark old migrations as applied
       const oldMigrations = [
         '0000_left_energizer.sql',
         '0001_glossy_fallen_one.sql',
