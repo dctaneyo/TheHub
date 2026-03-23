@@ -365,6 +365,9 @@ async function seed() {
   sqlite.exec(`INSERT OR IGNORE INTO tenants (id, slug, name, primary_color, plan, features, max_locations, max_users, is_active, timezone, created_at, updated_at) VALUES ('kazi', 'kazi', 'Kazi Demo', '#dc2626', 'enterprise', '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]', 50, 20, 1, 'Pacific/Honolulu', '${now}', '${now}')`);
 
   // Create demo ARL (admin)
+  // Demo constellation pattern: L-shape → nodes [0,3,6,7] (left column down, then bottom-middle)
+  // The pattern array is joined as "0367" and bcrypt-hashed
+  const demoPatternHash = hashSync("0367", 10);
   const adminId = uuid();
   const arlId = uuid();
   db.insert(schema.arls).values([
@@ -374,6 +377,7 @@ async function seed() {
       email: "admin@thehub.app",
       userId: "0001",
       pinHash: hashSync("1234", 10),
+      patternHash: demoPatternHash,
       role: "admin",
       createdAt: now,
       updatedAt: now,
@@ -384,6 +388,7 @@ async function seed() {
       email: "jane@thehub.app",
       userId: "0002",
       pinHash: hashSync("1234", 10),
+      patternHash: demoPatternHash,
       role: "arl",
       createdAt: now,
       updatedAt: now,
@@ -599,12 +604,13 @@ async function seed() {
   console.log("");
   console.log("Demo Credentials:");
   console.log("─────────────────────────────────");
-  console.log("Admin:        User ID: 0001  PIN: 1234");
-  console.log("ARL (Jane):   User ID: 0002  PIN: 1234");
+  console.log("Admin:        User ID: 0001  PIN: 1234  Pattern: L-shape (left column down → bottom-middle)");
+  console.log("ARL (Jane):   User ID: 0002  PIN: 1234  Pattern: same L-shape");
   console.log("Downtown:     User ID: 1001  PIN: 1111");
   console.log("Westside:     User ID: 1002  PIN: 2222");
   console.log("Airport:      User ID: 1003  PIN: 3333");
   console.log("─────────────────────────────────");
+  console.log("Constellation pattern: tap nodes 0→3→6→7 (left column top-to-bottom, then bottom-middle)");
 }
 
 seed().catch(console.error);
