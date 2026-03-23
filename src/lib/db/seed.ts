@@ -372,8 +372,8 @@ async function seed() {
       id: adminId,
       name: "Admin User",
       email: "admin@thehub.app",
-      userId: "000001",
-      pinHash: hashSync("123456", 10),
+      userId: "0001",
+      pinHash: hashSync("1234", 10),
       role: "admin",
       createdAt: now,
       updatedAt: now,
@@ -382,8 +382,8 @@ async function seed() {
       id: arlId,
       name: "Jane Smith",
       email: "jane@thehub.app",
-      userId: "000002",
-      pinHash: hashSync("123456", 10),
+      userId: "0002",
+      pinHash: hashSync("1234", 10),
       role: "arl",
       createdAt: now,
       updatedAt: now,
@@ -401,8 +401,8 @@ async function seed() {
       storeNumber: "1001",
       address: "123 Main St",
       email: "downtown@thehub.app",
-      userId: "100001",
-      pinHash: hashSync("111111", 10),
+      userId: "1001",
+      pinHash: hashSync("1111", 10),
       createdAt: now,
       updatedAt: now,
     },
@@ -412,8 +412,8 @@ async function seed() {
       storeNumber: "1002",
       address: "456 West Ave",
       email: "westside@thehub.app",
-      userId: "100002",
-      pinHash: hashSync("222222", 10),
+      userId: "1002",
+      pinHash: hashSync("2222", 10),
       createdAt: now,
       updatedAt: now,
     },
@@ -423,8 +423,8 @@ async function seed() {
       storeNumber: "1003",
       address: "789 Airport Blvd",
       email: "airport@thehub.app",
-      userId: "100003",
-      pinHash: hashSync("333333", 10),
+      userId: "1003",
+      pinHash: hashSync("3333", 10),
       createdAt: now,
       updatedAt: now,
     },
@@ -599,11 +599,11 @@ async function seed() {
   console.log("");
   console.log("Demo Credentials:");
   console.log("─────────────────────────────────");
-  console.log("Admin:        User ID: 000001  PIN: 123456");
-  console.log("ARL (Jane):   User ID: 000002  PIN: 123456");
-  console.log("Downtown:     User ID: 100001  PIN: 111111");
-  console.log("Westside:     User ID: 100002  PIN: 222222");
-  console.log("Airport:      User ID: 100003  PIN: 333333");
+  console.log("Admin:        User ID: 0001  PIN: 1234");
+  console.log("ARL (Jane):   User ID: 0002  PIN: 1234");
+  console.log("Downtown:     User ID: 1001  PIN: 1111");
+  console.log("Westside:     User ID: 1002  PIN: 2222");
+  console.log("Airport:      User ID: 1003  PIN: 3333");
   console.log("─────────────────────────────────");
 }
 
