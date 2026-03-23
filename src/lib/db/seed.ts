@@ -20,35 +20,69 @@ const db = drizzle(sqlite, { schema });
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  // Create tables manually via raw SQL (Drizzle push would be better but this works for seed)
+  // Create tables matching the current Drizzle schema so seed inserts work on a fresh DB.
+  // Migrations will skip these via CREATE TABLE IF NOT EXISTS / ALTER idempotency.
   sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS locations (
-      id TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS tenants (
+      id TEXT PRIMARY KEY NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
-      store_number TEXT NOT NULL UNIQUE,
+      logo_url TEXT,
+      primary_color TEXT NOT NULL DEFAULT '#dc2626',
+      accent_color TEXT,
+      favicon_url TEXT,
+      app_title TEXT,
+      plan TEXT NOT NULL DEFAULT 'starter',
+      features TEXT NOT NULL DEFAULT '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]',
+      max_locations INTEGER NOT NULL DEFAULT 50,
+      max_users INTEGER NOT NULL DEFAULT 20,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      custom_domain TEXT,
+      timezone TEXT NOT NULL DEFAULT 'Pacific/Honolulu',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS locations (
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
+      name TEXT NOT NULL,
+      store_number TEXT NOT NULL,
       address TEXT,
       email TEXT,
       user_id TEXT NOT NULL UNIQUE,
       pin_hash TEXT NOT NULL,
+      timezone TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
+      sound_muted INTEGER NOT NULL DEFAULT 0,
+      dashboard_layout TEXT NOT NULL DEFAULT 'classic',
+      pattern_hash TEXT,
+      latitude REAL,
+      longitude REAL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS arls (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       name TEXT NOT NULL,
       email TEXT,
       user_id TEXT NOT NULL UNIQUE,
       pin_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'arl',
+      role_id TEXT,
+      permissions TEXT,
+      assigned_location_ids TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
+      dashboard_layout TEXT NOT NULL DEFAULT 'classic',
+      pattern_hash TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
       session_code TEXT,
       user_type TEXT NOT NULL,
       user_id TEXT NOT NULL,
@@ -63,7 +97,8 @@ async function seed() {
     );
 
     CREATE TABLE IF NOT EXISTS tasks (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       title TEXT NOT NULL,
       description TEXT,
       type TEXT NOT NULL DEFAULT 'task',
@@ -73,40 +108,50 @@ async function seed() {
       is_recurring INTEGER NOT NULL DEFAULT 0,
       recurring_type TEXT,
       recurring_days TEXT,
+      biweekly_start TEXT,
       location_id TEXT,
       created_by TEXT NOT NULL,
       created_by_type TEXT NOT NULL DEFAULT 'arl',
       is_hidden INTEGER NOT NULL DEFAULT 0,
+      allow_early_complete INTEGER NOT NULL DEFAULT 0,
+      show_in_today INTEGER NOT NULL DEFAULT 1,
+      show_in_7day INTEGER NOT NULL DEFAULT 1,
+      show_in_calendar INTEGER NOT NULL DEFAULT 1,
       points INTEGER NOT NULL DEFAULT 10,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS task_completions (
-      id TEXT PRIMARY KEY,
-      task_id TEXT NOT NULL,
-      location_id TEXT NOT NULL,
+      id TEXT PRIMARY KEY NOT NULL,
+      task_id TEXT NOT NULL REFERENCES tasks(id),
+      location_id TEXT NOT NULL REFERENCES locations(id),
       completed_at TEXT NOT NULL,
       completed_date TEXT NOT NULL,
       notes TEXT,
-      points_earned INTEGER NOT NULL DEFAULT 0
+      points_earned INTEGER NOT NULL DEFAULT 0,
+      bonus_points INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
       conversation_id TEXT NOT NULL,
       sender_type TEXT NOT NULL,
       sender_id TEXT NOT NULL,
       sender_name TEXT NOT NULL DEFAULT '',
       content TEXT NOT NULL,
       message_type TEXT NOT NULL DEFAULT 'text',
+      metadata TEXT,
       created_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS conversations (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       type TEXT NOT NULL DEFAULT 'direct',
       name TEXT,
+      description TEXT,
+      avatar_color TEXT,
       participant_a_id TEXT,
       participant_a_type TEXT,
       participant_b_id TEXT,
@@ -114,28 +159,32 @@ async function seed() {
       last_message_at TEXT,
       last_message_preview TEXT,
       created_by TEXT,
+      created_by_type TEXT,
+      deleted_by TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS conversation_members (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL,
+      id TEXT PRIMARY KEY NOT NULL,
+      conversation_id TEXT NOT NULL REFERENCES conversations(id),
       member_id TEXT NOT NULL,
       member_type TEXT NOT NULL,
-      joined_at TEXT NOT NULL
+      role TEXT NOT NULL DEFAULT 'member',
+      joined_at TEXT NOT NULL,
+      left_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS message_reads (
-      id TEXT PRIMARY KEY,
-      message_id TEXT NOT NULL,
+      id TEXT PRIMARY KEY NOT NULL,
+      message_id TEXT NOT NULL REFERENCES messages(id),
       reader_type TEXT NOT NULL,
       reader_id TEXT NOT NULL,
       read_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS message_reactions (
-      id TEXT PRIMARY KEY,
-      message_id TEXT NOT NULL,
+      id TEXT PRIMARY KEY NOT NULL,
+      message_id TEXT NOT NULL REFERENCES messages(id),
       user_id TEXT NOT NULL,
       user_type TEXT NOT NULL,
       user_name TEXT NOT NULL,
@@ -143,20 +192,34 @@ async function seed() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS conversation_settings (
+      id TEXT PRIMARY KEY NOT NULL,
+      conversation_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      is_muted INTEGER NOT NULL DEFAULT 0,
+      muted_until TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS forms (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       title TEXT NOT NULL,
       description TEXT,
       category TEXT NOT NULL DEFAULT 'general',
       file_name TEXT NOT NULL,
       file_path TEXT NOT NULL,
+      file_content BLOB,
       file_size INTEGER NOT NULL,
       uploaded_by TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS location_scores (
-      id TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS daily_leaderboard (
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       location_id TEXT NOT NULL,
       date TEXT NOT NULL,
       points_earned INTEGER NOT NULL DEFAULT 0,
@@ -166,7 +229,7 @@ async function seed() {
     );
 
     CREATE TABLE IF NOT EXISTS notifications (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
       tenant_id TEXT NOT NULL DEFAULT 'kazi',
       user_id TEXT NOT NULL DEFAULT '',
       user_type TEXT NOT NULL DEFAULT 'location',
@@ -183,18 +246,123 @@ async function seed() {
     );
 
     CREATE TABLE IF NOT EXISTS emergency_messages (
-      id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
       message TEXT NOT NULL,
       sent_by TEXT NOT NULL,
       sent_by_name TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
+      target_location_ids TEXT,
+      viewed_by TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL,
       expires_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS pending_sessions (
+      id TEXT PRIMARY KEY NOT NULL,
+      code TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'pending',
+      assigned_user_type TEXT,
+      assigned_user_id TEXT,
+      activated_by TEXT,
+      token TEXT,
+      redirect_to TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL,
+      activated_at TEXT,
+      expires_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      endpoint TEXT NOT NULL,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS broadcasts (
+      id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT NOT NULL DEFAULT 'kazi' REFERENCES tenants(id),
+      arl_id TEXT NOT NULL,
+      arl_name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'live',
+      stream_mode TEXT NOT NULL DEFAULT 'video',
+      target_audience TEXT NOT NULL DEFAULT 'all',
+      target_location_ids TEXT,
+      recording_url TEXT,
+      thumbnail_url TEXT,
+      viewer_count INTEGER NOT NULL DEFAULT 0,
+      total_views INTEGER NOT NULL DEFAULT 0,
+      reaction_count INTEGER NOT NULL DEFAULT 0,
+      scheduled_for TEXT,
+      started_at TEXT,
+      ended_at TEXT,
+      duration INTEGER,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS broadcast_viewers (
+      id TEXT PRIMARY KEY NOT NULL,
+      broadcast_id TEXT NOT NULL,
+      viewer_type TEXT NOT NULL,
+      viewer_id TEXT NOT NULL,
+      viewer_name TEXT NOT NULL,
+      joined_at TEXT NOT NULL,
+      left_at TEXT,
+      watch_duration INTEGER,
+      is_minimized INTEGER NOT NULL DEFAULT 0,
+      is_dismissed INTEGER NOT NULL DEFAULT 0,
+      completion_rate REAL
+    );
+
+    CREATE TABLE IF NOT EXISTS broadcast_reactions (
+      id TEXT PRIMARY KEY NOT NULL,
+      broadcast_id TEXT NOT NULL,
+      viewer_type TEXT NOT NULL,
+      viewer_id TEXT NOT NULL,
+      viewer_name TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS broadcast_messages (
+      id TEXT PRIMARY KEY NOT NULL,
+      broadcast_id TEXT NOT NULL,
+      sender_type TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      sender_name TEXT NOT NULL,
+      content TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS broadcast_questions (
+      id TEXT PRIMARY KEY NOT NULL,
+      broadcast_id TEXT NOT NULL,
+      asker_type TEXT NOT NULL,
+      asker_id TEXT NOT NULL,
+      asker_name TEXT NOT NULL,
+      question TEXT NOT NULL,
+      answer TEXT,
+      answered_at TEXT,
+      is_answered INTEGER NOT NULL DEFAULT 0,
+      upvotes INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
     );
   `);
 
   // Seed demo data
   const now = new Date().toISOString();
+
+  // Create default tenant first (referenced by all other tables)
+  const tenantId = "kazi";
+  sqlite.exec(`INSERT OR IGNORE INTO tenants (id, slug, name, primary_color, plan, features, max_locations, max_users, is_active, timezone, created_at, updated_at) VALUES ('kazi', 'kazi', 'Kazi Demo', '#dc2626', 'enterprise', '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]', 50, 20, 1, 'Pacific/Honolulu', '${now}', '${now}')`);
 
   // Create demo ARL (admin)
   const adminId = uuid();
