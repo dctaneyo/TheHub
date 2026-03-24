@@ -77,6 +77,32 @@ function convIconBg(type: "direct" | "global" | "group") {
   return "bg-slate-100 text-slate-500";
 }
 
+function avatarColor(type: "direct" | "global" | "group") {
+  if (type === "direct") return "bg-blue-500";
+  if (type === "group") return "bg-purple-500";
+  return "bg-emerald-500";
+}
+
+function TypingBubble() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2 rounded-2xl rounded-bl-sm bg-white/5 backdrop-blur-xl border border-white/10 w-fit">
+      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:0ms]" />
+      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:150ms]" />
+      <div className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:300ms]" />
+    </div>
+  );
+}
+
+function VoiceWaveform() {
+  return (
+    <div className="flex items-center gap-0.5 h-8">
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div key={i} className="w-0.5 bg-white/40 rounded-full" style={{ height: `${20 + Math.sin(i * 0.8) * 60 + Math.cos(i * 1.3) * 20}%` }} />
+      ))}
+    </div>
+  );
+}
+
 interface Participant {
   id: string;
   name: string;
@@ -117,6 +143,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
   const [messages, setMessages] = useState<Message[]>([]);
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [panelWidth, setPanelWidth] = useState(360);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -458,11 +485,35 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
-          className="fixed right-0 top-0 z-[200] flex h-dvh w-full sm:w-[360px] flex-col overflow-hidden border-l border-border bg-card shadow-xl"
-          style={isFullscreen ? { width: "100%", left: 0 } : undefined}
+          className="fixed right-0 top-0 z-[200] flex h-dvh w-full sm:w-[var(--chat-panel-w)] flex-col overflow-hidden border-l border-white/10 bg-white/5 backdrop-blur-xl shadow-xl"
+          style={{
+            ...(isFullscreen ? { width: "100%", left: 0 } : {}),
+            "--chat-panel-w": `${panelWidth}px`,
+          } as React.CSSProperties}
         >
+          {/* Desktop drag handle for resizing */}
+          {!isFullscreen && (
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-white/20 transition-colors hidden sm:block z-10"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX;
+                const startWidth = panelWidth;
+                const onMove = (ev: MouseEvent) => {
+                  const delta = startX - ev.clientX;
+                  setPanelWidth(Math.max(320, Math.min(600, startWidth + delta)));
+                };
+                const onUp = () => {
+                  document.removeEventListener("mousemove", onMove);
+                  document.removeEventListener("mouseup", onUp);
+                };
+                document.addEventListener("mousemove", onMove);
+                document.addEventListener("mouseup", onUp);
+              }}
+            />
+          )}
           {/* Header */}
-          <div className="flex h-14 items-center justify-between border-b border-border px-4">
+          <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
             <div className="flex items-center gap-2">
               {(activeConvo || showNewChat) ? (
                 <button
@@ -553,7 +604,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
           {!activeConvo && showNewChat && (
             <div className="flex flex-1 flex-col overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
               {/* Direct / Group tabs */}
-              <div className="flex gap-1 border-b border-border px-3 py-2">
+              <div className="flex gap-1 border-b border-white/10 px-3 py-2">
                 <button
                   onClick={() => setNewChatMode("direct")}
                   className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
@@ -570,7 +621,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
 
               {/* Group name input */}
               {newChatMode === "group" && (
-                <div className="border-b border-border px-3 py-2">
+                <div className="border-b border-white/10 px-3 py-2">
                   <input
                     value={groupName}
                     onChange={(e) => setGroupName(e.target.value)}
@@ -592,7 +643,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               )}
 
               {/* Search */}
-              <div className="border-b border-border px-3 py-2">
+              <div className="border-b border-white/10 px-3 py-2">
                 <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
                   <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <input
@@ -658,7 +709,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
 
               {/* Create group button */}
               {newChatMode === "group" && (
-                <div className="border-t border-border p-3">
+                <div className="border-t border-white/10 p-3">
                   <Button
                     onClick={createGroupChat}
                     disabled={!groupName.trim() || groupMembers.length === 0 || startingChat}
@@ -711,8 +762,8 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                         convo.unreadCount > 0 ? "bg-red-50 dark:bg-red-950/40" : "hover:bg-muted/50"
                       )}
                     >
-                      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
-                        {convIcon(convo.type)}
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", avatarColor(convo.type))}>
+                        {convo.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
@@ -899,7 +950,7 @@ function ActiveConvoView({
     <>
       {/* Search bar */}
       {showSearch && (
-        <div className="border-b border-border px-4 py-2">
+        <div className="border-b border-white/10 px-4 py-2">
           <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <input
@@ -963,12 +1014,17 @@ function ActiveConvoView({
                 )}
                 <div className={cn(
                   "rounded-2xl px-3 py-2 shadow-sm max-w-[75%]",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
+                  isMe ? "rounded-br-sm bg-[var(--hub-red)] text-white" : "rounded-bl-sm bg-white/5 backdrop-blur-xl border border-white/10 text-foreground"
                 )}>
                   {msg.messageType === "voice" ? (() => {
                     try {
                       const meta = JSON.parse((msg as any).metadata || "{}");
-                      return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
+                      return (
+                        <div className="space-y-1">
+                          <VoiceWaveform />
+                          <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />
+                        </div>
+                      );
                     } catch { return <MessageContent content={msg.content} />; }
                   })() : <MessageContent content={msg.content} />}
                   
@@ -1042,13 +1098,9 @@ function ActiveConvoView({
         </div>
         {typingNames.length > 0 && (
           <div className="px-2 pb-1">
-            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-              <div className="flex gap-0.5">
-                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
-                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
-              </div>
-              <span className="text-[11px] text-slate-400">
+            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2">
+              <TypingBubble />
+              <span className="text-[11px] text-muted-foreground self-center">
                 {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
               </span>
             </motion.div>
@@ -1066,7 +1118,7 @@ function ActiveConvoView({
         />
       )}
 
-      <div className="border-t border-border">
+      <div className="border-t border-white/10">
         {/* Emoji Quick Replies */}
         {!showKeyboard && (
           <div className="px-3 pt-3">

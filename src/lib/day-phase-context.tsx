@@ -60,6 +60,26 @@ export const PHASE_CONFIG: Record<
   },
 };
 
+// ── Phase HSL values for time-of-day background shift ─────────────
+
+export const PHASE_HSL: Record<DayPhase, { h: number; s: number; l: number }> = {
+  night:     { h: 220, s: 15, l: 10 },
+  dawn:      { h: 35,  s: 10, l: 12 },
+  morning:   { h: 200, s: 12, l: 11 },
+  midday:    { h: 210, s: 10, l: 12 },
+  afternoon: { h: 220, s: 12, l: 11 },
+  evening:   { h: 240, s: 14, l: 11 },
+};
+
+/** Update CSS custom properties on the root element for the background hue shift. */
+function updateBackgroundHue(phase: DayPhase): void {
+  const target = PHASE_HSL[phase];
+  const root = document.documentElement;
+  root.style.setProperty("--bg-base-h", String(target.h));
+  root.style.setProperty("--bg-base-s", `${target.s}%`);
+  root.style.setProperty("--bg-base-l", `${target.l}%`);
+}
+
 // ── Phase detection ───────────────────────────────────────────────
 
 /** Determine the current day phase from an hour (0-23). */
@@ -113,9 +133,17 @@ export function DayPhaseProvider({ children }: { children: ReactNode }) {
     }
   }, [phase]);
 
+  // Set background HSL on mount and whenever phase changes
   useEffect(() => {
-    // Check every 60 seconds for phase changes
-    const interval = setInterval(checkPhase, 60_000);
+    updateBackgroundHue(phase);
+  }, [phase]);
+
+  useEffect(() => {
+    // Check every 60 seconds for phase changes and update background
+    const interval = setInterval(() => {
+      checkPhase();
+      updateBackgroundHue(getPhaseForHour(getCurrentHour()));
+    }, 60_000);
     return () => clearInterval(interval);
   }, [checkPhase]);
 

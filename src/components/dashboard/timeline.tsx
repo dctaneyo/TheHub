@@ -1,11 +1,9 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import {
-  CheckCircle2,
-  Circle,
+  Check,
   Clock,
-  AlertTriangle,
   Sparkles,
   SprayCan,
   ClipboardList,
@@ -13,7 +11,7 @@ import {
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { TaskCheckmark } from "@/components/ui/success-checkmark";
+import { useReducedMotion, ANIMATION } from "@/lib/animation-constants";
 
 export interface TaskItem {
   id: string;
@@ -41,14 +39,7 @@ const typeIcons: Record<string, typeof Clock> = {
   reminder: Clock,
 };
 
-const priorityColors: Record<string, { bg: string; border: string; text: string }> = {
-  urgent: { bg: "bg-red-50 dark:bg-red-950/50", border: "border-red-300 dark:border-red-800", text: "text-red-700 dark:text-red-400" },
-  high: { bg: "bg-orange-50 dark:bg-orange-950/50", border: "border-orange-300 dark:border-orange-800", text: "text-orange-700 dark:text-orange-400" },
-  normal: { bg: "bg-blue-50 dark:bg-blue-950/50", border: "border-blue-300 dark:border-blue-800", text: "text-blue-700 dark:text-blue-400" },
-  low: { bg: "bg-muted", border: "border-border", text: "text-muted-foreground" },
-};
-
-// Animated color transitions for due-soon tasks — not used, replaced by pulse animations
+const SWIPE_THRESHOLD = 120; // pixels to trigger completion
 
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -57,7 +48,10 @@ function formatTime(time: string): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-interface FlyupItem { id: string; points: number; }
+interface FlyupItem {
+  id: string;
+  points: number;
+}
 
 export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: TimelineProps) {
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -67,8 +61,9 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
-  // Ref-based guard prevents double-tap firing onComplete twice before state updates
   const completingIdsRef = useRef<Set<string>>(new Set());
+  const dragDirectionRef = useRef<Map<string, "horizontal" | "vertical" | null>>(new Map());
+  const prefersReducedMotion = useReducedMotion();
 
   const handleComplete = async (taskId: string) => {
     if (completingIdsRef.current.has(taskId)) return;
@@ -95,7 +90,7 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
   };
 
   const timeToMinutes = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   };
 
@@ -117,10 +112,9 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const groups = buildGroups();
     if (groups.length === 0) return;
 
-    const [ch, cm] = currentTime.split(':').map(Number);
+    const [ch, cm] = currentTime.split(":").map(Number);
     const currentMinutes = ch * 60 + cm;
 
-    // Build an array of { minutes, groupKey, el } for each group
     const groupData = groups.map((group) => {
       const key = group.map((t) => t.id).join("-");
       const el = groupRefs.current.get(key);
@@ -131,9 +125,8 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const outer = outerRef.current;
     if (!container || !outer) return;
 
-    // Find the two groups that bracket the current time
     let before = groupData[0];
-    let after: typeof groupData[0] | null = null;
+    let after: (typeof groupData)[0] | null = null;
 
     for (let i = 0; i < groupData.length; i++) {
       if (groupData[i].minutes <= currentMinutes) {
@@ -147,13 +140,10 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const beforeEl = before.el;
     if (!beforeEl) return;
 
-    // Measure relative to the outer wrapper (not the scroll container)
-    // so the indicator is positioned correctly even when scrolled
     const outerTop = outer.getBoundingClientRect().top;
     const containerScrollTop = container.scrollTop;
     const containerOffsetTop = container.getBoundingClientRect().top - outerTop;
 
-    // Current time is before the first task — place line at top of first group
     if (currentMinutes < groupData[0].minutes) {
       const rect = beforeEl.getBoundingClientRect();
       const pos = rect.top - outerTop + containerScrollTop;
@@ -161,7 +151,6 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       return;
     }
 
-    // Current time is at or past the last task — place line at bottom of last group
     if (after === null) {
       const rect = beforeEl.getBoundingClientRect();
       setIndicatorTop(rect.bottom - outerTop + containerScrollTop);
@@ -171,7 +160,6 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     const afterEl = after.el;
     if (!afterEl) return;
 
-    // Interpolate between before (bottom edge) and after (top edge) based on time ratio
     const beforeRect = beforeEl.getBoundingClientRect();
     const afterRect = afterEl.getBoundingClientRect();
 
@@ -185,12 +173,31 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
     setIndicatorTop(beforePx + (afterPx - beforePx) * ratio);
   }, [buildGroups, currentTime]);
 
-  // Recalculate whenever currentTime changes (every second from parent) or tasks change
   useEffect(() => {
-    // Small delay to let DOM settle after render
     const timeout = setTimeout(calculateIndicatorTop, 50);
     return () => clearTimeout(timeout);
   }, [calculateIndicatorTop, currentTime]);
+
+  /** Gesture disambiguation: only allow horizontal swipe if initial movement is >60% horizontal */
+  const handleDragStart = (taskId: string, _event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const absX = Math.abs(info.delta.x);
+    const absY = Math.abs(info.delta.y);
+    const total = absX + absY;
+    if (total === 0) {
+      dragDirectionRef.current.set(taskId, null);
+      return;
+    }
+    const horizontalRatio = absX / total;
+    dragDirectionRef.current.set(taskId, horizontalRatio >= 0.6 ? "horizontal" : "vertical");
+  };
+
+  const handleDragEnd = (taskId: string, _event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const direction = dragDirectionRef.current.get(taskId);
+    if (direction === "horizontal" && info.offset.x >= SWIPE_THRESHOLD) {
+      handleComplete(taskId);
+    }
+    dragDirectionRef.current.delete(taskId);
+  };
 
   return (
     <div ref={outerRef} className="flex h-full flex-col relative">
@@ -199,16 +206,15 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       </div>
 
       {/* Current time marker — lives outside scroll container so it's never clipped by header */}
-      {/* Hide on mobile to prevent positioning issues with different scroll containers */}
       {indicatorTop !== null && (
         <motion.div
-          className="hidden md:flex absolute left-0 right-0 z-[5] items-center pointer-events-none"
+          className="flex absolute left-0 right-0 z-[5] items-center pointer-events-none"
           style={{ top: indicatorTop }}
           animate={{ top: indicatorTop }}
-          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 20 }}
         >
           <div className="absolute left-0 right-0 h-0.5 bg-[var(--hub-red)] opacity-40" />
-          <div className="absolute left-0 flex items-center pl-8">
+          <div className="absolute left-0 flex items-center pl-2">
             <div className="rounded-full bg-[var(--hub-red)] px-2 py-1 text-xs font-medium text-white shadow-md shadow-red-200">
               {formatTime(currentTime)}
             </div>
@@ -217,13 +223,9 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
       )}
 
       <div ref={containerRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin overflow-x-hidden">
-        <div className="relative pl-8">
-          {/* Timeline line */}
-          <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-border" />
-
+        <div className="relative">
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
-              {/* Group tasks by dueTime, render same-time tasks side-by-side */}
               {(() => {
                 const groups = buildGroups();
                 let globalIdx = 0;
@@ -239,17 +241,23 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                         else groupRefs.current.delete(groupKey);
                       }}
                       layout
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: groupIdx * 0.04 }}
-                      className={cn("relative", group.length > 1 ? "flex gap-2" : "")}
+                      exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : { delay: groupIdx * ANIMATION.listStagger.delayPerItem }}
+                      className="relative"
                     >
+                      {/* Sticky time header */}
+                      <div className="sticky top-0 z-[3] flex items-center justify-between px-2 py-1.5 bg-background/80 backdrop-blur-sm">
+                        <span className="text-xs font-bold text-muted-foreground">{formatTime(group[0].dueTime)}</span>
+                        <span className="text-[10px] text-muted-foreground">{group.length} task{group.length !== 1 ? 's' : ''}</span>
+                      </div>
+
+                      <div className={cn(group.length > 1 ? "flex gap-2" : "", "space-y-2")}>
                       {group.map((task) => {
                         const isCompleting = completingId === task.id;
                         const Icon = typeIcons[task.type] || ClipboardList;
-                        const colors = priorityColors[task.priority] || priorityColors.normal;
-                        const isPast = task.dueTime < currentTime;
+                        const canSwipe = !task.isCompleted && !isCompleting;
                         return (
                           <div key={task.id} className={cn("relative", group.length > 1 ? "flex-1 min-w-0" : "")}>
                             {/* Points flyup */}
@@ -260,118 +268,145 @@ export function Timeline({ tasks, onComplete, onUncomplete, currentTime }: Timel
                                   initial={{ opacity: 1, y: 0, scale: 1 }}
                                   animate={{ opacity: 0, y: -48, scale: 1.2 }}
                                   exit={{ opacity: 0 }}
-                                  transition={{ duration: 1.0, ease: "easeOut" }}
+                                  transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: "easeOut" }}
                                   className="pointer-events-none absolute right-3 top-2 z-20 flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-xs font-black text-white shadow-lg shadow-amber-200"
                                 >
                                   <Sparkles className="h-3 w-3" />+{f.points} pts
                                 </motion.div>
                               ))}
                             </AnimatePresence>
-                            {/* Timeline dot — only show on first card in group */}
-                            {group.indexOf(task) === 0 && (
-                              <div className="absolute -left-8 top-4">
-                                {task.isCompleted || isCompleting ? (
-                                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300 }}>
-                                    <CheckCircle2 className="h-[18px] w-[18px] text-[var(--hub-green)]" />
-                                  </motion.div>
-                                ) : task.isOverdue ? (
-                                  <AlertTriangle className="h-[18px] w-[18px] text-[var(--hub-red)]" />
-                                ) : (
-                                  <Circle className={cn("h-[18px] w-[18px]", isPast ? "text-muted-foreground/40" : "text-muted-foreground")} />
-                                )}
-                              </div>
-                            )}
 
-                            {/* Task card */}
+                            {/* Collapsed single-line view for completed tasks */}
+                            {task.isCompleted && !isCompleting ? (
+                              <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-2 opacity-60">
+                                <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                                <span className="text-sm text-muted-foreground line-through truncate">{task.title}</span>
+                                <button
+                                  onClick={(e) => handleUncomplete(task.id, e)}
+                                  disabled={uncomletingId === task.id}
+                                  aria-label={`Undo completion: ${task.title}`}
+                                  className="ml-auto shrink-0 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"
+                                >
+                                  <Undo2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                            /* Task card — Frosted Glass with left-edge stripe */
                             <motion.div
                               className={cn(
-                                "w-full rounded-2xl border-2 p-4 text-left transition-all relative overflow-hidden",
-                                task.isCompleted || isCompleting
-                                  ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30 opacity-60"
-                                  : task.isOverdue
-                                  ? "border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/50 shadow-md shadow-red-200 dark:shadow-red-900/40"
-                                  : task.isDueSoon
-                                  ? "border-amber-400 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/30 shadow-md shadow-amber-200 dark:shadow-amber-900/40"
-                                  : cn(colors.border, colors.bg, "shadow-sm")
+                                "w-full rounded-2xl p-4 text-left relative overflow-hidden",
+                                "bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg",
                               )}
-                              animate={
-                                task.isOverdue && !task.isCompleted
-                                  ? { scale: [1, 1.015, 1], boxShadow: ["0 0 0 0 rgba(239,68,68,0)", "0 0 12px 4px rgba(239,68,68,0.3)", "0 0 0 0 rgba(239,68,68,0)"] }
-                                  : task.isDueSoon && !task.isCompleted
-                                  ? { scale: [1, 1.01, 1], boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 8px 3px rgba(245,158,11,0.25)", "0 0 0 0 rgba(245,158,11,0)"] }
-                                  : {}
-                              }
-                              transition={
-                                (task.isOverdue || task.isDueSoon) && !task.isCompleted
-                                  ? { duration: task.isOverdue ? 1.2 : 2, repeat: Infinity, ease: "easeInOut" }
-                                  : undefined
-                              }
+                              whileTap={prefersReducedMotion ? undefined : { scale: ANIMATION.cardPress.scale }}
+                              drag={canSwipe ? "x" : false}
+                              dragConstraints={{ left: 0, right: 150 }}
+                              dragElastic={0.1}
+                              dragSnapToOrigin
+                              onDragStart={canSwipe ? (_e, info) => handleDragStart(task.id, _e, info) : undefined}
+                              onDragEnd={canSwipe ? (_e, info) => handleDragEnd(task.id, _e, info) : undefined}
                             >
+                              {/* Left-edge color stripe */}
+                              <div
+                                className={cn(
+                                  "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
+                                  task.isOverdue && !task.isCompleted && "bg-red-500 animate-pulse",
+                                  task.isDueSoon && !task.isCompleted && "bg-amber-500",
+                                  task.isCompleted && "bg-emerald-500",
+                                  !task.isOverdue && !task.isDueSoon && !task.isCompleted && "bg-slate-400",
+                                )}
+                              />
+
                               <div className="flex items-start gap-3">
-                                <div className={cn(
-                                  "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                                  task.isCompleted || isCompleting ? "bg-emerald-100 text-emerald-600"
-                                    : task.isOverdue ? "bg-red-100 text-red-600"
-                                    : task.isDueSoon ? "bg-amber-100 text-amber-600"
-                                    : `${colors.bg} ${colors.text}`
-                                )}>
+                                <div
+                                  className={cn(
+                                    "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                                    isCompleting
+                                      ? "bg-emerald-500/20 text-emerald-400"
+                                      : task.isOverdue
+                                        ? "bg-red-500/20 text-red-400"
+                                        : task.isDueSoon
+                                          ? "bg-amber-500/20 text-amber-400"
+                                          : "bg-white/10 text-muted-foreground",
+                                  )}
+                                >
                                   <Icon className="h-4.5 w-4.5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={cn("text-sm font-semibold", task.isCompleted ? "line-through text-muted-foreground" : "text-foreground")}>
+                                    <span className="text-sm font-semibold text-foreground">
                                       {task.title}
                                     </span>
                                     {task.isOverdue && !task.isCompleted && (
-                                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">OVERDUE</span>
+                                      <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
+                                        OVERDUE
+                                      </span>
                                     )}
                                     {task.isDueSoon && !task.isCompleted && (
-                                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">DUE SOON</span>
+                                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                                        DUE SOON
+                                      </span>
                                     )}
                                   </div>
                                   {task.description && (
-                                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+                                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                                      {task.description}
+                                    </p>
                                   )}
                                   <div className="mt-1.5 flex items-center gap-3">
-                                    <span className="text-xs font-medium text-muted-foreground">{formatTime(task.dueTime)}</span>
-                                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
-                                      <Sparkles className="h-3 w-3" />{task.points} pts
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      {formatTime(task.dueTime)}
                                     </span>
-                                    <span className={cn(
-                                      "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                                      task.type === "cleaning" ? "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
-                                        : task.type === "reminder" ? "bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400"
-                                        : "bg-muted text-muted-foreground"
-                                    )}>{task.type}</span>
+                                    <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
+                                      <Sparkles className="h-3 w-3" />
+                                      {task.points} pts
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
+                                        task.type === "cleaning"
+                                          ? "bg-purple-500/20 text-purple-400"
+                                          : task.type === "reminder"
+                                            ? "bg-sky-500/20 text-sky-400"
+                                            : "bg-white/10 text-muted-foreground",
+                                      )}
+                                    >
+                                      {task.type}
+                                    </span>
                                   </div>
                                 </div>
-                                {!task.isCompleted && !isCompleting && (
+
+                                {/* Accessible button fallback for completion */}
+                                {!isCompleting && (
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleComplete(task.id); }}
-                                    className="mt-1 shrink-0 rounded-xl bg-card/80 hover:bg-emerald-50 dark:hover:bg-emerald-950 active:scale-95 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-emerald-600 shadow-sm transition-all cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleComplete(task.id);
+                                    }}
+                                    aria-label={`Complete task: ${task.title}`}
+                                    className="mt-1 shrink-0 rounded-xl bg-white/10 hover:bg-emerald-500/20 active:scale-95 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-emerald-400 shadow-sm transition-all cursor-pointer"
                                   >
                                     Tap
                                   </button>
                                 )}
+
+                                {/* Checkmark animation on completing — 400ms spring */}
                                 {isCompleting && (
-                                  <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} className="mt-1 shrink-0">
-                                    <Sparkles className="h-6 w-6 text-amber-500" />
-                                  </motion.div>
-                                )}
-                                {task.isCompleted && !isCompleting && (
-                                  <button
-                                    onClick={(e) => handleUncomplete(task.id, e)}
-                                    disabled={uncomletingId === task.id}
-                                    className="mt-1 shrink-0 flex items-center gap-1 rounded-xl bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground shadow-sm hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 transition-colors disabled:opacity-50"
+                                  <motion.div
+                                    initial={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 20, duration: 0.4 }}
+                                    className="mt-1 shrink-0"
                                   >
-                                    <Undo2 className="h-3 w-3" />Undo
-                                  </button>
+                                    <Check className="h-6 w-6 text-emerald-400" />
+                                  </motion.div>
                                 )}
                               </div>
                             </motion.div>
+                            )}
                           </div>
                         );
                       })}
+                      </div>
                     </motion.div>
                   );
                 });

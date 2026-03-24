@@ -234,7 +234,7 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
             className={`rounded-full min-h-[44px] px-3 py-1.5 text-xs font-semibold transition-colors ${
               filter === f
                 ? "bg-foreground text-background shadow"
-                : "bg-card/80 text-muted-foreground border border-border hover:bg-muted backdrop-blur-sm"
+                : "bg-white/5 backdrop-blur-xl border border-white/10 text-muted-foreground hover:bg-white/10"
             }`}
           >
             {f === "all" && "All"}
@@ -296,29 +296,29 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
               className="cursor-pointer"
               style={{ outline: "none" }}
             >
-              {/* Pulsing ring */}
-              <circle r={NODE_R + 8} fill="none" stroke={color} strokeWidth="2" opacity="0.4">
+              {/* Dark pulsing ring for active incidents */}
+              <circle r={NODE_R + 8} fill="none" stroke={loc.alertCount > 0 ? "#1e293b" : color} strokeWidth={loc.alertCount > 0 ? 3 : 2} opacity="0.6">
                 {!prefersReducedMotion && (
                   <>
                     <animate
                       attributeName="r"
                       values={`${NODE_R + 4};${NODE_R + 14};${NODE_R + 4}`}
-                      dur={`${speed}s`}
+                      dur={loc.alertCount > 0 ? "1.2s" : `${speed}s`}
                       repeatCount="indefinite"
                     />
                     <animate
                       attributeName="opacity"
-                      values="0.5;0.1;0.5"
-                      dur={`${speed}s`}
+                      values={loc.alertCount > 0 ? "0.8;0.2;0.8" : "0.5;0.1;0.5"}
+                      dur={loc.alertCount > 0 ? "1.2s" : `${speed}s`}
                       repeatCount="indefinite"
                     />
                   </>
                 )}
               </circle>
 
-              {/* Critical alert pulsing ring for health < 40 */}
+              {/* Critical alert dark pulsing ring for health < 40 */}
               {loc.healthScore < 40 && (
-                <circle r={NODE_R + 20} fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.5">
+                <circle r={NODE_R + 20} fill="none" stroke="#0f172a" strokeWidth="3" opacity="0.7">
                   {!prefersReducedMotion && (
                     <>
                       <animate
@@ -329,7 +329,7 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
                       />
                       <animate
                         attributeName="opacity"
-                        values="0.5;0.15;0.5"
+                        values="0.7;0.2;0.7"
                         dur="1.5s"
                         repeatCount="indefinite"
                       />
@@ -337,6 +337,14 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
                   )}
                 </circle>
               )}
+
+              {/* Frosted glass pin base */}
+              <circle
+                r={NODE_R + 1}
+                fill="rgba(255,255,255,0.05)"
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+              />
 
               {/* Filled circle */}
               <circle
@@ -350,7 +358,7 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
               />
 
               {/* Inner highlight */}
-              <circle r={NODE_R - 5} fill="white" opacity={0.2} />
+              <circle r={NODE_R - 5} fill="white" opacity={0.15} />
 
               {/* Online indicator */}
               {loc.isOnline && (
@@ -367,7 +375,7 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
                 {loc.storeNumber}
               </text>
 
-              {/* Expanded detail overlay when zoomed in */}
+              {/* Expanded detail overlay when zoomed in — Frosted Glass */}
               {isZoomedIn && (
                 <foreignObject
                   x={NODE_R + 6}
@@ -378,7 +386,10 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
                 >
                   <div
                     style={{
-                      background: "rgba(0,0,0,0.75)",
+                      background: "rgba(255,255,255,0.05)",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 6,
                       padding: "3px 6px",
                       fontSize: 9,
@@ -450,7 +461,7 @@ export function WarRoomMap({ locations, onLocationsUpdate }: WarRoomMapProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-20 w-64 rounded-2xl border border-border bg-card p-4 shadow-xl"
+            className="absolute z-20 w-64 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 shadow-xl"
             style={{
               left: "50%",
               bottom: 24,

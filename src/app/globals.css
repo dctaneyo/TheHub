@@ -63,7 +63,7 @@ html {
 
 :root {
   --radius: 1rem;
-  --background: #f0f4f8;
+  --background: #faf8f5;
   --foreground: #1e293b;
   --card: #ffffff;
   --card-foreground: #1e293b;
@@ -105,14 +105,33 @@ html {
   --hub-amber-light: #fffbeb;
   --hub-purple: #8b5cf6;
   --hub-purple-light: #f5f3ff;
+
+  /* Warm Industrial — Background HSL (light mode defaults) */
+  --bg-base-h: 220;
+  --bg-base-s: 20%;
+  --bg-base-l: 96%;
+
+  /* Warm Industrial — Frosted Glass card treatment (light mode: subtle shadows) */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-blur: 24px;
+  --card-border: rgba(0, 0, 0, 0.06);
+
+  /* Warm Industrial — Accent palette */
+  --warm-amber: #d97706;
+  --slate-blue: #64748b;
+  --muted-green: #059669;
+
+  /* Warm Industrial — Typography weights */
+  --font-weight-header: 900;
+  --font-weight-body: 500;
 }
 
 .dark {
-  --background: #0f172a;
+  --background: #0a0a0a;
   --foreground: #f1f5f9;
-  --card: #1e293b;
+  --card: #1a1a1a;
   --card-foreground: #f1f5f9;
-  --popover: #1e293b;
+  --popover: #1a1a1a;
   --popover-foreground: #f1f5f9;
   --primary: #e4002b;
   --primary-foreground: #ffffff;
@@ -150,6 +169,25 @@ html {
   --hub-amber-light: #422006;
   --hub-purple: #a78bfa;
   --hub-purple-light: #2e1065;
+
+  /* Warm Industrial — Background HSL (dark mode defaults: night phase) */
+  --bg-base-h: 220;
+  --bg-base-s: 15%;
+  --bg-base-l: 10%;
+
+  /* Warm Industrial — Frosted Glass card treatment (dark mode) */
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-blur: 24px;
+  --card-border: rgba(255, 255, 255, 0.1);
+
+  /* Warm Industrial — Accent palette */
+  --warm-amber: #d97706;
+  --slate-blue: #64748b;
+  --muted-green: #059669;
+
+  /* Warm Industrial — Typography weights */
+  --font-weight-header: 900;
+  --font-weight-body: 500;
 }
 
 @layer base {
@@ -164,5 +202,8 @@ html {
     touch-action: manipulation;
     /* Prevent horizontal overflow/scroll on mobile */
     overflow-x: hidden;
+    /* Warm Industrial — HSL background with slow transition for day-phase shifts */
+    background: hsl(var(--bg-base-h), var(--bg-base-s), var(--bg-base-l));
+    transition: background 3s ease;
   }
 }

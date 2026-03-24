@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -81,58 +82,149 @@ export function ArlSidebar({
   const { tenant } = useTenant();
   const brandInitial = (tenant?.name || "H").charAt(0).toUpperCase();
   const brandTitle = tenant?.appTitle || tenant?.name || "The Hub";
-  return (
-    <motion.aside
-      className={cn(
-        "z-[150] flex flex-col border-r border-border bg-card",
-        isMobileOrTablet
-          ? "fixed inset-y-0 left-0 w-[280px] shadow-xl"
-          : "relative w-[260px] shrink-0"
-      )}
-      initial={isMobileOrTablet ? { x: -280 } : false}
-      animate={
-        isMobileOrTablet
-          ? { x: sidebarOpen ? 0 : -280 }
-          : { x: 0 }
-      }
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    >
-      {/* Sidebar header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
-            <span className="text-sm font-black text-white">{brandInitial}</span>
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // On mobile/tablet, use the original sliding drawer behavior
+  if (isMobileOrTablet) {
+    return (
+      <motion.aside
+        className="z-[150] flex flex-col border-r border-white/10 bg-white/5 backdrop-blur-xl fixed inset-y-0 left-0 w-[280px] shadow-xl"
+        initial={{ x: -280 }}
+        animate={{ x: sidebarOpen ? 0 : -280 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        {/* Sidebar header */}
+        <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
+              <span className="text-sm font-black text-white">{brandInitial}</span>
+            </div>
+            <div>
+              <h1 className="text-sm font-bold text-foreground">{brandTitle}</h1>
+              <p className="text-[10px] text-muted-foreground">ARL Dashboard</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-foreground">{brandTitle}</h1>
-            <p className="text-[10px] text-muted-foreground">ARL Dashboard</p>
-          </div>
-        </div>
-        {isMobileOrTablet && (
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
-        )}
+        </div>
+
+        {/* User info */}
+        <div className="border-b border-white/10 px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">{user?.name}</p>
+          <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {navItems.filter((item) => {
+            if (user?.role === "admin") return true;
+            const requiredPerms = SIDEBAR_PERM_MAP[item.id];
+            if (!requiredPerms) return true;
+            const userPerms = user?.permissions;
+            if (!userPerms) return true;
+            return requiredPerms.some((p) => userPerms.includes(p));
+          }).map((item) => {
+            const isActive = activeView === item.id;
+            const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
+            const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;
+            return (
+              <Link
+                key={item.id}
+                href={VIEW_ROUTE_MAP[item.id] || "/arl"}
+                prefetch={true}
+                onClick={() => {
+                  onViewChange(item.id);
+                  onClose();
+                }}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
+                    : "text-muted-foreground hover:bg-white/10"
+                )}
+              >
+                <item.icon className="h-4.5 w-4.5 shrink-0" />
+                <span className="flex-1 text-left">{item.label}</span>
+                {badge > 0 && (
+                  <span className={cn(
+                    "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                    isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
+                  )}>
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
+                {onlineBadge > 0 && (
+                  <span className={cn(
+                    "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                    isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {onlineBadge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom */}
+        <div className="border-t border-white/10 p-3 space-y-1">
+          <button
+            onClick={onLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+          >
+            <LogOut className="h-4.5 w-4.5" />
+            Sign Out
+          </button>
+        </div>
+      </motion.aside>
+    );
+  }
+
+  // Desktop: collapse-to-icons sidebar with hover expand
+  return (
+    <aside
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      className={cn(
+        "z-[150] flex flex-col bg-white/5 backdrop-blur-xl border-r border-white/10 transition-all duration-200 ease-in-out overflow-hidden shrink-0 relative h-full",
+        isExpanded ? "w-[260px]" : "w-16"
+      )}
+    >
+      {/* Sidebar header */}
+      <div className="flex h-14 items-center border-b border-white/10 px-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
+            <span className="text-sm font-black text-white">{brandInitial}</span>
+          </div>
+          {isExpanded && (
+            <div>
+              <h1 className="text-sm font-bold text-foreground whitespace-nowrap">{brandTitle}</h1>
+              <p className="text-[10px] text-muted-foreground whitespace-nowrap">ARL Dashboard</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* User info */}
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">{user?.name}</p>
-        <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-      </div>
+      {/* User info — only when expanded */}
+      {isExpanded && (
+        <div className="border-b border-white/10 px-4 py-3">
+          <p className="text-sm font-semibold text-foreground whitespace-nowrap">{user?.name}</p>
+          <p className="text-xs text-muted-foreground capitalize whitespace-nowrap">{user?.role}</p>
+        </div>
+      )}
 
       {/* Nav items */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {navItems.filter((item) => {
-          // Admins see everything
           if (user?.role === "admin") return true;
           const requiredPerms = SIDEBAR_PERM_MAP[item.id];
-          if (!requiredPerms) return true; // no restriction
+          if (!requiredPerms) return true;
           const userPerms = user?.permissions;
-          if (!userPerms) return true; // null/undefined = all
+          if (!userPerms) return true;
           return requiredPerms.some((p) => userPerms.includes(p));
         }).map((item) => {
           const isActive = activeView === item.id;
@@ -143,33 +235,41 @@ export function ArlSidebar({
               key={item.id}
               href={VIEW_ROUTE_MAP[item.id] || "/arl"}
               prefetch={true}
-              onClick={() => {
-                onViewChange(item.id);
-                if (isMobileOrTablet) onClose();
-              }}
+              onClick={() => onViewChange(item.id)}
+              title={!isExpanded ? item.label : undefined}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                "flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-colors",
+                isExpanded ? "px-3" : "justify-center px-0",
                 isActive
                   ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
-                  : "text-muted-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:bg-white/10"
               )}
             >
-              <item.icon className="h-4.5 w-4.5 shrink-0" />
-              <span className="flex-1 text-left">{item.label}</span>
-              {badge > 0 && (
-                <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
-                  isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
-                )}>
-                  {badge > 99 ? "99+" : badge}
-                </span>
+              <item.icon className="h-5 w-5 shrink-0" />
+              {isExpanded && (
+                <>
+                  <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>
+                  {badge > 0 && (
+                    <span className={cn(
+                      "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                      isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
+                    )}>
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                  {onlineBadge > 0 && (
+                    <span className={cn(
+                      "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                      isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
+                    )}>
+                      {onlineBadge}
+                    </span>
+                  )}
+                </>
               )}
-              {onlineBadge > 0 && (
-                <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
-                  isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
-                )}>
-                  {onlineBadge}
+              {!isExpanded && badge > 0 && (
+                <span className="absolute right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--hub-red)] px-0.5 text-[9px] font-bold text-white">
+                  {badge > 99 ? "99+" : badge}
                 </span>
               )}
             </Link>
@@ -178,15 +278,19 @@ export function ArlSidebar({
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-border p-3 space-y-1">
+      <div className="border-t border-white/10 p-2 space-y-1">
         <button
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+          title={!isExpanded ? "Sign Out" : undefined}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950",
+            isExpanded ? "px-3" : "justify-center px-0"
+          )}
         >
-          <LogOut className="h-4.5 w-4.5" />
-          Sign Out
+          <LogOut className="h-5 w-5 shrink-0" />
+          {isExpanded && <span className="whitespace-nowrap">Sign Out</span>}
         </button>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

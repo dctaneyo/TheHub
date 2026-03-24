@@ -47,8 +47,8 @@ interface MoodDataPoint {
   checkinCount: number;
 }
 
-const CHART_COLORS = ["#dc2626", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
-const MOOD_LOCATION_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#ef4444", "#6366f1"];
+const CHART_COLORS = ["#e4002b", "#d97706", "#64748b", "#059669", "#e4002b", "#d97706", "#64748b", "#059669"];
+const MOOD_LOCATION_COLORS = ["#e4002b", "#d97706", "#059669", "#64748b", "#e4002b", "#d97706", "#059669", "#64748b"];
 
 function detectBurnout(data: MoodDataPoint[], locationId: string): boolean {
   const locationData = data
@@ -72,16 +72,16 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
   label: string; value: string | number; icon: any; trend?: number; trendLabel?: string; color?: string;
 }) {
   const colorMap: Record<string, string> = {
-    red: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-    green: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
-    orange: "bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
-    yellow: "bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400",
+    red: "bg-[#e4002b]/10 text-[#e4002b] dark:bg-[#e4002b]/20 dark:text-[#e4002b]",
+    blue: "bg-[#64748b]/10 text-[#64748b] dark:bg-[#64748b]/20 dark:text-[#64748b]",
+    green: "bg-[#059669]/10 text-[#059669] dark:bg-[#059669]/20 dark:text-[#059669]",
+    purple: "bg-[#64748b]/10 text-[#64748b] dark:bg-[#64748b]/20 dark:text-[#64748b]",
+    orange: "bg-[#d97706]/10 text-[#d97706] dark:bg-[#d97706]/20 dark:text-[#d97706]",
+    yellow: "bg-[#d97706]/10 text-[#d97706] dark:bg-[#d97706]/20 dark:text-[#d97706]",
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", colorMap[color])}>
           <Icon className="h-5 w-5" />
@@ -104,7 +104,7 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
 
 function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-5 shadow-sm", className)}>
+    <div className={cn("rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-5 shadow-sm", className)}>
       <h3 className="mb-4 text-sm font-semibold text-foreground">{title}</h3>
       {children}
     </div>
@@ -376,24 +376,24 @@ export function AnalyticsDashboard() {
           <p className="text-sm text-muted-foreground">Track performance across your locations</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={fetchData} className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors">
+          <button onClick={fetchData} className="flex h-9 items-center gap-2 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 px-3 text-sm text-muted-foreground hover:bg-white/10 transition-colors">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
           </button>
           <div className="relative">
             <button
               onClick={() => setShowExportMenu((v) => !v)}
-              className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors"
+              className="flex h-9 items-center gap-2 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 px-3 text-sm text-muted-foreground hover:bg-white/10 transition-colors"
             >
               <Download className="h-3.5 w-3.5" /> Export <ChevronDown className="h-3 w-3" />
             </button>
             {showExportMenu && (
-              <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden">
                 {exportOptions.map((opt) => (
                   <button
                     key={opt.label}
                     onClick={opt.action}
                     disabled={!opt.enabled}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-40 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-white/10 disabled:opacity-40 transition-colors"
                   >
                     <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {opt.label}
@@ -407,21 +407,21 @@ export function AnalyticsDashboard() {
 
       {/* Tab bar + Date range */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1 rounded-xl bg-muted p-1">
+        <div className="flex gap-1 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 p-1">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
-                activeTab === t.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                activeTab === t.id ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               <t.icon className="h-3.5 w-3.5" /> {t.label}
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
+        <div className="flex gap-1 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 p-1 overflow-x-auto">
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
               className={cn("rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
-                dateRange === d.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                dateRange === d.id ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               {d.label}
             </button>
@@ -456,9 +456,9 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} className="fill-muted-foreground" tickFormatter={(v) => { try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; } }} />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Area type="monotone" dataKey="count" stroke="#dc2626" fill="#dc262620" name="Completions" />
-                      <Area type="monotone" dataKey="totalPoints" stroke="#22c55e" fill="#22c55e20" name="Points" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Area type="monotone" dataKey="count" stroke="#e4002b" fill="#e4002b20" name="Completions" />
+                      <Area type="monotone" dataKey="totalPoints" stroke="#059669" fill="#05966920" name="Points" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -469,8 +469,8 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis type="number" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
                       <YAxis dataKey="locationName" type="category" width={100} tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="completions" fill="#dc2626" radius={[0, 6, 6, 0]} name="Completions" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Bar dataKey="completions" fill="#e4002b" radius={[0, 6, 6, 0]} name="Completions" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -481,8 +481,8 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Completions" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Bar dataKey="count" fill="#64748b" radius={[4, 4, 0, 0]} name="Completions" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -492,7 +492,7 @@ export function AnalyticsDashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                      <tr className="border-b border-white/10 text-left text-xs text-muted-foreground">
                         <th className="pb-2 font-medium">Task</th>
                         <th className="pb-2 font-medium text-right">Completions</th>
                         <th className="pb-2 font-medium text-right">Locations</th>
@@ -501,7 +501,7 @@ export function AnalyticsDashboard() {
                     </thead>
                     <tbody>
                       {taskData.taskPerformance.slice(0, 10).map((t, i) => (
-                        <tr key={t.taskId ?? i} className="border-b border-border/50 last:border-0">
+                        <tr key={t.taskId ?? i} className="border-b border-white/5 last:border-0">
                           <td className="py-2.5 font-medium text-foreground">{t.taskTitle || "Unknown Task"}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.completions}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.uniqueLocations}</td>
@@ -531,9 +531,9 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} className="fill-muted-foreground" tickFormatter={(v) => { try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; } }} />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Area type="monotone" dataKey="count" stroke="#3b82f6" fill="#3b82f620" name="Messages" />
-                      <Area type="monotone" dataKey="uniqueSenders" stroke="#8b5cf6" fill="#8b5cf620" name="Unique Senders" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Area type="monotone" dataKey="count" stroke="#64748b" fill="#64748b20" name="Messages" />
+                      <Area type="monotone" dataKey="uniqueSenders" stroke="#d97706" fill="#d9770620" name="Unique Senders" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -542,7 +542,7 @@ export function AnalyticsDashboard() {
                   <div className="space-y-2">
                     {msgData.topSenders.slice(0, 8).map((s, i) => (
                       <div key={s.senderId ?? i} className="flex items-center gap-3">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#64748b]/10 text-xs font-bold text-[#64748b] dark:bg-[#64748b]/20 dark:text-[#64748b]">
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">
@@ -561,8 +561,8 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Messages" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Bar dataKey="count" fill="#d97706" radius={[4, 4, 0, 0]} name="Messages" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -580,10 +580,10 @@ export function AnalyticsDashboard() {
                       <div key={l.locationId ?? i} className="flex items-center gap-3">
                         <span className={cn(
                           "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                          i === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
-                          i === 1 ? "bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400" :
-                          i === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" :
-                          "bg-muted text-muted-foreground"
+                          i === 0 ? "bg-[#d97706]/10 text-[#d97706] dark:bg-[#d97706]/20 dark:text-[#d97706]" :
+                          i === 1 ? "bg-[#64748b]/10 text-[#64748b] dark:bg-[#64748b]/20 dark:text-[#64748b]" :
+                          i === 2 ? "bg-[#e4002b]/10 text-[#e4002b] dark:bg-[#e4002b]/20 dark:text-[#e4002b]" :
+                          "bg-white/5 text-muted-foreground"
                         )}>
                           {i + 1}
                         </span>
@@ -606,8 +606,8 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} className="fill-muted-foreground" tickFormatter={(v) => { try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; } }} />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Line type="monotone" dataKey="count" stroke="#eab308" strokeWidth={2} dot={false} name="Unlocks" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Line type="monotone" dataKey="count" stroke="#d97706" strokeWidth={2} dot={false} name="Unlocks" />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -618,8 +618,8 @@ export function AnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="locationName" tick={{ fontSize: 10 }} className="fill-muted-foreground" angle={-30} textAnchor="end" height={60} />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="achievementCount" fill="#a855f7" radius={[4, 4, 0, 0]} name="Achievements" />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }} />
+                      <Bar dataKey="achievementCount" fill="#059669" radius={[4, 4, 0, 0]} name="Achievements" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -744,7 +744,7 @@ function CrewMoodSection({
       {/* Day range selector */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Period:</span>
-        <div className="flex gap-1 rounded-xl bg-muted p-1">
+        <div className="flex gap-1 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 p-1">
           {([7, 14, 30] as const).map((d) => (
             <button
               key={d}
@@ -752,7 +752,7 @@ function CrewMoodSection({
               className={cn(
                 "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
                 days === d
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-white/10 text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -767,9 +767,9 @@ function CrewMoodSection({
         <StatCard label="Avg Mood Score" value={overallAvg || "—"} icon={Smile} color="yellow" />
         <StatCard label="Total Check-ins" value={totalCheckins} icon={Activity} color="blue" />
         <StatCard label="Locations Reporting" value={locations.length} icon={Users} color="green" />
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", burnoutLocations.length > 0 ? "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400" : "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400")}>
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", burnoutLocations.length > 0 ? "bg-[#e4002b]/10 text-[#e4002b] dark:bg-[#e4002b]/20 dark:text-[#e4002b]" : "bg-[#059669]/10 text-[#059669] dark:bg-[#059669]/20 dark:text-[#059669]")}>
               <Heart className="h-5 w-5" />
             </div>
             {burnoutLocations.length > 0 && (
@@ -788,13 +788,13 @@ function CrewMoodSection({
 
       {/* Burnout warnings list */}
       {burnoutLocations.length > 0 && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/50">
-          <h3 className="mb-2 text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Burnout Warnings</h3>
+        <div className="rounded-2xl bg-[#e4002b]/5 backdrop-blur-xl border border-[#e4002b]/20 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-[#e4002b]">⚠️ Burnout Warnings</h3>
           <div className="flex flex-wrap gap-2">
             {burnoutLocations.map((loc) => (
               <span
                 key={loc.id}
-                className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#e4002b]/10 px-3 py-1 text-xs font-medium text-[#e4002b]"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
@@ -804,7 +804,7 @@ function CrewMoodSection({
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[10px] text-red-600/70 dark:text-red-400/70">
+          <p className="mt-2 text-[10px] text-[#e4002b]/70">
             Avg mood below 2.5 for 3+ consecutive days
           </p>
         </div>
@@ -828,7 +828,7 @@ function CrewMoodSection({
               />
               <YAxis domain={[0, 5]} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
               <Tooltip
-                contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }}
+                contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }}
                 formatter={(value: number | undefined) => [value != null ? value.toFixed(1) : "—", "Avg Mood"]}
               />
               {locations.map((loc, i) => (
@@ -855,7 +855,7 @@ function CrewMoodSection({
         <select
           value={selectedLocation || ""}
           onChange={(e) => onSelectLocation(e.target.value || null)}
-          className="rounded-xl border border-border bg-card px-3 py-1.5 text-sm text-foreground"
+          className="rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 px-3 py-1.5 text-sm text-foreground"
         >
           <option value="">All locations</option>
           {locations.map((loc) => (
@@ -897,7 +897,7 @@ function CrewMoodSection({
                   label={{ value: "Completion %", angle: 90, position: "insideRight", style: { fontSize: 11 } }}
                 />
                 <Tooltip
-                  contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }}
+                  contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.8)", backdropFilter: "blur(24px)" }}
                   formatter={(value: number | undefined, name?: string) => [
                     name === "Mood Score" ? (value != null ? value.toFixed(1) : "—") : `${value ?? 0}%`,
                     name || "",
@@ -907,7 +907,7 @@ function CrewMoodSection({
                   yAxisId="mood"
                   type="monotone"
                   dataKey="mood"
-                  stroke="#f59e0b"
+                  stroke="#d97706"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   name="Mood Score"
@@ -917,7 +917,7 @@ function CrewMoodSection({
                   yAxisId="completion"
                   type="monotone"
                   dataKey="completion"
-                  stroke="#3b82f6"
+                  stroke="#64748b"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   name="Task Completion %"

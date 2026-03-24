@@ -113,9 +113,9 @@ interface Particle {
   delay: number;
 }
 
-const CONFETTI_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#FF9FF3", "#54A0FF", "#5F27CD"];
-const COIN_COLORS = ["#FFD700", "#FFA500", "#FFE44D", "#DAA520"];
-const STAR_COLORS = ["#FFD700", "#FF6B6B", "#4ECDC4", "#FF9FF3", "#54A0FF"];
+const CONFETTI_COLORS = ["#e4002b", "#d97706", "#059669", "#64748b", "#FFEAA7", "#DDA0DD", "#98D8C8", "#f97316", "#3b82f6", "#8b5cf6"];
+const COIN_COLORS = ["#d97706", "#f59e0b", "#FFE44D", "#DAA520"];
+const STAR_COLORS = ["#d97706", "#e4002b", "#059669", "#f97316", "#3b82f6"];
 
 function randomBetween(a: number, b: number) { return a + Math.random() * (b - a); }
 
@@ -180,8 +180,8 @@ export function ConfettiBurst({ active, points, onComplete }: { active: boolean;
                 transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
                 className="fixed left-1/2 -translate-x-1/2 z-[101]"
               >
-                <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 px-6 py-3 shadow-2xl">
-                  <p className="text-center text-3xl font-black text-white">+{points} pts</p>
+                <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 shadow-2xl">
+                  <p className="text-center text-3xl font-black text-[var(--warm-amber)]">+{points} pts</p>
                 </div>
               </motion.div>
               <motion.div
@@ -190,8 +190,8 @@ export function ConfettiBurst({ active, points, onComplete }: { active: boolean;
                 transition={{ duration: 3, times: [0, 0.1, 0.8, 1] }}
                 className="fixed top-24 left-1/2 -translate-x-1/2 z-[101]"
               >
-                <div className="rounded-2xl bg-white border-2 border-green-400 px-6 py-3 shadow-2xl">
-                  <p className="text-center text-lg font-bold text-slate-800">{getRandomTaskCompletionPun()}</p>
+                <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 shadow-2xl">
+                  <p className="text-center text-lg font-bold text-white/90">{getRandomTaskCompletionPun()}</p>
                 </div>
               </motion.div>
             </>
@@ -242,8 +242,8 @@ export function CoinRain({ active, amount, onComplete }: { active: boolean; amou
               transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
               className="fixed left-1/2 -translate-x-1/2 z-[101]"
             >
-              <div className="rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 px-6 py-3 shadow-2xl">
-                <p className="text-center text-2xl font-black text-white">+{amount} bonus</p>
+              <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 shadow-2xl">
+                <p className="text-center text-2xl font-black text-[var(--warm-amber)]">+{amount} bonus</p>
               </div>
             </motion.div>
           )}
@@ -356,8 +356,8 @@ export function Fireworks({ active, onComplete }: { active: boolean; onComplete?
             transition={{ duration: 3, delay: 0.5, times: [0, 0.15, 0.6, 1] }}
             className="fixed left-1/2 -translate-x-1/2 z-[101]"
           >
-            <div className="rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 px-8 py-4 shadow-2xl">
-              <p className="text-center text-3xl font-black text-white">🎉 ALL DONE! 🎉</p>
+            <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-8 py-4 shadow-2xl">
+              <p className="text-center text-3xl font-black text-[var(--muted-green)]">🎉 ALL DONE! 🎉</p>
             </div>
           </motion.div>
         </motion.div>
@@ -389,7 +389,7 @@ export function LevelUpCelebration({ active, level, title, onComplete }: { activ
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: [0, 3, 2.5], opacity: [0, 0.3, 0] }}
             transition={{ duration: 2 }}
-            className="absolute w-40 h-40 rounded-full bg-gradient-radial from-purple-400 to-transparent"
+            className="absolute w-40 h-40 rounded-full bg-gradient-radial from-[var(--warm-amber)] to-transparent"
           />
 
           {/* Stars around */}
@@ -418,7 +418,7 @@ export function LevelUpCelebration({ active, level, title, onComplete }: { activ
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: [0, 1.2, 1], rotate: [-10, 5, 0] }}
             transition={{ duration: 0.8, delay: 0.2, ease: "backOut" }}
-            className="relative rounded-3xl bg-gradient-to-br from-purple-600 to-blue-600 px-10 py-8 shadow-2xl"
+            className="relative rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-10 py-8 shadow-2xl"
           >
             <motion.div
               animate={{ y: [0, -5, 0] }}
@@ -427,7 +427,7 @@ export function LevelUpCelebration({ active, level, title, onComplete }: { activ
               <p className="text-center text-5xl">🎖️</p>
             </motion.div>
             <p className="mt-2 text-center text-sm font-bold uppercase tracking-widest text-white/60">Level Up!</p>
-            <p className="text-center text-5xl font-black text-white">Level {level}</p>
+            <p className="text-center text-5xl font-black text-[var(--warm-amber)]">Level {level}</p>
             <p className="mt-1 text-center text-lg font-bold text-white/80">{title}</p>
           </motion.div>
         </motion.div>

@@ -63,11 +63,12 @@ export function Heartbeat({
   }, [overdueCount, dueSoonCount]);
 
   const colors = useMemo(() => {
-    if (health >= 90) return { primary: "#10b981", glow: "rgba(16,185,129,0.3)", bg: "rgba(16,185,129,0.05)" };
-    if (health >= 70) return { primary: "#22c55e", glow: "rgba(34,197,94,0.25)", bg: "rgba(34,197,94,0.04)" };
-    if (health >= 50) return { primary: "#f59e0b", glow: "rgba(245,158,11,0.3)", bg: "rgba(245,158,11,0.05)" };
+    // Warm Industrial accent palette
+    if (health >= 90) return { primary: "#059669", glow: "rgba(5,150,105,0.3)", bg: "rgba(5,150,105,0.05)" };   // --muted-green
+    if (health >= 70) return { primary: "#10b981", glow: "rgba(16,185,129,0.25)", bg: "rgba(16,185,129,0.04)" };
+    if (health >= 50) return { primary: "#d97706", glow: "rgba(217,119,6,0.3)", bg: "rgba(217,119,6,0.05)" };    // --warm-amber
     if (health >= 30) return { primary: "#f97316", glow: "rgba(249,115,22,0.35)", bg: "rgba(249,115,22,0.06)" };
-    return { primary: "#ef4444", glow: "rgba(239,68,68,0.4)", bg: "rgba(239,68,68,0.07)" };
+    return { primary: "#e4002b", glow: "rgba(228,0,43,0.4)", bg: "rgba(228,0,43,0.07)" };                        // --hub-red
   }, [health]);
 
   // Day-phase tint color for glow rings (optional overlay)
@@ -208,7 +209,7 @@ export function Heartbeat({
   const size = large ? 280 : 160;
 
   return (
-    <div className={cn("relative flex flex-col items-center justify-center", className)}>
+    <div className={cn("relative flex flex-col items-center justify-center rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4", className)}>
       <canvas ref={canvasRef} className="pointer-events-none" aria-label={ariaLabel} role="img" />
 
       {/* Health percentage overlay */}
@@ -237,22 +238,22 @@ export function Heartbeat({
         <div className="absolute inset-0 pointer-events-none">
           {/* Top: Points */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center">
-            <span className="text-xs font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{pointsToday} pts</span>
+            <span className="text-xs font-bold text-[var(--warm-amber)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{pointsToday} pts</span>
           </div>
           {/* Bottom: Streak */}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
-            <span className="text-xs font-bold text-orange-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">🔥 {streak} day streak</span>
+            <span className="text-xs font-bold text-[var(--warm-amber)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">🔥 {streak} day streak</span>
           </div>
           {/* Left: Overdue */}
           {overdueCount > 0 && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 text-center">
-              <span className="text-xs font-bold text-red-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{overdueCount} overdue</span>
+              <span className="text-xs font-bold text-[var(--hub-red)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{overdueCount} overdue</span>
             </div>
           )}
           {/* Right: Due soon */}
           {dueSoonCount > 0 && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2 text-center">
-              <span className="text-xs font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{dueSoonCount} due soon</span>
+              <span className="text-xs font-bold text-[var(--warm-amber)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{dueSoonCount} due soon</span>
             </div>
           )}
         </div>

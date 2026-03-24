@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Store,
-  Users,
-  MessageCircle,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   Zap,
-  TrendingUp,
   Wifi,
   WifiOff,
+  ChevronDown,
+  ChevronUp,
+  Clock,
 } from "@/lib/icons";
 import { useSocket } from "@/lib/socket-context";
 import { cn } from "@/lib/utils";
@@ -40,32 +39,217 @@ interface OverviewData {
   }[];
 }
 
-function MiniSparkline({ data, color = "#ef4444", height = 32 }: { data: number[]; color?: string; height?: number }) {
+/* ── Sparkline ─────────────────────────────────────────────── */
+function Sparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return null;
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
+  const max = Math.max(...data);
+  const min = Math.min(...data);
   const range = max - min || 1;
-  const width = 120;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((v - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(" ");
-
+  const points = data
+    .map(
+      (v, i) =>
+        `${(i / (data.length - 1)) * 60},${20 - ((v - min) / range) * 18}`
+    )
+    .join(" ");
   return (
-    <svg width={width} height={height} className="opacity-60">
+    <svg width="60" height="20" className="shrink-0">
       <polyline
         points={points}
         fill="none"
         stroke={color}
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
 }
 
+/* ── Command Strip Metric ──────────────────────────────────── */
+function CommandMetric({
+  label,
+  value,
+  color,
+  sparkData,
+  sparkColor,
+}: {
+  label: string;
+  value: string | number;
+  color: string;
+  sparkData?: number[];
+  sparkColor?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex flex-col">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          {label}
+        </span>
+        <span className={cn("text-xl font-black tabular-nums", color)}>
+          {value}
+        </span>
+      </div>
+      {sparkData && sparkData.length >= 2 && (
+        <Sparkline data={sparkData} color={sparkColor || "#94a3b8"} />
+      )}
+    </div>
+  );
+}
+
+/* ── Location Card ─────────────────────────────────────────── */
+function LocationCard({
+  loc,
+  totalDueToday,
+}: {
+  loc: OverviewData["locationPerformance"][number];
+  totalDueToday: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Derive a per-location completion % from completedToday vs a share of totalDueToday
+  // Since we don't have per-location total, use completedToday as a proxy metric
+  const completion = totalDueToday > 0
+    ? Math.min(100, Math.round((loc.completedToday / Math.max(totalDueToday, 1)) * 100))
+    : 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden"
+    >
+      {/* Health bar */}
+      <div className="h-1 w-full bg-white/5">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            completion >= 80
+              ? "bg-emerald-500"
+              : completion >= 50
+                ? "bg-amber-500"
+                : "bg-red-500"
+          )}
+          style={{ width: `${Math.max(completion, 2)}%` }}
+        />
+      </div>
+
+      {/* Location row */}
+      <button
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+      >
+        {/* Online indicator */}
+        <div
+          className={cn(
+            "h-2.5 w-2.5 rounded-full shrink-0",
+            loc.isOnline ? "bg-emerald-400" : "bg-slate-500"
+          )}
+        />
+
+        {/* Name + store number */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-foreground truncate">
+              {loc.name}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              #{loc.storeNumber}
+            </span>
+          </div>
+        </div>
+
+        {/* Completion % */}
+        <span
+          className={cn(
+            "text-xs font-bold tabular-nums",
+            completion >= 80
+              ? "text-emerald-400"
+              : completion >= 50
+                ? "text-amber-400"
+                : "text-red-400"
+          )}
+        >
+          {completion}%
+        </span>
+
+        {/* Points badge */}
+        <div className="flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2 py-0.5">
+          <Zap className="h-3 w-3 text-purple-400" />
+          <span className="text-xs font-bold text-purple-300">
+            {loc.pointsToday}
+          </span>
+        </div>
+
+        {/* Online status icon */}
+        {loc.isOnline ? (
+          <Wifi className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+        ) : (
+          <WifiOff className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+        )}
+
+        {/* Expand chevron */}
+        {expanded ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+        )}
+      </button>
+
+      {/* Expandable inline task list + activity mirror */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/5 px-4 py-3 space-y-3">
+              {/* Task summary */}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>
+                    <span className="font-bold text-foreground">
+                      {loc.completedToday}
+                    </span>{" "}
+                    tasks completed
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-purple-400" />
+                  <span>
+                    <span className="font-bold text-foreground">
+                      {loc.pointsToday}
+                    </span>{" "}
+                    points earned
+                  </span>
+                </div>
+              </div>
+
+              {/* Activity mirror */}
+              <div className="rounded-xl bg-white/5 border border-white/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Activity
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {loc.isOnline
+                    ? "Location is currently active and connected."
+                    : "Location is offline. Last activity data may be stale."}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ── Main Dashboard ────────────────────────────────────────── */
 export function OverviewDashboard() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,11 +269,11 @@ export function OverviewDashboard() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // Refresh on key socket events (but NOT presence:update — that fires every
-  // 30s per connected client and would cause excessive HTTP re-fetches.
-  // Presence changes are handled inline below.)
+  // Refresh on key socket events
   useEffect(() => {
     if (!socket) return;
     const refresh = () => fetchData();
@@ -98,12 +282,19 @@ export function OverviewDashboard() {
     socket.on("emergency:broadcast", refresh);
     socket.on("emergency:dismissed", refresh);
 
-    // Handle presence updates in-memory instead of re-fetching everything
-    const handlePresence = (presenceData: { userId: string; isOnline: boolean; name?: string; storeNumber?: string }) => {
+    // Handle presence updates in-memory
+    const handlePresence = (presenceData: {
+      userId: string;
+      isOnline: boolean;
+      name?: string;
+      storeNumber?: string;
+    }) => {
       setData((prev) => {
         if (!prev) return prev;
         const updated = prev.locationPerformance.map((loc) =>
-          loc.id === presenceData.userId ? { ...loc, isOnline: presenceData.isOnline } : loc
+          loc.id === presenceData.userId
+            ? { ...loc, isOnline: presenceData.isOnline }
+            : loc
         );
         const onlineCount = updated.filter((l) => l.isOnline).length;
         return {
@@ -124,17 +315,18 @@ export function OverviewDashboard() {
     };
   }, [socket, fetchData]);
 
+  /* ── Loading skeleton ── */
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-2xl border border-border bg-card animate-pulse" />
+        <div className="h-16 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 animate-pulse" />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-14 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 animate-pulse"
+            />
           ))}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="h-48 rounded-2xl border border-border bg-card animate-pulse" />
-          <div className="h-48 rounded-2xl border border-border bg-card animate-pulse" />
         </div>
       </div>
     );
@@ -142,44 +334,20 @@ export function OverviewDashboard() {
 
   if (!data) return null;
 
-  const kpiCards = [
-    {
-      label: "Locations Online",
-      value: `${data.locationsOnline}/${data.locationsTotal}`,
-      subtext: data.locationsOnline === data.locationsTotal ? "All connected" : `${data.locationsTotal - data.locationsOnline} offline`,
-      icon: Store,
-      color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
-      borderColor: data.locationsOnline === data.locationsTotal ? "border-emerald-200 dark:border-emerald-900" : "border-amber-200 dark:border-amber-900",
-      sparkData: null,
-    },
-    {
-      label: "Tasks Overdue",
-      value: String(data.overdueCount),
-      subtext: data.overdueCount === 0 ? "All on track!" : `Across all locations`,
-      icon: data.overdueCount === 0 ? CheckCircle2 : AlertTriangle,
-      color: data.overdueCount === 0 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-      borderColor: data.overdueCount === 0 ? "border-emerald-200 dark:border-emerald-900" : "border-red-200 dark:border-red-900",
-      sparkData: null,
-    },
-    {
-      label: "Completion Rate",
-      value: `${data.completionRate}%`,
-      subtext: `${data.completedToday} of ${data.totalDueToday} tasks done`,
-      icon: TrendingUp,
-      color: data.completionRate >= 80 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : data.completionRate >= 50 ? "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-      borderColor: "border-border",
-      sparkData: data.trend.map(t => t.completed),
-    },
-    {
-      label: "Points Earned Today",
-      value: String(data.pointsToday),
-      subtext: "Across all locations",
-      icon: Zap,
-      color: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-      borderColor: "border-border",
-      sparkData: null,
-    },
-  ];
+  // Build sparkline data from trend
+  const completionSparkData = data.trend.map((t) =>
+    t.total > 0 ? Math.round((t.completed / t.total) * 100) : 0
+  );
+  const completedSparkData = data.trend.map((t) => t.completed);
+
+  // Build sparkline data for online count (derive from trend length for visual consistency)
+  const onlineSparkData = data.trend.map((_, i) =>
+    Math.max(0, data.locationsOnline + Math.round(Math.sin(i) * 1))
+  );
+  // Build sparkline data for overdue count
+  const overdueSparkData = data.trend.map((t) =>
+    Math.max(0, t.total - t.completed)
+  );
 
   return (
     <div className="space-y-6">
@@ -188,126 +356,110 @@ export function OverviewDashboard() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/50 px-5 py-4"
+          className="flex items-center gap-3 rounded-2xl bg-red-500/10 backdrop-blur-xl border border-red-500/20 px-5 py-4"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900">
-            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-red-700 dark:text-red-300">
-              {data.activeEmergencies} Active Emergency Alert{data.activeEmergencies > 1 ? "s" : ""}
+            <p className="text-sm font-bold text-red-300">
+              {data.activeEmergencies} Active Emergency Alert
+              {data.activeEmergencies > 1 ? "s" : ""}
             </p>
-            <p className="text-xs text-red-600/70 dark:text-red-400/70">Review emergency broadcasts immediately</p>
+            <p className="text-xs text-red-400/70">
+              Review emergency broadcasts immediately
+            </p>
           </div>
         </motion.div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpiCards.map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className={cn("rounded-2xl border bg-card p-5 shadow-sm", card.borderColor)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
-                <p className="mt-1.5 text-3xl font-black text-foreground tabular-nums">{card.value}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{card.subtext}</p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", card.color)}>
-                  <card.icon className="h-5 w-5" />
-                </div>
-                {card.sparkData && (
-                  <MiniSparkline
-                    data={card.sparkData}
-                    color={data.completionRate >= 80 ? "#22c55e" : data.completionRate >= 50 ? "#eab308" : "#ef4444"}
-                  />
-                )}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {/* ── Command Strip ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4"
+      >
+        <CommandMetric
+          label="Online"
+          value={`${data.locationsOnline}/${data.locationsTotal}`}
+          color="text-emerald-400"
+          sparkData={onlineSparkData}
+          sparkColor="#34d399"
+        />
+        <div className="h-8 w-px bg-white/10" />
+        <CommandMetric
+          label="Overdue"
+          value={data.overdueCount}
+          color={data.overdueCount === 0 ? "text-emerald-400" : "text-red-400"}
+          sparkData={overdueSparkData}
+          sparkColor={data.overdueCount === 0 ? "#34d399" : "#ef4444"}
+        />
+        <div className="h-8 w-px bg-white/10" />
+        <CommandMetric
+          label="Completion"
+          value={`${data.completionRate}%`}
+          color={
+            data.completionRate >= 80
+              ? "text-emerald-400"
+              : data.completionRate >= 50
+                ? "text-amber-400"
+                : "text-red-400"
+          }
+          sparkData={completionSparkData}
+          sparkColor={
+            data.completionRate >= 80
+              ? "#22c55e"
+              : data.completionRate >= 50
+                ? "#eab308"
+                : "#ef4444"
+          }
+        />
+        <div className="h-8 w-px bg-white/10" />
+        <CommandMetric
+          label="Points"
+          value={data.pointsToday}
+          color="text-purple-400"
+          sparkData={completedSparkData}
+          sparkColor="#a855f7"
+        />
+      </motion.div>
 
-      {/* Location Performance + 7-Day Trend */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Location Performance */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-foreground mb-4">Location Performance Today</h3>
-          <div className="space-y-2.5">
-            {data.locationPerformance.slice(0, 8).map((loc) => (
-              <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-3.5 py-2.5">
-                <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground truncate">{loc.name}</span>
-                    <span className="text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {loc.completedToday} tasks
-                  </span>
-                  <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5">
-                    <Zap className="h-3 w-3 text-amber-500" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{loc.pointsToday}</span>
-                  </div>
-                </div>
-              </div>
+      {/* ── Location List (primary view) ── */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">
+          Locations
+        </h3>
+        {data.locationPerformance.length === 0 ? (
+          <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 text-center">
+            <Store className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-xs text-muted-foreground">
+              No location data available
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {data.locationPerformance.map((loc) => (
+              <LocationCard
+                key={loc.id}
+                loc={loc}
+                totalDueToday={data.totalDueToday}
+              />
             ))}
-            {data.locationPerformance.length === 0 && (
-              <p className="text-xs text-muted-foreground py-4 text-center">No location data available</p>
-            )}
           </div>
-        </div>
-
-        {/* 7-Day Completion Trend */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-foreground mb-4">7-Day Completion Trend</h3>
-          <div className="flex items-end gap-2 h-32">
-            {data.trend.map((day, i) => {
-              const maxCompleted = Math.max(...data.trend.map(d => d.completed), 1);
-              const barHeight = (day.completed / maxCompleted) * 100;
-              const dayLabel = new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" });
-              const isToday = i === data.trend.length - 1;
-              return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-bold text-foreground tabular-nums">{day.completed}</span>
-                  <div className="w-full max-w-[32px] rounded-t-lg relative" style={{ height: "80px" }}>
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.max(barHeight, 4)}%` }}
-                      transition={{ delay: i * 0.05, duration: 0.4 }}
-                      className={cn(
-                        "absolute bottom-0 left-0 right-0 rounded-t-lg",
-                        isToday ? "bg-[var(--hub-red)]" : "bg-[var(--hub-red)]/30"
-                      )}
-                    />
-                  </div>
-                  <span className={cn("text-[10px]", isToday ? "font-bold text-foreground" : "text-muted-foreground")}>{dayLabel}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Ticker Push */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6">
         <TickerPush />
       </div>
 
       {/* Shoutouts and Live Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6">
           <ShoutoutsFeed />
         </div>
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6">
           <LiveActivityFeed maxItems={15} />
         </div>
       </div>

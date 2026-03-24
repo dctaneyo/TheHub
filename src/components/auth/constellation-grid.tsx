@@ -107,6 +107,8 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
 
   // Keyboard navigation state
   const [focusedNode, setFocusedNode] = useState<number | null>(null);
+  // Hover state for pulse effect
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
   // Detect day phase from browser local time
   const phase = useMemo(() => getPhaseForHour(new Date().getHours()), []);
@@ -298,13 +300,20 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
         >
           {/* SVG Filters */}
           <defs>
+            {/* Glow trail filter: feGaussianBlur sigma 3 + feComposite for soft glow */}
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+              <feComposite in="blur" in2="SourceGraphic" operator="over" result="glowBase" />
+              <feComposite in="SourceGraphic" in2="glowBase" operator="over" />
             </filter>
             <filter id="starGlow" x="-100%" y="-100%" width="300%" height="300%">
               <feGaussianBlur stdDeviation="4" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            {/* Hover pulse filter for node glow on hover */}
+            <filter id="hoverPulse" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="hoverBlur" />
+              <feComposite in="SourceGraphic" in2="hoverBlur" operator="over" />
             </filter>
             <radialGradient id="nightBg" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor={theme.bgGradient[1]} />
@@ -354,6 +363,7 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
           {NODE_POSITIONS.map((pos, i) => {
             const isActive = selectedNodes.includes(i);
             const isFocused = focusedNode === i;
+            const isHovered = hoveredNode === i;
             return (
               <g
                 key={i}
@@ -363,6 +373,8 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
                 onFocus={() => setFocusedNode(i)}
                 onBlur={() => setFocusedNode(null)}
                 onKeyDown={(e) => handleKeyDown(e, i)}
+                onPointerEnter={() => setHoveredNode(i)}
+                onPointerLeave={() => setHoveredNode(null)}
                 style={{ outline: "none" }}
               >
                 {/* Touch target (invisible) */}
@@ -372,6 +384,31 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
                   r={NODE_RADIUS}
                   fill="transparent"
                 />
+
+                {/* Hover pulse glow ring */}
+                {isHovered && !isActive && !prefersReducedMotion && (
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={18}
+                    fill={theme.haloColor}
+                    opacity={0.4}
+                    filter="url(#hoverPulse)"
+                  >
+                    <animate
+                      attributeName="r"
+                      values="14;20;14"
+                      dur="1.2s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0.2;0.5;0.2"
+                      dur="1.2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                )}
 
                 {/* Halo glow */}
                 <circle
@@ -396,13 +433,13 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r={isActive ? STAR_RADIUS + 2 : STAR_RADIUS}
-                  fill={isActive ? theme.starColor : (isNightish ? "#475569" : "#cbd5e1")}
+                  r={isActive ? STAR_RADIUS + 2 : (isHovered ? STAR_RADIUS + 1 : STAR_RADIUS)}
+                  fill={isActive ? theme.starColor : (isHovered ? theme.starColor : (isNightish ? "#475569" : "#cbd5e1"))}
                   stroke={isFocused ? theme.starColor : "none"}
                   strokeWidth={isFocused ? 2 : 0}
                   strokeDasharray={isFocused ? "4 2" : "none"}
-                  opacity={isActive ? 1 : 0.6}
-                  filter={isActive ? "url(#starGlow)" : undefined}
+                  opacity={isActive ? 1 : (isHovered ? 0.8 : 0.6)}
+                  filter={isActive ? "url(#starGlow)" : (isHovered ? "url(#hoverPulse)" : undefined)}
                 />
 
                 {/* Inner bright spot */}
@@ -411,7 +448,7 @@ export function ConstellationGrid({ onSubmit, error, disabled }: ConstellationGr
                   cy={pos.y}
                   r={isActive ? 4 : 3}
                   fill={isActive ? "#ffffff" : (isNightish ? "#64748b" : "#e2e8f0")}
-                  opacity={isActive ? 0.9 : 0.4}
+                  opacity={isActive ? 0.9 : (isHovered ? 0.6 : 0.4)}
                 />
               </g>
             );
