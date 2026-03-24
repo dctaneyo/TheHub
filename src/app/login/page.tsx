@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Star } from "@/lib/icons";
@@ -753,25 +753,28 @@ export default function LoginPage() {
     setTimeout(() => setSelfPinged(false), 2500);
   };
 
+  const pendingIdRef = useRef<string | null>(null);
+
   const generateSession = useCallback(async () => {
     setRefreshing(true);
     try {
-      if (pendingId) {
+      if (pendingIdRef.current) {
         fetch("/api/session/pending", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: pendingId }),
+          body: JSON.stringify({ id: pendingIdRef.current }),
         }).catch(() => {});
       }
       const r = await fetch("/api/session/pending", { method: "POST" });
       if (r.ok) {
         const data = await r.json();
+        pendingIdRef.current = data.id;
         setPendingId(data.id);
         setPendingCode(data.code);
       }
     } catch {}
     setRefreshing(false);
-  }, [pendingId]);
+  }, []);
 
   useEffect(() => { generateSession(); }, [generateSession]);
 
@@ -966,7 +969,7 @@ export default function LoginPage() {
   // Loading state — waiting for org check
   if (!orgChecked) {
     return (
-      <div className="min-h-screen min-h-dvh w-screen flex items-center justify-center" style={{ background: "hsl(var(--bg-base-h), var(--bg-base-s), var(--bg-base-l))" }}>
+      <div className="dark min-h-screen min-h-dvh w-screen flex items-center justify-center" style={{ background: "hsl(220, 15%, 10%)" }}>
         <style dangerouslySetInnerHTML={{ __html: MESH_GRADIENT_STYLES }} />
         <Loader2 className="h-8 w-8 animate-spin text-[var(--hub-red)]" />
       </div>
@@ -974,9 +977,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto flex flex-col items-center py-6 px-4 ${
+    <div className={`dark min-h-screen min-h-dvh w-screen overflow-y-auto flex flex-col items-center py-6 px-4 ${
       meshSupported ? "mesh-gradient-bg" : "mesh-gradient-fallback"
-    } ${effectiveCardState === "org" && showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
+    } ${effectiveCardState === "org" && showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}
+    style={{ "--bg-base-h": "220", "--bg-base-s": "15%", "--bg-base-l": "10%" } as React.CSSProperties}>
       <style dangerouslySetInnerHTML={{ __html: MESH_GRADIENT_STYLES }} />
 
       {/* Ping animation overlay */}
