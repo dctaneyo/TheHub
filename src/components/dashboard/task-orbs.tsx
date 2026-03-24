@@ -251,8 +251,6 @@ export function TaskOrbs({ tasks, currentTime, onComplete, onUncomplete, dayPhas
               animate={{
                 opacity: isDissolvingNow ? 0 : task.isCompleted ? 0.5 : 1,
                 scale: isDissolvingNow ? 0 : scale,
-                x: `calc(${x}% - ${orbSize / 2}px)`,
-                y: `calc(${y}% - ${orbSize / 2}px)`,
               }}
               exit={{ opacity: 0, scale: 0, transition: { duration: 0.3 } }}
               transition={{
@@ -273,6 +271,8 @@ export function TaskOrbs({ tasks, currentTime, onComplete, onUncomplete, dayPhas
               style={{
                 width: orbSize,
                 height: orbSize,
+                left: `calc(${x}% - ${orbSize / 2}px)`,
+                top: `calc(${y}% - ${orbSize / 2}px)`,
                 background: task.isCompleted
                   ? "linear-gradient(135deg, #6b7280, #9ca3af)"
                   : task.isOverdue
