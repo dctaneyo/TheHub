@@ -60,6 +60,14 @@ export function DayPhaseBackground() {
         style={{ willChange: "background" }}
       />
 
+      {/* Dark vignette overlay for text contrast */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.25) 100%)",
+        }}
+      />
+
       {/* Floating particles — disabled when prefers-reduced-motion */}
       {!prefersReducedMotion &&
         particles.map((p) => (

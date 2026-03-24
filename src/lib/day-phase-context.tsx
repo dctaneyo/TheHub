@@ -30,32 +30,32 @@ export const PHASE_CONFIG: Record<
 > = {
   dawn: {
     hours: [5, 8],
-    gradient: "from-rose-200 via-orange-100 to-amber-50",
+    gradient: "from-rose-400 via-orange-300 to-amber-200",
     particleColor: "#fbbf24",
   },
   morning: {
     hours: [8, 11],
-    gradient: "from-sky-200 via-blue-50 to-white",
+    gradient: "from-sky-400 via-blue-200 to-sky-100",
     particleColor: "#38bdf8",
   },
   midday: {
     hours: [11, 14],
-    gradient: "from-amber-100 via-yellow-50 to-white",
+    gradient: "from-amber-300 via-yellow-200 to-orange-100",
     particleColor: "#fcd34d",
   },
   afternoon: {
     hours: [14, 17],
-    gradient: "from-amber-200 via-orange-100 to-rose-50",
+    gradient: "from-orange-400 via-amber-300 to-rose-200",
     particleColor: "#fb923c",
   },
   evening: {
     hours: [17, 20],
-    gradient: "from-indigo-400 via-purple-300 to-blue-200",
+    gradient: "from-indigo-900 via-purple-800 to-slate-700",
     particleColor: "#a78bfa",
   },
   night: {
     hours: [20, 5],
-    gradient: "from-slate-900 via-indigo-950 to-slate-800",
+    gradient: "from-slate-950 via-indigo-950 to-slate-900",
     particleColor: "#475569",
   },
 };

@@ -224,7 +224,7 @@ export function TaskOrbs({ tasks, currentTime, onComplete, onUncomplete, dayPhas
         {[30, 50, 70].map((r) => (
           <div
             key={r}
-            className="absolute rounded-full border border-border/30"
+            className="absolute rounded-full border border-white/20"
             style={{ width: `${r}%`, height: `${r}%` }}
           />
         ))}
@@ -293,7 +293,7 @@ export function TaskOrbs({ tasks, currentTime, onComplete, onUncomplete, dayPhas
 
               {/* Points badge */}
               {!task.isCompleted && task.points > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-black text-white shadow">
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black shadow-lg">
                   {task.points}
                 </span>
               )}

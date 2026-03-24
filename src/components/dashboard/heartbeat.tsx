@@ -218,7 +218,7 @@ export function Heartbeat({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className={cn(
-            "font-black tabular-nums",
+            "font-black tabular-nums drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]",
             large ? "text-3xl" : "text-lg",
           )}
           style={{ color: colors.primary }}
@@ -226,7 +226,7 @@ export function Heartbeat({
           {health}%
         </motion.span>
         {large && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] mt-1">
             Health
           </span>
         )}
@@ -237,22 +237,22 @@ export function Heartbeat({
         <div className="absolute inset-0 pointer-events-none">
           {/* Top: Points */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center">
-            <span className="text-xs font-bold text-amber-500">{pointsToday} pts</span>
+            <span className="text-xs font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{pointsToday} pts</span>
           </div>
           {/* Bottom: Streak */}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
-            <span className="text-xs font-bold text-orange-500">🔥 {streak} day streak</span>
+            <span className="text-xs font-bold text-orange-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">🔥 {streak} day streak</span>
           </div>
           {/* Left: Overdue */}
           {overdueCount > 0 && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 text-center">
-              <span className="text-xs font-bold text-red-500">{overdueCount} overdue</span>
+              <span className="text-xs font-bold text-red-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{overdueCount} overdue</span>
             </div>
           )}
           {/* Right: Due soon */}
           {dueSoonCount > 0 && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2 text-center">
-              <span className="text-xs font-bold text-amber-500">{dueSoonCount} due soon</span>
+              <span className="text-xs font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{dueSoonCount} due soon</span>
             </div>
           )}
         </div>
