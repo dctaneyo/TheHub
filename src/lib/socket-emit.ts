@@ -46,6 +46,26 @@ export function broadcastTaskUncompleted(locationId: string, taskId: string, ten
   emitToLocations("task:uncompleted", { locationId, taskId }, tenantId);
 }
 
+// ── Grid layout events ──
+// Notify all of an account's other devices that the saved dashboard layout
+// changed, so they can update live. `sourceDeviceId` lets the originating
+// device ignore its own echo.
+export function broadcastGridLayoutUpdate(
+  userType: "location" | "arl",
+  userId: string,
+  tenantId: string,
+  layout: unknown,
+  sourceDeviceId?: string
+) {
+  if (!isAvailable()) return;
+  const payload = { layout, sourceDeviceId };
+  if (userType === "location") {
+    emitToLocation(userId, "grid-layout:updated", payload, tenantId);
+  } else {
+    emitToArl(userId, "grid-layout:updated", payload, tenantId);
+  }
+}
+
 // ── Message events ──
 
 // Helper: emit to all members of a conversation via their user rooms

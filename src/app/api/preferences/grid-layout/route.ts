@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { locations, arls } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { broadcastGridLayoutUpdate } from "@/lib/socket-emit";
 
 // Returns the user's saved custom grid layout (JSON) or null if none saved.
 export async function GET() {
@@ -52,6 +53,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const layout = body?.layout ?? null;
+    const sourceDeviceId =
+      typeof body?.deviceId === "string" ? body.deviceId : undefined;
 
     // Basic shape validation — must be an object with a widgets array, or null to clear.
     if (layout !== null) {
@@ -80,6 +83,17 @@ export async function POST(req: NextRequest) {
         .set({ gridLayout: serialized, updatedAt: new Date().toISOString() })
         .where(eq(arls.id, session.id))
         .run();
+    }
+
+    // Notify this account's other devices so they reflect the change live.
+    if (session.userType === "location" || session.userType === "arl") {
+      broadcastGridLayoutUpdate(
+        session.userType,
+        session.id,
+        session.tenantId,
+        layout,
+        sourceDeviceId
+      );
     }
 
     return apiSuccess({ ok: true });

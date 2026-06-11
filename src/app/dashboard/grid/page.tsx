@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSocket } from "@/lib/socket-context";
 import { Loader2, LogOut } from "@/lib/icons";
@@ -13,6 +13,7 @@ import {
   GridProvider,
   GridControls,
   GridSurface,
+  GridSync,
   getPredefinedLayout,
   DEFAULT_LAYOUT_ID,
   type GridLayout,
@@ -70,6 +71,14 @@ export default function GridDashboardPage() {
   const [formsOpen, setFormsOpen] = useState(false);
 
   const [initialLayout, setInitialLayout] = useState<GridLayout | null>(null);
+
+  // Stable per-device id so we can ignore the layout-update broadcast that
+  // originated from this very device.
+  const deviceIdRef = useRef<string>(
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `dev-${Math.random().toString(36).slice(2)}-${Date.now()}`
+  );
 
   // ---- Data fetching -------------------------------------------------------
   const fetchTasks = useCallback(async () => {
@@ -216,14 +225,20 @@ export default function GridDashboardPage() {
     [fetchTasks]
   );
 
-  // ---- Persist layout ------------------------------------------------------
-  // Save custom layouts; clear the saved layout when a predefined one is chosen.
-  const persistLayout = useCallback((layout: GridLayout) => {
-    fetch("/api/preferences/grid-layout", {
+  // ---- Save layout (explicit, on demand) -----------------------------------
+  // No auto-save: the user commits with the Save button. We tag the request
+  // with this device's id so the server's broadcast back to the location's
+  // other devices can be ignored here (we already have the layout).
+  const saveLayout = useCallback(async (layout: GridLayout) => {
+    const res = await fetch("/api/preferences/grid-layout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ layout: layout.isCustom ? layout : null }),
-    }).catch(() => {});
+      body: JSON.stringify({
+        layout: layout.isCustom ? layout : null,
+        deviceId: deviceIdRef.current,
+      }),
+    });
+    if (!res.ok) throw new Error(`Save failed: ${res.status}`);
   }, []);
 
   // Stable launcher callbacks so they don't change widgetData identity.
@@ -277,6 +292,7 @@ export default function GridDashboardPage() {
 
   return (
     <GridProvider initialLayout={initialLayout}>
+      <GridSync socket={socket} deviceId={deviceIdRef.current} />
       <div className="flex h-screen flex-col bg-background">
         {/* Lightweight header */}
         <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
@@ -294,7 +310,7 @@ export default function GridDashboardPage() {
 
           <div className="flex items-center gap-3">
             <HeaderClock />
-            <GridControls />
+            <GridControls onSave={saveLayout} />
             {/* Connection status + session ID (kiosk-critical) */}
             <ConnectionStatus />
             <button
@@ -310,7 +326,7 @@ export default function GridDashboardPage() {
 
         {/* Grid */}
         <div className="min-h-0 flex-1">
-          <GridSurface data={widgetData} onPersist={persistLayout} />
+          <GridSurface data={widgetData} />
         </div>
 
         {/* Overlays (existing components, unmodified) */}

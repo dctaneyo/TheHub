@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid,
@@ -10,6 +11,9 @@ import {
   Check,
   ChevronDown,
   Sparkles,
+  Save,
+  X,
+  Loader2,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useGrid } from "./grid-context";
@@ -21,10 +25,16 @@ import type { WidgetData } from "./widget-data";
 
 /**
  * Header controls: layout picker (presets + Custom) and — only while the
- * editable Custom layout is active — the customize/edit affordances.
- * Must be rendered inside a <GridProvider>.
+ * editable Custom layout is active — the customize/save/cancel affordances.
+ * Editing uses explicit Save/Cancel (no auto-save) so that, when a location is
+ * signed in on multiple devices, the others only refresh when a layout is
+ * actually saved. Must be rendered inside a <GridProvider>.
  */
-export function GridControls() {
+export function GridControls({
+  onSave,
+}: {
+  onSave?: (layout: GridLayout) => Promise<void> | void;
+}) {
   const {
     layout,
     widgets,
@@ -33,102 +43,137 @@ export function GridControls() {
     addWidget,
     replaceLayout,
     selectCustom,
+    beginEdit,
+    commitEdit,
+    cancelEdit,
     compact,
   } = useGrid();
 
   const [showLayouts, setShowLayouts] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const isCustom = !!layout.isCustom;
   const usedTypes = new Set(widgets.map((w) => w.type));
 
+  const startEditing = () => {
+    beginEdit();
+    setEditMode(true);
+    setShowLayouts(false);
+    setShowAdd(false);
+  };
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave?.(layout);
+      commitEdit();
+      setEditMode(false);
+      setShowAdd(false);
+    } catch (err) {
+      console.error("Failed to save layout:", err);
+      // Stay in edit mode so the user can retry.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    cancelEdit();
+    setEditMode(false);
+    setShowAdd(false);
+  };
+
   return (
     <div className="flex items-center gap-2">
-      {/* Layout picker */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => {
-            setShowLayouts((v) => !v);
-            setShowAdd(false);
-          }}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">{layout.name}</span>
-          <span className="sm:hidden">Layouts</span>
-          <ChevronDown className="h-3 w-3" />
-        </button>
-        <AnimatePresence>
-          {showLayouts && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-lg border border-border bg-card p-1.5 shadow-lg"
-            >
-              {PREDEFINED_LAYOUTS.map((preset) => (
+      {/* Layout picker — hidden while editing to avoid switching mid-edit */}
+      {!editMode && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setShowLayouts((v) => !v);
+              setShowAdd(false);
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{layout.name}</span>
+            <span className="sm:hidden">Layouts</span>
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <AnimatePresence>
+            {showLayouts && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-lg border border-border bg-card p-1.5 shadow-lg"
+              >
+                {PREDEFINED_LAYOUTS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      replaceLayout({ ...preset, isCustom: false });
+                      setEditMode(false);
+                      setShowLayouts(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                      !isCustom && layout.id === preset.id && "bg-primary/10"
+                    )}
+                  >
+                    <div className="flex-1">
+                      <div className="text-xs font-medium text-foreground">
+                        {preset.name}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {preset.description}
+                      </div>
+                    </div>
+                    {!isCustom && layout.id === preset.id && (
+                      <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+                ))}
+
+                {/* Divider */}
+                <div className="my-1 h-px bg-border" />
+
+                {/* Custom (editable) layout */}
                 <button
-                  key={preset.id}
                   type="button"
                   onClick={() => {
-                    replaceLayout({ ...preset, isCustom: false });
-                    setEditMode(false);
+                    selectCustom();
                     setShowLayouts(false);
                   }}
                   className={cn(
                     "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted",
-                    !isCustom && layout.id === preset.id && "bg-primary/10"
+                    isCustom && "bg-primary/10"
                   )}
                 >
                   <div className="flex-1">
                     <div className="text-xs font-medium text-foreground">
-                      {preset.name}
+                      Custom
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      {preset.description}
+                      Build and arrange your own layout
                     </div>
                   </div>
-                  {!isCustom && layout.id === preset.id && (
+                  {isCustom && (
                     <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />
                   )}
                 </button>
-              ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
-              {/* Divider */}
-              <div className="my-1 h-px bg-border" />
-
-              {/* Custom (editable) layout */}
-              <button
-                type="button"
-                onClick={() => {
-                  selectCustom();
-                  setShowLayouts(false);
-                }}
-                className={cn(
-                  "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted",
-                  isCustom && "bg-primary/10"
-                )}
-              >
-                <div className="flex-1">
-                  <div className="text-xs font-medium text-foreground">
-                    Custom
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Build and arrange your own layout
-                  </div>
-                </div>
-                {isCustom && (
-                  <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                )}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Add widget (Custom + edit mode only) */}
-      {isCustom && editMode && (
+      {/* Add widget (editing only) */}
+      {editMode && (
         <div className="relative">
           <button
             type="button"
@@ -184,8 +229,8 @@ export function GridControls() {
         </div>
       )}
 
-      {/* Tidy up / compact (Custom + edit mode only) */}
-      {isCustom && editMode && (
+      {/* Tidy up / compact (editing only) */}
+      {editMode && (
         <button
           type="button"
           onClick={() => compact()}
@@ -197,8 +242,8 @@ export function GridControls() {
         </button>
       )}
 
-      {/* Reset (Custom + edit mode only) — reseed the custom layout */}
-      {isCustom && editMode && (
+      {/* Reset (editing only) — reseed the custom layout */}
+      {editMode && (
         <button
           type="button"
           onClick={() => {
@@ -219,62 +264,90 @@ export function GridControls() {
         </button>
       )}
 
-      {/* Customize toggle — only available on the Custom layout */}
-      {isCustom && (
+      {/* Customize — only on the Custom layout, when not already editing */}
+      {isCustom && !editMode && (
         <button
           type="button"
-          onClick={() => setEditMode(!editMode)}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
-            editMode
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-card hover:bg-muted"
-          )}
+          onClick={startEditing}
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
         >
-          {editMode ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Settings className="h-3.5 w-3.5" />
-          )}
-          {editMode ? "Done" : "Customize"}
+          <Settings className="h-3.5 w-3.5" />
+          Customize
         </button>
+      )}
+
+      {/* Save / Cancel — while editing */}
+      {editMode && (
+        <>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={saving}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 rounded-lg border border-primary bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+          >
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </>
       )}
     </div>
   );
 }
 
-/** Debounced persistence of the active layout. Renders nothing. */
-function GridPersistence({
-  onPersist,
+/**
+ * Listens for layout changes saved on other devices for the same account and
+ * applies them live (so all of a location's screens stay in sync). Ignores
+ * updates that originated from this device and never clobbers an in-progress
+ * edit. Must be rendered inside a <GridProvider>.
+ */
+export function GridSync({
+  socket,
+  deviceId,
 }: {
-  onPersist?: (layout: GridLayout) => void;
+  socket: Socket | null;
+  deviceId: string;
 }) {
-  const { layout } = useGrid();
-  const persistRef = useRef(onPersist);
-  persistRef.current = onPersist;
-  const firstRun = useRef(true);
+  const { replaceLayout, editMode } = useGrid();
+  const editingRef = useRef(editMode);
+  editingRef.current = editMode;
 
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return; // don't re-persist the layout we just loaded
-    }
-    const t = setTimeout(() => persistRef.current?.(layout), 600);
-    return () => clearTimeout(t);
-  }, [layout]);
+    if (!socket) return;
+    const handler = (payload: {
+      layout: GridLayout | null;
+      sourceDeviceId?: string;
+    }) => {
+      if (payload.sourceDeviceId && payload.sourceDeviceId === deviceId) return;
+      if (editingRef.current) return; // don't overwrite an active edit session
+      if (payload.layout && Array.isArray(payload.layout.widgets)) {
+        replaceLayout(payload.layout);
+      }
+    };
+    socket.on("grid-layout:updated", handler);
+    return () => {
+      socket.off("grid-layout:updated", handler);
+    };
+  }, [socket, deviceId, replaceLayout]);
 
   return null;
 }
 
 /** The grid surface (widgets + edit affordances). Must be rendered inside a
  *  <GridProvider>. */
-export function GridSurface({
-  data,
-  onPersist,
-}: {
-  data: WidgetData;
-  onPersist?: (layout: GridLayout) => void;
-}) {
+export function GridSurface({ data }: { data: WidgetData }) {
   const { widgets, editMode } = useGrid();
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -285,8 +358,6 @@ export function GridSurface({
 
   return (
     <div className="relative h-full overflow-hidden p-2">
-      <GridPersistence onPersist={onPersist} />
-
       {/* Cell guide background (aligned, behind widgets) */}
       {editMode && (
         <div

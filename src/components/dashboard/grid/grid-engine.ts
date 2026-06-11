@@ -189,6 +189,12 @@ export function useGridLayout(initialLayout: GridLayout) {
     initialLayout.isCustom ? normalizeLayout(initialLayout) : null
   );
 
+  // Always-current layout (for reading inside callbacks without stale closures)
+  // and a snapshot taken when an edit session begins (to support Cancel).
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+  const editSnapshotRef = useRef<GridLayout | null>(null);
+
   // Keep internal layout in sync if the caller swaps the initial layout
   // (e.g. after loading a persisted layout asynchronously).
   const initialIdRef = useRef(initialLayout.id);
@@ -335,6 +341,22 @@ export function useGridLayout(initialLayout: GridLayout) {
     setExpandedWidget(null);
   }, []);
 
+  // ---- Edit session (Save / Cancel) ----------------------------------------
+  // Snapshot the layout when editing starts so Cancel can restore it, and
+  // re-snapshot on a successful Save so a later Cancel reverts to what was saved.
+  const beginEdit = useCallback(() => {
+    editSnapshotRef.current = layoutRef.current;
+  }, []);
+
+  const commitEdit = useCallback(() => {
+    editSnapshotRef.current = layoutRef.current;
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    if (editSnapshotRef.current) setLayout(editSnapshotRef.current);
+    setExpandedWidget(null);
+  }, []);
+
   /** Gravity-compact: pull every widget as far up as it can go without
    *  overlapping, processing top-to-bottom. Columns (x) are preserved; only
    *  vertical gaps are removed. Triggered manually from the toolbar. */
@@ -377,6 +399,9 @@ export function useGridLayout(initialLayout: GridLayout) {
       removeWidget,
       replaceLayout,
       selectCustom,
+      beginEdit,
+      commitEdit,
+      cancelEdit,
       compact,
     }),
     [
@@ -389,6 +414,9 @@ export function useGridLayout(initialLayout: GridLayout) {
       removeWidget,
       replaceLayout,
       selectCustom,
+      beginEdit,
+      commitEdit,
+      cancelEdit,
       compact,
     ]
   );
