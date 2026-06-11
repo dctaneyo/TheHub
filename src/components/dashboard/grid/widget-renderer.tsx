@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Timeline } from "@/components/dashboard/timeline";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
@@ -45,7 +46,11 @@ function LauncherTile({
   );
 }
 
-export function WidgetRenderer({
+// Memoized so that re-rendering the grid during drag/resize (which changes the
+// grid context value) does NOT re-render the heavy widget bodies of widgets
+// that didn't actually change. `widget` objects keep a stable reference for
+// untouched widgets, and `data` is stable during in-grid interactions.
+export const WidgetRenderer = memo(function WidgetRenderer({
   widget,
   data,
 }: {
@@ -126,4 +131,4 @@ export function WidgetRenderer({
         </div>
       );
   }
-}
+});

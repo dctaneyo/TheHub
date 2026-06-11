@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { GridProvider, useGrid } from "./grid-context";
 import { WidgetContainer } from "./widget-container";
 import { WidgetRenderer } from "./widget-renderer";
-import { GRID_COLS, type GridLayout } from "./grid-engine";
+import { GRID_COLS, GRID_ROWS, type GridLayout } from "./grid-engine";
 import {
   PREDEFINED_LAYOUTS,
   WIDGET_CATALOG,
@@ -220,18 +220,18 @@ function GridArea({ data }: { data: WidgetData }) {
 
   const gridTemplate: React.CSSProperties = {
     gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
-    gridTemplateRows: "repeat(12, minmax(44px, 1fr))",
+    gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
   };
 
   return (
-    <div className="relative flex-1 overflow-auto p-2">
+    <div className="relative flex-1 overflow-hidden p-2">
       {/* Cell guide background (aligned, behind widgets) */}
       {editMode && (
         <div
           className="pointer-events-none absolute inset-2 grid gap-2"
           style={gridTemplate}
         >
-          {Array.from({ length: 144 }).map((_, i) => (
+          {Array.from({ length: GRID_COLS * GRID_ROWS }).map((_, i) => (
             <div
               key={i}
               className="rounded-md border border-dashed border-border/30"
@@ -243,7 +243,7 @@ function GridArea({ data }: { data: WidgetData }) {
       {/* Widget layer */}
       <div
         ref={gridRef}
-        className="relative grid min-h-full w-full gap-2"
+        className="relative grid h-full w-full gap-2"
         style={gridTemplate}
       >
         <AnimatePresence>

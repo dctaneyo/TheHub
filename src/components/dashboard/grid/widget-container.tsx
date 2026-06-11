@@ -69,6 +69,8 @@ export function WidgetContainer({
       const startX = e.clientX;
       const startY = e.clientY;
       const startPos = { ...widget.position };
+      let lastX = startPos.x;
+      let lastY = startPos.y;
       setDragging(true);
 
       const onMove = (ev: PointerEvent) => {
@@ -84,6 +86,11 @@ export function WidgetContainer({
           0,
           GRID_ROWS - height
         );
+        // Only commit when the target cell actually changes — avoids a
+        // setLayout (and full grid re-render) on every pointermove pixel.
+        if (nx === lastX && ny === lastY) return;
+        lastX = nx;
+        lastY = ny;
         moveWidget(widget.id, { x: nx, y: ny });
       };
       const onUp = () => {
@@ -121,7 +128,7 @@ export function WidgetContainer({
       </AnimatePresence>
 
       <motion.div
-        layout
+        layout={!dragging}
         style={gridStyle}
         className={cn(
           "group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
