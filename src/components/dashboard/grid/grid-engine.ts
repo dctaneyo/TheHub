@@ -62,6 +62,9 @@ export interface GridLayout {
   isCustom?: boolean;
 }
 
+// Identity of the single user-editable "Custom" layout slot.
+export const CUSTOM_LAYOUT_ID = "custom";
+
 // ---- Normalization / migration ----------------------------------------------
 
 const clamp = (v: number, min: number, max: number) =>
@@ -180,16 +183,30 @@ export function useGridLayout(initialLayout: GridLayout) {
   );
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
 
+  // Remember the user's custom arrangement so switching between a preset and
+  // Custom is non-destructive. Seeded from the initial layout if it was custom.
+  const customRef = useRef<GridLayout | null>(
+    initialLayout.isCustom ? normalizeLayout(initialLayout) : null
+  );
+
   // Keep internal layout in sync if the caller swaps the initial layout
   // (e.g. after loading a persisted layout asynchronously).
   const initialIdRef = useRef(initialLayout.id);
   useEffect(() => {
     if (initialLayout.id !== initialIdRef.current) {
       initialIdRef.current = initialLayout.id;
-      setLayout(normalizeLayout(initialLayout));
+      const next = normalizeLayout(initialLayout);
+      if (next.isCustom) customRef.current = next;
+      setLayout(next);
       setExpandedWidget(null);
     }
   }, [initialLayout]);
+
+  // Whenever the active layout is custom, remember it as the latest custom
+  // arrangement to restore when the user toggles back from a preset.
+  useEffect(() => {
+    if (layout.isCustom) customRef.current = layout;
+  }, [layout]);
 
   const markCustom = (l: GridLayout): GridLayout => ({
     ...l,
@@ -297,6 +314,27 @@ export function useGridLayout(initialLayout: GridLayout) {
     setExpandedWidget(null);
   }, []);
 
+  /** Switch to the single editable "Custom" layout. Restores the user's
+   *  remembered custom arrangement if there is one, otherwise seeds it from
+   *  the layout currently on screen. */
+  const selectCustom = useCallback(() => {
+    setLayout((prev) => {
+      if (prev.isCustom) return prev;
+      const base = customRef.current;
+      const seeded: GridLayout = base
+        ? { ...base }
+        : { ...prev, widgets: prev.widgets.map((w) => ({ ...w })) };
+      return {
+        ...seeded,
+        id: CUSTOM_LAYOUT_ID,
+        name: "Custom",
+        description: "Your personalized layout",
+        isCustom: true,
+      };
+    });
+    setExpandedWidget(null);
+  }, []);
+
   /** Gravity-compact: pull every widget as far up as it can go without
    *  overlapping, processing top-to-bottom. Columns (x) are preserved; only
    *  vertical gaps are removed. Triggered manually from the toolbar. */
@@ -338,6 +376,7 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
+      selectCustom,
       compact,
     }),
     [
@@ -349,6 +388,7 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
+      selectCustom,
       compact,
     ]
   );

@@ -25,6 +25,7 @@ interface GridContextValue {
   addWidget: (widget: Omit<Widget, "position">) => void;
   removeWidget: (id: string) => void;
   replaceLayout: (layout: GridLayout) => void;
+  selectCustom: () => void;
   compact: () => void;
 }
 

@@ -1,4 +1,5 @@
-export { GridDashboard } from "./grid-dashboard";
+export { GridControls, GridSurface } from "./grid-dashboard";
+export { GridProvider, useGrid } from "./grid-context";
 export {
   PREDEFINED_LAYOUTS,
   WIDGET_CATALOG,
@@ -10,6 +11,7 @@ export {
   GRID_ROWS,
   MIN_W,
   MIN_H,
+  CUSTOM_LAYOUT_ID,
   normalizeLayout,
   normalizeWidget,
   type Widget,

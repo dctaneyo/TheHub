@@ -10,7 +10,9 @@ import { ConnectionStatus } from "@/components/connection-status";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import type { TaskItem } from "@/components/dashboard/timeline";
 import {
-  GridDashboard,
+  GridProvider,
+  GridControls,
+  GridSurface,
   getPredefinedLayout,
   DEFAULT_LAYOUT_ID,
   type GridLayout,
@@ -32,6 +34,29 @@ function localParams() {
   const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const localDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
   return { localDate, localTime, query: `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}` };
+}
+
+// Live clock (updates every second, includes seconds). Isolated in its own
+// component so the 1s tick only re-renders the clock, not the whole page.
+function HeaderClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const time = now.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  return (
+    <span
+      className="font-mono text-sm font-semibold tabular-nums text-foreground"
+      aria-label="Current time"
+    >
+      {time}
+    </span>
+  );
 }
 
 export default function GridDashboardPage() {
@@ -251,56 +276,57 @@ export default function GridDashboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background">
-      {/* Lightweight header */}
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-black text-primary-foreground">H</span>
+    <GridProvider initialLayout={initialLayout}>
+      <div className="flex h-screen flex-col bg-background">
+        {/* Lightweight header */}
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+              <span className="text-sm font-black text-primary-foreground">H</span>
+            </div>
+            <div className="leading-tight">
+              <p className="text-sm font-bold text-foreground">Dashboard</p>
+              {user.name && (
+                <p className="text-[10px] text-muted-foreground">{user.name}</p>
+              )}
+            </div>
           </div>
-          <div className="leading-tight">
-            <p className="text-sm font-bold text-foreground">Dashboard</p>
-            {user.name && (
-              <p className="text-[10px] text-muted-foreground">{user.name}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {/* Connection status + session ID (kiosk-critical) */}
-          <ConnectionStatus />
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
-      </header>
 
-      {/* Grid */}
-      <div className="min-h-0 flex-1">
-        <GridDashboard
-          data={widgetData}
-          initialLayout={initialLayout}
-          onPersist={persistLayout}
+          <div className="flex items-center gap-3">
+            <HeaderClock />
+            <GridControls />
+            {/* Connection status + session ID (kiosk-critical) */}
+            <ConnectionStatus />
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Grid */}
+        <div className="min-h-0 flex-1">
+          <GridSurface data={widgetData} onPersist={persistLayout} />
+        </div>
+
+        {/* Overlays (existing components, unmodified) */}
+        <RestaurantChat
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          unreadCount={chatUnread}
+          onUnreadChange={setChatUnread}
+          currentUserId={user.id}
         />
-      </div>
+        {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
 
-      {/* Overlays (existing components, unmodified) */}
-      <RestaurantChat
-        isOpen={chatOpen}
-        onClose={() => setChatOpen(false)}
-        unreadCount={chatUnread}
-        onUnreadChange={setChatUnread}
-        currentUserId={user.id}
-      />
-      {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
-
-      <div className="fixed bottom-4 left-4 z-50">
-        <OfflineIndicator />
+        <div className="fixed bottom-4 left-4 z-50">
+          <OfflineIndicator />
+        </div>
       </div>
-    </div>
+    </GridProvider>
   );
 }
