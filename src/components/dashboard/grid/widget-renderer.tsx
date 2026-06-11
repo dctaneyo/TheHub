@@ -1,12 +1,13 @@
 "use client";
 
 import { memo } from "react";
-import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
-import { MessageCircle, FileText } from "@/lib/icons";
+import { FileText } from "@/lib/icons";
 import { StatsWidget } from "./stats-widget";
 import { GridTasksWidget } from "./grid-tasks";
+import { GridMessagesWidget } from "./grid-messages";
+import { GridUpcomingWidget } from "./grid-upcoming";
 import type { Widget } from "./grid-engine";
 import type { WidgetData } from "./widget-data";
 
@@ -15,13 +16,11 @@ function LauncherTile({
   icon: Icon,
   label,
   hint,
-  badge,
   onClick,
 }: {
-  icon: typeof MessageCircle;
+  icon: typeof FileText;
   label: string;
   hint: string;
-  badge?: number;
   onClick: () => void;
 }) {
   return (
@@ -32,11 +31,6 @@ function LauncherTile({
     >
       <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
         <Icon className="h-6 w-6 text-primary" />
-        {badge != null && badge > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-            {badge > 99 ? "99+" : badge}
-          </span>
-        )}
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">{label}</p>
@@ -63,7 +57,7 @@ export const WidgetRenderer = memo(function WidgetRenderer({
 
     case "calendar":
       return (
-        <MiniCalendar
+        <GridUpcomingWidget
           upcomingTasks={data.upcomingTasks}
           onEarlyComplete={data.onEarlyComplete}
         />
@@ -95,15 +89,7 @@ export const WidgetRenderer = memo(function WidgetRenderer({
       );
 
     case "messages":
-      return (
-        <LauncherTile
-          icon={MessageCircle}
-          label="Messages"
-          hint="Open chat"
-          badge={data.chatUnread}
-          onClick={data.onOpenChat}
-        />
-      );
+      return <GridMessagesWidget onOpen={data.onOpenChat} />;
 
     case "forms":
       return (

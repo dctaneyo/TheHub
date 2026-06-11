@@ -246,8 +246,16 @@ export function WidgetContainer({
           </button>
         )}
 
-        {/* Content */}
-        <div className="relative min-h-0 flex-1 overflow-auto">{children}</div>
+        {/* Content — non-interactive while editing so layout taps/drags don't
+            accidentally trigger actions inside the widget. */}
+        <div
+          className={cn(
+            "relative min-h-0 flex-1 overflow-auto",
+            editMode && !expanded && "pointer-events-none select-none"
+          )}
+        >
+          {children}
+        </div>
 
         {/* Resize handle (edit mode only, bottom-right corner) */}
         {editMode && !expanded && (
