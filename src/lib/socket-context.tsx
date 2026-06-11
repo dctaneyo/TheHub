@@ -72,18 +72,35 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     // We compare the server's build against the build THIS browser bundle was
     // compiled from (NEXT_PUBLIC_BUILD_ID, baked in at build time) — NOT against
     // "the first build:id we happened to receive". That distinction matters:
-    // reconnecting to a same-version server process (rolling deploys, replicas,
-    // crash-restarts) must NEVER trigger a reload. A reload is warranted only
-    // when the code running in the browser is genuinely older than the server.
+    // reconnecting to a same-version server process (replicas, crash-restarts)
+    // must NEVER trigger a reload. A reload is warranted only when the code
+    // running in the browser is genuinely older than the server.
     //
-    // To avoid flapping during a rolling deploy (where reconnects briefly bounce
-    // between old and new instances), we require the SAME differing build id to
-    // be reported on STABLE_THRESHOLD consecutive connects before reloading.
+    // build:id arrives once per connection, so we can't count "consecutive
+    // connects". Instead, when we see a build that differs from our bundle we
+    // start a short settle timer and reload when it elapses. If, during that
+    // window, we reconnect to an instance that matches our bundle (e.g. a
+    // rolling deploy still draining old instances), we cancel — preventing
+    // premature reloads mid-rollout.
     const clientBuildId = process.env.NEXT_PUBLIC_BUILD_ID;
-    const STABLE_THRESHOLD = 2;
-    let pendingBuildId: string | null = null;
-    let pendingCount = 0;
+    const SETTLE_MS = 4000;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
     let reloadScheduled = false;
+
+    const scheduleReload = (serverBuildId: string) => {
+      if (reloadScheduled) return;
+      // Guard against rapid repeated reloads (e.g. within 60s of last reload).
+      const lastReload = sessionStorage.getItem("hub-last-reload");
+      if (lastReload && Date.now() - Number(lastReload) < 60000) return;
+
+      reloadScheduled = true;
+      setCurrentBuild(clientBuildId ?? null);
+      setNewBuild(serverBuildId);
+      setUpdating(true);
+      sessionStorage.setItem("hub-last-reload", String(Date.now()));
+      // Brief delay so the splash animation is visible before reload.
+      setTimeout(() => window.location.reload(), 3500);
+    };
 
     s.on("build:id", ({ buildId }: { buildId: string }) => {
       // Ignore fallback/dev values — they don't represent real builds.
@@ -95,35 +112,22 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
       // Never auto-reload on the login page — it disrupts the login flow.
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/login")) return;
 
-      // Server matches the bundle we're running — fully up to date. Clear any
-      // pending mismatch (e.g. we reconnected back to a current instance).
+      // Server matches the bundle we're running — fully up to date. Cancel any
+      // pending settle (we reconnected back to a current instance).
       if (buildId === clientBuildId) {
-        pendingBuildId = null;
-        pendingCount = 0;
+        if (settleTimer) {
+          clearTimeout(settleTimer);
+          settleTimer = null;
+        }
         return;
       }
 
-      // Server reports a different build than our bundle. Require the same
-      // differing id across consecutive connects before committing to reload.
-      if (buildId === pendingBuildId) {
-        pendingCount += 1;
-      } else {
-        pendingBuildId = buildId;
-        pendingCount = 1;
-      }
-      if (pendingCount < STABLE_THRESHOLD) return;
-
-      // Guard against rapid repeated reloads (e.g. within 60s of last reload).
-      const lastReload = sessionStorage.getItem("hub-last-reload");
-      if (lastReload && Date.now() - Number(lastReload) < 60000) return;
-
-      reloadScheduled = true;
-      setCurrentBuild(clientBuildId);
-      setNewBuild(buildId);
-      setUpdating(true);
-      sessionStorage.setItem("hub-last-reload", String(Date.now()));
-      // Brief delay so the splash animation is visible before reload.
-      setTimeout(() => window.location.reload(), 3500);
+      // Server reports a different build than our bundle → settle, then reload.
+      if (settleTimer) return; // already waiting
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
+        scheduleReload(buildId);
+      }, SETTLE_MS);
     });
 
     s.on("disconnect", () => {
@@ -167,6 +171,7 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
 
     return () => {
       clearInterval(heartbeatInterval);
+      if (settleTimer) clearTimeout(settleTimer);
       s.disconnect();
       socketRef.current = null;
     };

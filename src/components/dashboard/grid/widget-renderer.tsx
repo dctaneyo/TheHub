@@ -1,45 +1,14 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
-import { Timeline } from "@/components/dashboard/timeline";
+import { memo } from "react";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { MessageCircle, FileText } from "@/lib/icons";
 import { StatsWidget } from "./stats-widget";
+import { GridTasksWidget } from "./grid-tasks";
 import type { Widget } from "./grid-engine";
 import type { WidgetData } from "./widget-data";
-
-function currentLocalTime(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(
-    now.getMinutes()
-  ).padStart(2, "0")}`;
-}
-
-// The clock lives inside the tasks widget so the 30s "now" tick only
-// re-renders the timeline — not every widget on the grid. (Previously
-// currentTime was part of the shared WidgetData, so each tick changed the
-// data object's identity and re-rendered all widgets.)
-const TasksWidget = memo(function TasksWidget({ data }: { data: WidgetData }) {
-  const [currentTime, setCurrentTime] = useState(currentLocalTime);
-
-  useEffect(() => {
-    const id = setInterval(() => setCurrentTime(currentLocalTime()), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <div className="h-full overflow-auto p-2">
-      <Timeline
-        tasks={data.tasks}
-        onComplete={data.onComplete}
-        onUncomplete={data.onUncomplete}
-        currentTime={currentTime}
-      />
-    </div>
-  );
-});
 
 /** Full-bleed launcher tile for components that open as their own overlay. */
 function LauncherTile({
@@ -90,7 +59,7 @@ export const WidgetRenderer = memo(function WidgetRenderer({
 }) {
   switch (widget.type) {
     case "tasks":
-      return <TasksWidget data={data} />;
+      return <GridTasksWidget tasks={data.tasks} onComplete={data.onComplete} />;
 
     case "calendar":
       return (

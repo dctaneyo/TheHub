@@ -187,22 +187,18 @@ export function WidgetContainer({
           editMode && !active && !expanded && "ring-1 ring-primary/20"
         )}
       >
-        {/* Header */}
-        <div
-          className={cn(
-            "flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3",
-            editMode && !expanded && "cursor-grab active:cursor-grabbing"
-          )}
-          onPointerDown={editMode && !expanded ? handleMovePointerDown : undefined}
-        >
-          <div className="flex items-center gap-2 overflow-hidden">
-            {editMode && !expanded && (
+        {/* Header — only while editing (drag handle / size / remove).
+            Removed in normal view for a cleaner, chrome-free tile. */}
+        {editMode && !expanded && (
+          <div
+            className="flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3 active:cursor-grabbing"
+            onPointerDown={handleMovePointerDown}
+          >
+            <div className="flex items-center gap-2 overflow-hidden">
               <Hand className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            )}
-            <span className="truncate text-xs font-semibold text-foreground">
-              {widget.title}
-            </span>
-            {editMode && !expanded && (
+              <span className="truncate text-xs font-semibold text-foreground">
+                {widget.title}
+              </span>
               <span
                 className={cn(
                   "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
@@ -213,37 +209,42 @@ export function WidgetContainer({
               >
                 {width}×{height}
               </span>
-            )}
-          </div>
+            </div>
 
-          <div className="flex items-center gap-0.5">
-            {/* Expand / collapse */}
             <button
               type="button"
-              onClick={() => toggleExpand(widget.id)}
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title={expanded ? "Collapse" : "Expand"}
+              onClick={() => removeWidget(widget.id)}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title="Remove"
             >
-              {expanded ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
+              <X className="h-3.5 w-3.5" />
             </button>
-
-            {/* Remove (edit mode only) */}
-            {editMode && !expanded && (
-              <button
-                type="button"
-                onClick={() => removeWidget(widget.id)}
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                title="Remove"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
-        </div>
+        )}
+
+        {/* Floating expand control — view mode only, revealed on hover */}
+        {!editMode && !expanded && (
+          <button
+            type="button"
+            onClick={() => toggleExpand(widget.id)}
+            className="absolute right-1.5 top-1.5 z-20 rounded-md bg-card/80 p-1 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity hover:text-foreground group-hover:opacity-100"
+            title="Expand"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+
+        {/* Floating collapse control — while expanded */}
+        {expanded && (
+          <button
+            type="button"
+            onClick={() => toggleExpand(widget.id)}
+            className="absolute right-3 top-3 z-20 rounded-md bg-muted/70 p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Collapse"
+          >
+            <Minimize2 className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Content */}
         <div className="relative min-h-0 flex-1 overflow-auto">{children}</div>
