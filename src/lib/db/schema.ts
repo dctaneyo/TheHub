@@ -35,6 +35,7 @@ export const locations = sqliteTable("locations", {
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   soundMuted: integer("sound_muted", { mode: "boolean" }).notNull().default(false),
   dashboardLayout: text("dashboard_layout").notNull().default("classic"),
+  gridLayout: text("grid_layout"), // JSON-serialized custom grid layout — null = use predefined
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -53,6 +54,7 @@ export const arls = sqliteTable("arls", {
   assignedLocationIds: text("assigned_location_ids"), // JSON array of location IDs — null = all locations
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   dashboardLayout: text("dashboard_layout").notNull().default("classic"),
+  gridLayout: text("grid_layout"), // JSON-serialized custom grid layout — null = use predefined
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
