@@ -10,7 +10,6 @@ import {
   useGridLayout,
   type GridLayout,
   type Widget,
-  type WidgetSize,
 } from "./grid-engine";
 
 interface GridContextValue {
@@ -21,11 +20,12 @@ interface GridContextValue {
   editMode: boolean;
   setEditMode: (v: boolean) => void;
   moveWidget: (id: string, position: { x: number; y: number }) => void;
-  resizeWidget: (id: string, size: WidgetSize) => void;
+  resizeWidget: (id: string, w: number, h: number) => void;
   toggleExpand: (id: string) => void;
   addWidget: (widget: Omit<Widget, "position">) => void;
   removeWidget: (id: string) => void;
   replaceLayout: (layout: GridLayout) => void;
+  compact: () => void;
 }
 
 const GridContext = createContext<GridContextValue | null>(null);

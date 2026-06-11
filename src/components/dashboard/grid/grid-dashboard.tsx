@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Check,
   ChevronDown,
+  Sparkles,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { GridProvider, useGrid } from "./grid-context";
@@ -36,6 +37,7 @@ function Toolbar({ onPersist }: { onPersist?: (layout: GridLayout) => void }) {
     setEditMode,
     addWidget,
     replaceLayout,
+    compact,
   } = useGrid();
 
   const [showLayouts, setShowLayouts] = useState(false);
@@ -157,7 +159,8 @@ function Toolbar({ onPersist }: { onPersist?: (layout: GridLayout) => void }) {
                             id: `${item.type}-${Date.now()}`,
                             type: item.type,
                             title: item.title,
-                            size: item.defaultSize,
+                            w: item.defaultW,
+                            h: item.defaultH,
                           });
                           setShowAdd(false);
                         }}
@@ -177,6 +180,19 @@ function Toolbar({ onPersist }: { onPersist?: (layout: GridLayout) => void }) {
               )}
             </AnimatePresence>
           </div>
+        )}
+
+        {/* Tidy up / compact (edit mode only) */}
+        {editMode && (
+          <button
+            type="button"
+            onClick={() => compact()}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+            title="Pull widgets up to close gaps"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Tidy up
+          </button>
         )}
 
         {/* Reset (edit mode only) */}

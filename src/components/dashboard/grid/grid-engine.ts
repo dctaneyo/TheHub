@@ -7,7 +7,13 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 export const GRID_COLS = 12;
 export const GRID_ROWS = 12;
 
-// Widget size presets (width x height in grid cells)
+// Minimum widget footprint (in grid cells). Widgets can be resized freely
+// between this minimum and the full grid, in single-cell increments.
+export const MIN_W = 2;
+export const MIN_H = 2;
+
+// Legacy preset table — kept ONLY to migrate older persisted layouts that
+// stored a `size` string (e.g. "4x6") instead of explicit w/h numbers.
 export const WIDGET_SIZES = {
   "2x2": { width: 2, height: 2 },
   "3x3": { width: 3, height: 3 },
@@ -42,7 +48,9 @@ export interface Widget {
   id: string;
   type: WidgetType;
   title: string;
-  size: WidgetSize;
+  // Free-form footprint in grid cells (no longer constrained to presets).
+  w: number;
+  h: number;
   position: { x: number; y: number };
 }
 
@@ -54,6 +62,50 @@ export interface GridLayout {
   isCustom?: boolean;
 }
 
+// ---- Normalization / migration ----------------------------------------------
+
+const clamp = (v: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, v));
+
+/** Accept a widget that may use the legacy `size` string and return one with
+ *  explicit numeric w/h, clamped to the grid. Safe to call on new-format
+ *  widgets too. */
+export function normalizeWidget(raw: unknown): Widget {
+  const w = raw as Partial<Widget> & { size?: string };
+  let width = typeof w.w === "number" ? w.w : NaN;
+  let height = typeof w.h === "number" ? w.h : NaN;
+
+  if ((Number.isNaN(width) || Number.isNaN(height)) && w.size) {
+    const dims = WIDGET_SIZES[w.size as WidgetSize];
+    if (dims) {
+      width = dims.width;
+      height = dims.height;
+    }
+  }
+  if (Number.isNaN(width)) width = 4;
+  if (Number.isNaN(height)) height = 3;
+
+  const x = clamp(w.position?.x ?? 0, 0, GRID_COLS - 1);
+  const y = clamp(w.position?.y ?? 0, 0, GRID_ROWS - 1);
+
+  return {
+    id: String(w.id),
+    type: w.type as WidgetType,
+    title: String(w.title ?? ""),
+    w: clamp(width, MIN_W, GRID_COLS),
+    h: clamp(height, MIN_H, GRID_ROWS),
+    position: { x, y },
+  };
+}
+
+/** Normalize an entire layout (migrating legacy widgets in the process). */
+export function normalizeLayout(layout: GridLayout): GridLayout {
+  return {
+    ...layout,
+    widgets: (layout.widgets ?? []).map(normalizeWidget),
+  };
+}
+
 // ---- Collision helpers ------------------------------------------------------
 
 interface Bounds {
@@ -63,13 +115,12 @@ interface Bounds {
   bottom: number;
 }
 
-function boundsOf(widget: Pick<Widget, "position" | "size">): Bounds {
-  const { width, height } = WIDGET_SIZES[widget.size];
+function boundsOf(widget: Pick<Widget, "position" | "w" | "h">): Bounds {
   return {
     left: widget.position.x,
     top: widget.position.y,
-    right: widget.position.x + width,
-    bottom: widget.position.y + height,
+    right: widget.position.x + widget.w,
+    bottom: widget.position.y + widget.h,
   };
 }
 
@@ -84,7 +135,7 @@ function overlaps(a: Bounds, b: Bounds): boolean {
 
 /** True if `candidate` collides with any widget except `excludeId`. */
 export function checkCollision(
-  candidate: Pick<Widget, "position" | "size">,
+  candidate: Pick<Widget, "position" | "w" | "h">,
   others: Widget[],
   excludeId?: string
 ): boolean {
@@ -92,30 +143,30 @@ export function checkCollision(
   return others.some((o) => o.id !== excludeId && overlaps(cb, boundsOf(o)));
 }
 
-/** True if a widget of `size` placed at (x,y) is on-grid and collision-free. */
+/** True if a widget of (w,h) placed at (x,y) is on-grid and collision-free. */
 export function fits(
-  size: WidgetSize,
+  w: number,
+  h: number,
   position: { x: number; y: number },
   others: Widget[],
   excludeId?: string
 ): boolean {
-  const { width, height } = WIDGET_SIZES[size];
   if (position.x < 0 || position.y < 0) return false;
-  if (position.x + width > GRID_COLS) return false;
-  if (position.y + height > GRID_ROWS) return false;
-  return !checkCollision({ position, size }, others, excludeId);
+  if (position.x + w > GRID_COLS) return false;
+  if (position.y + h > GRID_ROWS) return false;
+  return !checkCollision({ position, w, h }, others, excludeId);
 }
 
-/** Scan row-by-row for the first empty slot that fits `size`. */
+/** Scan row-by-row for the first empty slot that fits (w,h). */
 export function findEmptyPosition(
-  size: WidgetSize,
+  w: number,
+  h: number,
   widgets: Widget[],
   excludeId?: string
 ): { x: number; y: number } | null {
-  const { width, height } = WIDGET_SIZES[size];
-  for (let y = 0; y <= GRID_ROWS - height; y++) {
-    for (let x = 0; x <= GRID_COLS - width; x++) {
-      if (fits(size, { x, y }, widgets, excludeId)) return { x, y };
+  for (let y = 0; y <= GRID_ROWS - h; y++) {
+    for (let x = 0; x <= GRID_COLS - w; x++) {
+      if (fits(w, h, { x, y }, widgets, excludeId)) return { x, y };
     }
   }
   return null;
@@ -124,7 +175,9 @@ export function findEmptyPosition(
 // ---- Layout engine hook -----------------------------------------------------
 
 export function useGridLayout(initialLayout: GridLayout) {
-  const [layout, setLayout] = useState<GridLayout>(initialLayout);
+  const [layout, setLayout] = useState<GridLayout>(() =>
+    normalizeLayout(initialLayout)
+  );
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
 
   // Keep internal layout in sync if the caller swaps the initial layout
@@ -133,7 +186,7 @@ export function useGridLayout(initialLayout: GridLayout) {
   useEffect(() => {
     if (initialLayout.id !== initialIdRef.current) {
       initialIdRef.current = initialLayout.id;
-      setLayout(initialLayout);
+      setLayout(normalizeLayout(initialLayout));
       setExpandedWidget(null);
     }
   }, [initialLayout]);
@@ -149,7 +202,8 @@ export function useGridLayout(initialLayout: GridLayout) {
       setLayout((prev) => {
         const widget = prev.widgets.find((w) => w.id === widgetId);
         if (!widget) return prev;
-        if (!fits(widget.size, position, prev.widgets, widgetId)) return prev;
+        if (!fits(widget.w, widget.h, position, prev.widgets, widgetId))
+          return prev;
         return markCustom({
           ...prev,
           widgets: prev.widgets.map((w) =>
@@ -161,49 +215,72 @@ export function useGridLayout(initialLayout: GridLayout) {
     []
   );
 
-  const resizeWidget = useCallback((widgetId: string, size: WidgetSize) => {
-    setLayout((prev) => {
-      const widget = prev.widgets.find((w) => w.id === widgetId);
-      if (!widget) return prev;
+  /** Resize a widget to an arbitrary (w,h) footprint. The size is clamped to
+   *  the grid/minimum and only committed if it does not overlap a neighbour.
+   *  Anchor (top-left) position is preserved. */
+  const resizeWidget = useCallback(
+    (widgetId: string, w: number, h: number) => {
+      setLayout((prev) => {
+        const widget = prev.widgets.find((wd) => wd.id === widgetId);
+        if (!widget) return prev;
 
-      // Keep current position if the new size fits there.
-      if (fits(size, widget.position, prev.widgets, widgetId)) {
+        const maxW = GRID_COLS - widget.position.x;
+        const maxH = GRID_ROWS - widget.position.y;
+        const nextW = clamp(Math.round(w), MIN_W, maxW);
+        const nextH = clamp(Math.round(h), MIN_H, maxH);
+
+        if (nextW === widget.w && nextH === widget.h) return prev;
+        if (!fits(nextW, nextH, widget.position, prev.widgets, widgetId))
+          return prev;
+
         return markCustom({
           ...prev,
-          widgets: prev.widgets.map((w) =>
-            w.id === widgetId ? { ...w, size } : w
+          widgets: prev.widgets.map((wd) =>
+            wd.id === widgetId ? { ...wd, w: nextW, h: nextH } : wd
           ),
         });
-      }
-      // Otherwise relocate to the first slot that fits.
-      const pos = findEmptyPosition(
-        size,
-        prev.widgets.filter((w) => w.id !== widgetId)
-      );
-      if (!pos) return prev;
-      return markCustom({
-        ...prev,
-        widgets: prev.widgets.map((w) =>
-          w.id === widgetId ? { ...w, size, position: pos } : w
-        ),
       });
-    });
-  }, []);
+    },
+    []
+  );
 
   const toggleExpand = useCallback((widgetId: string) => {
     setExpandedWidget((prev) => (prev === widgetId ? null : widgetId));
   }, []);
 
-  const addWidget = useCallback((widget: Omit<Widget, "position">) => {
-    setLayout((prev) => {
-      const pos = findEmptyPosition(widget.size, prev.widgets);
-      if (!pos) return prev;
-      return markCustom({
-        ...prev,
-        widgets: [...prev.widgets, { ...widget, position: pos }],
+  const addWidget = useCallback(
+    (widget: Omit<Widget, "position">) => {
+      setLayout((prev) => {
+        // Try the requested footprint first; if it doesn't fit, try
+        // progressively smaller ones so the widget still lands somewhere.
+        const candidates: Array<{ w: number; h: number }> = [
+          { w: widget.w, h: widget.h },
+          { w: 6, h: 4 },
+          { w: 6, h: 3 },
+          { w: 4, h: 4 },
+          { w: 4, h: 3 },
+          { w: 3, h: 3 },
+          { w: MIN_W, h: MIN_H },
+        ];
+        for (const { w, h } of candidates) {
+          const cw = clamp(w, MIN_W, GRID_COLS);
+          const ch = clamp(h, MIN_H, GRID_ROWS);
+          const pos = findEmptyPosition(cw, ch, prev.widgets);
+          if (pos) {
+            return markCustom({
+              ...prev,
+              widgets: [
+                ...prev.widgets,
+                { ...widget, w: cw, h: ch, position: pos },
+              ],
+            });
+          }
+        }
+        return prev; // no space at all
       });
-    });
-  }, []);
+    },
+    []
+  );
 
   const removeWidget = useCallback((widgetId: string) => {
     setLayout((prev) =>
@@ -216,8 +293,37 @@ export function useGridLayout(initialLayout: GridLayout) {
   }, []);
 
   const replaceLayout = useCallback((next: GridLayout) => {
-    setLayout(next);
+    setLayout(normalizeLayout(next));
     setExpandedWidget(null);
+  }, []);
+
+  /** Gravity-compact: pull every widget as far up as it can go without
+   *  overlapping, processing top-to-bottom. Columns (x) are preserved; only
+   *  vertical gaps are removed. Triggered manually from the toolbar. */
+  const compact = useCallback(() => {
+    setLayout((prev) => {
+      const sorted = [...prev.widgets].sort(
+        (a, b) => a.position.y - b.position.y || a.position.x - b.position.x
+      );
+      const placed: Widget[] = [];
+      for (const w of sorted) {
+        let y = w.position.y;
+        while (
+          y > 0 &&
+          fits(w.w, w.h, { x: w.position.x, y: y - 1 }, placed, w.id)
+        ) {
+          y--;
+        }
+        placed.push({ ...w, position: { x: w.position.x, y } });
+      }
+      // No-op if nothing actually moved (avoid marking custom needlessly).
+      const changed = placed.some((p) => {
+        const orig = prev.widgets.find((o) => o.id === p.id);
+        return orig && orig.position.y !== p.position.y;
+      });
+      if (!changed) return prev;
+      return markCustom({ ...prev, widgets: placed });
+    });
   }, []);
 
   return useMemo(
@@ -232,6 +338,7 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
+      compact,
     }),
     [
       layout,
@@ -242,6 +349,7 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
+      compact,
     ]
   );
 }

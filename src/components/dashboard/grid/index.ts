@@ -6,12 +6,14 @@ export {
   getPredefinedLayout,
 } from "./layouts";
 export {
-  WIDGET_SIZES,
   GRID_COLS,
   GRID_ROWS,
+  MIN_W,
+  MIN_H,
+  normalizeLayout,
+  normalizeWidget,
   type Widget,
   type WidgetType,
-  type WidgetSize,
   type GridLayout,
 } from "./grid-engine";
 export type { WidgetData, UpcomingTask } from "./widget-data";

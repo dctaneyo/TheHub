@@ -1,35 +1,18 @@
 "use client";
 
-import { useState, useRef, useCallback, type RefObject } from "react";
+import { useState, useCallback, useRef, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Maximize2,
-  Minimize2,
-  X,
-  Hand,
-  Square,
-} from "@/lib/icons";
+import { Maximize2, Minimize2, X, Hand } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useGrid } from "./grid-context";
 import {
-  WIDGET_SIZES,
   GRID_COLS,
   GRID_ROWS,
+  MIN_W,
+  MIN_H,
+  fits,
   type Widget,
-  type WidgetSize,
 } from "./grid-engine";
-
-// Sizes offered in the per-widget resize menu.
-const RESIZE_OPTIONS: WidgetSize[] = [
-  "4x3",
-  "4x4",
-  "4x6",
-  "6x4",
-  "6x6",
-  "8x6",
-  "8x8",
-  "12x4",
-];
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
@@ -44,6 +27,7 @@ export function WidgetContainer({
   children: React.ReactNode;
 }) {
   const {
+    widgets,
     editMode,
     isExpanded,
     toggleExpand,
@@ -53,11 +37,18 @@ export function WidgetContainer({
   } = useGrid();
 
   const [dragging, setDragging] = useState(false);
-  const [showResize, setShowResize] = useState(false);
+  const [resizing, setResizing] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const expanded = isExpanded(widget.id);
-  const { width, height } = WIDGET_SIZES[widget.size];
+  const { w: width, h: height } = widget;
 
-  const handlePointerDown = useCallback(
+  // Latest widgets snapshot for collision checks inside pointer handlers
+  // (avoids stale closures while a drag/resize is in flight).
+  const widgetsRef = useRef(widgets);
+  widgetsRef.current = widgets;
+
+  // ---- Drag to move --------------------------------------------------------
+  const handleMovePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode || expanded || !gridRef.current) return;
       e.preventDefault();
@@ -86,15 +77,21 @@ export function WidgetContainer({
           0,
           GRID_ROWS - height
         );
-        // Only commit when the target cell actually changes — avoids a
-        // setLayout (and full grid re-render) on every pointermove pixel.
         if (nx === lastX && ny === lastY) return;
         lastX = nx;
         lastY = ny;
-        moveWidget(widget.id, { x: nx, y: ny });
+        // Show a blocked state instead of silently freezing when the target
+        // cell overlaps a neighbour.
+        if (fits(width, height, { x: nx, y: ny }, widgetsRef.current, widget.id)) {
+          setBlocked(false);
+          moveWidget(widget.id, { x: nx, y: ny });
+        } else {
+          setBlocked(true);
+        }
       };
       const onUp = () => {
         setDragging(false);
+        setBlocked(false);
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
       };
@@ -104,12 +101,61 @@ export function WidgetContainer({
     [editMode, expanded, gridRef, widget.id, widget.position, width, height, moveWidget]
   );
 
+  // ---- Drag corner to resize ----------------------------------------------
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode || expanded || !gridRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+
+      const rect = gridRef.current.getBoundingClientRect();
+      const cellW = rect.width / GRID_COLS;
+      const cellH = rect.height / GRID_ROWS;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = widget.w;
+      const startH = widget.h;
+      const maxW = GRID_COLS - widget.position.x;
+      const maxH = GRID_ROWS - widget.position.y;
+      let lastW = startW;
+      let lastH = startH;
+      setResizing(true);
+
+      const onMove = (ev: PointerEvent) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        const nw = clamp(startW + Math.round(dx / cellW), MIN_W, maxW);
+        const nh = clamp(startH + Math.round(dy / cellH), MIN_H, maxH);
+        if (nw === lastW && nh === lastH) return;
+        lastW = nw;
+        lastH = nh;
+        if (fits(nw, nh, widget.position, widgetsRef.current, widget.id)) {
+          setBlocked(false);
+          resizeWidget(widget.id, nw, nh);
+        } else {
+          setBlocked(true);
+        }
+      };
+      const onUp = () => {
+        setResizing(false);
+        setBlocked(false);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [editMode, expanded, gridRef, widget.id, widget.position, widget.w, widget.h, resizeWidget]
+  );
+
+  const active = dragging || resizing;
   const gridStyle: React.CSSProperties = expanded
     ? {}
     : {
         gridColumn: `${widget.position.x + 1} / span ${width}`,
         gridRow: `${widget.position.y + 1} / span ${height}`,
-        zIndex: dragging ? 40 : undefined,
+        zIndex: active ? 40 : undefined,
       };
 
   return (
@@ -128,14 +174,17 @@ export function WidgetContainer({
       </AnimatePresence>
 
       <motion.div
-        layout={!dragging}
+        layout={!active}
         style={gridStyle}
         className={cn(
-          "group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
-          dragging && "shadow-lg ring-2 ring-primary/40",
+          "group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm",
+          !active && "border-border",
+          active && "border-transparent",
+          active && !blocked && "shadow-lg ring-2 ring-primary/40",
+          active && blocked && "shadow-lg ring-2 ring-destructive",
           expanded &&
             "fixed inset-4 z-[151] rounded-3xl shadow-2xl md:inset-8",
-          editMode && !expanded && "ring-1 ring-primary/20"
+          editMode && !active && !expanded && "ring-1 ring-primary/20"
         )}
       >
         {/* Header */}
@@ -144,7 +193,7 @@ export function WidgetContainer({
             "flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3",
             editMode && !expanded && "cursor-grab active:cursor-grabbing"
           )}
-          onPointerDown={editMode && !expanded ? handlePointerDown : undefined}
+          onPointerDown={editMode && !expanded ? handleMovePointerDown : undefined}
         >
           <div className="flex items-center gap-2 overflow-hidden">
             {editMode && !expanded && (
@@ -153,52 +202,21 @@ export function WidgetContainer({
             <span className="truncate text-xs font-semibold text-foreground">
               {widget.title}
             </span>
+            {editMode && !expanded && (
+              <span
+                className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
+                  active && blocked
+                    ? "bg-destructive/15 text-destructive"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {width}×{height}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-0.5">
-            {/* Resize (edit mode only) */}
-            {editMode && !expanded && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowResize((v) => !v)}
-                  className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  title="Resize"
-                >
-                  <Square className="h-3.5 w-3.5" />
-                </button>
-                <AnimatePresence>
-                  {showResize && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      className="absolute right-0 top-full z-50 mt-1 grid w-40 grid-cols-2 gap-1 rounded-lg border border-border bg-card p-2 shadow-lg"
-                    >
-                      {RESIZE_OPTIONS.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => {
-                            resizeWidget(widget.id, s);
-                            setShowResize(false);
-                          }}
-                          className={cn(
-                            "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-                            s === widget.size
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted hover:bg-muted-foreground/20"
-                          )}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
             {/* Expand / collapse */}
             <button
               type="button"
@@ -229,6 +247,24 @@ export function WidgetContainer({
 
         {/* Content */}
         <div className="relative min-h-0 flex-1 overflow-auto">{children}</div>
+
+        {/* Resize handle (edit mode only, bottom-right corner) */}
+        {editMode && !expanded && (
+          <div
+            onPointerDown={handleResizePointerDown}
+            className="absolute bottom-0 right-0 z-20 flex h-5 w-5 cursor-nwse-resize items-end justify-end p-0.5"
+            title="Drag to resize"
+          >
+            <span
+              className={cn(
+                "block h-3 w-3 rounded-br-md border-b-2 border-r-2 transition-colors",
+                active && blocked
+                  ? "border-destructive"
+                  : "border-primary/60 group-hover:border-primary"
+              )}
+            />
+          </div>
+        )}
       </motion.div>
     </>
   );
