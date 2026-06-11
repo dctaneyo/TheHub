@@ -5,7 +5,7 @@ import { addDays, format, isSameDay } from "date-fns";
 import { CalendarDays, ChevronRight, CheckCircle2, Circle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
-interface UpcomingTask {
+export interface UpcomingTask {
   id: string;
   title: string;
   dueTime: string;

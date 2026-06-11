@@ -28,6 +28,14 @@ export interface TaskItem {
   isDueSoon: boolean;
 }
 
+export interface TasksResponse {
+  tasks: TaskItem[];
+  completedToday: number;
+  totalToday: number;
+  missedYesterday: TaskItem[];
+  pointsToday: number;
+}
+
 interface TimelineProps {
   tasks: TaskItem[];
   onComplete: (taskId: string) => void;
