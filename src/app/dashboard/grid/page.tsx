@@ -40,7 +40,6 @@ export default function GridDashboardPage() {
 
   const [data, setData] = useState<TasksResponse | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, UpcomingTask[]>>({});
-  const [currentTime, setCurrentTime] = useState(() => localParams().localTime);
   const [chatUnread, setChatUnread] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [formsOpen, setFormsOpen] = useState(false);
@@ -113,12 +112,6 @@ export default function GridDashboardPage() {
     fetchTasks();
     fetchChatUnread();
   }, [user, fetchTasks, fetchChatUnread]);
-
-  // Clock (drives the timeline "now" indicator)
-  useEffect(() => {
-    const id = setInterval(() => setCurrentTime(localParams().localTime), 30_000);
-    return () => clearInterval(id);
-  }, []);
 
   // Real-time refresh via socket (subscribed at top level — never inside an effect body as a hook)
   useEffect(() => {
@@ -224,7 +217,6 @@ export default function GridDashboardPage() {
     const tasks = data?.tasks ?? [];
     return {
       tasks,
-      currentTime,
       onComplete: handleComplete,
       onUncomplete: handleUncomplete,
       upcomingTasks,
@@ -240,7 +232,6 @@ export default function GridDashboardPage() {
     };
   }, [
     data,
-    currentTime,
     upcomingTasks,
     chatUnread,
     currentLocationId,

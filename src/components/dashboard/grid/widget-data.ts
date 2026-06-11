@@ -17,7 +17,6 @@ export interface UpcomingTask {
 export interface WidgetData {
   // tasks / timeline
   tasks: TaskItem[];
-  currentTime: string;
   onComplete: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
 
