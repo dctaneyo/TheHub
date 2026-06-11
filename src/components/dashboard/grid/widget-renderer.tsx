@@ -53,7 +53,13 @@ export const WidgetRenderer = memo(function WidgetRenderer({
 }) {
   switch (widget.type) {
     case "tasks":
-      return <GridTasksWidget tasks={data.tasks} onComplete={data.onComplete} />;
+      return (
+        <GridTasksWidget
+          tasks={data.tasks}
+          onComplete={data.onComplete}
+          onUncomplete={data.onUncomplete}
+        />
+      );
 
     case "calendar":
       return (

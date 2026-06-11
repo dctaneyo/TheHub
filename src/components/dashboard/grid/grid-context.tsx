@@ -3,9 +3,10 @@
 import {
   createContext,
   useContext,
-  useState,
+  useEffect,
   type ReactNode,
 } from "react";
+import { setReloadBlocked } from "@/lib/reload-guard";
 import {
   useGridLayout,
   type GridLayout,
@@ -42,12 +43,17 @@ export function GridProvider({
   initialLayout: GridLayout;
 }) {
   const engine = useGridLayout(initialLayout);
-  const [editMode, setEditMode] = useState(false);
+
+  // While the layout is being edited, block the build-update auto-reload so an
+  // unsaved customization is never wiped out. Any deferred reload runs once
+  // editing ends (Save/Cancel).
+  useEffect(() => {
+    setReloadBlocked(engine.editMode);
+    return () => setReloadBlocked(false);
+  }, [engine.editMode]);
 
   return (
-    <GridContext.Provider value={{ ...engine, editMode, setEditMode }}>
-      {children}
-    </GridContext.Provider>
+    <GridContext.Provider value={engine}>{children}</GridContext.Provider>
   );
 }
 

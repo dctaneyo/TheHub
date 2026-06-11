@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, CheckCircle2 } from "@/lib/icons";
+import { X, Check, CheckCircle2, Undo2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
@@ -82,9 +82,11 @@ function CompletionRing({
 export function GridTasksWidget({
   tasks,
   onComplete,
+  onUncomplete,
 }: {
   tasks: TaskItem[];
   onComplete: (taskId: string) => void;
+  onUncomplete: (taskId: string) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -240,10 +242,15 @@ export function GridTasksWidget({
                         {task.title}
                       </span>
                       {done ? (
-                        <CheckCircle2
-                          className="h-5 w-5 shrink-0"
-                          style={{ color: "var(--hub-green)" }}
-                        />
+                        <button
+                          type="button"
+                          onClick={() => onUncomplete(task.id)}
+                          title="Undo — mark as not complete"
+                          className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-[var(--hub-red)]/40 hover:text-[var(--hub-red)]"
+                        >
+                          <Undo2 className="h-3.5 w-3.5" />
+                          Undo
+                        </button>
                       ) : (
                         <button
                           type="button"

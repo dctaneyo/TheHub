@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { isReloadBlocked, deferReload } from "@/lib/reload-guard";
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -71,17 +72,18 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     //
     // We compare the server's build against the build THIS browser bundle was
     // compiled from (NEXT_PUBLIC_BUILD_ID, baked in at build time) — NOT against
-    // "the first build:id we happened to receive". That distinction matters:
-    // reconnecting to a same-version server process (replicas, crash-restarts)
-    // must NEVER trigger a reload. A reload is warranted only when the code
-    // running in the browser is genuinely older than the server.
+    // "the first build:id we happened to receive". Reconnecting to a same-version
+    // process (replicas, crash-restarts) must NEVER trigger a reload; a reload is
+    // only warranted when the running bundle is genuinely older than the server.
     //
-    // build:id arrives once per connection, so we can't count "consecutive
-    // connects". Instead, when we see a build that differs from our bundle we
-    // start a short settle timer and reload when it elapses. If, during that
-    // window, we reconnect to an instance that matches our bundle (e.g. a
-    // rolling deploy still draining old instances), we cancel — preventing
-    // premature reloads mid-rollout.
+    // Three safeguards prevent spurious / disruptive reloads:
+    //  1. Never reload while a reload is "blocked" (e.g. an unsaved layout edit
+    //     is in progress) — the reload is deferred until the block lifts.
+    //  2. A short settle timer; cancelled if we reconnect to a matching instance
+    //     (rolling deploys won't flap).
+    //  3. An "already attempted this build" guard: if we reloaded hoping to reach
+    //     a newer build but our bundle is STILL old afterwards (e.g. a stale
+    //     service-worker cache served the old JS), we stop — no reload loop.
     const clientBuildId = process.env.NEXT_PUBLIC_BUILD_ID;
     const SETTLE_MS = 4000;
     let settleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -89,17 +91,33 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
 
     const scheduleReload = (serverBuildId: string) => {
       if (reloadScheduled) return;
+
+      // Already tried to reach this exact build and we're still on the old
+      // bundle → reloading won't help (stale cache). Don't loop.
+      if (sessionStorage.getItem("hub-reload-target") === serverBuildId) return;
+
       // Guard against rapid repeated reloads (e.g. within 60s of last reload).
       const lastReload = sessionStorage.getItem("hub-last-reload");
       if (lastReload && Date.now() - Number(lastReload) < 60000) return;
 
-      reloadScheduled = true;
-      setCurrentBuild(clientBuildId ?? null);
-      setNewBuild(serverBuildId);
-      setUpdating(true);
-      sessionStorage.setItem("hub-last-reload", String(Date.now()));
-      // Brief delay so the splash animation is visible before reload.
-      setTimeout(() => window.location.reload(), 3500);
+      const doReload = () => {
+        if (reloadScheduled) return;
+        reloadScheduled = true;
+        setCurrentBuild(clientBuildId ?? null);
+        setNewBuild(serverBuildId);
+        setUpdating(true);
+        sessionStorage.setItem("hub-last-reload", String(Date.now()));
+        sessionStorage.setItem("hub-reload-target", serverBuildId);
+        // Brief delay so the splash animation is visible before reload.
+        setTimeout(() => window.location.reload(), 3500);
+      };
+
+      // Hold the reload if something (an unsaved edit) is currently protected.
+      if (isReloadBlocked()) {
+        deferReload(doReload);
+        return;
+      }
+      doReload();
     };
 
     s.on("build:id", ({ buildId }: { buildId: string }) => {
@@ -113,12 +131,13 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/login")) return;
 
       // Server matches the bundle we're running — fully up to date. Cancel any
-      // pending settle (we reconnected back to a current instance).
+      // pending settle and clear the attempted-target marker.
       if (buildId === clientBuildId) {
         if (settleTimer) {
           clearTimeout(settleTimer);
           settleTimer = null;
         }
+        sessionStorage.removeItem("hub-reload-target");
         return;
       }
 

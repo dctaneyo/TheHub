@@ -182,6 +182,11 @@ export function useGridLayout(initialLayout: GridLayout) {
     normalizeLayout(initialLayout)
   );
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const [editMode, setEditModeState] = useState(false);
+
+  // editMode mirrored in a ref so effects can read it without re-subscribing.
+  const editModeRef = useRef(editMode);
+  editModeRef.current = editMode;
 
   // Remember the user's custom arrangement so switching between a preset and
   // Custom is non-destructive. Seeded from the initial layout if it was custom.
@@ -196,9 +201,11 @@ export function useGridLayout(initialLayout: GridLayout) {
   const editSnapshotRef = useRef<GridLayout | null>(null);
 
   // Keep internal layout in sync if the caller swaps the initial layout
-  // (e.g. after loading a persisted layout asynchronously).
+  // (e.g. after loading a persisted layout asynchronously). NEVER do this while
+  // an edit is in progress — it would wipe the user's unsaved changes.
   const initialIdRef = useRef(initialLayout.id);
   useEffect(() => {
+    if (editModeRef.current) return;
     if (initialLayout.id !== initialIdRef.current) {
       initialIdRef.current = initialLayout.id;
       const next = normalizeLayout(initialLayout);
@@ -357,6 +364,10 @@ export function useGridLayout(initialLayout: GridLayout) {
     setExpandedWidget(null);
   }, []);
 
+  const setEditMode = useCallback((v: boolean) => {
+    setEditModeState(v);
+  }, []);
+
   /** Gravity-compact: pull every widget as far up as it can go without
    *  overlapping, processing top-to-bottom. Columns (x) are preserved; only
    *  vertical gaps are removed. Triggered manually from the toolbar. */
@@ -391,6 +402,8 @@ export function useGridLayout(initialLayout: GridLayout) {
       layout,
       widgets: layout.widgets,
       expandedWidget,
+      editMode,
+      setEditMode,
       isExpanded: (id: string) => expandedWidget === id,
       moveWidget,
       resizeWidget,
@@ -407,6 +420,8 @@ export function useGridLayout(initialLayout: GridLayout) {
     [
       layout,
       expandedWidget,
+      editMode,
+      setEditMode,
       moveWidget,
       resizeWidget,
       toggleExpand,
