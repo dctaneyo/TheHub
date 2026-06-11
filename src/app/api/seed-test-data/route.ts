@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users, locations, arls } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { locations, arls } from "@/lib/db/schema";
+import { hashSync } from "bcryptjs";
+import { v4 as uuid } from "uuid";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,53 +13,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid seed key" }, { status: 403 });
     }
 
-    // Create test location
-    const testLocation = await db.insert(locations).values({
+    // Create test location with 4-digit User ID and PIN
+    await db.insert(locations).values({
+      id: uuid(),
+      tenantId: "kazi",
       name: "Test Store",
       storeNumber: "TEST001",
-      address: "123 Test Street",
-      city: "Test City",
-      state: "TS",
-      zipCode: "12345",
+      userId: "1111", // 4-digit User ID
+      pinHash: hashSync("1111", 10), // 4-digit PIN hashed
       isActive: true,
-    }).returning();
-
-    // Create test ARL
-    const testArl = await db.insert(arls).values({
-      name: "Test ARL",
-      email: "arl@test.com",
-      phone: "555-0123",
-      region: "Test Region",
-      isActive: true,
-    }).returning();
-
-    // Create test location user
-    await db.insert(users).values({
-      userId: "test-location",
-      pin: "1234", // In production, this should be hashed
-      userType: "location",
-      name: "Test Location User",
-      storeNumber: "TEST001",
-      locationId: testLocation[0].id,
-      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
-    // Create test ARL user
-    await db.insert(users).values({
-      userId: "test-arl",
-      pin: "1234", // In production, this should be hashed
-      userType: "arl",
-      name: "Test ARL User",
-      arlId: testArl[0].id,
+    // Create test ARL with 4-digit User ID and PIN
+    await db.insert(arls).values({
+      id: uuid(),
+      tenantId: "kazi",
+      name: "Test ARL",
+      email: "arl@test.com",
+      userId: "2222", // 4-digit User ID
+      pinHash: hashSync("2222", 10), // 4-digit PIN hashed
       isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     return NextResponse.json({ 
       success: true,
       message: "Test data seeded successfully",
       users: [
-        { userId: "test-location", pin: "1234", type: "location" },
-        { userId: "test-arl", pin: "1234", type: "arl" }
+        { userId: "1111", pin: "1111", type: "location", name: "Test Store" },
+        { userId: "2222", pin: "2222", type: "arl", name: "Test ARL" }
       ]
     });
 
