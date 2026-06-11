@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSocket } from "@/lib/socket-context";
 import { Loader2, LogOut } from "@/lib/icons";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
+import { ConnectionStatus } from "@/components/connection-status";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import type { TaskItem } from "@/components/dashboard/timeline";
 import {
@@ -207,28 +208,48 @@ export default function GridDashboardPage() {
     }).catch(() => {});
   }, []);
 
-  // ---- Build widget data bundle -------------------------------------------
-  const tasks = data?.tasks ?? [];
-  const completedToday = tasks.filter((t) => t.isCompleted);
+  // Stable launcher callbacks so they don't change widgetData identity.
+  const openChat = useCallback(() => setChatOpen(true), []);
+  const openForms = useCallback(() => setFormsOpen(true), []);
+
   const currentLocationId =
     user?.userType === "location" ? user.locationId || user.id : undefined;
 
-  const widgetData: WidgetData = {
-    tasks,
+  // ---- Build widget data bundle -------------------------------------------
+  // Memoized so transient re-renders (e.g. socket connect/disconnect toggling
+  // the provider's context value) DON'T change the object identity. Without
+  // this, every reconnect rebuilt `widgetData`, defeated the memo() on the
+  // widgets, and re-rendered every widget body — which looked like a refresh.
+  const widgetData = useMemo<WidgetData>(() => {
+    const tasks = data?.tasks ?? [];
+    return {
+      tasks,
+      currentTime,
+      onComplete: handleComplete,
+      onUncomplete: handleUncomplete,
+      upcomingTasks,
+      onEarlyComplete: handleEarlyComplete,
+      completedToday: tasks.filter((t) => t.isCompleted),
+      missedYesterday: data?.missedYesterday ?? [],
+      pointsToday: data?.pointsToday ?? 0,
+      totalToday: data?.totalToday ?? 0,
+      currentLocationId,
+      chatUnread,
+      onOpenChat: openChat,
+      onOpenForms: openForms,
+    };
+  }, [
+    data,
     currentTime,
-    onComplete: handleComplete,
-    onUncomplete: handleUncomplete,
     upcomingTasks,
-    onEarlyComplete: handleEarlyComplete,
-    completedToday,
-    missedYesterday: data?.missedYesterday ?? [],
-    pointsToday: data?.pointsToday ?? 0,
-    totalToday: data?.totalToday ?? 0,
-    currentLocationId,
     chatUnread,
-    onOpenChat: () => setChatOpen(true),
-    onOpenForms: () => setFormsOpen(true),
-  };
+    currentLocationId,
+    handleComplete,
+    handleUncomplete,
+    handleEarlyComplete,
+    openChat,
+    openForms,
+  ]);
 
   if (!user || !initialLayout) {
     return (
@@ -253,14 +274,18 @@ export default function GridDashboardPage() {
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Connection status + session ID (kiosk-critical) */}
+          <ConnectionStatus />
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
       </header>
 
       {/* Grid */}
