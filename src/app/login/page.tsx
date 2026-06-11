@@ -203,6 +203,14 @@ export default function LoginPage() {
   const [remoteActivating, setRemoteActivating] = useState(false);
   const [pinged, setPinged] = useState(false);
 
+  // Track the latest pendingId in a ref so generateSession can cancel the
+  // previous pending session without depending on pendingId (which would
+  // recreate the callback and re-trigger the mount effect in a loop).
+  const pendingIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    pendingIdRef.current = pendingId;
+  }, [pendingId]);
+
   const [refreshing, setRefreshing] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   const [selfPinged, setSelfPinged] = useState(false);
@@ -218,11 +226,12 @@ export default function LoginPage() {
     setRefreshing(true);
     try {
       // Cancel the old pending session so it disappears from ARL Hub
-      if (pendingId) {
+      const prevId = pendingIdRef.current;
+      if (prevId) {
         fetch("/api/session/pending", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: pendingId }),
+          body: JSON.stringify({ id: prevId }),
         }).catch(() => {});
       }
       const r = await fetch("/api/session/pending", { method: "POST" });
@@ -233,7 +242,7 @@ export default function LoginPage() {
       }
     } catch {}
     setRefreshing(false);
-  }, [pendingId]);
+  }, []);
 
   // Generate pending session on mount
   useEffect(() => {
