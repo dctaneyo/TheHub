@@ -23,6 +23,7 @@ export interface WidgetData {
   // calendar
   upcomingTasks: Record<string, UpcomingTask[]>;
   onEarlyComplete: (taskId: string, dateStr: string) => void;
+  onEarlyUncomplete: (taskId: string, dateStr: string) => void;
 
   // completed / missed / stats
   completedToday: TaskItem[];

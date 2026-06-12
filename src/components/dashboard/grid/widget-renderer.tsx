@@ -66,6 +66,7 @@ export const WidgetRenderer = memo(function WidgetRenderer({
         <GridUpcomingWidget
           upcomingTasks={data.upcomingTasks}
           onEarlyComplete={data.onEarlyComplete}
+          onEarlyUncomplete={data.onEarlyUncomplete}
         />
       );
 

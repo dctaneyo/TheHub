@@ -39,9 +39,11 @@ interface FlatItem {
 export function GridUpcomingWidget({
   upcomingTasks = {},
   onEarlyComplete,
+  onEarlyUncomplete,
 }: {
   upcomingTasks?: Record<string, UpcomingTask[]>;
   onEarlyComplete?: (taskId: string, dateStr: string) => void;
+  onEarlyUncomplete?: (taskId: string, dateStr: string) => void;
 }) {
   const [completing, setCompleting] = useState<string | null>(null);
 
@@ -112,13 +114,19 @@ export function GridUpcomingWidget({
                 <button
                   type="button"
                   onClick={() =>
-                    !task.isCompleted && handleEarlyComplete(task.id, dateStr)
+                    task.isCompleted
+                      ? onEarlyUncomplete?.(task.id, dateStr)
+                      : handleEarlyComplete(task.id, dateStr)
                   }
-                  className="shrink-0"
-                  title={task.isCompleted ? "Completed early" : "Complete early"}
+                  className="group/cb shrink-0"
+                  title={
+                    task.isCompleted
+                      ? "Undo — mark as not complete"
+                      : "Complete early"
+                  }
                 >
                   {task.isCompleted ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 transition-colors group-hover/cb:text-[var(--hub-red)]" />
                   ) : (
                     <Circle
                       className={cn(

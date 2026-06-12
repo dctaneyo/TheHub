@@ -225,6 +225,22 @@ export default function GridDashboardPage() {
     [fetchTasks]
   );
 
+  const handleEarlyUncomplete = useCallback(
+    async (taskId: string, dateStr: string) => {
+      try {
+        await fetch("/api/tasks/uncomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId, localDate: dateStr }),
+        });
+        await fetchTasks();
+      } catch (err) {
+        console.error("Failed to early-uncomplete task:", err);
+      }
+    },
+    [fetchTasks]
+  );
+
   // ---- Save layout (explicit, on demand) -----------------------------------
   // No auto-save: the user commits with the Save button. We tag the request
   // with this device's id so the server's broadcast back to the location's
@@ -261,6 +277,7 @@ export default function GridDashboardPage() {
       onUncomplete: handleUncomplete,
       upcomingTasks,
       onEarlyComplete: handleEarlyComplete,
+      onEarlyUncomplete: handleEarlyUncomplete,
       completedToday: tasks.filter((t) => t.isCompleted),
       missedYesterday: data?.missedYesterday ?? [],
       pointsToday: data?.pointsToday ?? 0,
@@ -278,6 +295,7 @@ export default function GridDashboardPage() {
     handleComplete,
     handleUncomplete,
     handleEarlyComplete,
+    handleEarlyUncomplete,
     openChat,
     openForms,
   ]);
