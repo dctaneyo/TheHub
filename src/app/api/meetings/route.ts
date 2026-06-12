@@ -47,13 +47,19 @@ export async function POST(req: NextRequest) {
     if (denied) return denied;
 
     const {
-      title, description, password, scheduledAt,
+      title, description, password, scheduledAt, timezone,
       durationMinutes, isRecurring, recurringType,
       recurringDays, allowGuests,
     } = await req.json();
 
     if (!title || !scheduledAt) {
       return ApiErrors.badRequest("Title and scheduled time are required");
+    }
+
+    // Validate timezone if provided.
+    if (timezone) {
+      try { Intl.DateTimeFormat(undefined, { timeZone: timezone }); }
+      catch { return ApiErrors.badRequest("Invalid timezone"); }
     }
 
     // Generate unique 6-char meeting code
@@ -72,12 +78,12 @@ export async function POST(req: NextRequest) {
     sqlite.prepare(`
       INSERT INTO scheduled_meetings (
         id, meeting_code, title, description, password, host_id, host_name,
-        scheduled_at, duration_minutes, is_recurring, recurring_type,
+        scheduled_at, timezone, duration_minutes, is_recurring, recurring_type,
         recurring_days, allow_guests, is_active, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
     `).run(
       id, meetingCode, title, description || null, password || null,
-      session.id, session.name, scheduledAt,
+      session.id, session.name, scheduledAt, timezone || null,
       durationMinutes || 60, isRecurring ? 1 : 0,
       recurringType || null, recurringDays ? JSON.stringify(recurringDays) : null,
       allowGuests ? 1 : 0, now, now
@@ -118,6 +124,7 @@ export async function PATCH(req: NextRequest) {
     if (updates.description !== undefined) { fields.push("description = ?"); values.push(updates.description); }
     if (updates.password !== undefined) { fields.push("password = ?"); values.push(updates.password || null); }
     if (updates.scheduledAt !== undefined) { fields.push("scheduled_at = ?"); values.push(updates.scheduledAt); }
+    if (updates.timezone !== undefined) { fields.push("timezone = ?"); values.push(updates.timezone || null); }
     if (updates.durationMinutes !== undefined) { fields.push("duration_minutes = ?"); values.push(updates.durationMinutes); }
     if (updates.isRecurring !== undefined) { fields.push("is_recurring = ?"); values.push(updates.isRecurring ? 1 : 0); }
     if (updates.recurringType !== undefined) { fields.push("recurring_type = ?"); values.push(updates.recurringType); }

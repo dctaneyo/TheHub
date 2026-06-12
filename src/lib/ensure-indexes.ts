@@ -10,6 +10,7 @@ export function ensureIndexes() {
   const patches = [
     `ALTER TABLE tenants ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Pacific/Honolulu'`,
     `ALTER TABLE locations ADD COLUMN timezone TEXT`,
+    `ALTER TABLE scheduled_meetings ADD COLUMN timezone TEXT`,
   ];
 
   for (const sql of patches) {

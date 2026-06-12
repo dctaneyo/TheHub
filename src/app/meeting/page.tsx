@@ -11,6 +11,11 @@ import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-ro
 import { SocketProvider, useSocket } from "@/lib/socket-context";
 import { AuthContext } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  getBrowserTimeZone,
+  formatTimeInZone,
+  tzAbbrev,
+} from "@/lib/tz-format";
 
 interface MeetingInfo {
   id: string;
@@ -19,6 +24,7 @@ interface MeetingInfo {
   hostName: string;
   hostId: string;
   scheduledAt: string;
+  timezone?: string | null;
   durationMinutes: number;
   hasPassword: boolean;
   isLive?: boolean;
@@ -519,6 +525,9 @@ function GuestMeetingPageWithParams() {
     (!meetingLookup.hasPassword || password.trim().length > 0 || !!inviteToken);
   const guestAllowed = !!inviteToken || !!meetingLookup?.allowGuests;
 
+  // The viewer's local timezone — used to show meeting times in their own time.
+  const viewerTz = getBrowserTimeZone();
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
       <div className="absolute right-3 top-3 z-50">
@@ -550,8 +559,15 @@ function GuestMeetingPageWithParams() {
                     <p className="text-sm text-muted-foreground mb-1">Meeting starts in</p>
                     <p className="text-3xl font-bold font-mono text-foreground tracking-wide">{countdown}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Scheduled for {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      Starts at {formatTimeInZone(meetingInfo.scheduledAt, viewerTz)} (your time)
                     </p>
+                    {meetingInfo.timezone &&
+                      tzAbbrev(meetingInfo.scheduledAt, meetingInfo.timezone) !==
+                        tzAbbrev(meetingInfo.scheduledAt, viewerTz) && (
+                        <p className="text-[11px] text-muted-foreground/70">
+                          {formatTimeInZone(meetingInfo.scheduledAt, meetingInfo.timezone)} (host&apos;s time)
+                        </p>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/40 rounded-lg p-3">
@@ -626,8 +642,15 @@ function GuestMeetingPageWithParams() {
                   <div className="bg-muted rounded-xl p-3 text-center">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
                     <p className="text-sm font-medium text-foreground">
-                      {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      {formatTimeInZone(meetingInfo.scheduledAt, viewerTz)} (your time)
                     </p>
+                    {meetingInfo.timezone &&
+                      tzAbbrev(meetingInfo.scheduledAt, meetingInfo.timezone) !==
+                        tzAbbrev(meetingInfo.scheduledAt, viewerTz) && (
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {formatTimeInZone(meetingInfo.scheduledAt, meetingInfo.timezone)} (host&apos;s time)
+                        </p>
+                      )}
                   </div>
 
                   <button

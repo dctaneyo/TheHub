@@ -13,6 +13,14 @@ import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
+import {
+  getBrowserTimeZone,
+  getTimeZoneList,
+  timeZoneLabel,
+  zonedWallTimeToUtcISO,
+  formatDateTimeInZone,
+  formatTimeInZone,
+} from "@/lib/tz-format";
 
 interface ScheduledMeeting {
   id: string;
@@ -23,6 +31,7 @@ interface ScheduledMeeting {
   host_id: string;
   host_name: string;
   scheduled_at: string;
+  timezone: string | null;
   duration_minutes: number;
   is_recurring: number;
   recurring_type: string | null;
@@ -60,6 +69,10 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   const [password, setPassword] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
+  const [timezone, setTimezone] = useState<string>(() => getBrowserTimeZone());
+  const tzOptions = useRef<{ value: string; label: string }[]>(
+    getTimeZoneList().map((tz) => ({ value: tz, label: timeZoneLabel(tz) }))
+  );
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringType, setRecurringType] = useState<string>("weekly");
@@ -100,6 +113,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   const resetForm = () => {
     setTitle(""); setDescription(""); setPassword("");
     setScheduledDate(""); setScheduledTime("");
+    setTimezone(getBrowserTimeZone());
     setDurationMinutes(60); setIsRecurring(false);
     setRecurringType("weekly"); setRecurringDays([]);
     setAllowGuests(true);
@@ -109,7 +123,9 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
     if (!title.trim() || !scheduledDate || !scheduledTime) return;
     setCreating(true);
     try {
-      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
+      // Interpret the entered date/time in the SELECTED timezone (not the
+      // organizer's browser tz) so the stored instant is correct for everyone.
+      const scheduledAt = zonedWallTimeToUtcISO(scheduledDate, scheduledTime, timezone);
       const res = await fetch("/api/meetings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,6 +134,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           description: description.trim() || undefined,
           password: password.trim() || undefined,
           scheduledAt,
+          timezone,
           durationMinutes,
           isRecurring,
           recurringType: isRecurring ? recurringType : undefined,
@@ -298,6 +315,25 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                 </div>
               </div>
 
+              {/* Timezone */}
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Timezone</label>
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
+                >
+                  {tzOptions.current.map((tz) => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
+                {scheduledDate && scheduledTime && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Starts {formatDateTimeInZone(zonedWallTimeToUtcISO(scheduledDate, scheduledTime, timezone), timezone)}
+                  </p>
+                )}
+              </div>
+
               {/* Recurring */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -412,7 +448,9 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {scheduledDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                        {m.timezone
+                          ? formatTimeInZone(m.scheduled_at, m.timezone)
+                          : scheduledDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
                         {" "}({m.duration_minutes}min)
                       </span>
                       {m.allow_guests ? (

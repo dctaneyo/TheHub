@@ -548,6 +548,11 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_meeting_invites_code ON meeting_invites(meeting_code)`);
   });
 
+  // ── Scheduled meeting timezone (IANA tz the meeting time was set in) ──
+  migrate("050_meeting_timezone", () => {
+    try { s.exec(`ALTER TABLE scheduled_meetings ADD COLUMN timezone TEXT`); } catch {}
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }
