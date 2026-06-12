@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, schema, sqlite } from "@/lib/db";
+import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { compareSync } from "bcryptjs";
 import { signToken, getTokenExpiry, type AuthPayload } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
 import { broadcastSessionUpdated } from "@/lib/socket-emit";
-import { findActiveMeetingByCode } from "@/lib/socket-server";
+import { resolveTenantFromMeetingCode } from "@/lib/meeting-tenant";
 import { checkRateLimit, resetRateLimit, getClientIP } from "@/lib/rate-limiter";
 import { validate, loginSchema } from "@/lib/validations";
 import { ApiErrors } from "@/lib/api-response";
@@ -50,28 +50,7 @@ export async function POST(req: NextRequest) {
     // tenant IS the organization. This lets restaurants/ARLs log in from the join
     // page without separately selecting their org.
     if (!tenantId) {
-      const meetingCode =
-        typeof body?.meetingCode === "string" ? body.meetingCode.toUpperCase().trim() : "";
-      if (meetingCode) {
-        let hostId: string | null = null;
-        const scheduled = sqlite
-          .prepare("SELECT host_id FROM scheduled_meetings WHERE meeting_code = ? AND is_active = 1")
-          .get(meetingCode) as { host_id?: string } | undefined;
-        if (scheduled?.host_id) {
-          hostId = scheduled.host_id;
-        } else {
-          const active = findActiveMeetingByCode(meetingCode);
-          if (active?.hostId) hostId = active.hostId;
-        }
-        if (hostId) {
-          const host = db
-            .select({ tenantId: schema.arls.tenantId })
-            .from(schema.arls)
-            .where(eq(schema.arls.id, hostId))
-            .get();
-          if (host?.tenantId) tenantId = host.tenantId;
-        }
-      }
+      tenantId = resolveTenantFromMeetingCode(body?.meetingCode);
     }
 
     if (!tenantId) {

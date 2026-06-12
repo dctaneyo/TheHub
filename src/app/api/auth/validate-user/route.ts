@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { resolveTenantFromMeetingCode } from "@/lib/meeting-tenant";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 // Public endpoint – no auth required. Returns only the display name (no PIN hash).
@@ -14,14 +15,26 @@ export async function POST(req: NextRequest) {
       return ApiErrors.tooManyRequests(60);
     }
 
-    const { userId } = await req.json();
+    const body = await req.json();
+    const { userId } = body;
     if (!userId || userId.length !== 4) {
       return ApiErrors.badRequest("Invalid User ID");
     }
 
-    const tenantId = req.headers.get("x-tenant-id");
+    // Resolve org from the middleware header, or fall back to the meeting code
+    // (join page has no org context — the meeting's host ARL defines the org).
+    let tenantId = req.headers.get("x-tenant-id");
     if (!tenantId) {
-      return ApiErrors.badRequest("Organization context required");
+      tenantId = resolveTenantFromMeetingCode(body?.meetingCode);
+    }
+    if (!tenantId) {
+      const triedMeetingCode =
+        typeof body?.meetingCode === "string" && body.meetingCode.trim().length > 0;
+      return ApiErrors.badRequest(
+        triedMeetingCode
+          ? "We couldn't find that meeting. Double-check the meeting code and try again."
+          : "Organization context required"
+      );
     }
 
     const location = db.select().from(schema.locations)
