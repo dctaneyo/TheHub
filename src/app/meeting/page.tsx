@@ -249,7 +249,7 @@ function GuestMeetingPageWithParams() {
             const res = await fetch("/api/auth/login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId, pin: newVal }),
+              body: JSON.stringify({ userId, pin: newVal, meetingCode: meetingCode.trim().toUpperCase() }),
             });
 
             const data = await res.json();
