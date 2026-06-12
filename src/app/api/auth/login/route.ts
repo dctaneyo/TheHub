@@ -75,6 +75,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (!tenantId) {
+      // If a meeting code was supplied but we still couldn't resolve an org from
+      // it, the code is the likely problem — give a clear, actionable message.
+      const triedMeetingCode =
+        typeof body?.meetingCode === "string" && body.meetingCode.trim().length > 0;
+      if (triedMeetingCode) {
+        return ApiErrors.badRequest(
+          "We couldn't find that meeting. Double-check the meeting code and try again."
+        );
+      }
       return ApiErrors.badRequest("Organization context required");
     }
 

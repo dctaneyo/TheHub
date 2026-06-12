@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
+import { setReloadBlocked } from "@/lib/reload-guard";
 import {
   LiveKitRoom,
   useParticipants,
@@ -56,6 +57,13 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
 
   const hasVideoCapability = user?.userType === "arl" || user?.userType === "guest";
   const { socket } = useSocket();
+
+  // Block the build-update auto-reload while in a live meeting — a reload would
+  // drop the user out of the call. Any pending update reload runs on leave.
+  useEffect(() => {
+    setReloadBlocked(true);
+    return () => setReloadBlocked(false);
+  }, []);
 
   // Emit meeting:create when host starts meeting via URL
   useEffect(() => {
