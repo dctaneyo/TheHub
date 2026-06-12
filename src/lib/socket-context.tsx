@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { isReloadBlocked, deferReload } from "@/lib/reload-guard";
+import { recordReload, logStartupDiagnostics } from "@/lib/reload-diagnostics";
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -46,6 +47,10 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    // One-time startup diagnostic — reports navigation type + reload breadcrumbs
+    // (helps identify reloads, since a full reload clears the console).
+    logStartupDiagnostics();
+
     // Build auth payload — include guest info if provided
     const auth: Record<string, string> = {};
     if (guestName) auth.guestName = guestName;
@@ -108,6 +113,10 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
         setUpdating(true);
         sessionStorage.setItem("hub-last-reload", String(Date.now()));
         sessionStorage.setItem("hub-reload-target", serverBuildId);
+        recordReload(`build-update ${clientBuildId} -> ${serverBuildId}`);
+        console.warn(
+          `[Hub] build update detected (running ${clientBuildId}, server ${serverBuildId}) — reloading in 3.5s`
+        );
         // Brief delay so the splash animation is visible before reload.
         setTimeout(() => window.location.reload(), 3500);
       };
@@ -161,6 +170,7 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     s.on("session:force-logout", () => {
       // Already on login — nothing to do
       if (window.location.pathname.startsWith("/login")) return;
+      recordReload("session:force-logout");
       fetch("/api/auth/logout", { method: "POST" }).finally(() => {
         window.location.href = "/login";
       });
@@ -169,6 +179,7 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     s.on("session:force-redirect", async (data: { token: string; redirectTo: string }) => {
       // Don't redirect away from login unless explicitly going somewhere else
       if (window.location.pathname.startsWith("/login") && data.redirectTo === "/login") return;
+      recordReload(`session:force-redirect ${data.redirectTo}`);
       try {
         await fetch("/api/auth/force-apply", {
           method: "POST",

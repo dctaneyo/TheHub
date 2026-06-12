@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { recordReload } from "@/lib/reload-diagnostics";
 
 export interface User {
   id: string;
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
       setUser(null);
+      recordReload("auth logout");
       window.location.href = "/login";
     }
   };

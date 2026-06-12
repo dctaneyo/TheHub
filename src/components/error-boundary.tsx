@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { recordReload } from "@/lib/reload-diagnostics";
 
 interface Props {
   children: React.ReactNode;
@@ -48,6 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   handleReload = () => {
+    recordReload("error-boundary manual reload");
     window.location.reload();
   };
 
