@@ -68,6 +68,7 @@ export default function GridDashboardPage() {
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, UpcomingTask[]>>({});
   const [chatUnread, setChatUnread] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatThreadId, setChatThreadId] = useState<string | null>(null);
   const [formsOpen, setFormsOpen] = useState(false);
 
   const [initialLayout, setInitialLayout] = useState<GridLayout | null>(null);
@@ -258,7 +259,11 @@ export default function GridDashboardPage() {
   }, []);
 
   // Stable launcher callbacks so they don't change widgetData identity.
-  const openChat = useCallback(() => setChatOpen(true), []);
+  // Opening from a conversation row jumps straight into that thread (fullscreen).
+  const openChat = useCallback((conversationId?: string) => {
+    setChatThreadId(conversationId ?? null);
+    setChatOpen(true);
+  }, []);
   const openForms = useCallback(() => setFormsOpen(true), []);
 
   const currentLocationId =
@@ -350,10 +355,15 @@ export default function GridDashboardPage() {
         {/* Overlays (existing components, unmodified) */}
         <RestaurantChat
           isOpen={chatOpen}
-          onClose={() => setChatOpen(false)}
+          onClose={() => {
+            setChatOpen(false);
+            setChatThreadId(null);
+          }}
           unreadCount={chatUnread}
           onUnreadChange={setChatUnread}
           currentUserId={user.id}
+          chatThreadId={chatThreadId}
+          startFullscreen
         />
         {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
 

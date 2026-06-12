@@ -36,6 +36,6 @@ export interface WidgetData {
 
   // launchers (open the existing overlay components unchanged)
   chatUnread: number;
-  onOpenChat: () => void;
+  onOpenChat: (conversationId?: string) => void;
   onOpenForms: () => void;
 }

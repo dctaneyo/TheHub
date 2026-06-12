@@ -92,24 +92,29 @@ interface RestaurantChatProps {
   currentUserId?: string;
   chatThreadId?: string | null;
   chatThreadName?: string | null;
+  startFullscreen?: boolean;
 }
 
-export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, currentUserId, chatThreadId, chatThreadName }: RestaurantChatProps) {
+export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, currentUserId, chatThreadId, chatThreadName, startFullscreen }: RestaurantChatProps) {
   const { sendViewChange } = useMirror();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvo, setActiveConvo] = useState<Conversation | null>(null);
 
-  // Sync chat thread when the mirror prop changes (not on conversations list updates)
+  // Sync chat thread when the requested thread changes. Defer consuming the
+  // change until the conversation list has loaded, so opening a specific thread
+  // works even when the panel was just opened (list still loading).
   const prevChatThreadIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     const prev = prevChatThreadIdRef.current;
     if (prev === chatThreadId) return;
+    // A thread was requested but the list isn't ready — wait (don't consume the
+    // change); this effect re-runs once `conversations` populates.
+    if (chatThreadId && conversations.length === 0) return;
     prevChatThreadIdRef.current = chatThreadId;
-    if (chatThreadId && conversations.length > 0) {
+    if (chatThreadId) {
       const convo = conversations.find((c: Conversation) => c.id === chatThreadId);
       if (convo) setActiveConvo(convo);
     } else if (chatThreadId === null && prev !== undefined) {
-      // prev was a real thread ID (or null from a prior sync), now cleared
       setActiveConvo(null);
     }
   }, [chatThreadId, conversations]);
@@ -163,10 +168,11 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
       setActiveConvo(null);
       setShowNewChat(false);
     } else {
-      // Always open in slideout view, never fullscreen
-      setIsFullscreen(false);
+      // Open fullscreen when requested (e.g. from the grid messages widget),
+      // otherwise default to the slideout view.
+      setIsFullscreen(!!startFullscreen);
     }
-  }, [isOpen]);
+  }, [isOpen, startFullscreen]);
 
   const fetchParticipants = useCallback(async () => {
     try {

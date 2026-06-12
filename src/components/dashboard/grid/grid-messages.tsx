@@ -42,7 +42,11 @@ function initials(name: string): string {
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function GridMessagesWidget({ onOpen }: { onOpen: () => void }) {
+export function GridMessagesWidget({
+  onOpen,
+}: {
+  onOpen: (conversationId?: string) => void;
+}) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const { socket } = useSocket();
@@ -110,7 +114,7 @@ export function GridMessagesWidget({ onOpen }: { onOpen: () => void }) {
               <button
                 key={c.id}
                 type="button"
-                onClick={onOpen}
+                onClick={() => onOpen(c.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-muted/60",
                   unread && "bg-primary/5"
