@@ -247,11 +247,14 @@ export function WidgetContainer({
         )}
 
         {/* Content — non-interactive while editing so layout taps/drags don't
-            accidentally trigger actions inside the widget. */}
+            accidentally trigger actions inside the widget. Dimmed + slightly
+            desaturated to make the non-interactive state visually obvious. */}
         <div
           className={cn(
-            "relative min-h-0 flex-1 overflow-auto",
-            editMode && !expanded && "pointer-events-none select-none"
+            "relative min-h-0 flex-1 overflow-auto transition-[opacity,filter] duration-200",
+            editMode &&
+              !expanded &&
+              "pointer-events-none select-none opacity-50 grayscale-[35%]"
           )}
         >
           {children}
