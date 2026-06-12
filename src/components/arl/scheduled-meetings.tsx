@@ -169,9 +169,35 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const getAppUrl = () => {
-    // Use join subdomain for all meeting URLs
-    return "https://join.meetthehub.com";
+  // Create a secure one-click invite link (opaque token — never the password)
+  // and copy it to the clipboard. expiresInHours = null → reusable, no expiry.
+  const createInviteLink = async (
+    m: { id: string; title: string; meeting_code: string },
+    expiresInHours: number | null
+  ) => {
+    const key = `invite-${m.id}${expiresInHours ? "-exp" : ""}`;
+    try {
+      const res = await fetch("/api/meetings/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingCode: m.meeting_code, expiresInHours }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.url) {
+        setCopiedCode(`err-${m.id}`);
+        setTimeout(() => setCopiedCode(null), 2000);
+        return;
+      }
+      const text = `Join meeting "${m.title}"\nOne-click join: ${data.url}${
+        expiresInHours ? "\n(This link expires in 24 hours)" : ""
+      }`;
+      await navigator.clipboard.writeText(text);
+      setCopiedCode(key);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch {
+      setCopiedCode(`err-${m.id}`);
+      setTimeout(() => setCopiedCode(null), 2000);
+    }
   };
 
   const toggleDay = (day: string) => {
@@ -345,7 +371,6 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           {meetings.map(m => {
             const scheduledDate = new Date(m.scheduled_at);
             const isPast = scheduledDate < new Date();
-            const joinUrl = getAppUrl();
 
             return (
               <motion.div
@@ -446,24 +471,25 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       </button>
                     </div>
                     {m.allow_guests && (
-                      <button
-                        onClick={() => {
-                          // Create one-click join URL with pre-filled parameters
-                          const params = new URLSearchParams({
-                            code: m.meeting_code,
-                            ...(m.password && { password: m.password })
-                          });
-                          const oneClickUrl = `${joinUrl}?${params.toString()}`;
-                          
-                          const text = `Join meeting "${m.title}"\nOne-click join: ${oneClickUrl}\n${m.password ? `Or enter manually:\nCode: ${m.meeting_code}\nPassword: ${m.password}` : `Meeting code: ${m.meeting_code}`}`;
-                          navigator.clipboard.writeText(text);
-                          setCopiedCode(`invite-${m.id}`);
-                          setTimeout(() => setCopiedCode(null), 2000);
-                        }}
-                        className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                      >
-                        {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy one-click link"}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => createInviteLink(m, null)}
+                          className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                          title="Reusable link — password is never shown in the URL"
+                        >
+                          {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
+                        </button>
+                        <button
+                          onClick={() => createInviteLink(m, 24)}
+                          className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                          title="Link expires 24 hours after it's generated (reusable within that window)"
+                        >
+                          {copiedCode === `invite-${m.id}-exp` ? "Copied!" : "Copy 24h link"}
+                        </button>
+                        {copiedCode === `err-${m.id}` && (
+                          <span className="text-[10px] font-semibold text-red-600">Failed</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/lib/db";
 import { findActiveMeetingByCode } from "@/lib/socket-server";
+import { inviteGrantsAccess } from "@/lib/meeting-invite";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
-// POST - Validate meeting code + password for guest access
+// POST - Validate meeting code + password (or invite token) for guest access
 export async function POST(req: NextRequest) {
   try {
-    const { meetingCode, password, guestName } = await req.json();
+    const { meetingCode, password, guestName, inviteToken } = await req.json();
 
     if (!meetingCode || !guestName) {
       return ApiErrors.badRequest("Meeting code and name are required");
@@ -14,17 +15,20 @@ export async function POST(req: NextRequest) {
 
     const code = meetingCode.toUpperCase().trim();
 
+    // A valid invite token grants access without needing the password.
+    const hasInvite = inviteGrantsAccess(inviteToken, code);
+
     // First check the scheduled_meetings DB table
     const meeting = sqlite.prepare(
       "SELECT * FROM scheduled_meetings WHERE meeting_code = ? AND is_active = 1"
     ).get(code) as any;
 
     if (meeting) {
-      if (!meeting.allow_guests) {
+      if (!meeting.allow_guests && !hasInvite) {
         return ApiErrors.forbidden("This meeting does not allow guest access");
       }
 
-      if (meeting.password && meeting.password !== password) {
+      if (meeting.password && meeting.password !== password && !hasInvite) {
         return ApiErrors.unauthorized();
       }
 
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest) {
     // Not in DB — check in-memory active meetings (on-demand meetings created via BroadcastStudio)
     const activeMeeting = findActiveMeetingByCode(code);
     if (activeMeeting) {
-      if (activeMeeting.password && activeMeeting.password !== password) {
+      if (activeMeeting.password && activeMeeting.password !== password && !hasInvite) {
         return ApiErrors.unauthorized();
       }
 

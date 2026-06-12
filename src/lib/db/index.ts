@@ -534,6 +534,20 @@ function runMigrations() {
     s.exec(`CREATE INDEX IF NOT EXISTS idx_notif_prefs_tenant ON notification_preferences(tenant_id)`);
   });
 
+  // ── Secure one-click meeting invite tokens (password never in the URL) ──
+  migrate("049_meeting_invites", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS meeting_invites (
+      token TEXT PRIMARY KEY,
+      meeting_code TEXT NOT NULL,
+      tenant_id TEXT,
+      created_by TEXT,
+      expires_at TEXT,
+      revoked INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_meeting_invites_code ON meeting_invites(meeting_code)`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

@@ -93,6 +93,8 @@ function GuestMeetingPageWithParams() {
     title: string | null;
   } | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+  // Secure one-click invite token (from ?invite=…) — grants access without a password.
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
   const [isHostStartingMeeting, setIsHostStartingMeeting] = useState(false); // Track if host is starting meeting
   const [canRejoin, setCanRejoin] = useState(false); // Track if user can rejoin after disconnect
@@ -108,7 +110,7 @@ function GuestMeetingPageWithParams() {
   const keyboardInputRef = useRef<HTMLInputElement>(null);
 
   // Read URL parameters on component mount and fetch meeting info for one-click join
-  const isOneClickJoin = !!searchParams?.get("code");
+  const isOneClickJoin = !!searchParams?.get("code") || !!searchParams?.get("invite");
   useEffect(() => {
     const code = searchParams?.get("code");
     const pwd = searchParams?.get("password");
@@ -141,6 +143,33 @@ function GuestMeetingPageWithParams() {
     if (pwd && !code) {
       setPassword(pwd);
     }
+  }, [searchParams]);
+
+  // Resolve a secure invite token (?invite=…) → prefill the meeting + grant access.
+  useEffect(() => {
+    const token = searchParams?.get("invite");
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/meetings/invite?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data?.ok && data.valid && data.meetingCode) {
+          setInviteToken(token);
+          setMeetingCode(data.meetingCode);
+        } else if (data?.expired) {
+          setError("This invite link has expired. Ask the host for a new link.");
+        } else {
+          setError("This invite link is no longer valid.");
+        }
+      } catch {
+        if (!cancelled) setError("Could not validate the invite link.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   // Live-validate the meeting code as it's typed/pasted (also runs for one-click
@@ -196,6 +225,7 @@ function GuestMeetingPageWithParams() {
           meetingCode: meetingCode.trim().toUpperCase(),
           password: password.trim(),
           guestName: userName,
+          inviteToken: inviteToken || undefined,
         }),
       });
 
@@ -482,10 +512,12 @@ function GuestMeetingPageWithParams() {
   }
 
   // Gate the join choices: a valid meeting must be found, and if it's password
-  // protected the password must be entered (one-click links prefill it via URL).
+  // protected the password must be entered (one-click links prefill it via URL,
+  // and a valid invite token grants access without a password).
   const meetingReady =
-    !!meetingLookup?.exists && (!meetingLookup.hasPassword || password.trim().length > 0);
-  const guestAllowed = !!meetingLookup?.allowGuests;
+    !!meetingLookup?.exists &&
+    (!meetingLookup.hasPassword || password.trim().length > 0 || !!inviteToken);
+  const guestAllowed = !!inviteToken || !!meetingLookup?.allowGuests;
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
@@ -503,7 +535,7 @@ function GuestMeetingPageWithParams() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-md"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-card rounded-2xl shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 text-center">
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Clock className="h-7 w-7" />
@@ -514,20 +546,20 @@ function GuestMeetingPageWithParams() {
 
                 <div className="p-6 space-y-5">
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-slate-700 mb-3">Welcome, {authenticatedUser ? authenticatedUser.name : guestName}!</p>
-                    <p className="text-sm text-slate-500 mb-1">Meeting starts in</p>
-                    <p className="text-3xl font-bold font-mono text-slate-800 tracking-wide">{countdown}</p>
-                    <p className="text-xs text-slate-400 mt-2">
+                    <p className="text-lg font-semibold text-foreground mb-3">Welcome, {authenticatedUser ? authenticatedUser.name : guestName}!</p>
+                    <p className="text-sm text-muted-foreground mb-1">Meeting starts in</p>
+                    <p className="text-3xl font-bold font-mono text-foreground tracking-wide">{countdown}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
                       Scheduled for {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/40 rounded-lg p-3">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>You&apos;ll be automatically connected when the host starts the meeting.</span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
                     <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
                     Listening for host...
                   </div>
@@ -537,7 +569,7 @@ function GuestMeetingPageWithParams() {
                     <Button
                       onClick={() => setStep("waiting-for-host")}
                       variant="outline"
-                      className="w-full h-11 text-sm font-semibold rounded-xl border-slate-300"
+                      className="w-full h-11 text-sm font-semibold rounded-xl"
                     >
                       Join Anyway <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -545,13 +577,13 @@ function GuestMeetingPageWithParams() {
 
                   <button
                     onClick={() => { setStep("enter-code"); setMeetingInfo(null); setActiveMeetingId(null); }}
-                    className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     &larr; Back
                   </button>
                 </div>
               </div>
-            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+            <p className="text-center text-xs text-muted-foreground mt-4">The Hub &bull; Video Meeting Platform</p>
           </motion.div>
           </SocketProvider>
         )}
@@ -566,7 +598,7 @@ function GuestMeetingPageWithParams() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-md"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-card rounded-2xl shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Video className="h-7 w-7" />
@@ -577,36 +609,36 @@ function GuestMeetingPageWithParams() {
 
                 <div className="p-6 space-y-5">
                   <div className="text-center">
-                    <div className="h-16 w-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                    <div className="h-16 w-16 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center mx-auto mb-3">
                       <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
                     </div>
-                    <p className="text-sm font-medium text-slate-700">The host hasn&apos;t started the meeting yet</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-sm font-medium text-foreground">The host hasn&apos;t started the meeting yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       You&apos;ll be connected automatically once it begins
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
                     <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
                     Listening for host...
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl p-3 text-center">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
-                    <p className="text-sm font-medium text-slate-600">
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
+                    <p className="text-sm font-medium text-foreground">
                       {new Date(meetingInfo.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
 
                   <button
                     onClick={() => { setStep("enter-code"); setMeetingInfo(null); setActiveMeetingId(null); }}
-                    className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     &larr; Back
                   </button>
                 </div>
               </div>
-              <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+              <p className="text-center text-xs text-muted-foreground mt-4">The Hub &bull; Video Meeting Platform</p>
             </motion.div>
           </SocketProvider>
         )}
@@ -619,7 +651,7 @@ function GuestMeetingPageWithParams() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-md"
           >
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white p-6 text-center">
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <CheckCircle2 className="h-7 w-7" />
@@ -630,11 +662,11 @@ function GuestMeetingPageWithParams() {
 
               <div className="p-6 space-y-5">
                 <div className="text-center">
-                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="h-8 w-8 text-slate-600" />
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-slate-700">The meeting has ended</p>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-sm font-medium text-foreground">The meeting has ended</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Thank you for joining!
                   </p>
                 </div>
@@ -656,7 +688,7 @@ function GuestMeetingPageWithParams() {
                 </Button>
               </div>
             </div>
-            <p className="text-center text-xs text-slate-500 mt-4">The Hub &bull; Video Meeting Platform</p>
+            <p className="text-center text-xs text-muted-foreground mt-4">The Hub &bull; Video Meeting Platform</p>
           </motion.div>
         )}
 
@@ -915,10 +947,10 @@ function GuestMeetingPageWithParams() {
 export default function GuestMeetingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-red-600 mx-auto mb-4" />
-          <p className="text-slate-600">Loading meeting...</p>
+          <p className="text-muted-foreground">Loading meeting...</p>
         </div>
       </div>
     }>
