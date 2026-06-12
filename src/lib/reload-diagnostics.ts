@@ -1,33 +1,47 @@
 // Reload diagnostics — survives the console clear that a full reload causes.
 //
-// Every in-app navigation/reload should call recordReload(reason) right before
-// it happens. On the next load, logStartupDiagnostics() prints:
-//   - the browser's navigation type (reload | navigate | back_forward), and
-//   - the most recent in-app reload breadcrumbs.
+// Every in-app navigation/reload calls recordReload(reason) right before it
+// happens. Visibility changes are logged via recordEvent so we can tell when a
+// reload was preceded by the tab being backgrounded (a strong signal that the
+// browser — e.g. Safari discarding a background tab — caused the reload, not us).
 //
-// This lets us tell apart:
-//   • an in-app reload (a breadcrumb exists, e.g. "build-update …"), vs
-//   • an EXTERNAL reload (navigation type "reload" but NO breadcrumb) —
-//     which points to the service worker, the browser, or the kiosk shell.
+// On the next load, logStartupDiagnostics() prints:
+//   - the browser's navigation type (reload | navigate | back_forward),
+//   - seconds since the previous load (reveals a recurring cadence),
+//   - the recent breadcrumb trail, and
+//   - a best-guess attribution (in-app reload vs external/browser).
 
 const KEY = "hub-reload-log";
-const MAX = 12;
+const MAX = 16;
+
+type Kind = "reload" | "event";
 
 interface Breadcrumb {
   t: string;
+  kind: Kind;
   reason: string;
 }
 
-export function recordReload(reason: string): void {
+function append(kind: Kind, reason: string): void {
   if (typeof window === "undefined") return;
   try {
     const log: Breadcrumb[] = JSON.parse(localStorage.getItem(KEY) || "[]");
-    log.push({ t: new Date().toISOString(), reason });
+    log.push({ t: new Date().toISOString(), kind, reason });
     while (log.length > MAX) log.shift();
     localStorage.setItem(KEY, JSON.stringify(log));
   } catch {
     /* ignore storage failures */
   }
+}
+
+/** Record an imminent in-app full reload / navigation. */
+export function recordReload(reason: string): void {
+  append("reload", reason);
+}
+
+/** Record a non-reload signal (e.g. tab hidden/visible). */
+export function recordEvent(reason: string): void {
+  append("event", reason);
 }
 
 export function logStartupDiagnostics(): void {
@@ -39,42 +53,49 @@ export function logStartupDiagnostics(): void {
     ) as PerformanceNavigationTiming[];
     if (navs[0]?.type) navType = navs[0].type;
 
-    // Measure the gap since the previous page load (reveals a recurring cadence
-    // even when the reload is triggered externally and leaves no breadcrumb).
-    const LOAD_KEY = "hub-last-load-ts";
     const now = Date.now();
+    const LOAD_KEY = "hub-last-load-ts";
     const prevLoad = Number(localStorage.getItem(LOAD_KEY) || 0);
     localStorage.setItem(LOAD_KEY, String(now));
     const sinceLastLoad = prevLoad ? Math.round((now - prevLoad) / 1000) : null;
 
     const log: Breadcrumb[] = JSON.parse(localStorage.getItem(KEY) || "[]");
+
     console.log(
       `%c[Hub diag] page load — navigation type: ${navType}${
         sinceLastLoad != null ? `, ${sinceLastLoad}s since previous load` : ""
       }`,
       "color:#e4002b;font-weight:bold"
     );
-
     if (log.length > 0) {
-      const last = log[log.length - 1];
-      const ageS = Math.round((Date.now() - new Date(last.t).getTime()) / 1000);
-      console.log(
-        `[Hub diag] last in-app reload: "${last.reason}" (${ageS}s ago). Recent breadcrumbs:`,
-        log
-      );
+      console.log("[Hub diag] recent breadcrumbs:", log);
     }
 
-    // If the page reloaded recently but NO in-app breadcrumb was written just
-    // before it, the trigger is external to app code.
-    const lastCrumbAgeS = log.length
-      ? Math.round((now - new Date(log[log.length - 1].t).getTime()) / 1000)
+    const lastReload = [...log].reverse().find((b) => b.kind === "reload");
+    const lastReloadAgeS = lastReload
+      ? Math.round((now - new Date(lastReload.t).getTime()) / 1000)
       : Infinity;
-    if (navType === "reload" && lastCrumbAgeS > 10) {
-      console.warn(
-        "[Hub diag] The page RELOADED but NO recent in-app reload was recorded. " +
-          "The cause is EXTERNAL to app code — likely the service worker, the " +
-          "browser/kiosk shell, or a meta refresh."
+    const lastEntry = log[log.length - 1];
+    const lastWasHidden = lastEntry?.reason === "tab hidden";
+
+    if (lastReloadAgeS <= 10) {
+      console.log(
+        `[Hub diag] → attributed to IN-APP reload: "${lastReload!.reason}" (${lastReloadAgeS}s ago)`
       );
+    } else if (navType === "reload") {
+      if (lastWasHidden) {
+        console.warn(
+          "[Hub diag] → The tab was BACKGROUNDED just before this reload and no " +
+            "in-app reload was recorded. This is almost certainly the browser " +
+            "discarding/reloading a background tab (e.g. Safari memory management), " +
+            "not the app."
+        );
+      } else {
+        console.warn(
+          "[Hub diag] → The page reloaded with NO in-app reload recorded. The " +
+            "cause is EXTERNAL to app code (service worker, browser, or kiosk shell)."
+        );
+      }
     }
   } catch {
     /* ignore */

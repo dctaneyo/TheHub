@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { isReloadBlocked, deferReload } from "@/lib/reload-guard";
-import { recordReload, logStartupDiagnostics } from "@/lib/reload-diagnostics";
+import { recordReload, recordEvent, logStartupDiagnostics } from "@/lib/reload-diagnostics";
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -50,6 +50,12 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     // One-time startup diagnostic — reports navigation type + reload breadcrumbs
     // (helps identify reloads, since a full reload clears the console).
     logStartupDiagnostics();
+
+    // Track tab background/foreground so we can correlate reloads with the tab
+    // being discarded by the browser (common on Safari) vs an in-app reload.
+    const onVisibility = () =>
+      recordEvent(document.hidden ? "tab hidden" : "tab visible");
+    document.addEventListener("visibilitychange", onVisibility);
 
     // Build auth payload — include guest info if provided
     const auth: Record<string, string> = {};
@@ -202,6 +208,7 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
     return () => {
       clearInterval(heartbeatInterval);
       if (settleTimer) clearTimeout(settleTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
       s.disconnect();
       socketRef.current = null;
     };
