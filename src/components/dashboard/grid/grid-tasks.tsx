@@ -246,9 +246,9 @@ export function GridTasksWidget({
                           type="button"
                           onClick={() => onUncomplete(task.id)}
                           title="Undo — mark as not complete"
-                          className="group/undo flex shrink-0 items-center justify-center"
+                          className="group/undo flex h-6 w-6 shrink-0 items-center justify-center"
                         >
-                          <CheckCircle2 className="h-5 w-5 text-[var(--hub-green)] transition-colors group-hover/undo:text-[var(--hub-red)]" />
+                          <CheckCircle2 className="h-6 w-6 text-[var(--hub-green)] transition-colors group-hover/undo:text-[var(--hub-red)]" />
                         </button>
                       ) : (
                         <button
