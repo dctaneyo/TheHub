@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 import { SocketProvider, useSocket } from "@/lib/socket-context";
 import { AuthContext } from "@/lib/auth-context";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface MeetingInfo {
   id: string;
@@ -83,6 +84,15 @@ function GuestMeetingPageWithParams() {
   const [loading, setLoading] = useState(false);
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+
+  // Live meeting-code lookup (decides whether to prompt for a password)
+  const [meetingLookup, setMeetingLookup] = useState<{
+    exists: boolean;
+    hasPassword: boolean;
+    allowGuests: boolean;
+    title: string | null;
+  } | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null); // For restaurant/ARL login
   const [isHostStartingMeeting, setIsHostStartingMeeting] = useState(false); // Track if host is starting meeting
   const [canRejoin, setCanRejoin] = useState(false); // Track if user can rejoin after disconnect
@@ -132,6 +142,46 @@ function GuestMeetingPageWithParams() {
       setPassword(pwd);
     }
   }, [searchParams]);
+
+  // Live-validate the meeting code as it's typed/pasted (also runs for one-click
+  // links, whose code is prefilled). Reveals the password field only when the
+  // meeting is password protected.
+  useEffect(() => {
+    const code = meetingCode.trim().toUpperCase();
+    if (code.length < 6) {
+      setMeetingLookup(null);
+      setLookingUp(false);
+      return;
+    }
+    let cancelled = false;
+    setLookingUp(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/meetings/lookup?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (!cancelled) {
+          setMeetingLookup(
+            data?.ok
+              ? {
+                  exists: !!data.exists,
+                  hasPassword: !!data.hasPassword,
+                  allowGuests: !!data.allowGuests,
+                  title: data.title ?? null,
+                }
+              : null
+          );
+        }
+      } catch {
+        if (!cancelled) setMeetingLookup(null);
+      } finally {
+        if (!cancelled) setLookingUp(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [meetingCode]);
 
   // Validate meeting and route to waiting/meeting
   const validateAndJoinMeeting = async (userName: string, userObj?: any) => {
@@ -431,8 +481,17 @@ function GuestMeetingPageWithParams() {
     );
   }
 
+  // Gate the join choices: a valid meeting must be found, and if it's password
+  // protected the password must be entered (one-click links prefill it via URL).
+  const meetingReady =
+    !!meetingLookup?.exists && (!meetingLookup.hasPassword || password.trim().length > 0);
+  const guestAllowed = !!meetingLookup?.allowGuests;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
+      <div className="absolute right-3 top-3 z-50">
+        <ThemeToggle />
+      </div>
       <AnimatePresence mode="wait">
         {step === "waiting" && meetingInfo && activeMeetingId && (
           <SocketProvider guestName={guestName} guestMeetingId={activeMeetingId}>
@@ -609,7 +668,7 @@ function GuestMeetingPageWithParams() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-md"
           >
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 text-center">
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <Video className="h-7 w-7" />
@@ -618,15 +677,17 @@ function GuestMeetingPageWithParams() {
                   {isOneClickJoin ? "You're Invited!" : "Join a Meeting"}
                 </h1>
                 <p className="text-sm text-red-100 mt-1">
-                  {isOneClickJoin && meetingInfo ? meetingInfo.title : isOneClickJoin ? "Loading meeting..." : "Enter the meeting code to join"}
+                  {isOneClickJoin
+                    ? (meetingInfo?.title || meetingLookup?.title || "Loading meeting...")
+                    : "Enter the meeting code to join"}
                 </p>
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Meeting Code and Password */}
+                {/* Meeting Code */}
                 {!isOneClickJoin && (
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Meeting Code</label>
+                    <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Code</label>
                     <Input
                       value={meetingCode}
                       onChange={(e) => { setMeetingCode(e.target.value.toUpperCase()); setError(""); }}
@@ -634,15 +695,40 @@ function GuestMeetingPageWithParams() {
                       className="text-center text-lg font-mono tracking-widest uppercase"
                       maxLength={6}
                     />
+                    {/* Live meeting status */}
+                    {meetingCode.trim().length === 6 && (
+                      <div className="mt-2 text-xs">
+                        {lookingUp ? (
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Checking meeting…
+                          </span>
+                        ) : meetingLookup && !meetingLookup.exists ? (
+                          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3" /> No meeting found with that code.
+                          </span>
+                        ) : meetingLookup?.exists ? (
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {meetingLookup.title ? `Found: ${meetingLookup.title}` : "Meeting found"}
+                            {meetingLookup.hasPassword ? " · password required" : ""}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {!isOneClickJoin && (
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                {/* Password — only shown when the meeting is password protected */}
+                {!isOneClickJoin && meetingLookup?.exists && meetingLookup.hasPassword && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="block text-sm font-semibold text-foreground mb-1.5">
                       <div className="flex items-center gap-1.5">
                         <Lock className="h-3.5 w-3.5" />
-                        Password <span className="text-slate-400 font-normal">(if required)</span>
+                        Password <span className="text-muted-foreground font-normal">(required)</span>
                       </div>
                     </label>
                     <Input
@@ -650,15 +736,19 @@ function GuestMeetingPageWithParams() {
                       onChange={(e) => { setPassword(e.target.value); setError(""); }}
                       placeholder="Enter meeting password"
                       type="password"
+                      autoFocus
                     />
-                  </div>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      This meeting is password protected.
+                    </p>
+                  </motion.div>
                 )}
 
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg p-3"
+                    className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/40 rounded-lg p-3"
                   >
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {error}
@@ -668,25 +758,26 @@ function GuestMeetingPageWithParams() {
                 {/* Choice: Login or Join as Guest */}
                 {!showGuestInput && !showPinPad && (
                   <div className="space-y-3">
-                    <div className="text-center text-sm font-medium text-slate-600 mb-2">How would you like to join?</div>
+                    <div className="text-center text-sm font-medium text-muted-foreground mb-2">How would you like to join?</div>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => { setShowPinPad(true); setError(""); }}
-                        disabled={!meetingCode.trim()}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        disabled={!meetingReady}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-900 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:hover:border-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
-                        <LogIn className="h-6 w-6 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-900">Login</span>
-                        <span className="text-xs text-blue-600">Restaurant/ARL</span>
+                        <LogIn className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <span className="text-sm font-semibold text-blue-900 dark:text-blue-200">Login</span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400">Restaurant/ARL</span>
                       </button>
                       <button
                         onClick={() => { setShowGuestInput(true); setError(""); }}
-                        disabled={!meetingCode.trim()}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        disabled={!meetingReady || !guestAllowed}
+                        title={meetingLookup?.exists && !meetingLookup.allowGuests ? "This meeting doesn't allow guests" : undefined}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300 dark:border-green-900 dark:bg-green-950/40 dark:hover:bg-green-900/40 dark:hover:border-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
-                        <UserPlus className="h-6 w-6 text-green-600" />
-                        <span className="text-sm font-semibold text-green-900">Join as Guest</span>
-                        <span className="text-xs text-green-600">No login needed</span>
+                        <UserPlus className="h-6 w-6 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-semibold text-green-900 dark:text-green-200">Join as Guest</span>
+                        <span className="text-xs text-green-600 dark:text-green-400">No login needed</span>
                       </button>
                     </div>
                   </div>
@@ -700,9 +791,9 @@ function GuestMeetingPageWithParams() {
                     className="space-y-3"
                   >
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your Name</label>
+                      <label className="block text-sm font-semibold text-foreground mb-1.5">Your Name</label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           value={guestName}
                           onChange={(e) => { setGuestName(e.target.value); setError(""); }}
@@ -751,7 +842,7 @@ function GuestMeetingPageWithParams() {
                       style={{ position: 'absolute', left: -9999 }}
                     />
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-slate-700 mb-4">
+                      <p className="text-sm font-semibold text-foreground mb-4">
                         {pinPadStep === "userId" ? "Enter User ID" : "Enter PIN"}
                       </p>
                       <div className="flex justify-center gap-3 mb-6">
@@ -774,7 +865,7 @@ function GuestMeetingPageWithParams() {
                                 className={`h-5 w-5 rounded-full border-2 transition-colors duration-200 ${
                                   filled
                                     ? "border-red-600 bg-red-600"
-                                    : "border-slate-300 bg-white"
+                                    : "border-border bg-background"
                                 }`}
                                 animate={filled ? { scale: [1, 1.3, 1] } : {}}
                                 transition={{ duration: 0.15 }}
@@ -793,7 +884,7 @@ function GuestMeetingPageWithParams() {
                             else if (digit) handlePinPadDigit(digit);
                           }}
                           disabled={!digit || loading}
-                          className="h-14 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-0 font-semibold text-lg text-slate-700 transition-colors"
+                          className="h-14 rounded-lg bg-muted hover:bg-muted/70 active:bg-muted/60 disabled:opacity-0 font-semibold text-lg text-foreground transition-colors"
                         >
                           {digit === "⌫" ? <Delete className="h-5 w-5 mx-auto" /> : digit}
                         </button>
