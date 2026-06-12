@@ -9,7 +9,12 @@ import { cleanupStaleData } from "./src/lib/cleanup";
 import { processScheduledReports } from "./src/lib/report-generator";
 import { ensureIndexes } from "./src/lib/ensure-indexes";
 
-const dev = process.env.NODE_ENV !== "production";
+// This custom server (dist/server.js) is the PRODUCTION entrypoint — local
+// development uses `next dev` directly. Default to production mode and only run
+// the Next dev compiler/HMR when NODE_ENV is explicitly "development". (A bare
+// `!== "production"` check meant an unset NODE_ENV booted dev mode in prod,
+// pulling in HMR + the dev overlay and breaking the CSP.)
+const dev = process.env.NODE_ENV === "development";
 const hostname = "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
