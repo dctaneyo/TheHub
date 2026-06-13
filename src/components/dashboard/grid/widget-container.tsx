@@ -191,7 +191,7 @@ export function WidgetContainer({
             Removed in normal view for a cleaner, chrome-free tile. */}
         {editMode && !expanded && (
           <div
-            className="flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3 active:cursor-grabbing"
+            className="flex h-11 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3 active:cursor-grabbing"
             onPointerDown={handleMovePointerDown}
           >
             <div className="flex items-center gap-2 overflow-hidden">
@@ -214,23 +214,23 @@ export function WidgetContainer({
             <button
               type="button"
               onClick={() => removeWidget(widget.id)}
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               title="Remove"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        {/* Floating expand control — view mode only, revealed on hover */}
+        {/* Floating expand control — view mode only, always visible (no hover-only on touch) */}
         {!editMode && !expanded && (
           <button
             type="button"
             onClick={() => toggleExpand(widget.id)}
-            className="absolute right-1.5 top-1.5 z-20 rounded-md bg-card/80 p-1 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity hover:text-foreground group-hover:opacity-100"
+            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-foreground active:bg-muted"
             title="Expand"
           >
-            <Maximize2 className="h-3.5 w-3.5" />
+            <Maximize2 className="h-4 w-4" />
           </button>
         )}
 
@@ -239,10 +239,10 @@ export function WidgetContainer({
           <button
             type="button"
             onClick={() => toggleExpand(widget.id)}
-            className="absolute right-3 top-3 z-20 rounded-md bg-muted/70 p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="Collapse"
           >
-            <Minimize2 className="h-4 w-4" />
+            <Minimize2 className="h-5 w-5" />
           </button>
         )}
 
@@ -260,16 +260,16 @@ export function WidgetContainer({
           {children}
         </div>
 
-        {/* Resize handle (edit mode only, bottom-right corner) */}
+        {/* Resize handle (edit mode only, bottom-right corner) — larger for touch */}
         {editMode && !expanded && (
           <div
             onPointerDown={handleResizePointerDown}
-            className="absolute bottom-0 right-0 z-20 flex h-5 w-5 cursor-nwse-resize items-end justify-end p-0.5"
+            className="absolute bottom-0 right-0 z-20 flex h-8 w-8 cursor-nwse-resize items-end justify-end p-1"
             title="Drag to resize"
           >
             <span
               className={cn(
-                "block h-3 w-3 rounded-br-md border-b-2 border-r-2 transition-colors",
+                "block h-4 w-4 rounded-br-md border-b-2 border-r-2 transition-colors",
                 active && blocked
                   ? "border-destructive"
                   : "border-primary/60 group-hover:border-primary"

@@ -116,18 +116,18 @@ export function GridMessagesWidget({
                 type="button"
                 onClick={() => onOpen(c.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-muted/60",
+                  "flex w-full items-center gap-3 rounded-xl px-2.5 py-3 text-left transition-colors active:bg-muted/80",
                   unread && "bg-primary/5"
                 )}
               >
-                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                   {c.type === "global" ? (
-                    <MessageCircle className="h-4 w-4" />
+                    <MessageCircle className="h-5 w-5" />
                   ) : (
                     initials(c.name)
                   )}
                   {unread && (
-                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-card" />
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-destructive ring-2 ring-card" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export function GridMessagesWidget({
                       {c.name}
                     </span>
                     {c.lastMessage && (
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
                         {timeAgo(c.lastMessage.createdAt)}
                       </span>
                     )}

@@ -96,7 +96,7 @@ export function GridControls({
               setShowLayouts((v) => !v);
               setShowAdd(false);
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+            className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{layout.name}</span>
@@ -181,7 +181,7 @@ export function GridControls({
               setShowAdd((v) => !v);
               setShowLayouts(false);
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+            className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add</span>
@@ -234,7 +234,7 @@ export function GridControls({
         <button
           type="button"
           onClick={() => compact()}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+          className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted"
           title="Pull widgets up to close gaps"
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -256,7 +256,7 @@ export function GridControls({
               isCustom: true,
             });
           }}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+          className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted"
           title="Reset custom layout"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -269,7 +269,7 @@ export function GridControls({
         <button
           type="button"
           onClick={startEditing}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+          className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted"
         >
           <Settings className="h-3.5 w-3.5" />
           Customize
@@ -283,7 +283,7 @@ export function GridControls({
             type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            className="flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -292,7 +292,7 @@ export function GridControls({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg border border-primary bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            className="flex h-10 items-center gap-1.5 rounded-lg border border-primary bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

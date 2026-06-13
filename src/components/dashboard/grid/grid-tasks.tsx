@@ -154,7 +154,7 @@ export function GridTasksWidget({
                 key={task.id}
                 layout
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                className="flex items-center gap-3 border-b border-border/40 py-2"
+                className="flex items-center gap-3 border-b border-border/40 py-2.5"
               >
                 <span
                   className={cn(
@@ -164,13 +164,14 @@ export function GridTasksWidget({
                 >
                   [{formatTime(task.dueTime)}] {task.title}
                 </span>
+                {/* Touch-friendly checkbox: 44×44 tap target */}
                 <button
                   type="button"
                   onClick={() => onComplete(task.id)}
                   title="Mark complete"
-                  className="group/cb flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-muted-foreground/40 transition-colors hover:border-[var(--hub-green)] hover:bg-[var(--hub-green)]/10"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-muted-foreground/30 transition-colors active:border-[var(--hub-green)] active:bg-[var(--hub-green)]/10"
                 >
-                  <Check className="h-3.5 w-3.5 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100" />
+                  <Check className="h-5 w-5 text-[var(--hub-green)]" />
                 </button>
               </motion.div>
             ))}
@@ -207,7 +208,7 @@ export function GridTasksWidget({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   title="Close"
                 >
                   <X className="h-5 w-5" />
@@ -226,7 +227,7 @@ export function GridTasksWidget({
                   return (
                     <div
                       key={task.id}
-                      className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-2.5"
+                      className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
                     >
                       <span className="w-20 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
                         {formatTime(task.dueTime)}
@@ -246,18 +247,18 @@ export function GridTasksWidget({
                           type="button"
                           onClick={() => onUncomplete(task.id)}
                           title="Undo — mark as not complete"
-                          className="group/undo flex h-6 w-6 shrink-0 items-center justify-center"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
                         >
-                          <CheckCircle2 className="h-6 w-6 text-[var(--hub-green)] transition-colors group-hover/undo:text-[var(--hub-red)]" />
+                          <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors active:text-[var(--hub-red)]" />
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => onComplete(task.id)}
                           title="Mark complete"
-                          className="group/cb flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-muted-foreground/40 transition-colors hover:border-[var(--hub-green)] hover:bg-[var(--hub-green)]/10"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-muted-foreground/30 transition-colors active:border-[var(--hub-green)] active:bg-[var(--hub-green)]/10"
                         >
-                          <Check className="h-3.5 w-3.5 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100" />
+                          <Check className="h-5 w-5 text-[var(--hub-green)]" />
                         </button>
                       )}
                     </div>

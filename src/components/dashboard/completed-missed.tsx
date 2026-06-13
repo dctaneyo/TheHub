@@ -111,9 +111,9 @@ export function CompletedMissed({
                 key={task.id}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 px-3 py-2.5"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                 <span className="flex-1 truncate text-xs font-medium text-muted-foreground line-through">
                   {task.title}
                 </span>
@@ -146,9 +146,9 @@ export function CompletedMissed({
             missedYesterday.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-2 rounded-xl bg-red-50/50 dark:bg-red-950/30 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl bg-red-50/50 dark:bg-red-950/30 px-3 py-2.5"
               >
-                <XCircle className="h-3.5 w-3.5 shrink-0 text-red-400" />
+                <XCircle className="h-4 w-4 shrink-0 text-red-400" />
                 <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
                   {task.title}
                 </span>

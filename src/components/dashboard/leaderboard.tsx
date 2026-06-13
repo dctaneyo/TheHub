@@ -64,7 +64,7 @@ function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: bool
   return (
     <>
       {shouldCelebrate && <ConfettiBurst active={true} />}
-      <div className={cn("flex items-center gap-3 rounded-xl border transition-all", compact ? "p-1.5" : "p-3", cardBg)}>
+      <div className={cn("flex items-center gap-3 rounded-xl border transition-all", compact ? "p-2.5" : "p-3", cardBg)}>
         {/* Rank indicator */}
         <div className={cn("flex shrink-0 items-center justify-center", compact ? "h-6 w-6" : "h-9 w-9")}>
           {medal ? (
@@ -85,8 +85,8 @@ function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: bool
             {isMe && <span className="shrink-0 rounded-full bg-[var(--hub-red)]/10 px-1.5 py-0.5 text-[8px] font-bold text-[var(--hub-red)]">YOU</span>}
           </div>
           <div className="mt-1.5 flex items-center gap-2">
-            <div className={cn("flex-1 rounded-full bg-muted", compact ? "h-1" : "h-2")}>
-              <div className={cn("rounded-full transition-all duration-500", compact ? "h-1" : "h-2", pctColor(entry.completionPct))} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
+            <div className={cn("flex-1 rounded-full bg-muted", compact ? "h-1.5" : "h-2")}>
+              <div className={cn("rounded-full transition-all duration-500", compact ? "h-1.5" : "h-2", pctColor(entry.completionPct))} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
             </div>
             <span className={cn("shrink-0 font-bold tabular-nums", compact ? "text-[9px]" : "text-xs", pctTextColor(entry.completionPct))}>{entry.completionPct}%</span>
           </div>

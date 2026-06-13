@@ -27,14 +27,14 @@ function LauncherTile({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center transition-colors hover:bg-muted/40"
+      className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center transition-colors active:bg-muted/60"
     >
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-        <Icon className="h-6 w-6 text-primary" />
+      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+        <Icon className="h-7 w-7 text-primary" />
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">{label}</p>
-        <p className="text-[11px] text-muted-foreground">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
     </button>
   );

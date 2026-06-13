@@ -97,10 +97,10 @@ export function GridUpcomingWidget({
           items.map(({ dateStr, date, task }) => (
             <div
               key={`${dateStr}-${task.id}`}
-              className="flex items-center gap-2.5 border-b border-border/40 px-1.5 py-2"
+              className="flex items-center gap-2.5 border-b border-border/40 px-1.5 py-2.5"
             >
               {/* Date badge */}
-              <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
+              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
                 <span className="text-[9px] font-semibold uppercase leading-none text-muted-foreground">
                   {format(date, "EEE")}
                 </span>
@@ -118,7 +118,7 @@ export function GridUpcomingWidget({
                       ? onEarlyUncomplete?.(task.id, dateStr)
                       : handleEarlyComplete(task.id, dateStr)
                   }
-                  className="group/cb shrink-0"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
                   title={
                     task.isCompleted
                       ? "Undo — mark as not complete"
@@ -126,14 +126,14 @@ export function GridUpcomingWidget({
                   }
                 >
                   {task.isCompleted ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 transition-colors group-hover/cb:text-[var(--hub-red)]" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 transition-colors active:text-[var(--hub-red)]" />
                   ) : (
                     <Circle
                       className={cn(
-                        "h-4 w-4 transition-colors",
+                        "h-5 w-5 transition-colors",
                         completing === task.id + dateStr
                           ? "animate-pulse text-emerald-400"
-                          : "text-slate-300 hover:text-emerald-400"
+                          : "text-slate-300"
                       )}
                     />
                   )}
@@ -141,7 +141,7 @@ export function GridUpcomingWidget({
               ) : (
                 <div
                   className={cn(
-                    "h-2 w-2 shrink-0 rounded-full",
+                    "h-2.5 w-2.5 shrink-0 rounded-full",
                     priorityDots[task.priority] || priorityDots.normal
                   )}
                 />

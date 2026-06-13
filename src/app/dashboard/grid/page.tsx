@@ -317,21 +317,21 @@ export default function GridDashboardPage() {
     <GridProvider initialLayout={initialLayout}>
       <GridSync socket={socket} deviceId={deviceIdRef.current} />
       <div className="flex h-screen flex-col bg-background">
-        {/* Lightweight header */}
-        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-              <span className="text-sm font-black text-primary-foreground">H</span>
+        {/* Lightweight header — touch-optimised: h-14, 44 px tap targets */}
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <span className="text-base font-black text-primary-foreground">H</span>
             </div>
             <div className="leading-tight">
               <p className="text-sm font-bold text-foreground">Dashboard</p>
               {user.name && (
-                <p className="text-[10px] text-muted-foreground">{user.name}</p>
+                <p className="text-[11px] text-muted-foreground">{user.name}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <HeaderClock />
             <GridControls onSave={saveLayout} />
             {/* Connection status + session ID (kiosk-critical) */}
@@ -339,7 +339,7 @@ export default function GridDashboardPage() {
             <button
               type="button"
               onClick={() => logout()}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>

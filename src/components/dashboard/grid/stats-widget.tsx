@@ -49,9 +49,9 @@ export function StatsWidget({ completed, total, points, missed }: StatsWidgetPro
       {cards.map((c) => (
         <div
           key={c.label}
-          className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2"
+          className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3"
         >
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.bg}`}>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c.bg}`}>
             <c.icon className={`h-5 w-5 ${c.tint}`} />
           </div>
           <div className="min-w-0">
