@@ -75,6 +75,26 @@ function resolveOrgFromCookie(request: NextRequest): string | null {
   return slug.toLowerCase();
 }
 
+/**
+ * Extract an organization slug from a per-org subdomain, e.g.
+ * "kazi.meetthehub.com" → "kazi". Edge-compatible (format check only — the
+ * slug is validated against the DB later by /api/auth/resolve-org). Returns
+ * null for the bare domain, www, and the reserved join/admin subdomains.
+ */
+function resolveOrgFromSubdomain(hostname: string): string | null {
+  const host = hostname.split(":")[0];
+  for (const d of hubDomains) {
+    if (host === d || host === `www.${d}`) return null; // bare/root domain
+    if (host.endsWith(`.${d}`)) {
+      const sub = host.slice(0, host.length - d.length - 1); // label before ".domain"
+      if (!sub || sub === "www" || sub === "join" || sub === "admin") return null;
+      if (!/^[a-zA-Z0-9]{2,10}$/.test(sub)) return null; // single-label slug only
+      return sub.toLowerCase();
+    }
+  }
+  return null;
+}
+
 // Paths exempt from CSRF check (auth flow, health, webhooks)
 const csrfExemptPaths = [
   "/api/auth/",
@@ -156,7 +176,10 @@ export function middleware(request: NextRequest) {
   }
 
   const rawOrgCookie = request.cookies.get("x-org-id")?.value;
-  const orgSlug = resolveOrgFromCookie(request);
+  // A per-org subdomain (e.g. kazi.meetthehub.com) takes priority over the
+  // saved org cookie — it's the most explicit signal of which org to load.
+  const subdomainSlug = resolveOrgFromSubdomain(hostname);
+  const orgSlug = subdomainSlug || resolveOrgFromCookie(request);
 
   // Cookie exists but slug is invalid format — clear it and redirect to /login
   if (rawOrgCookie && !orgSlug) {

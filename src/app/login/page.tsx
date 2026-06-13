@@ -9,6 +9,27 @@ import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
 
+const HUB_DOMAINS = ["meetthehub.com", "meethehub.com"];
+
+/**
+ * Extract a per-org slug from the current subdomain (kazi.meetthehub.com → "kazi").
+ * Returns null on the bare domain, www, and the reserved join/admin subdomains.
+ */
+function getSubdomainOrgSlug(): string | null {
+  if (typeof window === "undefined") return null;
+  const host = window.location.hostname;
+  for (const d of HUB_DOMAINS) {
+    if (host === d || host === `www.${d}`) return null;
+    if (host.endsWith(`.${d}`)) {
+      const sub = host.slice(0, host.length - d.length - 1);
+      if (!sub || sub === "www" || sub === "join" || sub === "admin") return null;
+      if (!/^[a-zA-Z0-9]{2,10}$/.test(sub)) return null;
+      return sub.toLowerCase();
+    }
+  }
+  return null;
+}
+
 interface ValidatedUser {
   userType: "location" | "arl";
   name: string;
@@ -46,6 +67,8 @@ export default function LoginPage() {
   const [resolvedTenant, setResolvedTenant] = useState<ResolvedTenant | null>(null);
   const [showOrgKeyboard, setShowOrgKeyboard] = useState(false);
   const [orgChecked, setOrgChecked] = useState(false);
+  // True when the org is fixed by the subdomain — hides the "change org" control.
+  const [lockedToSubdomain, setLockedToSubdomain] = useState(false);
 
   // Prominent floating particles for the org entry screen
   const orgParticles = useMemo(() =>
@@ -91,6 +114,35 @@ export default function LoginPage() {
     let cancelled = false;
 
     (async () => {
+      // Step 0: per-org subdomain (kazi.meetthehub.com) — highest priority.
+      const subSlug = getSubdomainOrgSlug();
+      if (subSlug) {
+        try {
+          const res = await fetch("/api/auth/resolve-org", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slug: subSlug }),
+          });
+          if (cancelled) return;
+          if (res.ok) {
+            const data = await res.json();
+            const tenant = data.tenant as ResolvedTenant;
+            setOrgSlug(tenant.slug);
+            setResolvedTenant(tenant);
+            applyBranding(tenant);
+            setLockedToSubdomain(true);
+            localStorage.setItem("hub-org-id", tenant.slug);
+            document.cookie = `x-org-id=${tenant.slug}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+            setOrgChecked(true);
+            return;
+          }
+          // Subdomain slug didn't resolve — fall through to IP/localStorage.
+        } catch {
+          // Network error — fall through.
+        }
+        if (cancelled) return;
+      }
+
       // Step 1: Check IP-based org association (takes priority per Req 6.3)
       try {
         const ipRes = await fetch("/api/auth/resolve-org-by-ip");
@@ -942,8 +994,8 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Change Organization link */}
-        {resolvedTenant && (
+        {/* Change Organization link — hidden when the org is fixed by the subdomain */}
+        {resolvedTenant && !lockedToSubdomain && (
           <button
             onClick={() => {
               document.cookie = "x-org-id=; path=/; max-age=0";
