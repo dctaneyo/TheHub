@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarDays, CheckCircle2, Check } from "@/lib/icons";
+import { CalendarDays, CheckCircle2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { UpcomingTask } from "./widget-data";
 
@@ -128,19 +128,12 @@ export function GridUpcomingWidget({
                   {task.isCompleted ? (
                     <CheckCircle2 className="h-7 w-7 text-emerald-500 transition-colors group-hover/cb:text-[var(--hub-red)] group-active/cb:text-[var(--hub-red)]" />
                   ) : (
-                    <span className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-full border-2 transition-colors",
+                    <CheckCircle2 className={cn(
+                      "h-7 w-7 transition-colors",
                       completing === task.id + dateStr
-                        ? "animate-pulse border-emerald-400 bg-emerald-400/10"
-                        : "border-muted-foreground/30 group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10"
-                    )}>
-                      <Check className={cn(
-                        "h-4 w-4 text-[var(--hub-green)] transition-opacity",
-                        completing === task.id + dateStr
-                          ? "opacity-100"
-                          : "opacity-0 group-hover/cb:opacity-100 group-active/cb:opacity-100"
-                      )} />
-                    </span>
+                        ? "animate-pulse text-emerald-400"
+                        : "text-muted-foreground/25 group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]"
+                    )} />
                   )}
                 </button>
               ) : (

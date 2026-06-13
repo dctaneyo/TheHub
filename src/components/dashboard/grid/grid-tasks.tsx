@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, CheckCircle2 } from "@/lib/icons";
+import { X, CheckCircle2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
@@ -164,16 +164,14 @@ export function GridTasksWidget({
                 >
                   [{formatTime(task.dueTime)}] {task.title}
                 </span>
-                {/* Touch-friendly complete button — 44×44 tap area, true circle */}
+                {/* Touch-friendly complete button — same CheckCircle2 icon as completed state, muted until hovered */}
                 <button
                   type="button"
                   onClick={() => onComplete(task.id)}
                   title="Mark complete"
-                  className="group/cb flex h-11 w-11 shrink-0 items-center justify-center transition-colors"
+                  className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-muted-foreground/30 transition-colors group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10">
-                    <Check className="h-4 w-4 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100 group-active/cb:opacity-100" />
-                  </span>
+                  <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
                 </button>
               </motion.div>
             ))}
@@ -260,9 +258,7 @@ export function GridTasksWidget({
                           title="Mark complete"
                           className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
                         >
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-muted-foreground/30 transition-colors group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10">
-                            <Check className="h-4 w-4 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100 group-active/cb:opacity-100" />
-                          </span>
+                          <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
                         </button>
                       )}
                     </div>
