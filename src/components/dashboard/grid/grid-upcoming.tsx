@@ -82,14 +82,14 @@ export function GridUpcomingWidget({
     <div className="flex h-full flex-col">
       <div className="mb-2 flex shrink-0 items-center gap-2 px-3 pt-3">
         <CalendarDays className="h-4 w-4 text-[var(--hub-blue)]" />
-        <h2 className="text-sm font-bold text-foreground">Upcoming 7 Days</h2>
+        <h2 className="text-base font-bold text-foreground">Upcoming 7 Days</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
         {items.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <CalendarDays className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Nothing scheduled in the next 7 days
             </p>
           </div>
@@ -101,10 +101,10 @@ export function GridUpcomingWidget({
             >
               {/* Date badge */}
               <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
-                <span className="text-[9px] font-semibold uppercase leading-none text-muted-foreground">
+                <span className="text-xs font-semibold uppercase leading-none text-muted-foreground">
                   {format(date, "EEE")}
                 </span>
-                <span className="text-sm font-bold leading-tight text-foreground">
+                <span className="text-base font-bold leading-tight text-foreground">
                   {format(date, "d")}
                 </span>
               </div>
@@ -150,7 +150,7 @@ export function GridUpcomingWidget({
               {/* Title */}
               <span
                 className={cn(
-                  "min-w-0 flex-1 truncate text-sm font-semibold",
+                  "min-w-0 flex-1 truncate text-base font-semibold",
                   task.isCompleted
                     ? "text-muted-foreground line-through"
                     : "text-foreground"
@@ -160,7 +160,7 @@ export function GridUpcomingWidget({
               </span>
 
               {/* Time */}
-              <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
+              <span className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
                 {formatTime12(task.dueTime)}
               </span>
             </div>

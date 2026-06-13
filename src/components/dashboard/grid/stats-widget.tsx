@@ -59,11 +59,11 @@ export function StatsWidget({ completed, total, points, missed }: StatsWidgetPro
               key={c.value}
               initial={{ scale: 1.15 }}
               animate={{ scale: 1 }}
-              className="text-lg font-bold leading-none text-foreground"
+              className="text-xl font-bold leading-none text-foreground"
             >
               {c.value}
             </motion.p>
-            <p className="mt-1 truncate text-[11px] text-muted-foreground">{c.label}</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{c.label}</p>
           </div>
         </div>
       ))}

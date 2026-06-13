@@ -70,8 +70,8 @@ function CompletionRing({
         />
       </svg>
       <span className="absolute flex flex-col items-center leading-none">
-        <span className="text-2xl font-black text-foreground">{pct}%</span>
-        <span className="mt-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
+        <span className="text-3xl font-black text-foreground">{pct}%</span>
+        <span className="mt-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
           COMPLETE
         </span>
       </span>
@@ -107,7 +107,7 @@ export function GridTasksWidget({
       <div className="flex shrink-0 flex-col items-center gap-3 pb-3">
         <CompletionRing pct={pct} onClick={() => setModalOpen(true)} />
 
-        <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
+        <div className="flex w-full max-w-[240px] flex-col gap-1 text-base">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 font-medium text-foreground">
               <span
@@ -143,7 +143,7 @@ export function GridTasksWidget({
               className="h-8 w-8"
               style={{ color: "var(--hub-green)" }}
             />
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-base font-medium text-muted-foreground">
               {total === 0 ? "No tasks today" : "All tasks complete"}
             </p>
           </div>
@@ -158,7 +158,7 @@ export function GridTasksWidget({
               >
                 <span
                   className={cn(
-                    "min-w-0 flex-1 truncate text-sm font-bold",
+                    "min-w-0 flex-1 truncate text-base font-bold",
                     task.isOverdue ? "text-[var(--hub-red)]" : "text-foreground"
                   )}
                 >
@@ -198,10 +198,10 @@ export function GridTasksWidget({
             >
               <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
                 <div>
-                  <h2 className="text-base font-bold text-foreground">
+                  <h2 className="text-lg font-bold text-foreground">
                     Today&apos;s Tasks
                   </h2>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {pct}% complete · {completedCount}/{total} done
                   </p>
                 </div>
@@ -217,7 +217,7 @@ export function GridTasksWidget({
 
               <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
                 {allSorted.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="py-8 text-center text-base text-muted-foreground">
                     No tasks scheduled today
                   </p>
                 )}
@@ -229,12 +229,12 @@ export function GridTasksWidget({
                       key={task.id}
                       className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
                     >
-                      <span className="w-20 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+                      <span className="w-24 shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
                         {formatTime(task.dueTime)}
                       </span>
                       <span
                         className={cn(
-                          "min-w-0 flex-1 truncate text-sm font-semibold",
+                          "min-w-0 flex-1 truncate text-base font-semibold",
                           done && "text-[var(--hub-green)] line-through opacity-70",
                           overdue && "text-[var(--hub-red)]",
                           !done && !overdue && "text-foreground"

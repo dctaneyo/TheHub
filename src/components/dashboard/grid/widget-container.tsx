@@ -196,12 +196,12 @@ export function WidgetContainer({
           >
             <div className="flex items-center gap-2 overflow-hidden">
               <Hand className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate text-xs font-semibold text-foreground">
+              <span className="truncate text-sm font-semibold text-foreground">
                 {widget.title}
               </span>
               <span
                 className={cn(
-                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
+                  "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium",
                   active && blocked
                     ? "bg-destructive/15 text-destructive"
                     : "bg-muted text-muted-foreground"

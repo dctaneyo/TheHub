@@ -69,26 +69,26 @@ function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: bool
         <div className={cn("flex shrink-0 items-center justify-center", compact ? "h-6 w-6" : "h-9 w-9")}>
           {medal ? (
             <div className="flex items-center gap-0.5">
-              <span className={compact ? "text-base leading-none" : "text-xl leading-none"}>{medal}</span>
+              <span className={compact ? "text-lg leading-none" : "text-xl leading-none"}>{medal}</span>
               {shouldCelebrate && <Sparkles className="h-3 w-3 text-yellow-500 animate-pulse" />}
             </div>
           ) : (
-            <span className={cn("font-bold text-muted-foreground tabular-nums", compact ? "text-[10px]" : "text-sm")}>#{entry.rank}</span>
+            <span className={cn("font-bold text-muted-foreground tabular-nums", compact ? "text-xs" : "text-sm")}>#{entry.rank}</span>
           )}
         </div>
 
         {/* Name + store + progress */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={cn("font-semibold text-foreground truncate", compact ? "text-[11px]" : "text-sm")}>{entry.name}</span>
+            <span className={cn("font-semibold text-foreground truncate", compact ? "text-sm" : "text-sm")}>{entry.name}</span>
             {!compact && <span className="text-[10px] text-muted-foreground shrink-0">#{entry.storeNumber}</span>}
-            {isMe && <span className="shrink-0 rounded-full bg-[var(--hub-red)]/10 px-1.5 py-0.5 text-[8px] font-bold text-[var(--hub-red)]">YOU</span>}
+            {isMe && <span className="shrink-0 rounded-full bg-[var(--hub-red)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--hub-red)]">YOU</span>}
           </div>
           <div className="mt-1.5 flex items-center gap-2">
             <div className={cn("flex-1 rounded-full bg-muted", compact ? "h-1.5" : "h-2")}>
               <div className={cn("rounded-full transition-all duration-500", compact ? "h-1.5" : "h-2", pctColor(entry.completionPct))} style={{ width: `${Math.min(entry.completionPct, 100)}%` }} />
             </div>
-            <span className={cn("shrink-0 font-bold tabular-nums", compact ? "text-[9px]" : "text-xs", pctTextColor(entry.completionPct))}>{entry.completionPct}%</span>
+            <span className={cn("shrink-0 font-bold tabular-nums", compact ? "text-xs" : "text-xs", pctTextColor(entry.completionPct))}>{entry.completionPct}%</span>
           </div>
         </div>
 
@@ -96,9 +96,9 @@ function RankRow({ entry, isMe, compact }: { entry: LeaderboardEntry; isMe: bool
         <div className="shrink-0 text-right">
           <div className="flex items-center gap-0.5 justify-end">
             <Zap className={cn("text-amber-500", compact ? "h-2.5 w-2.5" : "h-3.5 w-3.5")} />
-            <span className={cn("font-bold tabular-nums text-foreground", compact ? "text-[10px]" : "text-sm")}>{entry.totalPoints}</span>
+            <span className={cn("font-bold tabular-nums text-foreground", compact ? "text-sm" : "text-sm")}>{entry.totalPoints}</span>
           </div>
-          {entry.bonusPoints > 0 && <span className={cn("text-amber-600 dark:text-amber-400 font-medium", compact ? "text-[8px]" : "text-[10px]")}>+{entry.bonusPoints} bonus</span>}
+          {entry.bonusPoints > 0 && <span className={cn("text-amber-600 dark:text-amber-400 font-medium", compact ? "text-xs" : "text-[10px]")}>+{entry.bonusPoints} bonus</span>}
           {!compact && <p className="text-[10px] text-muted-foreground">{entry.completedTasks}/{entry.totalTasks} tasks</p>}
         </div>
       </div>
@@ -159,9 +159,9 @@ export function Leaderboard({ currentLocationId, compact = false }: LeaderboardP
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Trophy className={cn("text-amber-500", compact ? "h-3.5 w-3.5" : "h-5 w-5")} />
-          <h2 className={cn("font-bold text-foreground", compact ? "text-xs" : "text-lg")}>Weekly Leaderboard</h2>
+          <h2 className={cn("font-bold text-foreground", compact ? "text-sm" : "text-lg")}>Weekly Leaderboard</h2>
         </div>
-        <span className={cn("font-medium text-muted-foreground", compact ? "text-[10px]" : "text-xs")}>{formatWeekRange(data.weekStart, data.weekEnd)}</span>
+        <span className={cn("font-medium text-muted-foreground", compact ? "text-xs" : "text-xs")}>{formatWeekRange(data.weekStart, data.weekEnd)}</span>
       </div>
 
       {/* Uniform list view for all entries */}
@@ -172,7 +172,7 @@ export function Leaderboard({ currentLocationId, compact = false }: LeaderboardP
       </div>
 
       {compact && data.leaderboard.length > 5 && (
-        <p className="text-center text-[10px] text-muted-foreground">+{data.leaderboard.length - 5} more</p>
+        <p className="text-center text-xs text-muted-foreground">+{data.leaderboard.length - 5} more</p>
       )}
     </div>
   );

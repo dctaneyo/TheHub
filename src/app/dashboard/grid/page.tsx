@@ -52,7 +52,7 @@ function HeaderClock() {
   });
   return (
     <span
-      className="font-mono text-sm font-semibold tabular-nums text-foreground"
+      className="font-mono text-base font-semibold tabular-nums text-foreground"
       aria-label="Current time"
     >
       {time}
@@ -324,9 +324,9 @@ export default function GridDashboardPage() {
               <span className="text-base font-black text-primary-foreground">H</span>
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-bold text-foreground">Dashboard</p>
+              <p className="text-base font-bold text-foreground">Dashboard</p>
               {user.name && (
-                <p className="text-[11px] text-muted-foreground">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.name}</p>
               )}
             </div>
           </div>

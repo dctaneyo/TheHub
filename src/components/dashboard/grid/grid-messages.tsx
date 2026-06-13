@@ -87,7 +87,7 @@ export function GridMessagesWidget({
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-bold text-foreground">Messages</h2>
+          <h2 className="text-base font-bold text-foreground">Messages</h2>
         </div>
         {totalUnread > 0 && (
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
@@ -105,7 +105,7 @@ export function GridMessagesWidget({
         ) : conversations.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <MessageCircle className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No conversations</p>
+            <p className="text-base text-muted-foreground">No conversations</p>
           </div>
         ) : (
           conversations.map((c) => {
@@ -134,7 +134,7 @@ export function GridMessagesWidget({
                   <div className="flex items-center justify-between gap-2">
                     <span
                       className={cn(
-                        "truncate text-sm",
+                        "truncate text-base",
                         unread
                           ? "font-bold text-foreground"
                           : "font-semibold text-foreground"
@@ -143,14 +143,14 @@ export function GridMessagesWidget({
                       {c.name}
                     </span>
                     {c.lastMessage && (
-                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         {timeAgo(c.lastMessage.createdAt)}
                       </span>
                     )}
                   </div>
                   <p
                     className={cn(
-                      "truncate text-xs",
+                      "truncate text-sm",
                       unread
                         ? "font-medium text-foreground/80"
                         : "text-muted-foreground"

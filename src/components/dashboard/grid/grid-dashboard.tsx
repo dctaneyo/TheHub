@@ -126,10 +126,10 @@ export function GridControls({
                     )}
                   >
                     <div className="flex-1">
-                      <div className="text-xs font-medium text-foreground">
+                      <div className="text-sm font-medium text-foreground">
                         {preset.name}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         {preset.description}
                       </div>
                     </div>
@@ -155,10 +155,10 @@ export function GridControls({
                   )}
                 >
                   <div className="flex-1">
-                    <div className="text-xs font-medium text-foreground">
+                    <div className="text-sm font-medium text-foreground">
                       Custom
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Build and arrange your own layout
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export function GridControls({
                         setShowAdd(false);
                       }}
                       className={cn(
-                        "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition-colors",
+                        "flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors",
                         used
                           ? "cursor-not-allowed text-muted-foreground/50"
                           : "hover:bg-muted"
