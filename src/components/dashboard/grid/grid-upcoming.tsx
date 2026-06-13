@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarDays, CheckCircle2, Circle } from "@/lib/icons";
+import { CalendarDays, CheckCircle2, Check } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { UpcomingTask } from "./widget-data";
 
@@ -118,7 +118,7 @@ export function GridUpcomingWidget({
                       ? onEarlyUncomplete?.(task.id, dateStr)
                       : handleEarlyComplete(task.id, dateStr)
                   }
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
                   title={
                     task.isCompleted
                       ? "Undo — mark as not complete"
@@ -126,16 +126,21 @@ export function GridUpcomingWidget({
                   }
                 >
                   {task.isCompleted ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500 transition-colors active:text-[var(--hub-red)]" />
+                    <CheckCircle2 className="h-7 w-7 text-emerald-500 transition-colors group-hover/cb:text-[var(--hub-red)] group-active/cb:text-[var(--hub-red)]" />
                   ) : (
-                    <Circle
-                      className={cn(
-                        "h-5 w-5 transition-colors",
+                    <span className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-full border-2 transition-colors",
+                      completing === task.id + dateStr
+                        ? "animate-pulse border-emerald-400 bg-emerald-400/10"
+                        : "border-muted-foreground/30 group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10"
+                    )}>
+                      <Check className={cn(
+                        "h-4 w-4 text-[var(--hub-green)] transition-opacity",
                         completing === task.id + dateStr
-                          ? "animate-pulse text-emerald-400"
-                          : "text-slate-300"
-                      )}
-                    />
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/cb:opacity-100 group-active/cb:opacity-100"
+                      )} />
+                    </span>
                   )}
                 </button>
               ) : (

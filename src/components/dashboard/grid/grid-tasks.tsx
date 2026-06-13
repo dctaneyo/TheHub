@@ -164,14 +164,16 @@ export function GridTasksWidget({
                 >
                   [{formatTime(task.dueTime)}] {task.title}
                 </span>
-                {/* Touch-friendly checkbox: 44×44 tap target */}
+                {/* Touch-friendly complete button — 44×44 tap area, true circle */}
                 <button
                   type="button"
                   onClick={() => onComplete(task.id)}
                   title="Mark complete"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-muted-foreground/30 transition-colors active:border-[var(--hub-green)] active:bg-[var(--hub-green)]/10"
+                  className="group/cb flex h-11 w-11 shrink-0 items-center justify-center transition-colors"
                 >
-                  <Check className="h-5 w-5 text-[var(--hub-green)]" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-muted-foreground/30 transition-colors group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10">
+                    <Check className="h-4 w-4 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100 group-active/cb:opacity-100" />
+                  </span>
                 </button>
               </motion.div>
             ))}
@@ -247,18 +249,20 @@ export function GridTasksWidget({
                           type="button"
                           onClick={() => onUncomplete(task.id)}
                           title="Undo — mark as not complete"
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                          className="group/undo flex h-11 w-11 shrink-0 items-center justify-center"
                         >
-                          <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors active:text-[var(--hub-red)]" />
+                          <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors group-hover/undo:text-[var(--hub-red)] group-active/undo:text-[var(--hub-red)]" />
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => onComplete(task.id)}
                           title="Mark complete"
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-muted-foreground/30 transition-colors active:border-[var(--hub-green)] active:bg-[var(--hub-green)]/10"
+                          className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
                         >
-                          <Check className="h-5 w-5 text-[var(--hub-green)]" />
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-muted-foreground/30 transition-colors group-hover/cb:border-[var(--hub-green)] group-hover/cb:bg-[var(--hub-green)]/10 group-active/cb:border-[var(--hub-green)] group-active/cb:bg-[var(--hub-green)]/10">
+                            <Check className="h-4 w-4 text-[var(--hub-green)] opacity-0 transition-opacity group-hover/cb:opacity-100 group-active/cb:opacity-100" />
+                          </span>
                         </button>
                       )}
                     </div>
