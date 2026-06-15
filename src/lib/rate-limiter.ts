@@ -1,6 +1,10 @@
 /**
  * In-memory rate limiter for API routes.
  * Tracks attempts per key (usually IP address) with a sliding window.
+ *
+ * The store is pinned to globalThis (same pattern as the Socket.IO singleton)
+ * so all API routes share one Map instance even when Next.js loads this module
+ * separately in different route bundles.
  */
 
 interface RateLimitEntry {
@@ -9,19 +13,26 @@ interface RateLimitEntry {
   lockedUntil?: number;
 }
 
-const store = new Map<string, RateLimitEntry>();
+const _g = globalThis as { __hubRateLimitStore?: Map<string, RateLimitEntry> };
+if (!_g.__hubRateLimitStore) {
+  _g.__hubRateLimitStore = new Map<string, RateLimitEntry>();
+}
+const store = _g.__hubRateLimitStore;
 
-// Clean up old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (entry.lockedUntil && entry.lockedUntil < now) {
-      store.delete(key);
-    } else if (now - entry.firstAttempt > 60_000) {
-      store.delete(key);
+// Clean up old entries every 5 minutes (register only once).
+if (!(_g as any).__hubRateLimitCleanup) {
+  (_g as any).__hubRateLimitCleanup = true;
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of store) {
+      if (entry.lockedUntil && entry.lockedUntil < now) {
+        store.delete(key);
+      } else if (now - entry.firstAttempt > 60_000) {
+        store.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  }, 5 * 60 * 1000);
+}
 
 export interface RateLimitConfig {
   maxAttempts: number;       // max attempts per window
