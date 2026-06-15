@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard } from "@/lib/icons";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Lock, CheckCircle2 } from "@/lib/icons";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 
@@ -87,6 +87,111 @@ export default function LoginPage() {
   const pinRef = useRef("");
   const keyboardInputRef = useRef<HTMLInputElement>(null);
   const orgInputRef = useRef<HTMLInputElement>(null);
+
+  // ---- Staff lockout bypass ------------------------------------------------
+  // Triggered by 5 rapid taps on the logo within 2 seconds.
+  const [showBypass, setShowBypass] = useState(false);
+  const [bypassCode, setBypassCode] = useState("");
+  const [bypassError, setBypassError] = useState("");
+  const [bypassLoading, setBypassLoading] = useState(false);
+  const [bypassDone, setBypassDone] = useState(false);
+  const logoTapCount = useRef(0);
+  const logoTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bypassIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetBypassIdleTimer = useCallback(() => {
+    if (bypassIdleTimer.current) clearTimeout(bypassIdleTimer.current);
+    bypassIdleTimer.current = setTimeout(() => setShowBypass(false), 30_000);
+  }, []);
+
+  const openBypassDialog = useCallback(() => {
+    setShowBypass(true);
+    setBypassCode("");
+    setBypassError("");
+    setBypassDone(false);
+    resetBypassIdleTimer();
+  }, [resetBypassIdleTimer]);
+
+  const closeBypassDialog = useCallback(() => {
+    setShowBypass(false);
+    setBypassCode("");
+    setBypassError("");
+    if (bypassIdleTimer.current) clearTimeout(bypassIdleTimer.current);
+  }, []);
+
+  // Secret trigger: 5 taps within 2 s on the logo.
+  const handleLogoTap = useCallback(() => {
+    logoTapCount.current += 1;
+    if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
+    logoTapTimer.current = setTimeout(() => { logoTapCount.current = 0; }, 2000);
+    if (logoTapCount.current >= 5) {
+      logoTapCount.current = 0;
+      if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
+      openBypassDialog();
+    }
+  }, [openBypassDialog]);
+
+  // Bypass numpad handlers.
+  const handleBypassDigit = useCallback((digit: string) => {
+    if (bypassLoading || bypassDone) return;
+    setBypassCode(prev => prev.length < 4 ? prev + digit : prev);
+    resetBypassIdleTimer();
+  }, [bypassLoading, bypassDone, resetBypassIdleTimer]);
+
+  const handleBypassDelete = useCallback(() => {
+    setBypassCode(prev => prev.slice(0, -1));
+    resetBypassIdleTimer();
+  }, [resetBypassIdleTimer]);
+
+  const handleBypassSubmit = useCallback(async () => {
+    if (bypassCode.length !== 4 || bypassLoading || bypassDone) return;
+    setBypassLoading(true);
+    setBypassError("");
+    try {
+      const res = await fetch("/api/auth/reset-lockout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: bypassCode }),
+      });
+      if (res.ok) {
+        setBypassDone(true);
+        setBypassLoading(false);
+        setTimeout(() => {
+          closeBypassDialog();
+          setBypassDone(false);
+          setError(""); // clear the "Too many attempts" error on the main screen
+        }, 1800);
+      } else if (res.status === 429) {
+        const retryAfterSec = parseInt(res.headers.get("Retry-After") || "3600", 10);
+        const retryMin = Math.ceil(retryAfterSec / 60);
+        setBypassError(`Too many attempts. Try again in ${retryMin} min.`);
+        setBypassCode("");
+        setBypassLoading(false);
+      } else {
+        setBypassError("Invalid bypass code.");
+        setBypassCode("");
+        setBypassLoading(false);
+      }
+    } catch {
+      setBypassError("Connection error. Try again.");
+      setBypassLoading(false);
+    }
+  }, [bypassCode, bypassLoading, bypassDone, closeBypassDialog]);
+
+  // Auto-submit when all 4 bypass digits are entered.
+  useEffect(() => {
+    if (bypassCode.length === 4 && !bypassLoading && !bypassDone) {
+      handleBypassSubmit();
+    }
+  }, [bypassCode, bypassLoading, bypassDone, handleBypassSubmit]);
+
+  // Cleanup timers on unmount.
+  useEffect(() => {
+    return () => {
+      if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
+      if (bypassIdleTimer.current) clearTimeout(bypassIdleTimer.current);
+    };
+  }, []);
 
   // Apply tenant branding to the page (CSS variables, title, favicon)
   const applyBranding = useCallback((tenant: ResolvedTenant) => {
@@ -832,13 +937,15 @@ export default function LoginPage() {
           <motion.img
             src={resolvedTenant.logoUrl}
             alt={`${resolvedTenant.name} logo`}
-            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200"
+            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200 select-none"
             whileHover={{ scale: 1.05 }}
+            onClick={handleLogoTap}
           />
         ) : (
           <motion.div
-            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200 select-none"
             whileHover={{ scale: 1.05 }}
+            onClick={handleLogoTap}
           >
             <span className="text-xl sm:text-2xl font-black text-white">H</span>
           </motion.div>
@@ -1017,6 +1124,145 @@ export default function LoginPage() {
           </button>
         )}
       </motion.div>
+
+      {/* ---- Staff lockout bypass dialog ---------------------------------- */}
+      {/* Triggered by 5 rapid taps on the logo. Not shown in normal usage.  */}
+      <AnimatePresence>
+        {showBypass && (
+          <motion.div
+            key="bypass-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !bypassLoading) closeBypassDialog();
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 340, damping: 28 }}
+              className="w-full max-w-[280px] rounded-3xl bg-white px-6 py-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex flex-col items-center gap-2 mb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
+                  <Lock className="h-6 w-6 text-slate-500" />
+                </div>
+                <h2 className="text-base font-bold text-slate-800">Staff Unlock</h2>
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                  Enter the 4-digit bypass code to reset the login lockout
+                </p>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {bypassDone ? (
+                  /* Success state */
+                  <motion.div
+                    key="done"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center gap-2 py-4"
+                  >
+                    <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                    <p className="text-sm font-semibold text-slate-700">Lockout cleared!</p>
+                    <p className="text-xs text-slate-400">You may try again now</p>
+                  </motion.div>
+                ) : (
+                  <motion.div key="form">
+                    {/* Dots */}
+                    <div className="flex justify-center gap-3 mb-4">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-3 w-3 rounded-full transition-all duration-150 ${
+                            i < bypassCode.length
+                              ? "bg-slate-700 scale-110"
+                              : "bg-slate-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Error */}
+                    <div className="min-h-[2rem] mb-2">
+                      <AnimatePresence mode="wait">
+                        {bypassError && (
+                          <motion.div
+                            key="bypass-err"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-1.5 text-xs text-red-600"
+                          >
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span>{bypassError}</span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Numpad: 1-9, Cancel, 0, Delete */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["1","2","3","4","5","6","7","8","9","cancel","0","delete"] as const).map((btn) => {
+                        if (btn === "cancel") {
+                          return (
+                            <motion.button
+                              key="cancel"
+                              type="button"
+                              whileTap={{ scale: 0.92 }}
+                              onClick={closeBypassDialog}
+                              disabled={bypassLoading}
+                              className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 text-xs font-semibold text-slate-500 shadow-sm transition-colors hover:bg-slate-200 disabled:opacity-50"
+                            >
+                              Cancel
+                            </motion.button>
+                          );
+                        }
+                        if (btn === "delete") {
+                          return (
+                            <motion.button
+                              key="delete"
+                              type="button"
+                              whileTap={{ scale: 0.92 }}
+                              onClick={handleBypassDelete}
+                              disabled={bypassLoading}
+                              className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm transition-colors hover:bg-slate-200 disabled:opacity-50"
+                            >
+                              <Delete className="h-4 w-4" />
+                            </motion.button>
+                          );
+                        }
+                        const isSubmitting = bypassLoading && bypassCode.length === 4;
+                        return (
+                          <motion.button
+                            key={btn}
+                            type="button"
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => handleBypassDigit(btn)}
+                            disabled={bypassLoading || bypassCode.length >= 4}
+                            className="flex h-12 items-center justify-center rounded-2xl border border-slate-100 bg-white text-lg font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
+                          >
+                            {isSubmitting && bypassCode[bypassCode.length - 1] === btn ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                            ) : (
+                              btn
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
