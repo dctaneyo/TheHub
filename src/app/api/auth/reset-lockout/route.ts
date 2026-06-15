@@ -53,8 +53,12 @@ export async function POST(req: NextRequest) {
     return apiError("INVALID_CODE", "Invalid bypass code.", 401);
   }
 
-  // Valid — clear the login lockout for this IP so the user can try again.
+  // Valid — clear both login and validate-user lockouts for this IP.
+  // The login flow hits two separate rate-limited endpoints:
+  //   validate-user  (key: validate:<ip>)  — User ID entry, 60s lockout
+  //   login          (key: login:<ip>)     — PIN entry, 5-min lockout
   resetRateLimit(`login:${ip}`);
+  resetRateLimit(`validate:${ip}`);
 
   return apiSuccess({ ok: true });
 }
