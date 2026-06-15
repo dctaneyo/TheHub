@@ -534,7 +534,7 @@ export function RemoteLogin() {
                         title={isForceTarget && forceAction === "logout" ? "Click again to confirm" : "Force logout to login screen"}
                       >
                         <LogOut className="h-3 w-3" />
-                        {isForceTarget && forceAction === "logout" ? "Confirm" : "Logout"}
+                        {isForceTarget && forceAction === "logout" ? "Confirm" : "Sign Out"}
                       </button>
                     </div>
                   </div>

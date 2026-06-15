@@ -292,7 +292,7 @@ export default function AdminPortal() {
               className="border-white/10 text-slate-400 hover:bg-white/5 hover:text-white gap-2"
             >
               <LogIn className="h-4 w-4 rotate-180" />
-              Logout
+              Sign Out
             </Button>
           </div>
         </div>

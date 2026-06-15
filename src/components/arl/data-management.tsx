@@ -281,7 +281,7 @@ export function DataManagement() {
       cards: [
         { id: "stale-sess", icon: Shield, color: "blue", title: "Clear Stale Sessions", desc: "Remove offline sessions older than 7 days.", btn: "Clear Stale", onClick: () => confirm("stale-sess", "Clear Stale Sessions", "This will remove all offline sessions older than 7 days.", clearSessions("stale", "Stale sessions")) },
         { id: "offline-sess", icon: Shield, color: "indigo", title: "Clear All Offline", desc: "Remove all currently offline sessions.", btn: "Clear Offline", onClick: () => confirm("offline-sess", "Clear Offline Sessions", "This will remove all sessions that are currently offline.", clearSessions("all-offline", "Offline sessions")) },
-        { id: "force-all", icon: Shield, color: "red", title: "Force Logout All", desc: "Logout everyone except yourself.", btn: "Force Logout", onClick: () => confirm("force-all", "Force Logout All Users", "This will forcefully log out ALL users except your current session.", clearSessions("force-all", "Force logout")) },
+        { id: "force-all", icon: Shield, color: "red", title: "Force Sign Out All", desc: "Sign out everyone except yourself.", btn: "Force Sign Out", onClick: () => confirm("force-all", "Force Sign Out All Users", "This will forcefully sign out ALL users except your current session.", clearSessions("force-all", "Force sign out")) },
       ],
     },
     {
