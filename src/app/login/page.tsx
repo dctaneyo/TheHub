@@ -119,8 +119,8 @@ export default function LoginPage() {
     if (bypassIdleTimer.current) clearTimeout(bypassIdleTimer.current);
   }, []);
 
-  // Secret trigger: 5 taps within 2 s on the logo.
-  const handleLogoTap = useCallback(() => {
+  // Secret trigger: 5 taps within 2 s on the connection status indicator.
+  const handleConnectionTap = useCallback(() => {
     logoTapCount.current += 1;
     if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
     logoTapTimer.current = setTimeout(() => { logoTapCount.current = 0; }, 2000);
@@ -808,7 +808,10 @@ export default function LoginPage() {
             </button>
           </motion.button>
         )}
-        <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm">
+        <div
+          onClick={handleConnectionTap}
+          className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm select-none"
+        >
           {isOnline ? (
             <>
               <Wifi className="h-4 w-4 text-emerald-500" />
@@ -890,7 +893,10 @@ export default function LoginPage() {
       >
         {/* Mobile-only: session ID + connection status inside card */}
         <div className="flex sm:hidden w-full justify-between items-center mb-4">
-          <div className="flex items-center gap-1.5">
+          <div
+            onClick={handleConnectionTap}
+            className="flex items-center gap-1.5 select-none"
+          >
             {isOnline ? (
               <>
                 <Wifi className="h-3.5 w-3.5 text-emerald-500" />
@@ -937,15 +943,13 @@ export default function LoginPage() {
           <motion.img
             src={resolvedTenant.logoUrl}
             alt={`${resolvedTenant.name} logo`}
-            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200 select-none"
+            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200"
             whileHover={{ scale: 1.05 }}
-            onClick={handleLogoTap}
           />
         ) : (
           <motion.div
-            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200 select-none"
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
             whileHover={{ scale: 1.05 }}
-            onClick={handleLogoTap}
           >
             <span className="text-xl sm:text-2xl font-black text-white">H</span>
           </motion.div>
