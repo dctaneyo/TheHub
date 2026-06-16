@@ -21,7 +21,7 @@ export function CompletedMissed({
   missedYesterday,
 }: CompletedMissedProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-3">
       {/* Completed Today */}
       <div>
         <div className="mb-2 flex items-center gap-2 px-1">
