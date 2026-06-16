@@ -188,13 +188,14 @@ function ConcentricRings() {
 }
 
 /**
- * Travelling dot-wave background — a grid of dots whose scale and opacity are
- * driven by two overlapping sine waves that travel diagonally across the field,
- * creating the "digital dots form waves" effect. Implemented on a single canvas
- * with requestAnimationFrame for smooth, GPU-composited animation without
- * spawning hundreds of Framer Motion instances.
+ * Auto-ripple dot grid — a calm grid of small dots where ripples spawn
+ * automatically from random grid points on a timer. Each ripple expands
+ * outward as a circular wavefront; dots along the front scale up and
+ * brighten as the ring passes through them, then settle back to rest.
+ * Multiple ripples coexist, creating an ambient "raindrops on still water"
+ * feel. Implemented on a single canvas with requestAnimationFrame.
  */
-function DotWaveGrid() {
+function RippleGrid() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -204,71 +205,124 @@ function DotWaveGrid() {
     let raf: number;
     let stopped = false;
 
-    // Resolve the brand colour from the CSS variable once
-    const resolveBrandColor = () => {
+    // ── Config ──────────────────────────────────────────────────────────────
+    const SPACING   = 38;   // px between dots
+    const DOT_BASE  = 1.8;  // resting dot radius (px)
+    const DOT_PEAK  = 5.5;  // max radius at ripple crest
+    const RIPPLE_SPEED   = 90;  // px/s — how fast the ring expands
+    const RIPPLE_WIDTH   = 55;  // px — thickness of the bright band
+    const RIPPLE_OPACITY = 0.7; // peak opacity of a dot at the crest
+    const BASE_OPACITY   = 0.10; // resting dot opacity
+    const SPAWN_INTERVAL = 1200; // ms between automatic ripple spawns
+
+    // ── Ripple state ─────────────────────────────────────────────────────────
+    interface Ripple { x: number; y: number; radius: number; born: number }
+    const ripples: Ripple[] = [];
+
+    // Resolve brand colour from CSS variable
+    const getBrandColor = (): [number, number, number] => {
       const raw = getComputedStyle(document.documentElement)
-        .getPropertyValue("--hub-red")
-        .trim();
-      // Expect a hex like #dc2626 or rgb(...)
-      return raw || "#dc2626";
+        .getPropertyValue("--hub-red").trim() || "#dc2626";
+      if (raw.startsWith("rgb")) {
+        const m = raw.match(/\d+/g);
+        if (m) return [+m[0], +m[1], +m[2]];
+      }
+      let hex = raw.replace("#", "");
+      if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+      return [
+        parseInt(hex.slice(0,2), 16),
+        parseInt(hex.slice(2,4), 16),
+        parseInt(hex.slice(4,6), 16),
+      ];
     };
 
-    const COLS = 28;
-    const ROWS = 18;
-    const DOT_R = 2.5;         // dot base radius (px)
-    const WAVE_SPEED_1 = 0.55; // radians/second for wave 1
-    const WAVE_SPEED_2 = 0.35; // radians/second for wave 2 (slower, opposite angle)
+    // ── Spawn helper — picks a random grid cell ───────────────────────────────
+    const spawnRipple = (now: number) => {
+      const W = canvas.width;
+      const H = canvas.height;
+      const cols = Math.floor(W / SPACING) + 1;
+      const rows = Math.floor(H / SPACING) + 1;
+      const c = Math.floor(Math.random() * cols);
+      const r = Math.floor(Math.random() * rows);
+      const xOff = (W - (cols - 1) * SPACING) / 2;
+      const yOff = (H - (rows - 1) * SPACING) / 2;
+      ripples.push({ x: xOff + c * SPACING, y: yOff + r * SPACING, radius: 0, born: now });
+    };
 
-    const draw = (t: number) => {
+    // ── Draw loop ─────────────────────────────────────────────────────────────
+    let lastSpawn = 0;
+    const draw = (now: number) => {
       if (stopped) return;
       const W = canvas.width;
       const H = canvas.height;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      // Spawn new ripples on schedule
+      if (now - lastSpawn > SPAWN_INTERVAL) {
+        spawnRipple(now);
+        // Occasionally spawn two close together for variety
+        if (Math.random() < 0.35) spawnRipple(now);
+        lastSpawn = now;
+      }
+
+      // Advance ripple radii; prune dead ones
+      const maxR = Math.sqrt(W * W + H * H) / 2 + RIPPLE_WIDTH;
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const elapsed = (now - ripples[i].born) / 1000;
+        ripples[i].radius = elapsed * RIPPLE_SPEED;
+        if (ripples[i].radius - RIPPLE_WIDTH > maxR) ripples.splice(i, 1);
+      }
+
       ctx.clearRect(0, 0, W, H);
 
-      const color = resolveBrandColor();
+      const [rr, gg, bb] = getBrandColor();
+      const cols = Math.floor(W / SPACING) + 1;
+      const rows = Math.floor(H / SPACING) + 1;
+      const xOff = (W - (cols - 1) * SPACING) / 2;
+      const yOff = (H - (rows - 1) * SPACING) / 2;
 
-      const cellW = W / (COLS - 1);
-      const cellH = H / (ROWS - 1);
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = xOff + col * SPACING;
+          const y = yOff + row * SPACING;
 
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const x = c * cellW;
-          const y = r * cellH;
+          // Sum influence of all live ripples on this dot
+          let influence = 0;
+          for (const rp of ripples) {
+            const dist = Math.sqrt((x - rp.x) ** 2 + (y - rp.y) ** 2);
+            const delta = dist - rp.radius; // negative = inside ring, positive = outside
+            // Bell curve centred on the wavefront
+            if (Math.abs(delta) < RIPPLE_WIDTH) {
+              const t = 1 - Math.abs(delta) / RIPPLE_WIDTH;
+              influence = Math.max(influence, t * t * (3 - 2 * t)); // smoothstep
+            }
+          }
 
-          // Wave 1 — travels diagonally top-left → bottom-right
-          const phase1 = (c * 0.55 + r * 0.28) - t * WAVE_SPEED_1;
-          // Wave 2 — travels diagonally top-right → bottom-left (opposite)
-          const phase2 = (-c * 0.4 + r * 0.35) - t * WAVE_SPEED_2;
-
-          // Combine waves; result in [-2, 2], normalise to [0, 1]
-          const combined = (Math.sin(phase1) + Math.sin(phase2)) / 2; // [-1, 1]
-          const n = (combined + 1) / 2; // [0, 1]
-
-          // Map to visual properties
-          const opacity = 0.06 + n * 0.38;   // [0.06, 0.44] — subtle base, bright peaks
-          const radius  = DOT_R * (0.5 + n * 1.1); // [DOT_R*0.5, DOT_R*1.6]
+          const opacity = BASE_OPACITY + influence * (RIPPLE_OPACITY - BASE_OPACITY);
+          const radius  = DOT_BASE   + influence * (DOT_PEAK - DOT_BASE);
 
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = hexOrVarToRgba(color, opacity);
+          ctx.fillStyle = `rgba(${rr},${gg},${bb},${opacity.toFixed(3)})`;
           ctx.fill();
         }
       }
 
-      raf = requestAnimationFrame((ts) => draw(ts / 1000));
+      raf = requestAnimationFrame(draw);
     };
 
+    // ── Resize ────────────────────────────────────────────────────────────────
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
     };
-
     resize();
     window.addEventListener("resize", resize);
-    raf = requestAnimationFrame((ts) => draw(ts / 1000));
+
+    // Seed the first ripple immediately so the screen isn't blank
+    spawnRipple(performance.now());
+    raf = requestAnimationFrame(draw);
 
     return () => {
       stopped = true;
@@ -287,42 +341,26 @@ function DotWaveGrid() {
   );
 }
 
-/** Convert a CSS hex colour + alpha into rgba(...) for canvas fillStyle. */
-function hexOrVarToRgba(color: string, alpha: number): string {
-  // Already rgb/rgba — just change alpha
-  if (color.startsWith("rgb")) {
-    return color.replace(/rgba?\(([^)]+)\)/, (_, inner) => {
-      const parts = inner.split(",").slice(0, 3).join(",");
-      return `rgba(${parts},${alpha.toFixed(3)})`;
-    });
-  }
-  // Hex (#rrggbb or #rgb)
-  let hex = color.replace("#", "");
-  if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
-}
-
-type LoginBg = "wave" | "mesh" | "dots" | "rings" | "none";
+type LoginBg = "ripple" | "mesh" | "dots" | "rings" | "none";
 
 const BG_OPTIONS: { value: LoginBg; label: string }[] = [
-  { value: "wave",  label: "Wave"  },
-  { value: "mesh",  label: "Mesh"  },
-  { value: "dots",  label: "Dots"  },
-  { value: "rings", label: "Rings" },
-  { value: "none",  label: "None"  },
+  { value: "ripple", label: "Ripple" },
+  { value: "mesh",   label: "Mesh"   },
+  { value: "dots",   label: "Dots"   },
+  { value: "rings",  label: "Rings"  },
+  { value: "none",   label: "None"   },
 ];
 
 const BG_STORAGE_KEY = "hub-login-bg";
 
 function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
-  const [bg, setBgState] = useState<LoginBg>("wave");
+  const [bg, setBgState] = useState<LoginBg>("ripple");
 
   useEffect(() => {
     const stored = localStorage.getItem(BG_STORAGE_KEY) as LoginBg | null;
-    if (stored && BG_OPTIONS.some((o) => o.value === stored)) setBgState(stored);
+    // "wave" was the previous key name — migrate to "ripple"
+    const mapped = stored === "wave" ? "ripple" : stored;
+    if (mapped && BG_OPTIONS.some((o) => o.value === mapped)) setBgState(mapped);
   }, []);
 
   const setBg = useCallback((v: LoginBg) => {
@@ -334,10 +372,10 @@ function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
 }
 
 function ActiveBackground({ bg }: { bg: LoginBg }) {
-  if (bg === "wave")  return <DotWaveGrid />;
-  if (bg === "mesh")  return <MeshGradient />;
-  if (bg === "dots")  return <DotPulseGrid />;
-  if (bg === "rings") return <ConcentricRings />;
+  if (bg === "ripple") return <RippleGrid />;
+  if (bg === "mesh")   return <MeshGradient />;
+  if (bg === "dots")   return <DotPulseGrid />;
+  if (bg === "rings")  return <ConcentricRings />;
   return null;
 }
 
