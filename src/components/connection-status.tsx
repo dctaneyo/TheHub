@@ -210,20 +210,20 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCode((v) => !v)}
-            className="flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-3.5 py-2 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm cursor-pointer hover:bg-card transition-colors"
           >
             <div className="relative">
-              <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-emerald-50 dark:border-emerald-950 bg-emerald-500" />
+              <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+              <div className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full border border-card bg-emerald-500" />
             </div>
-            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Connected</span>
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Connected</span>
             {sessionCode && (
-              <span className="ml-0.5 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
+              <span className="ml-0.5 font-mono text-xs font-bold text-muted-foreground tracking-wider">
                 #{sessionCode}
               </span>
             )}
             {multiSession && (
-              <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-white">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-white">
                 {sessions.length}
               </span>
             )}
@@ -234,14 +234,14 @@ export function ConnectionStatus() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex items-center gap-2 rounded-full bg-red-50 dark:bg-red-950/50 px-3.5 py-2"
+            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm"
           >
             {isReconnecting ? (
-              <RefreshCw className="h-4 w-4 animate-spin text-red-500" />
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-red-500" />
             ) : (
-              <WifiOff className="h-4 w-4 text-red-500" />
+              <WifiOff className="h-3.5 w-3.5 text-red-500" />
             )}
-            <span className="text-xs font-semibold text-red-600 dark:text-red-400">
+            <span className="text-xs font-semibold text-red-500">
               {isReconnecting ? "Reconnecting..." : "Offline"}
             </span>
           </motion.div>

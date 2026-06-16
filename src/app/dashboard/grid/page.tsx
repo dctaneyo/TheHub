@@ -322,31 +322,37 @@ export default function GridDashboardPage() {
     <GridProvider initialLayout={initialLayout}>
       <GridSync socket={socket} deviceId={deviceIdRef.current} />
       <div className="flex h-screen flex-col bg-background">
-        {/* Lightweight header — touch-optimised: h-14, 44 px tap targets */}
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <span className="text-base font-black text-primary-foreground">H</span>
+        {/* Floating pill header — no background, no border, elements float as pills */}
+        <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
+          {/* Logo + name pill */}
+          <div className="flex h-9 items-center gap-2.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
+              <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
             <div className="leading-tight">
-              <p className="text-base font-bold text-foreground">Dashboard</p>
+              <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
               {user.name && (
-                <p className="text-xs text-muted-foreground">{user.name}</p>
+                <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <HeaderClock />
+            {/* Clock pill */}
+            <div className="flex h-9 items-center rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm">
+              <HeaderClock />
+            </div>
+            {/* Layout / edit controls — each button already styled as pills inside GridControls */}
             <GridControls onSave={saveLayout} />
-            {/* Connection status + session ID (kiosk-critical) */}
+            {/* Connection status */}
             <ConnectionStatus />
+            {/* Sign out pill */}
             <button
               type="button"
               onClick={() => logout()}
-              className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
