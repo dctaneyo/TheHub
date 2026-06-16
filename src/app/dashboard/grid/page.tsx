@@ -215,10 +215,10 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
           </div>
           {/* Scrolling text — single copy, RAF, absolute position within relative container */}
-          <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden">
+          <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: "100%" }}>
             <span
               ref={spanRef}
-              className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs font-medium text-foreground/80"
+              className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-medium text-foreground/80"
               style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
             >
               {tickerText}
