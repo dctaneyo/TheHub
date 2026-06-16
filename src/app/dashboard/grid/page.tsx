@@ -61,12 +61,17 @@ function HeaderClockDisplay() {
 }
 
 // Hides the header clock when the user has placed a Clock widget on the grid.
+// The pill wrapper is included here so it disappears entirely when hidden.
 // Must be rendered inside <GridProvider> to access useGrid().
 function HeaderClock() {
   const { widgets } = useGrid();
   const hasClockWidget = widgets.some((w) => w.type === "clock");
   if (hasClockWidget) return null;
-  return <HeaderClockDisplay />;
+  return (
+    <div className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+      <HeaderClockDisplay />
+    </div>
+  );
 }
 
 export default function GridDashboardPage() {
@@ -324,8 +329,8 @@ export default function GridDashboardPage() {
       <div className="flex h-screen flex-col bg-background">
         {/* Floating pill header — no background, no border, elements float as pills */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
-          {/* Logo + name pill */}
-          <div className="flex h-9 items-center gap-2.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm">
+          {/* Logo + name pill — px-4 for breathing room */}
+          <div className="flex h-9 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
@@ -338,10 +343,8 @@ export default function GridDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Clock pill */}
-            <div className="flex h-9 items-center rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm">
-              <HeaderClock />
-            </div>
+            {/* Clock pill — hidden when a Clock widget is on the grid */}
+            <HeaderClock />
             {/* Layout / edit controls — each button already styled as pills inside GridControls */}
             <GridControls onSave={saveLayout} />
             {/* Connection status */}
