@@ -22,6 +22,7 @@ import {
   type WidgetData,
   type UpcomingTask,
 } from "@/components/dashboard/grid";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -72,6 +73,143 @@ function HeaderClock() {
     <div className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
       <HeaderClockDisplay />
     </div>
+  );
+}
+
+// ── Grid Ticker ──────────────────────────────────────────────────────────────
+// A pill-shaped live ticker that sits at the bottom of the grid layout.
+// When it has items it renders and pushes the grid up; when empty it unmounts
+// so the grid reclaims the space. Uses the same socket events as LiveTicker.
+
+interface TickerItem {
+  id: string;
+  text: string;
+  icon: string;
+  timestamp: number;
+}
+
+const MAX_TICKER_ITEMS = 20;
+const TICKER_SPEED_PX = 65; // px/s
+
+function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
+  const [items, setItems] = useState<TickerItem[]>([]);
+  const { socket } = useSocket();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<number>(0);
+  const posRef = useRef(0);
+
+  // Hydrate ARL-pushed messages on mount
+  useEffect(() => {
+    fetch("/api/ticker")
+      .then((r) => (r.ok ? r.json() : { messages: [] }))
+      .then((data) => {
+        const arlItems: TickerItem[] = (data.messages || []).map(
+          (m: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => ({
+            id: `arl-${m.id}`,
+            text: `${m.content} — ${m.arlName}`,
+            icon: m.icon,
+            timestamp: new Date(m.createdAt).getTime(),
+          })
+        );
+        if (arlItems.length > 0) setItems(arlItems.slice(0, MAX_TICKER_ITEMS));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Socket events
+  useEffect(() => {
+    if (!socket) return;
+
+    const add = (item: TickerItem) =>
+      setItems((prev) => [item, ...prev].slice(0, MAX_TICKER_ITEMS));
+
+    const onTaskCompleted = (d: { locationId?: string; locationName?: string; taskTitle?: string; taskId?: string }) => {
+      if (currentLocationId && d.locationId === currentLocationId) return;
+      add({ id: `task-${d.taskId}-${Date.now()}`, text: `${d.locationName || "A location"} completed "${d.taskTitle}"`, icon: "✅", timestamp: Date.now() });
+    };
+    const onTaskUncompleted = (d: { taskId?: string }) => {
+      if (d.taskId) setItems((prev) => prev.filter((i) => !i.id.startsWith(`task-${d.taskId}-`)));
+    };
+    const onTickerNew = (d: { id: string; icon: string; content: string; arlName: string }) => {
+      add({ id: `arl-${d.id}`, text: `${d.content} — ${d.arlName}`, icon: d.icon, timestamp: Date.now() });
+    };
+    const onTickerDelete = (d: { id: string }) => {
+      setItems((prev) => prev.filter((i) => i.id !== `arl-${d.id}`));
+    };
+
+    socket.on("task:completed", onTaskCompleted);
+    socket.on("task:uncompleted", onTaskUncompleted);
+    socket.on("ticker:new", onTickerNew);
+    socket.on("ticker:delete", onTickerDelete);
+
+    return () => {
+      socket.off("task:completed", onTaskCompleted);
+      socket.off("task:uncompleted", onTaskUncompleted);
+      socket.off("ticker:new", onTickerNew);
+      socket.off("ticker:delete", onTickerDelete);
+    };
+  }, [socket, currentLocationId]);
+
+  // Horizontal scroll animation
+  useEffect(() => {
+    if (items.length === 0) return;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      const content = contentRef.current;
+      if (content) {
+        const half = content.scrollWidth / 2;
+        posRef.current -= TICKER_SPEED_PX * dt;
+        if (Math.abs(posRef.current) >= half) posRef.current += half;
+        content.style.transform = `translateX(${posRef.current}px)`;
+      }
+      animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [items.length]);
+
+  if (items.length === 0) return null;
+
+  const hasItems = items.length > 0;
+
+  const fmt = (ts: number) =>
+    new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const tickerText = hasItems
+    ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
+    : "";
+
+  return (
+    <AnimatePresence initial={false}>
+      {hasItems && (
+        <motion.div
+          key="ticker"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ type: "spring", stiffness: 340, damping: 30 }}
+          className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full bg-card/80 shadow-sm backdrop-blur-sm"
+        >
+          {/* LIVE badge */}
+          <div className="flex h-full shrink-0 items-center gap-1.5 rounded-full bg-primary px-3">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
+          </div>
+          {/* Scrolling text */}
+          <div ref={containerRef} className="min-w-0 flex-1 overflow-hidden">
+            <div ref={contentRef} className="flex whitespace-nowrap will-change-transform">
+              <span className="px-6 text-xs font-medium text-foreground/80">{tickerText}</span>
+              <span className="px-6 text-xs font-medium text-foreground/80">{tickerText}</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -377,10 +515,15 @@ export default function GridDashboardPage() {
           </div>
         </header>
 
-        {/* Grid */}
-        <div className="min-h-0 flex-1">
+        {/* Grid — layout-animated so it smoothly resizes when ticker mounts/unmounts */}
+        <motion.div layout className="min-h-0 flex-1">
           <GridSurface data={widgetData} />
-        </div>
+        </motion.div>
+
+        {/* Live ticker pill — mounts/unmounts based on whether there are items,
+            AnimatePresence drives the slide-up entrance and slide-down exit.
+            GridTickerBar handles its own show/hide; we wrap it for animation. */}
+        <GridTickerBar currentLocationId={currentLocationId} />
 
         {/* Overlays (existing components, unmodified) */}
         <RestaurantChat
