@@ -472,6 +472,9 @@ export default function GridDashboardPage() {
     );
   }
 
+  const currentLocationId =
+    user.userType === "location" ? (user.locationId || user.id) : undefined;
+
   return (
     <GridProvider initialLayout={initialLayout}>
       <GridSync socket={socket} deviceId={deviceIdRef.current} />
