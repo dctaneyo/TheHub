@@ -329,8 +329,8 @@ export default function GridDashboardPage() {
       <div className="flex h-screen flex-col bg-background">
         {/* Floating pill header — no background, no border, elements float as pills */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
-          {/* Logo + name pill — px-4 for breathing room */}
-          <div className="flex h-9 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+          {/* Logo + name pill — flex-1 so it fills the remaining header space */}
+          <div className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
