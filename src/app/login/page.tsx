@@ -211,8 +211,8 @@ function RippleGrid() {
     const DOT_PEAK  = 5.5;  // max radius at ripple crest
     const RIPPLE_SPEED   = 90;  // px/s — how fast the ring expands
     const RIPPLE_WIDTH   = 55;  // px — thickness of the bright band
-    const RIPPLE_OPACITY = 0.7; // peak opacity of a dot at the crest
-    const BASE_OPACITY   = 0.10; // resting dot opacity
+    const RIPPLE_OPACITY = 0.45; // peak opacity at the crest
+    const BASE_OPACITY   = 0.08; // resting dot opacity
     const SPAWN_INTERVAL = 2800; // ms between automatic ripple spawns
     const MAX_RIPPLES    = 2;    // never more than 2 live at once
 
@@ -220,10 +220,10 @@ function RippleGrid() {
     interface Ripple { x: number; y: number; radius: number; born: number }
     const ripples: Ripple[] = [];
 
-    // Resolve brand colour from CSS variable
-    const getBrandColor = (): [number, number, number] => {
+    // Resolve foreground colour from CSS variable — adapts to light/dark theme
+    const getFgColor = (): [number, number, number] => {
       const raw = getComputedStyle(document.documentElement)
-        .getPropertyValue("--hub-red").trim() || "#dc2626";
+        .getPropertyValue("--foreground").trim() || "#1e293b";
       if (raw.startsWith("rgb")) {
         const m = raw.match(/\d+/g);
         if (m) return [+m[0], +m[1], +m[2]];
@@ -275,7 +275,7 @@ function RippleGrid() {
 
       ctx.clearRect(0, 0, W, H);
 
-      const [rr, gg, bb] = getBrandColor();
+      const [rr, gg, bb] = getFgColor();
       const cols = Math.floor(W / SPACING) + 1;
       const rows = Math.floor(H / SPACING) + 1;
       const xOff = (W - (cols - 1) * SPACING) / 2;
