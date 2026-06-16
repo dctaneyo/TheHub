@@ -152,14 +152,33 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
   }, [socket, currentLocationId]);
 
   // RAF scroll: single copy, starts at container right edge, exits left, loops
-  useEffect(() => {
-    if (items.length === 0) return;
+  // Keep a ref to the latest tickerText so the RAF reads it without restarting
+  const tickerTextRef = useRef("");
 
-    cancelAnimationFrame(animRef.current);
-    posRef.current = null; // reset so we re-measure on next frame
+  const fmt = (ts: number) =>
+    new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  const hasItems = items.length > 0;
+  const tickerText = hasItems
+    ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
+    : "";
+
+  // Keep the ref in sync with the latest text (no effect restart needed)
+  tickerTextRef.current = tickerText;
+
+  // Start/stop the RAF based solely on whether there are items — never restart
+  // mid-scroll when the item list grows. posRef persists across item changes.
+  useEffect(() => {
+    if (!hasItems) return;
+
+    // Only initialise position if not already running (first mount)
+    if (posRef.current === null) posRef.current = 0; // will be overwritten on first frame
 
     let last = performance.now();
+    let running = true;
+
     const tick = (now: number) => {
+      if (!running) return;
       const dt = (now - last) / 1000;
       last = now;
 
@@ -169,8 +188,10 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
         const cw = container.clientWidth;
         const sw = span.offsetWidth;
 
-        // Initialise starting position to just off the right edge
-        if (posRef.current === null) posRef.current = cw;
+        // Initialise to just off the right edge on very first frame
+        if (posRef.current === null || posRef.current === 0) {
+          posRef.current = cw;
+        }
 
         posRef.current -= TICKER_SPEED_PX * dt;
 
@@ -184,16 +205,13 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
     };
 
     animRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [items.length]);
 
-  const fmt = (ts: number) =>
-    new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-
-  const hasItems = items.length > 0;
-  const tickerText = hasItems
-    ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
-    : "";
+    return () => {
+      running = false;
+      cancelAnimationFrame(animRef.current);
+      posRef.current = null; // reset for next mount
+    };
+  }, [hasItems]); // only start/stop — never restart on item count change
 
   return (
     <AnimatePresence initial={false}>
@@ -214,12 +232,16 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
           </div>
-          {/* Scrolling text — single copy, RAF, absolute position within relative container */}
+          {/* Scrolling text — single copy, RAF, starts off-screen right */}
           <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: "100%" }}>
             <span
               ref={spanRef}
               className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-medium text-foreground/80"
-              style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
+              style={{
+                paddingLeft: "1.5rem",
+                paddingRight: "1.5rem",
+                transform: "translateX(9999px)", // start off-screen until RAF takes over
+              }}
             >
               {tickerText}
             </span>
