@@ -104,13 +104,13 @@ export function SettingsPanel({
       opacity: 1,
       scale: 1,
       x: 0,
-      transition: { delay: i * 0.07, type: "spring" as const, stiffness: 200, damping: 28 },
+      transition: { delay: i * 0.07, type: "spring" as const, stiffness: 120, damping: 28 },
     }),
     exit: (i: number) => ({
       opacity: 0,
       scale: 0.7,
       x: 32,
-      transition: { delay: i * 0.04, duration: 0.2 },
+      transition: { delay: i * 0.04, duration: 0.22 },
     }),
   };
 
@@ -287,18 +287,21 @@ export function SettingsPanel({
         ))}
       </AnimatePresence>
 
-      {/* Cog pill — layout-animated so it slides left as pills appear */}
-      <motion.button
-        layout
+      {/* Cog pill — plain button, only the icon rotates */}
+      <button
         type="button"
         onClick={() => { setOpen((v) => !v); if (open) { setShowLayouts(false); setShowAdd(false); } }}
         className={cn(PILL, open && "bg-card text-foreground")}
         title={open ? "Close settings" : "Settings"}
-        animate={{ rotate: open ? 90 : 0 }}
-        transition={{ type: "spring", stiffness: 180, damping: 26 }}
       >
-        <Settings className="h-3.5 w-3.5" />
-      </motion.button>
+        <motion.span
+          animate={{ rotate: open ? 90 : 0 }}
+          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+          className="inline-flex"
+        >
+          <Settings className="h-3.5 w-3.5" />
+        </motion.span>
+      </button>
     </div>
   );
 }
