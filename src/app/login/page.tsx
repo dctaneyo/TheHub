@@ -97,6 +97,187 @@ function MeshGradient() {
   );
 }
 
+/**
+ * Dot-pulse grid background — a grid of small dots whose opacity/scale pulses
+ * outward from the centre in a radial ripple wave, like a sonar ping. The dots
+ * are fixed; only colour changes animate.
+ */
+function DotPulseGrid() {
+  const COLS = 22;
+  const ROWS = 14;
+  const cx = COLS / 2 - 0.5;
+  const cy = ROWS / 2 - 0.5;
+  const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+  // Build dot definitions once — deterministic, no randomness
+  const dots = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const dist = Math.sqrt((c - cx) ** 2 + (r - cy) ** 2);
+      // Stagger delay based on distance from center so the ripple radiates out
+      const delay = (dist / maxDist) * 2.4;
+      dots.push({ id: `${r}-${c}`, x: (c / (COLS - 1)) * 100, y: (r / (ROWS - 1)) * 100, delay });
+    }
+  }
+
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      {dots.map((d) => (
+        <motion.div
+          key={d.id}
+          style={{
+            position: "absolute",
+            left:  `${d.x}%`,
+            top:   `${d.y}%`,
+            width:  4,
+            height: 4,
+            borderRadius: "50%",
+            backgroundColor: "var(--hub-red)",
+            transform: "translate(-50%, -50%)",
+          }}
+          animate={{
+            opacity: [0.07, 0.32, 0.07],
+            scale:   [0.8,  1.6,  0.8],
+          }}
+          transition={{
+            duration: 3.2,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: d.delay,
+            repeatDelay: 1.2,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Concentric rings background — a set of rings centred on the screen that
+ * continuously expand and fade outward, like a sonar ping / WiFi signal.
+ */
+function ConcentricRings() {
+  const rings = [0, 1, 2, 3, 4];
+
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden flex items-center justify-center" aria-hidden>
+      {rings.map((i) => (
+        <motion.div
+          key={i}
+          style={{
+            position: "absolute",
+            borderRadius: "50%",
+            border: "1.5px solid var(--hub-red)",
+          }}
+          initial={{ width: 80, height: 80, opacity: 0 }}
+          animate={{
+            width:   [80, 900],
+            height:  [80, 900],
+            opacity: [0.28, 0],
+          }}
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            ease: "easeOut",
+            delay: i * 0.9,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Background picker ──────────────────────────────────────────────────────
+
+type LoginBg = "mesh" | "dots" | "rings" | "none";
+
+const BG_OPTIONS: { value: LoginBg; label: string }[] = [
+  { value: "mesh",  label: "Mesh"  },
+  { value: "dots",  label: "Dots"  },
+  { value: "rings", label: "Rings" },
+  { value: "none",  label: "None"  },
+];
+
+const BG_STORAGE_KEY = "hub-login-bg";
+
+function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
+  const [bg, setBgState] = useState<LoginBg>("mesh");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(BG_STORAGE_KEY) as LoginBg | null;
+    if (stored && BG_OPTIONS.some((o) => o.value === stored)) setBgState(stored);
+  }, []);
+
+  const setBg = useCallback((v: LoginBg) => {
+    setBgState(v);
+    localStorage.setItem(BG_STORAGE_KEY, v);
+  }, []);
+
+  return [bg, setBg];
+}
+
+function ActiveBackground({ bg }: { bg: LoginBg }) {
+  if (bg === "mesh")  return <MeshGradient />;
+  if (bg === "dots")  return <DotPulseGrid />;
+  if (bg === "rings") return <ConcentricRings />;
+  return null;
+}
+
+function BgPicker({ bg, setBg }: { bg: LoginBg; setBg: (v: LoginBg) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = BG_OPTIONS.find((o) => o.value === bg)!;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title="Change background"
+        className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
+      >
+        {/* Small animated preview dot */}
+        <motion.span
+          className="h-2 w-2 rounded-full bg-[var(--hub-red)]"
+          animate={bg !== "none" ? { opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] } : { opacity: 0.3, scale: 1 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <span className="text-[10px] font-medium text-muted-foreground">{current.label}</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Click-outside dismiss */}
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="absolute right-0 top-full z-50 mt-1.5 flex flex-col gap-0.5 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md min-w-[110px]"
+            >
+              {BG_OPTIONS.map((o) => (
+                <button
+                  key={o.value}
+                  onClick={() => { setBg(o.value); setOpen(false); }}
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    o.value === bg
+                      ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {o.value === bg && <span className="h-1.5 w-1.5 rounded-full bg-[var(--hub-red)]" />}
+                  {o.value !== bg && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />}
+                  {o.label}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -107,6 +288,8 @@ export default function LoginPage() {
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
   }, [theme, setTheme]);
+
+  const [bg, setBg] = useBgPreference();
 
   const [step, setStep] = useState<LoginStep>("userId");
   const [userId, setUserId] = useState("");
@@ -676,21 +859,24 @@ export default function LoginPage() {
     return (
       <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center relative ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
         {themeMounted && (
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${theme}`}
-            className="absolute right-4 top-4 z-50 flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
-          >
-            {theme === "dark"
-              ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
-              : theme === "light"
-              ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-              : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
-            <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
-          </button>
+          <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+            <BgPicker bg={bg} setBg={setBg} />
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${theme}`}
+              className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
+            >
+              {theme === "dark"
+                ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                : theme === "light"
+                ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+                : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
+              <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
+            </button>
+          </div>
         )}
-        {/* Animated mesh gradient background */}
-        <MeshGradient />
+        {/* Active background */}
+        <ActiveBackground bg={bg} />
 
         {/* Spacer to push content above keyboard on mobile */}
         {showOrgKeyboard && <div className="flex-1 min-h-4 sm:hidden" />}
@@ -803,8 +989,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4">
-      {/* Animated mesh gradient background */}
-      <MeshGradient />
+      {/* Active background */}
+      <ActiveBackground bg={bg} />
       {/* Hidden input for keyboard support */}
       <input
         ref={keyboardInputRef}
@@ -878,6 +1064,7 @@ export default function LoginPage() {
               : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
             <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
           </button>
+          <BgPicker bg={bg} setBg={setBg} />
         )}
       </div>
 
