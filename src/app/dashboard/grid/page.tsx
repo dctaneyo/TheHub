@@ -94,6 +94,10 @@ const TICKER_SPEED_PX = 65; // px/s
 function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
   const [items, setItems] = useState<TickerItem[]>([]);
   const { socket } = useSocket();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const animRef = useRef<number>(0);
+  const posRef = useRef<number | null>(null); // null = not yet initialised
 
   // Hydrate ARL-pushed messages on mount
   useEffect(() => {
@@ -147,8 +151,42 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
     };
   }, [socket, currentLocationId]);
 
-  // Single-copy CSS animation — scrolls the full content off left then loops.
-  // No duplicate span; no RAF needed.
+  // RAF scroll: single copy, starts at container right edge, exits left, loops
+  useEffect(() => {
+    if (items.length === 0) return;
+
+    cancelAnimationFrame(animRef.current);
+    posRef.current = null; // reset so we re-measure on next frame
+
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+
+      const container = containerRef.current;
+      const span = spanRef.current;
+      if (container && span) {
+        const cw = container.clientWidth;
+        const sw = span.offsetWidth;
+
+        // Initialise starting position to just off the right edge
+        if (posRef.current === null) posRef.current = cw;
+
+        posRef.current -= TICKER_SPEED_PX * dt;
+
+        // When fully off left edge, jump back to just off right edge
+        if (posRef.current < -sw) posRef.current = cw;
+
+        span.style.transform = `translateX(${posRef.current}px)`;
+      }
+
+      animRef.current = requestAnimationFrame(tick);
+    };
+
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [items.length]);
+
   const fmt = (ts: number) =>
     new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
@@ -156,11 +194,6 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
   const tickerText = hasItems
     ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
     : "";
-
-  // Duration scales with content length so speed stays constant (~65px/s).
-  // We measure after mount but approximate here: ~7px per character.
-  const approxWidth = tickerText.length * 7;
-  const durationSec = Math.max(8, approxWidth / TICKER_SPEED_PX);
 
   return (
     <AnimatePresence initial={false}>
@@ -173,7 +206,7 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
           transition={{ type: "spring", stiffness: 340, damping: 30 }}
           className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full bg-card/80 shadow-sm backdrop-blur-sm"
         >
-          {/* LIVE badge — rounded left, flat right so it sits flush against the ticker text */}
+          {/* LIVE badge — rounded left, flat right */}
           <div className="flex h-full shrink-0 items-center gap-1.5 rounded-l-full bg-primary px-3">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
@@ -181,23 +214,16 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
           </div>
-          {/* Scrolling text — single copy, CSS animation, no doubling */}
-          <div className="min-w-0 flex-1 overflow-hidden">
+          {/* Scrolling text — single copy, RAF, absolute position within relative container */}
+          <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden">
             <span
-              className="inline-block whitespace-nowrap px-6 text-xs font-medium text-foreground/80"
-              style={{
-                animation: `hub-ticker-scroll ${durationSec}s linear infinite`,
-              }}
+              ref={spanRef}
+              className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs font-medium text-foreground/80"
+              style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
             >
               {tickerText}
             </span>
           </div>
-          <style>{`
-            @keyframes hub-ticker-scroll {
-              0%   { transform: translateX(100%); }
-              100% { transform: translateX(-100%); }
-            }
-          `}</style>
         </motion.div>
       )}
     </AnimatePresence>
