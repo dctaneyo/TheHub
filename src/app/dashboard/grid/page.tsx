@@ -70,7 +70,7 @@ function HeaderClock() {
   const hasClockWidget = widgets.some((w) => w.type === "clock");
   if (hasClockWidget) return null;
   return (
-    <motion.div layout className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+    <motion.div layout transition={{ type: "spring", stiffness: 180, damping: 28 }} className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
       <HeaderClockDisplay />
     </motion.div>
   );
@@ -94,10 +94,6 @@ const TICKER_SPEED_PX = 65; // px/s
 function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
   const [items, setItems] = useState<TickerItem[]>([]);
   const { socket } = useSocket();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const animRef = useRef<number>(0);
-  const posRef = useRef(0);
 
   // Hydrate ARL-pushed messages on mount
   useEffect(() => {
@@ -151,35 +147,20 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
     };
   }, [socket, currentLocationId]);
 
-  // Horizontal scroll animation
-  useEffect(() => {
-    if (items.length === 0) return;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      const content = contentRef.current;
-      if (content) {
-        const half = content.scrollWidth / 2;
-        posRef.current -= TICKER_SPEED_PX * dt;
-        if (Math.abs(posRef.current) >= half) posRef.current += half;
-        content.style.transform = `translateX(${posRef.current}px)`;
-      }
-      animRef.current = requestAnimationFrame(tick);
-    };
-    animRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [items.length]);
-
-  if (items.length === 0) return null;
-
-  const hasItems = items.length > 0;
-
+  // Single-copy CSS animation — scrolls the full content off left then loops.
+  // No duplicate span; no RAF needed.
   const fmt = (ts: number) =>
     new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  const hasItems = items.length > 0;
   const tickerText = hasItems
     ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
     : "";
+
+  // Duration scales with content length so speed stays constant (~65px/s).
+  // We measure after mount but approximate here: ~7px per character.
+  const approxWidth = tickerText.length * 7;
+  const durationSec = Math.max(8, approxWidth / TICKER_SPEED_PX);
 
   return (
     <AnimatePresence initial={false}>
@@ -200,13 +181,23 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
           </div>
-          {/* Scrolling text */}
-          <div ref={containerRef} className="min-w-0 flex-1 overflow-hidden">
-            <div ref={contentRef} className="flex whitespace-nowrap will-change-transform">
-              <span className="px-6 text-xs font-medium text-foreground/80">{tickerText}</span>
-              <span className="px-6 text-xs font-medium text-foreground/80">{tickerText}</span>
-            </div>
+          {/* Scrolling text — single copy, CSS animation, no doubling */}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <span
+              className="inline-block whitespace-nowrap px-6 text-xs font-medium text-foreground/80"
+              style={{
+                animation: `hub-ticker-scroll ${durationSec}s linear infinite`,
+              }}
+            >
+              {tickerText}
+            </span>
           </div>
+          <style>{`
+            @keyframes hub-ticker-scroll {
+              0%   { transform: translateX(100%); }
+              100% { transform: translateX(-100%); }
+            }
+          `}</style>
         </motion.div>
       )}
     </AnimatePresence>
@@ -482,7 +473,7 @@ export default function GridDashboardPage() {
         {/* Floating pill header — no background, no border, elements float as pills */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
           {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
-          <motion.div layout className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+          <motion.div layout transition={{ type: "spring", stiffness: 180, damping: 28 }} className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
@@ -495,7 +486,7 @@ export default function GridDashboardPage() {
           </motion.div>
 
           {/* Right cluster — layout-animated so clock and other pills shift smoothly */}
-          <motion.div layout className="flex items-center gap-2">
+          <motion.div layout transition={{ type: "spring", stiffness: 180, damping: 28 }} className="flex items-center gap-2">
             {/* Clock pill — hidden when a Clock widget is on the grid */}
             <HeaderClock />
             {/* Settings panel: layout picker + customize + theme — animates out from cog */}

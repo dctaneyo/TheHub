@@ -97,20 +97,20 @@ export function SettingsPanel({
     setOpen(false);
   };
 
-  // Pill animation variants — pills morph out from the cog (x: rightward origin)
+  // Pill animation variants — slower springs for a calmer feel
   const pillVariants = {
     hidden: { opacity: 0, scale: 0.7, x: 32 },
     visible: (i: number) => ({
       opacity: 1,
       scale: 1,
       x: 0,
-      transition: { delay: i * 0.055, type: "spring" as const, stiffness: 380, damping: 28 },
+      transition: { delay: i * 0.07, type: "spring" as const, stiffness: 200, damping: 28 },
     }),
     exit: (i: number) => ({
       opacity: 0,
       scale: 0.7,
       x: 32,
-      transition: { delay: i * 0.03, duration: 0.15 },
+      transition: { delay: i * 0.04, duration: 0.2 },
     }),
   };
 
@@ -295,7 +295,7 @@ export function SettingsPanel({
         className={cn(PILL, open && "bg-card text-foreground")}
         title={open ? "Close settings" : "Settings"}
         animate={{ rotate: open ? 90 : 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        transition={{ type: "spring", stiffness: 180, damping: 26 }}
       >
         <Settings className="h-3.5 w-3.5" />
       </motion.button>
