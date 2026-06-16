@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -83,12 +83,28 @@ export function GridTasksWidget({
   tasks,
   onComplete,
   onUncomplete,
+  externalModalOpen,
+  onExternalModalClose,
 }: {
   tasks: TaskItem[];
   onComplete: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
+  /** When true, the fullscreen modal is forced open (e.g. via the expand button). */
+  externalModalOpen?: boolean;
+  onExternalModalClose?: () => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Sync external trigger — when the parent flips externalModalOpen to true,
+  // open the modal; the parent resets it when we call onExternalModalClose.
+  useEffect(() => {
+    if (externalModalOpen) setModalOpen(true);
+  }, [externalModalOpen]);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    onExternalModalClose?.();
+  };
 
   const { total, completedCount, remainingCount, pct, pending, allSorted } =
     useMemo(() => {
@@ -188,7 +204,7 @@ export function GridTasksWidget({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm"
-              onClick={() => setModalOpen(false)}
+              onClick={closeModal}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
@@ -207,7 +223,7 @@ export function GridTasksWidget({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={closeModal}
                   className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   title="Close"
                 >

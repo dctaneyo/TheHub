@@ -46,9 +46,14 @@ function LauncherTile({
 export const WidgetRenderer = memo(function WidgetRenderer({
   widget,
   data,
+  tasksModalOpen,
+  onTasksModalClose,
 }: {
   widget: Widget;
   data: WidgetData;
+  /** Controlled open state for the tasks fullscreen modal (driven by the expand button). */
+  tasksModalOpen?: boolean;
+  onTasksModalClose?: () => void;
 }) {
   switch (widget.type) {
     case "tasks":
@@ -57,6 +62,8 @@ export const WidgetRenderer = memo(function WidgetRenderer({
           tasks={data.tasks}
           onComplete={data.onComplete}
           onUncomplete={data.onUncomplete}
+          externalModalOpen={tasksModalOpen}
+          onExternalModalClose={onTasksModalClose}
         />
       );
 

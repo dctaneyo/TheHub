@@ -350,6 +350,7 @@ export function GridSync({
 export function GridSurface({ data }: { data: WidgetData }) {
   const { widgets, editMode } = useGrid();
   const gridRef = useRef<HTMLDivElement>(null);
+  const [tasksModalOpen, setTasksModalOpen] = useState(false);
 
   const gridTemplate: React.CSSProperties = {
     gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
@@ -381,8 +382,24 @@ export function GridSurface({ data }: { data: WidgetData }) {
       >
         <AnimatePresence>
           {widgets.map((widget) => (
-            <WidgetContainer key={widget.id} widget={widget} gridRef={gridRef}>
-              <WidgetRenderer widget={widget} data={data} />
+            <WidgetContainer
+              key={widget.id}
+              widget={widget}
+              gridRef={gridRef}
+              onExpand={
+                widget.type === "tasks"
+                  ? () => setTasksModalOpen(true)
+                  : widget.type === "messages"
+                  ? () => data.onOpenChat()
+                  : undefined
+              }
+            >
+              <WidgetRenderer
+                widget={widget}
+                data={data}
+                tasksModalOpen={widget.type === "tasks" ? tasksModalOpen : undefined}
+                onTasksModalClose={widget.type === "tasks" ? () => setTasksModalOpen(false) : undefined}
+              />
             </WidgetContainer>
           ))}
         </AnimatePresence>

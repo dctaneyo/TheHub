@@ -21,10 +21,13 @@ export function WidgetContainer({
   widget,
   gridRef,
   children,
+  onExpand,
 }: {
   widget: Widget;
   gridRef: RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
+  /** When provided, clicking the expand button calls this instead of the default grid-expand. */
+  onExpand?: () => void;
 }) {
   const {
     widgets,
@@ -226,7 +229,7 @@ export function WidgetContainer({
         {!editMode && !expanded && (
           <button
             type="button"
-            onClick={() => toggleExpand(widget.id)}
+            onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
             className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-foreground active:bg-muted"
             title="Expand"
           >
