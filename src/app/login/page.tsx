@@ -1052,19 +1052,21 @@ export default function LoginPage() {
           )}
         </div>
         {themeMounted && (
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${theme}`}
-            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
-          >
-            {theme === "dark"
-              ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
-              : theme === "light"
-              ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-              : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
-            <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
-          </button>
-          <BgPicker bg={bg} setBg={setBg} />
+          <>
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${theme}`}
+              className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
+            >
+              {theme === "dark"
+                ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                : theme === "light"
+                ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+                : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
+              <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
+            </button>
+            <BgPicker bg={bg} setBg={setBg} />
+          </>
         )}
       </div>
 
