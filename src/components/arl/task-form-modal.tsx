@@ -35,7 +35,6 @@ interface TaskFormModalProps {
     assignMode: "all" | "single" | "multiple";
     locationId: string;
     selectedLocationIds: string[];
-    points: number;
     allowEarlyComplete: boolean;
     showInToday: boolean;
     showIn7Day: boolean;
@@ -59,7 +58,6 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
   const [assignMode, setAssignMode] = useState<"all" | "single" | "multiple">(initialValues?.assignMode ?? "all");
   const [locationId, setLocationId] = useState(initialValues?.locationId ?? "");
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>(initialValues?.selectedLocationIds ?? []);
-  const [points, setPoints] = useState(initialValues?.points ?? 10);
   const [allowEarlyComplete, setAllowEarlyComplete] = useState(initialValues?.allowEarlyComplete ?? false);
   const [showInToday, setShowInToday] = useState(initialValues?.showInToday ?? true);
   const [showIn7Day, setShowIn7Day] = useState(initialValues?.showIn7Day ?? true);
@@ -94,7 +92,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           : JSON.stringify(recurringDays)
         : null,
       biweeklyStart: isRecurring && recurringType === "biweekly" ? biweeklyStart : null,
-      points,
+      points: 10,
       allowEarlyComplete,
       showInToday,
       showIn7Day,
@@ -230,7 +228,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             </div>
           </div>
 
-          {/* Due Date + Time + Points */}
+          {/* Due Date + Time */}
           <div className="flex flex-col sm:flex-row gap-3">
             {!isRecurring && (
               <div className="flex-1">
@@ -254,17 +252,6 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 />
               </div>
             )}
-            <div className="w-24">
-              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Points</label>
-              <Input
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(Number(e.target.value))}
-                min={1}
-                max={100}
-                className="rounded-xl"
-              />
-            </div>
           </div>
 
           {/* Recurring */}

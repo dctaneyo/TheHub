@@ -1,101 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getRandomTaskCompletionPun } from "@/lib/funny-messages";
-
-// ── Sound Effects ──
-function useAudioCtx() {
-  const ref = useRef<AudioContext | null>(null);
-  const get = useCallback(() => {
-    if (!ref.current) ref.current = new AudioContext();
-    return ref.current;
-  }, []);
-  return get;
-}
-
-export function useConfettiSound() {
-  const getCtx = useAudioCtx();
-  return useCallback(() => {
-    try {
-      const ctx = getCtx();
-      const t = ctx.currentTime;
-      // Cheerful ascending chime
-      [[523, 0, 0.12], [659, 0.1, 0.12], [784, 0.2, 0.12], [1047, 0.3, 0.2]].forEach(([f, d, dur]) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.value = f;
-        gain.gain.setValueAtTime(0.3, t + d);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + d + dur);
-        osc.start(t + d); osc.stop(t + d + dur);
-      });
-    } catch {}
-  }, [getCtx]);
-}
-
-export function useLevelUpSound() {
-  const getCtx = useAudioCtx();
-  return useCallback(() => {
-    try {
-      const ctx = getCtx();
-      const t = ctx.currentTime;
-      // Epic ascending fanfare
-      [[440, 0, 0.15], [554, 0.12, 0.15], [659, 0.24, 0.15], [880, 0.36, 0.3], [1047, 0.55, 0.15], [1319, 0.65, 0.35]].forEach(([f, d, dur]) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = "triangle";
-        osc.frequency.value = f;
-        gain.gain.setValueAtTime(0.4, t + d);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + d + dur);
-        osc.start(t + d); osc.stop(t + d + dur);
-      });
-    } catch {}
-  }, [getCtx]);
-}
-
-export function useBadgeSound() {
-  const getCtx = useAudioCtx();
-  return useCallback(() => {
-    try {
-      const ctx = getCtx();
-      const t = ctx.currentTime;
-      // Sparkle sound
-      [[880, 0, 0.1], [1320, 0.08, 0.1], [1760, 0.16, 0.15], [1320, 0.28, 0.2]].forEach(([f, d, dur]) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.value = f;
-        gain.gain.setValueAtTime(0.2, t + d);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + d + dur);
-        osc.start(t + d); osc.stop(t + d + dur);
-      });
-    } catch {}
-  }, [getCtx]);
-}
-
-export function useStreakSound() {
-  const getCtx = useAudioCtx();
-  return useCallback(() => {
-    try {
-      const ctx = getCtx();
-      const t = ctx.currentTime;
-      // Fire whoosh
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(200, t);
-      osc.frequency.exponentialRampToValueAtTime(800, t + 0.3);
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-      osc.start(t); osc.stop(t + 0.4);
-    } catch {}
-  }, [getCtx]);
-}
 
 // ── Particle types ──
 type ParticleType = "confetti" | "coin" | "star" | "firework";
@@ -139,8 +45,8 @@ function generateParticles(type: ParticleType, count: number): Particle[] {
   return particles;
 }
 
-// ── Confetti Burst (enhanced) ──
-export function ConfettiBurst({ active, points, onComplete }: { active: boolean; points?: number; onComplete?: () => void }) {
+// ── Confetti Burst ──
+export function ConfettiBurst({ active, onComplete }: { active: boolean; onComplete?: () => void }) {
   const [particles] = useState(() => generateParticles("confetti", 60));
 
   useEffect(() => {
@@ -172,81 +78,7 @@ export function ConfettiBurst({ active, points, onComplete }: { active: boolean;
               style={{ position: "absolute", width: p.size, height: p.size * 0.6, backgroundColor: p.color, borderRadius: 2 }}
             />
           ))}
-          {points !== undefined && points > 0 && (
-            <>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5, y: "40vh" }}
-                animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.2, 1, 0.8], y: ["40vh", "35vh", "30vh", "25vh"] }}
-                transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
-                className="fixed left-1/2 -translate-x-1/2 z-[101]"
-              >
-                <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 px-6 py-3 shadow-2xl">
-                  <p className="text-center text-3xl font-black text-white">+{points} pts</p>
-                </div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: [0, 1, 1, 0], y: [20, 0, 0, -10] }}
-                transition={{ duration: 3, times: [0, 0.1, 0.8, 1] }}
-                className="fixed top-24 left-1/2 -translate-x-1/2 z-[101]"
-              >
-                <div className="rounded-2xl bg-white border-2 border-green-400 px-6 py-3 shadow-2xl">
-                  <p className="text-center text-lg font-bold text-slate-800">{getRandomTaskCompletionPun()}</p>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
-// ── Coin Rain ──
-export function CoinRain({ active, amount, onComplete }: { active: boolean; amount?: number; onComplete?: () => void }) {
-  const [particles] = useState(() => generateParticles("coin", 35));
-
-  useEffect(() => {
-    if (active && onComplete) {
-      const timer = setTimeout(onComplete, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [active, onComplete]);
-
-  return (
-    <AnimatePresence>
-      {active && (
-        <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
-          {particles.map((p) => (
-            <motion.div
-              key={p.id}
-              initial={{ x: `${p.x}vw`, y: "-5vh", rotate: 0, opacity: 1, scale: 0 }}
-              animate={{
-                x: `${p.x + p.velocityX * 5}vw`,
-                y: "110vh",
-                rotate: p.rotation * 2,
-                opacity: [0, 1, 1, 0],
-                scale: [0, 1, 1, 0.5],
-              }}
-              transition={{ duration: randomBetween(2, 3), delay: p.delay, ease: "easeIn" }}
-              className="absolute text-center"
-              style={{ fontSize: p.size }}
-            >
-              🪙
-            </motion.div>
-          ))}
-          {amount !== undefined && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, y: "45vh" }}
-              animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.3, 1, 0.8], y: ["45vh", "38vh", "33vh", "28vh"] }}
-              transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
-              className="fixed left-1/2 -translate-x-1/2 z-[101]"
-            >
-              <div className="rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 px-6 py-3 shadow-2xl">
-                <p className="text-center text-2xl font-black text-white">+{amount} bonus</p>
-              </div>
-            </motion.div>
-          )}
         </motion.div>
       )}
     </AnimatePresence>

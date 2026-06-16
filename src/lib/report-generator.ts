@@ -1,5 +1,5 @@
 import { db, schema } from "@/lib/db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 
 interface ReportData {
@@ -86,7 +86,6 @@ function generateTaskCompletionReport(tenantId: string, dateRange: { start: stri
       Completed: completedTotal,
       Expected: expectedTotal,
       "Rate (%)": rate,
-      Points: locCompletions.reduce((sum, c) => sum + (c.pointsEarned || 0), 0),
     };
   });
 
@@ -100,62 +99,6 @@ function generateTaskCompletionReport(tenantId: string, dateRange: { start: stri
       "Total Completed": totalCompleted,
       "Total Expected": totalExpected,
       "Overall Rate (%)": totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0,
-    },
-  }];
-}
-
-function generateLeaderboardReport(tenantId: string, dateRange: { start: string; end: string }, filters?: { locationIds?: string[]; groupIds?: string[] }): ReportSection[] {
-  const leaderboard = db.select().from(schema.dailyLeaderboard)
-    .where(eq(schema.dailyLeaderboard.tenantId, tenantId)).all()
-    .filter((l) => l.date >= dateRange.start && l.date <= dateRange.end);
-
-  const locations = db.select().from(schema.locations)
-    .where(eq(schema.locations.tenantId, tenantId)).all();
-
-  const locationMap = new Map(locations.map((l) => [l.id, l]));
-
-  // Aggregate by location
-  const aggregated = new Map<string, { points: number; completed: number; missed: number; streak: number }>();
-  for (const entry of leaderboard) {
-    const existing = aggregated.get(entry.locationId) || { points: 0, completed: 0, missed: 0, streak: 0 };
-    existing.points += entry.pointsEarned;
-    existing.completed += entry.tasksCompleted;
-    existing.missed += entry.tasksMissed;
-    existing.streak = Math.max(existing.streak, entry.streak);
-    aggregated.set(entry.locationId, existing);
-  }
-
-  let rows = Array.from(aggregated.entries())
-    .map(([locId, stats]) => {
-      const loc = locationMap.get(locId);
-      return {
-        Rank: 0,
-        Location: loc?.name || "Unknown",
-        "Store #": loc?.storeNumber || "?",
-        Points: stats.points,
-        "Tasks Done": stats.completed,
-        "Tasks Missed": stats.missed,
-        "Best Streak": stats.streak,
-      };
-    })
-    .sort((a, b) => b.Points - a.Points);
-
-  // Apply filters
-  if (filters?.locationIds && filters.locationIds.length > 0) {
-    const locNames = new Set(
-      locations.filter((l) => filters.locationIds!.includes(l.id)).map((l) => l.name)
-    );
-    rows = rows.filter((r) => locNames.has(r.Location));
-  }
-
-  rows.forEach((r, i) => { r.Rank = i + 1; });
-
-  return [{
-    heading: "Leaderboard Rankings",
-    rows,
-    summary: {
-      "Total Locations": rows.length,
-      "Total Points": rows.reduce((sum, r) => sum + r.Points, 0),
     },
   }];
 }
@@ -238,9 +181,6 @@ export function generateReport(
   switch (report.type) {
     case "task_completion":
       sections = generateTaskCompletionReport(report.tenantId, dateRange, filters);
-      break;
-    case "leaderboard":
-      sections = generateLeaderboardReport(report.tenantId, dateRange, filters);
       break;
     case "attendance":
       sections = generateAttendanceReport(report.tenantId, dateRange);

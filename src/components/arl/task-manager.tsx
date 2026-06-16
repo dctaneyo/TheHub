@@ -94,7 +94,6 @@ export function TaskManager() {
       assignMode: "all" as const,
       locationId: "",
       selectedLocationIds: [],
-      points: tpl.fields.points,
       allowEarlyComplete: tpl.fields.allowEarlyComplete ?? false,
       showInToday: true,
       showIn7Day: true,
@@ -122,7 +121,6 @@ export function TaskManager() {
       assignMode: task.locationId ? "single" as const : "all" as const,
       locationId: task.locationId || "",
       selectedLocationIds: [],
-      points: task.points,
       allowEarlyComplete: task.allowEarlyComplete ?? false,
       showInToday: task.showInToday ?? true,
       showIn7Day: task.showIn7Day ?? true,
@@ -239,7 +237,6 @@ export function TaskManager() {
                       <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-[10px] text-muted-foreground">{tpl.fields.dueTime}</span>
-                        <span className="text-[10px] font-medium text-amber-600">{tpl.fields.points} pts</span>
                         {tpl.fields.isRecurring && <span className="text-[10px] text-muted-foreground capitalize">{tpl.fields.recurringType}</span>}
                       </div>
                     </div>

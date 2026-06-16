@@ -22,8 +22,6 @@ interface NotificationPreferences {
   meetingStarted: boolean;
   meetingEnded: boolean;
   meetingReminder: boolean;
-  newShoutout: boolean;
-  leaderboardUpdate: boolean;
   systemAlert: boolean;
   weeklyReport: boolean;
   priorityTypes: string[];
@@ -62,12 +60,6 @@ const categories = [
     title: "Broadcasts & Meetings",
     icon: "📢",
     description: "Emergency broadcasts and meeting updates",
-  },
-  {
-    id: "gamification",
-    title: "Gamification",
-    icon: "🏆",
-    description: "Shoutouts, leaderboards, and achievements",
   },
   {
     id: "system",
@@ -123,8 +115,6 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
     meetingStarted: true,
     meetingEnded: false,
     meetingReminder: true,
-    newShoutout: true,
-    leaderboardUpdate: false,
     systemAlert: true,
     weeklyReport: false,
     priorityTypes: ["urgent"],
@@ -141,7 +131,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
       "taskDueSoon", "taskOverdue", "taskCompleted", "newMessage", "messageReply",
       "locationOnline", "locationOffline", "locationStatusChange", "emergencyBroadcast",
       "regularBroadcast", "meetingStarted", "meetingEnded", "meetingReminder",
-      "newShoutout", "leaderboardUpdate", "systemAlert", "weeklyReport",
+      "systemAlert", "weeklyReport",
     ] as const;
     const presets = {
       minimal: {
@@ -149,21 +139,21 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
         messageReply: false, locationOnline: false, locationOffline: false,
         locationStatusChange: false, emergencyBroadcast: true, regularBroadcast: false,
         meetingStarted: true, meetingEnded: false, meetingReminder: true,
-        newShoutout: false, leaderboardUpdate: false, systemAlert: true, weeklyReport: false,
+        systemAlert: true, weeklyReport: false,
       },
       balanced: {
         taskDueSoon: true, taskOverdue: true, taskCompleted: false, newMessage: true,
         messageReply: true, locationOnline: true, locationOffline: false,
         locationStatusChange: false, emergencyBroadcast: true, regularBroadcast: true,
         meetingStarted: true, meetingEnded: false, meetingReminder: true,
-        newShoutout: true, leaderboardUpdate: false, systemAlert: true, weeklyReport: false,
+        systemAlert: true, weeklyReport: false,
       },
       comprehensive: {
         taskDueSoon: true, taskOverdue: true, taskCompleted: true, newMessage: true,
         messageReply: true, locationOnline: true, locationOffline: true,
         locationStatusChange: true, emergencyBroadcast: true, regularBroadcast: true,
         meetingStarted: true, meetingEnded: true, meetingReminder: true,
-        newShoutout: true, leaderboardUpdate: true, systemAlert: true, weeklyReport: true,
+        systemAlert: true, weeklyReport: true,
       },
     };
     for (const mode of ["minimal", "balanced", "comprehensive"] as const) {
@@ -236,8 +226,6 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
         meetingStarted: true,
         meetingEnded: false,
         meetingReminder: true,
-        newShoutout: false,
-        leaderboardUpdate: false,
         systemAlert: true,
         weeklyReport: false,
       },
@@ -255,8 +243,6 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
         meetingStarted: true,
         meetingEnded: false,
         meetingReminder: true,
-        newShoutout: true,
-        leaderboardUpdate: false,
         systemAlert: true,
         weeklyReport: false,
       },
@@ -274,8 +260,6 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
         meetingStarted: true,
         meetingEnded: true,
         meetingReminder: true,
-        newShoutout: true,
-        leaderboardUpdate: true,
         systemAlert: true,
         weeklyReport: true,
       },
@@ -411,30 +395,6 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                 description="15-minute reminder before scheduled meetings"
                 checked={preferences.meetingReminder}
                 onChange={(checked) => handleToggle("meetingReminder", checked)}
-              />
-            </div>
-          </div>
-        );
-
-      case "gamification":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Gamification</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Celebrate achievements and track performance.
-            </p>
-            <div className="space-y-3 mt-4">
-              <ToggleField
-                label="New Shoutouts"
-                description="Notify when you receive a shoutout"
-                checked={preferences.newShoutout}
-                onChange={(checked) => handleToggle("newShoutout", checked)}
-              />
-              <ToggleField
-                label="Leaderboard Updates"
-                description="Weekly leaderboard and ranking updates"
-                checked={preferences.leaderboardUpdate}
-                onChange={(checked) => handleToggle("leaderboardUpdate", checked)}
               />
             </div>
           </div>

@@ -39,7 +39,6 @@ export type WidgetType =
   | "tasks"
   | "calendar"
   | "completed"
-  | "leaderboard"
   | "messages"
   | "forms"
   | "stats";

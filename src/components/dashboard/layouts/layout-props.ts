@@ -5,7 +5,6 @@ export interface DashboardLayoutProps {
   allTasks: TaskItem[];
   completedTasks: TaskItem[];
   missedYesterday: TaskItem[];
-  pointsToday: number;
   totalToday: number;
   currentTime: string;
   displayTime?: string;

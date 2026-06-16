@@ -18,15 +18,14 @@ import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { useHapticFeedback, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
-import { Leaderboard } from "@/components/dashboard/leaderboard";
-import { ConfettiBurst, CoinRain, Fireworks, useConfettiSound } from "@/components/dashboard/celebrations";
+import { ConfettiBurst } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
-import { HighFiveAnimation } from "@/components/high-five-animation";
+
 import { AnimatedBackground } from "@/components/animated-background";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { LiveTicker } from "@/components/dashboard/live-ticker";
-import { playTaskSound, playBonusSound } from "@/lib/sound-effects";
+import { playTaskSound } from "@/lib/sound-effects";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
 import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
@@ -48,7 +47,6 @@ interface TasksResponse {
   completedToday: number;
   totalToday: number;
   missedYesterday: TaskItem[];
-  pointsToday: number;
 }
 
 export default function DashboardPageWrapper() {
@@ -379,19 +377,13 @@ function DashboardPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [displayTime, setDisplayTime] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
-  const [confettiPoints, setConfettiPoints] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
   const [chatThreadName, setChatThreadName] = useState<string | null>(null);
   const [calOpen, setCalOpen] = useState(false);
   const [formsOpen, setFormsOpen] = useState(false);
-  const [showCoinRain, setShowCoinRain] = useState(false);
-  const [coinRainAmount, setCoinRainAmount] = useState(0);
-  const [showFireworks, setShowFireworks] = useState(false);
   const [activeStream, setActiveStream] = useState<{ broadcastId: string; meetingId: string; arlName: string; title: string } | null>(null);
-  const playConfettiSound = useConfettiSound();
-
   // ── Mirror mode: sync view state from target ──
   const mirrorSyncingRef = useRef(false);
   const { theme: currentTheme, setTheme } = useTheme();
@@ -433,19 +425,9 @@ function DashboardPage() {
     }
     // Sync celebrations from target
     if (mirrorViewState.celebration) {
-      const pts = mirrorViewState.celebrationPoints || 0;
-      if (mirrorViewState.celebration === "confetti") {
-        setConfettiPoints(pts);
+      if (mirrorViewState.celebration === "confetti" || mirrorViewState.celebration === "fireworks" || mirrorViewState.celebration === "coinRain") {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 2800);
-      } else if (mirrorViewState.celebration === "coinRain") {
-        setCoinRainAmount(pts);
-        setShowCoinRain(true);
-        setTimeout(() => setShowCoinRain(false), 3000);
-      } else if (mirrorViewState.celebration === "fireworks") {
-        setConfettiPoints(pts);
-        setShowFireworks(true);
-        setTimeout(() => setShowFireworks(false), 3500);
       }
     }
     // Sync idle/screensaver from target
@@ -487,9 +469,6 @@ function DashboardPage() {
       }
       if (vs.hubMenuOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { hubMenuOpen: vs.hubMenuOpen } }));
-      }
-      if (vs.gamificationOpen !== undefined) {
-        window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { gamificationOpen: vs.gamificationOpen } }));
       }
       if (vs.connectionOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { connectionOpen: vs.connectionOpen } }));
@@ -668,7 +647,7 @@ function DashboardPage() {
     setMobileView(view);
     if (view === "chat") { setChatOpen(true); setCalOpen(false); setFormsOpen(false); }
     else if (view === "calendar") { setCalOpen(true); setChatOpen(false); setFormsOpen(false); }
-    else if (view === "leaderboard") { setMobilePanelOpen("right"); setChatOpen(false); setCalOpen(false); }
+    else if (view === "upcoming") { setMobilePanelOpen("right"); setChatOpen(false); setCalOpen(false); }
     else { setChatOpen(false); setCalOpen(false); setFormsOpen(false); setMobilePanelOpen(null); }
   };
 
@@ -765,25 +744,12 @@ function DashboardPage() {
         }),
       });
       if (res.ok) {
-        const result = await res.json();
-        setConfettiPoints(result.pointsEarned || 0);
-        if (result.bonusPoints > 0) {
-          setCoinRainAmount(result.bonusPoints);
-          setShowCoinRain(true);
-          setTimeout(() => setShowCoinRain(false), 3000);
-          if (remoteViewActive && captureManagerRef.current) {
-            captureManagerRef.current.broadcastViewState({ celebration: "coinRain", celebrationPoints: result.bonusPoints });
-            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 3000);
-          }
-        } else {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 2800);
-          if (remoteViewActive && captureManagerRef.current) {
-            captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
-            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
-          }
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2800);
+        if (remoteViewActive && captureManagerRef.current) {
+          captureManagerRef.current.broadcastViewState({ celebration: "confetti" });
+          setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
         }
-        playConfettiSound();
         await fetchTasks();
       }
     } catch (err) {
@@ -847,50 +813,23 @@ function DashboardPage() {
       });
 
       if (res.ok) {
-        const result = await res.json();
-        setConfettiPoints(result.pointsEarned || 0);
-        
         // Play task completion sound
         const task = allTasks.find(t => t.id === taskId);
         if (soundEnabled && task) {
           playTaskSound(task.type as any);
         }
-        
-        // Play bonus sound if bonus points awarded
-        if (result.bonusPoints > 0 && soundEnabled) {
-          setTimeout(() => playBonusSound(), 300);
-        }
-        
-        playConfettiSound();
-        
-        // Fetch confirmed state to check all-done and update points
+
+        // Fetch confirmed state to check all-done
         const updatedRes = await fetch(`/api/tasks/today?${localTimeParams()}`);
         if (updatedRes.ok) {
           const updated = await updatedRes.json();
-          const allDone = (updated.tasks || []).length > 0 && (updated.tasks || []).every((t: any) => t.isCompleted);
-          if (allDone) {
-            setShowFireworks(true);
-            setTimeout(() => setShowFireworks(false), 3500);
-            if (remoteViewActive && captureManagerRef.current) {
-              captureManagerRef.current.broadcastViewState({ celebration: "fireworks", celebrationPoints: result.pointsEarned || 0 });
-              setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 3500);
-            }
-          } else {
-            setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 2800);
-            if (remoteViewActive && captureManagerRef.current) {
-              captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
-              setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
-            }
-          }
           setData(updated);
-        } else {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 2800);
-          if (remoteViewActive && captureManagerRef.current) {
-            captureManagerRef.current.broadcastViewState({ celebration: "confetti", celebrationPoints: result.pointsEarned || 0 });
-            setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
-          }
+        }
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2800);
+        if (remoteViewActive && captureManagerRef.current) {
+          captureManagerRef.current.broadcastViewState({ celebration: "confetti" });
+          setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
         }
       } else {
         // Revert optimistic update on failure — bypass the lock
@@ -1135,7 +1074,6 @@ function DashboardPage() {
                 <CompletedMissed
                   completedToday={completedTasks}
                   missedYesterday={data?.missedYesterday || []}
-                  pointsToday={data?.pointsToday || 0}
                   totalToday={data?.totalToday || 0}
                 />
               </div>
@@ -1161,7 +1099,7 @@ function DashboardPage() {
               </div>
             </div>
 
-            {/* Right Column - Mini Calendar + Leaderboard tabs */}
+            {/* Right Column - Mini Calendar */}
             <div className={cn(
               "w-[300px] shrink-0 border-l border-border bg-card overflow-hidden",
               useTargetMobile ? (targetIsMobile ? (mobilePanelOpen === "right" ? "flex flex-col absolute inset-0 z-[999] w-full" : "hidden") : "flex flex-col") : "hidden lg:flex lg:flex-col",
@@ -1170,7 +1108,7 @@ function DashboardPage() {
               {/* Mobile close button */}
               {mobilePanelOpen === "right" && (useTargetMobile ? targetIsMobile : true) && (
                 <div className={cn("sticky top-0 z-[120] bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0", useTargetMobile ? "" : "lg:hidden")}>
-                  <h3 className="text-sm font-bold text-foreground">Upcoming & Leaderboard</h3>
+                  <h3 className="text-sm font-bold text-foreground">Upcoming</h3>
                   <button
                     onClick={() => setMobilePanelOpen(null)}
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
@@ -1179,7 +1117,7 @@ function DashboardPage() {
                   </button>
                 </div>
               )}
-              <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} currentLocationId={effectiveLocationId} />
+              <RightPanel upcomingTasks={upcomingTasks} onEarlyComplete={handleEarlyComplete} />
             </div>
           </div>
         </>
@@ -1190,7 +1128,6 @@ function DashboardPage() {
           allTasks={allTasks}
           completedTasks={completedTasks}
           missedYesterday={data?.missedYesterday || []}
-          pointsToday={data?.pointsToday || 0}
           totalToday={data?.totalToday || 0}
           currentTime={currentTime}
           displayTime={displayTime}
@@ -1207,9 +1144,7 @@ function DashboardPage() {
       {!remoteViewActive && !isMirroring && <LiveTicker currentLocationId={effectiveLocationId} />}
 
       {/* Celebrations */}
-      <ConfettiBurst active={showConfetti} points={confettiPoints} onComplete={() => setShowConfetti(false)} />
-      <CoinRain active={showCoinRain} amount={coinRainAmount} onComplete={() => setShowCoinRain(false)} />
-      <Fireworks active={showFireworks} onComplete={() => setShowFireworks(false)} />
+      <ConfettiBurst active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
       {/* Full Calendar Modal */}
       {calOpen && <CalendarModal onClose={() => setCalOpen(false)} locationId={user?.id} />}
@@ -1259,8 +1194,7 @@ function DashboardPage() {
       {/* Emergency Broadcast Overlay */}
       <EmergencyOverlay />
 
-      {/* High-Five Animation — disabled during remote view and mirror mode */}
-      {!remoteViewActive && !isMirroring && <HighFiveAnimation />}
+
 
       {/* Live Broadcast Overlay — auto-opens when ARL starts a broadcast */}
       {activeStream && (
@@ -1308,35 +1242,14 @@ function DashboardPage() {
 function RightPanel({
   upcomingTasks,
   onEarlyComplete,
-  currentLocationId,
 }: {
   upcomingTasks: Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string; allowEarlyComplete?: boolean; isCompleted?: boolean }>>;
   onEarlyComplete: (taskId: string, dateStr: string) => void;
-  currentLocationId?: string;
 }) {
-  const [tab, setTab] = useState<"calendar" | "leaderboard">("calendar");
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex shrink-0 border-b border-border">
-        <button
-          onClick={() => setTab("calendar")}
-          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "calendar" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          Upcoming
-        </button>
-        <button
-          onClick={() => setTab("leaderboard")}
-          className={`flex-1 py-2.5 text-[11px] font-semibold transition-colors ${tab === "leaderboard" ? "border-b-2 border-[var(--hub-red)] text-[var(--hub-red)]" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          🏆 Leaderboard
-        </button>
-      </div>
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
-        {tab === "calendar" ? (
-          <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
-        ) : (
-          <Leaderboard currentLocationId={currentLocationId} compact />
-        )}
+        <MiniCalendar upcomingTasks={upcomingTasks} onEarlyComplete={onEarlyComplete} />
       </div>
       <div className="shrink-0 p-4 pt-0">
         <MotivationalQuote />

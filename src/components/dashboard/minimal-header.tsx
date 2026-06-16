@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { ConnectionStatus } from "@/components/connection-status";
 import { NotificationBell } from "@/components/notification-bell";
 import { type TaskItem } from "@/components/dashboard/timeline";
-import { GamificationHub } from "@/components/dashboard/gamification-hub";
 import { useLayout, LAYOUT_OPTIONS } from "@/lib/layout-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -272,8 +271,6 @@ export function MinimalHeader({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0">
-        <GamificationHub locationId={effectiveLocationId || user?.id} />
-
         <div className="hidden sm:block">
           <ConnectionStatus />
         </div>

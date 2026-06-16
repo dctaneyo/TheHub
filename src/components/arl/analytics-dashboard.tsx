@@ -6,9 +6,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart,
 } from "recharts";
 import {
-  TrendingUp, TrendingDown, CheckCircle2, MessageCircle, Trophy,
-  Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Zap, Target,
-  Clock, Star, Award,
+  TrendingUp, TrendingDown, CheckCircle2, MessageCircle,
+  Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Target,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -16,11 +15,11 @@ import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 type DateRange = "7d" | "30d" | "90d" | "thisMonth" | "lastMonth" | "custom";
 
 interface TaskAnalytics {
-  completionsByDate: Array<{ date: string; count: number; totalPoints: number; bonusPoints: number }>;
-  topLocations: Array<{ locationId: string; locationName: string; completions: number; totalPoints: number }>;
+  completionsByDate: Array<{ date: string; count: number }>;
+  topLocations: Array<{ locationId: string; locationName: string; completions: number }>;
   timeOfDayPattern: Array<{ hour: number; count: number }>;
-  taskPerformance: Array<{ taskId: string; taskTitle: string; completions: number; uniqueLocations: number; avgPoints: number }>;
-  summary: { totalCompletions: number; totalPoints: number; totalBonusPoints: number; activeLocations: number; uniqueTasks: number };
+  taskPerformance: Array<{ taskId: string; taskTitle: string; completions: number; uniqueLocations: number }>;
+  summary: { totalCompletions: number; activeLocations: number; uniqueTasks: number };
 }
 
 interface MessagingAnalytics {
@@ -28,13 +27,6 @@ interface MessagingAnalytics {
   topSenders: Array<{ senderId: string; senderType: string; senderName: string; messageCount: number }>;
   hourlyPattern: Array<{ hour: number; count: number }>;
   summary: { totalMessages: number; uniqueSenders: number; activeConversations: number };
-}
-
-interface GamificationAnalytics {
-  leaderboard: Array<{ locationId: string; locationName: string; totalPoints: number; completions: number }>;
-  achievementTrends: Array<{ date: string; count: number }>;
-  popularAchievements: Array<{ achievement_id: string; count: number }>;
-  locationSummary: Array<{ locationId: string; locationName: string; achievementCount: number }>;
 }
 
 const CHART_COLORS = ["#dc2626", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
@@ -83,12 +75,11 @@ function ChartCard({ title, children, className }: { title: string; children: Re
 }
 
 export function AnalyticsDashboard() {
-  const [activeTab, setActiveTab] = useState<"tasks" | "messaging" | "gamification">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "messaging">("tasks");
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [loading, setLoading] = useState(true);
   const [taskData, setTaskData] = useState<TaskAnalytics | null>(null);
   const [msgData, setMsgData] = useState<MessagingAnalytics | null>(null);
-  const [gamData, setGamData] = useState<GamificationAnalytics | null>(null);
 
   const dateParams = useMemo(() => {
     const now = new Date();
@@ -110,14 +101,12 @@ export function AnalyticsDashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [taskRes, msgRes, gamRes] = await Promise.all([
+      const [taskRes, msgRes] = await Promise.all([
         fetch(`/api/analytics/tasks?${dateParams}`),
         fetch(`/api/analytics/messaging?${dateParams}`),
-        fetch(`/api/analytics/gamification?${dateParams}`),
       ]);
       if (taskRes.ok) setTaskData(await taskRes.json());
       if (msgRes.ok) setMsgData(await msgRes.json());
-      if (gamRes.ok) setGamData(await gamRes.json());
     } catch (err) {
       console.error("Analytics fetch error:", err);
     } finally {
@@ -140,24 +129,24 @@ export function AnalyticsDashboard() {
 
   const exportTaskCompletions = useCallback(() => {
     if (!taskData) return;
-    const rows = [["Date", "Completions", "Total Points", "Bonus Points"]];
-    taskData.completionsByDate.forEach(d => rows.push([d.date, String(d.count), String(d.totalPoints), String(d.bonusPoints)]));
+    const rows = [["Date", "Completions"]];
+    taskData.completionsByDate.forEach(d => rows.push([d.date, String(d.count)]));
     downloadCSV(`task-completions-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
     setShowExportMenu(false);
   }, [taskData, downloadCSV]);
 
   const exportTopLocations = useCallback(() => {
     if (!taskData) return;
-    const rows = [["Location", "Completions", "Total Points"]];
-    taskData.topLocations.forEach(l => rows.push([l.locationName, String(l.completions), String(l.totalPoints)]));
+    const rows = [["Location", "Completions"]];
+    taskData.topLocations.forEach(l => rows.push([l.locationName, String(l.completions)]));
     downloadCSV(`top-locations-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
     setShowExportMenu(false);
   }, [taskData, downloadCSV]);
 
   const exportTaskPerformance = useCallback(() => {
     if (!taskData) return;
-    const rows = [["Task", "Completions", "Locations", "Avg Points"]];
-    taskData.taskPerformance.forEach(t => rows.push([t.taskTitle || "Unknown", String(t.completions), String(t.uniqueLocations), String(t.avgPoints)]));
+    const rows = [["Task", "Completions", "Locations"]];
+    taskData.taskPerformance.forEach(t => rows.push([t.taskTitle || "Unknown", String(t.completions), String(t.uniqueLocations)]));
     downloadCSV(`task-performance-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
     setShowExportMenu(false);
   }, [taskData, downloadCSV]);
@@ -178,28 +167,20 @@ export function AnalyticsDashboard() {
     setShowExportMenu(false);
   }, [msgData, downloadCSV]);
 
-  const exportLeaderboard = useCallback(() => {
-    if (!gamData) return;
-    const rows = [["Rank", "Location", "Total Points", "Completions"]];
-    (gamData.leaderboard ?? []).forEach((l, i) => rows.push([String(i + 1), l.locationName || "Unknown", String(l.totalPoints ?? 0), String(l.completions)]));
-    downloadCSV(`leaderboard-${format(new Date(), "yyyy-MM-dd")}.csv`, rows);
-    setShowExportMenu(false);
-  }, [gamData, downloadCSV]);
-
   const exportAllData = useCallback(() => {
     const sections: string[] = [];
     if (taskData) {
       sections.push("=== TASK COMPLETIONS BY DATE ===");
-      sections.push(["Date", "Completions", "Total Points", "Bonus Points"].join(","));
-      taskData.completionsByDate.forEach(d => sections.push([d.date, d.count, d.totalPoints, d.bonusPoints].join(",")));
+      sections.push(["Date", "Completions"].join(","));
+      taskData.completionsByDate.forEach(d => sections.push([d.date, d.count].join(",")));
       sections.push("");
       sections.push("=== TOP LOCATIONS ===");
-      sections.push(["Location", "Completions", "Total Points"].join(","));
-      taskData.topLocations.forEach(l => sections.push([`"${l.locationName}"`, l.completions, l.totalPoints].join(",")));
+      sections.push(["Location", "Completions"].join(","));
+      taskData.topLocations.forEach(l => sections.push([`"${l.locationName}"`, l.completions].join(",")));
       sections.push("");
       sections.push("=== TASK PERFORMANCE ===");
-      sections.push(["Task", "Completions", "Locations", "Avg Points"].join(","));
-      taskData.taskPerformance.forEach(t => sections.push([`"${t.taskTitle || "Unknown"}"`, t.completions, t.uniqueLocations, t.avgPoints].join(",")));
+      sections.push(["Task", "Completions", "Locations"].join(","));
+      taskData.taskPerformance.forEach(t => sections.push([`"${t.taskTitle || "Unknown"}"`, t.completions, t.uniqueLocations].join(",")));
     }
     if (msgData) {
       sections.push("");
@@ -211,19 +192,13 @@ export function AnalyticsDashboard() {
       sections.push(["Name", "Type", "Messages"].join(","));
       msgData.topSenders.forEach(s => sections.push([`"${s.senderName || "Unknown"}"`, s.senderType, s.messageCount].join(",")));
     }
-    if (gamData) {
-      sections.push("");
-      sections.push("=== POINTS LEADERBOARD ===");
-      sections.push(["Rank", "Location", "Total Points", "Completions"].join(","));
-      (gamData.leaderboard ?? []).forEach((l, i) => sections.push([i + 1, `"${l.locationName || "Unknown"}"`, l.totalPoints ?? 0, l.completions].join(",")));
-    }
     const blob = new Blob([sections.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = `hub-analytics-full-${format(new Date(), "yyyy-MM-dd")}.csv`; a.click();
     URL.revokeObjectURL(url);
     setShowExportMenu(false);
-  }, [taskData, msgData, gamData]);
+  }, [taskData, msgData]);
 
   // Export options per tab
   const exportOptions = useMemo(() => {
@@ -231,23 +206,18 @@ export function AnalyticsDashboard() {
       { label: "Completions by Date", action: exportTaskCompletions, enabled: !!taskData },
       { label: "Top Locations", action: exportTopLocations, enabled: !!taskData },
       { label: "Task Performance", action: exportTaskPerformance, enabled: !!taskData },
-      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
-    ];
-    if (activeTab === "messaging") return [
-      { label: "Messages by Date", action: exportMessages, enabled: !!msgData },
-      { label: "Top Senders", action: exportTopSenders, enabled: !!msgData },
-      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
+      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData) },
     ];
     return [
-      { label: "Points Leaderboard", action: exportLeaderboard, enabled: !!gamData },
-      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData || gamData) },
+      { label: "Messages by Date", action: exportMessages, enabled: !!msgData },
+      { label: "Top Senders", action: exportTopSenders, enabled: !!msgData },
+      { label: "Export All Data", action: exportAllData, enabled: !!(taskData || msgData) },
     ];
-  }, [activeTab, taskData, msgData, gamData, exportTaskCompletions, exportTopLocations, exportTaskPerformance, exportMessages, exportTopSenders, exportLeaderboard, exportAllData]);
+  }, [activeTab, taskData, msgData, exportTaskCompletions, exportTopLocations, exportTaskPerformance, exportMessages, exportTopSenders, exportAllData]);
 
   const tabs = [
     { id: "tasks" as const, label: "Tasks", icon: CheckCircle2 },
     { id: "messaging" as const, label: "Messaging", icon: MessageCircle },
-    { id: "gamification" as const, label: "Gamification", icon: Trophy },
   ];
 
   const dateRanges: { id: DateRange; label: string }[] = [
@@ -343,10 +313,8 @@ export function AnalyticsDashboard() {
           {/* ── TASKS TAB ── */}
           {activeTab === "tasks" && taskData && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 <StatCard label="Total Completions" value={taskData.summary?.totalCompletions ?? 0} icon={CheckCircle2} color="green" />
-                <StatCard label="Total Points" value={taskData.summary?.totalPoints ?? 0} icon={Zap} color="yellow" />
-                <StatCard label="Bonus Points" value={taskData.summary?.totalBonusPoints ?? 0} icon={Star} color="orange" />
                 <StatCard label="Active Locations" value={taskData.summary?.activeLocations ?? 0} icon={Users} color="blue" />
                 <StatCard label="Unique Tasks" value={taskData.summary?.uniqueTasks ?? 0} icon={Target} color="purple" />
               </div>
@@ -360,7 +328,6 @@ export function AnalyticsDashboard() {
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
                       <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
                       <Area type="monotone" dataKey="count" stroke="#dc2626" fill="#dc262620" name="Completions" />
-                      <Area type="monotone" dataKey="totalPoints" stroke="#22c55e" fill="#22c55e20" name="Points" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -398,7 +365,6 @@ export function AnalyticsDashboard() {
                         <th className="pb-2 font-medium">Task</th>
                         <th className="pb-2 font-medium text-right">Completions</th>
                         <th className="pb-2 font-medium text-right">Locations</th>
-                        <th className="pb-2 font-medium text-right">Avg Points</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -407,7 +373,6 @@ export function AnalyticsDashboard() {
                           <td className="py-2.5 font-medium text-foreground">{t.taskTitle || "Unknown Task"}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.completions}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.uniqueLocations}</td>
-                          <td className="py-2.5 text-right text-muted-foreground">{t.avgPoints}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -472,62 +437,6 @@ export function AnalyticsDashboard() {
             </div>
           )}
 
-          {/* ── GAMIFICATION TAB ── */}
-          {activeTab === "gamification" && gamData && (
-            <div className="space-y-5">
-              <div className="grid gap-5 lg:grid-cols-2">
-                <ChartCard title="Points Leaderboard">
-                  <div className="space-y-2">
-                    {(gamData.leaderboard ?? []).slice(0, 10).map((l, i) => (
-                      <div key={l.locationId ?? i} className="flex items-center gap-3">
-                        <span className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                          i === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
-                          i === 1 ? "bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400" :
-                          i === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" :
-                          "bg-muted text-muted-foreground"
-                        )}>
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{l.locationName || "Unknown"}</p>
-                          <p className="text-[10px] text-muted-foreground">{l.completions} completions</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-foreground">{(l.totalPoints ?? 0).toLocaleString()}</p>
-                          <p className="text-[10px] text-muted-foreground">pts</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ChartCard>
-
-                <ChartCard title="Achievement Unlocks Over Time">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={[...(gamData.achievementTrends ?? [])].reverse()}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} className="fill-muted-foreground" tickFormatter={(v) => { try { return format(new Date(v + "T00:00:00"), "MMM d"); } catch { return v; } }} />
-                      <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Line type="monotone" dataKey="count" stroke="#eab308" strokeWidth={2} dot={false} name="Unlocks" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-
-                <ChartCard title="Location Achievement Summary" className="lg:col-span-2">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={(gamData.locationSummary ?? []).slice(0, 10)}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="locationName" tick={{ fontSize: 10 }} className="fill-muted-foreground" angle={-30} textAnchor="end" height={60} />
-                      <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="achievementCount" fill="#a855f7" radius={[4, 4, 0, 0]} name="Achievements" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

@@ -28,11 +28,7 @@ export interface WidgetData {
   // completed / missed / stats
   completedToday: TaskItem[];
   missedYesterday: TaskItem[];
-  pointsToday: number;
   totalToday: number;
-
-  // leaderboard
-  currentLocationId?: string;
 
   // launchers (open the existing overlay components unchanged)
   chatUnread: number;

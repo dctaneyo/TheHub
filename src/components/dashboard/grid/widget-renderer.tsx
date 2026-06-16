@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
-import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { FileText } from "@/lib/icons";
 import { StatsWidget } from "./stats-widget";
 import { GridTasksWidget } from "./grid-tasks";
@@ -75,14 +74,8 @@ export const WidgetRenderer = memo(function WidgetRenderer({
         <CompletedMissed
           completedToday={data.completedToday}
           missedYesterday={data.missedYesterday}
-          pointsToday={data.pointsToday}
           totalToday={data.totalToday}
         />
-      );
-
-    case "leaderboard":
-      return (
-        <Leaderboard currentLocationId={data.currentLocationId} compact />
       );
 
     case "stats":
@@ -90,7 +83,6 @@ export const WidgetRenderer = memo(function WidgetRenderer({
         <StatsWidget
           completed={data.completedToday.length}
           total={data.totalToday}
-          points={data.pointsToday}
           missed={data.missedYesterday.length}
         />
       );

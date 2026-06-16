@@ -115,7 +115,7 @@ export async function GET(req: Request) {
         ...t,
         isMissed: true,
       })),
-      pointsToday: completions.reduce((sum, c) => sum + c.pointsEarned, 0),
+
     });
   } catch (error) {
     console.error("Tasks error:", error);

@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Activity, CheckCircle, MessageCircle, Trophy, Zap, Trash2 } from "@/lib/icons";
+import { Activity, CheckCircle, MessageCircle, Trash2 } from "@/lib/icons";
 
 interface ActivityItem {
   id: string;
-  type: "task_completed" | "message_sent" | "high_five" | "shoutout" | "achievement";
+  type: "task_completed" | "message_sent";
   userName: string;
   userType: string;
   description: string;
@@ -25,7 +25,10 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setActivities(parsed.slice(0, maxItems));
+        const filtered = parsed.filter((a: ActivityItem) =>
+          a.type === "task_completed" || a.type === "message_sent"
+        );
+        setActivities(filtered.slice(0, maxItems));
       } catch (err) {
         console.error('Failed to parse stored activities:', err);
       }
@@ -68,42 +71,12 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
       addActivity(activity);
     };
 
-    const handleHighFive = (data: any) => {
-      const activity: ActivityItem = {
-        id: `hf-${data.id}-${Date.now()}`,
-        type: "high_five",
-        userName: data.from_user_name,
-        userType: data.from_user_type,
-        description: `sent a high-five to ${data.to_user_name}`,
-        timestamp: data.created_at,
-        icon: "🙌",
-      };
-      addActivity(activity);
-    };
-
-    const handleShoutout = (data: any) => {
-      const activity: ActivityItem = {
-        id: `shout-${data.id}-${Date.now()}`,
-        type: "shoutout",
-        userName: data.from_user_name,
-        userType: data.from_user_type,
-        description: `gave a shoutout to ${data.to_location_name}`,
-        timestamp: data.created_at,
-        icon: "📣",
-      };
-      addActivity(activity);
-    };
-
     socket.on("task:completed", handleTaskCompleted);
     socket.on("message:new", handleMessageNew);
-    socket.on("high-five:received", handleHighFive);
-    socket.on("shoutout:new", handleShoutout);
 
     return () => {
       socket.off("task:completed", handleTaskCompleted);
       socket.off("message:new", handleMessageNew);
-      socket.off("high-five:received", handleHighFive);
-      socket.off("shoutout:new", handleShoutout);
     };
   }, [socket]);
 
@@ -117,12 +90,6 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "message_sent":
         return <MessageCircle className="h-4 w-4 text-blue-500" />;
-      case "high_five":
-        return <span className="text-base">🙌</span>;
-      case "shoutout":
-        return <span className="text-base">📣</span>;
-      case "achievement":
-        return <Trophy className="h-4 w-4 text-yellow-500" />;
       default:
         return <Activity className="h-4 w-4 text-muted-foreground" />;
     }
@@ -149,7 +116,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-yellow-500" />
+        <Activity className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Live Activity</h3>
         <div className="flex items-center gap-1 ml-auto">
           <button

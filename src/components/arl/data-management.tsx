@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Trash2, Database, AlertTriangle, CheckCircle2, Trophy, Download, Calendar,
+  Trash2, Database, AlertTriangle, CheckCircle2, Download, Calendar,
   HardDrive, Unlink, Shield, ListChecks, Copy, Upload,
   BarChart3, RefreshCw, X, Archive, ScrollText,
 } from "@/lib/icons";
@@ -90,13 +90,6 @@ export function DataManagement() {
     if (!res.ok) throw new Error((await res.json()).error);
     const d = await res.json();
     return `Purged ${d.deletedCompletions || 0} old task completions (>90 days)`;
-  });
-
-  const resetLeaderboard = () => runAction(async () => {
-    const res = await fetch("/api/data-management/reset-leaderboard", { method: "POST" });
-    if (!res.ok) throw new Error((await res.json()).error);
-    const d = await res.json();
-    return `Reset leaderboard — cleared ${d.deletedCompletions || 0} completions`;
   });
 
   const vacuumDb = () => runAction(async () => {
@@ -259,7 +252,6 @@ export function DataManagement() {
       cards: [
         { id: "purge-msg", icon: Trash2, color: "red", title: "Purge All Messages", desc: "Delete all messages, read receipts, and reactions.", btn: "Purge Messages", onClick: () => confirm("purge-msg", "Purge All Messages", "This will permanently delete ALL messages, read receipts, and reactions from every conversation.", purgeMessages) },
         { id: "purge-convos", icon: Trash2, color: "red", title: "Purge All Conversations", desc: "Delete all conversations, messages, and related data.", btn: "Purge Conversations", onClick: () => confirm("purge-convos", "Purge All Conversations", "This will permanently delete ALL conversations, messages, read receipts, reactions, and conversation members. This is more destructive than purging messages alone.", purgeConversations) },
-        { id: "reset-lb", icon: Trophy, color: "red", title: "Reset Leaderboard", desc: "Clear all points and task completion history.", btn: "Reset Points", onClick: () => confirm("reset-lb", "Reset Leaderboard", "This will reset ALL points and task completion history for every location. Use to start a new competition period.", resetLeaderboard) },
         { id: "purge-broadcast", icon: Trash2, color: "red", title: "Purge Broadcast Data", desc: "Delete all broadcast records, messages, Q&A, reactions, and viewers.", btn: "Purge Broadcasts", onClick: () => confirm("purge-broadcast", "Purge All Broadcast Data", "This will permanently delete ALL broadcast records including messages, questions, reactions, and viewer data.", purgeBroadcastData) },
         { id: "purge-notif", icon: Trash2, color: "red", title: "Purge Notifications", desc: "Delete all notifications and emergency messages.", btn: "Purge Notifications", onClick: () => confirm("purge-notif", "Purge All Notifications", "This will permanently delete ALL notifications and emergency broadcast messages.", purgeNotifications) },
       ],

@@ -6,7 +6,6 @@ import {
   Menu,
   Bell,
   BellOff,
-  Zap,
   CheckCircle2,
   Wifi,
   WifiOff,
@@ -18,8 +17,6 @@ import {
 } from "@/lib/icons";
 import { useAuth } from "@/lib/auth-context";
 import { OfflineIndicator } from "@/components/offline-indicator";
-import { HighFiveAnimation } from "@/components/high-five-animation";
-import { SocialActionsMenu } from "@/components/social-actions-menu";
 import { BroadcastStudio } from "@/components/arl/broadcast-studio";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
@@ -371,10 +368,6 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-semibold text-foreground truncate">{toast.locationName}</p>
                 <p className="text-xs text-muted-foreground truncate">Completed: {toast.taskTitle}</p>
               </div>
-              <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-1">
-                <Zap className="h-3 w-3 text-amber-500" />
-                <span className="text-xs font-bold text-amber-700">+{toast.pointsEarned}</span>
-              </div>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -457,11 +450,6 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* High-Five Animation */}
-      <HighFiveAnimation />
-
-      {/* Social Actions Menu */}
-      <SocialActionsMenu userType="arl" userId={user?.id} userName={user?.name} />
     </div>
   );
 }

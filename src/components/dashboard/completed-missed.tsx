@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 import {
   CheckCircle2,
   XCircle,
-  Trophy,
-  Sparkles,
   Flame,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -14,7 +12,6 @@ import { type TaskItem } from "./timeline";
 interface CompletedMissedProps {
   completedToday: TaskItem[];
   missedYesterday: TaskItem[];
-  pointsToday: number;
   totalToday: number;
 }
 
@@ -28,7 +25,6 @@ function formatTime12(time: string): string {
 export function CompletedMissed({
   completedToday,
   missedYesterday,
-  pointsToday,
   totalToday,
 }: CompletedMissedProps) {
   const completionRate = totalToday > 0
@@ -37,30 +33,10 @@ export function CompletedMissed({
 
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* Points & Progress Card */}
+      {/* Progress Card */}
       <div className="rounded-2xl bg-gradient-to-br from-[var(--hub-red)] to-[#c4001f] p-4 text-white shadow-lg shadow-red-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-white/70">Today&apos;s Points</p>
-            <div className="flex items-baseline gap-1">
-              <motion.span
-                key={pointsToday}
-                initial={{ scale: 1.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-3xl font-black"
-              >
-                {pointsToday}
-              </motion.span>
-              <Sparkles className="h-4 w-4 text-yellow-300" />
-            </div>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-            <Trophy className="h-7 w-7 text-yellow-300" />
-          </div>
-        </div>
-
         {/* Progress bar */}
-        <div className="mt-3">
+        <div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-white/70">Progress</span>
             <span className="font-bold">

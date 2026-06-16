@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Trophy,
-  Sparkles,
   ChevronDown,
   AlertTriangle,
   ClipboardList,
@@ -18,7 +16,6 @@ import {
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 import type { DashboardLayoutProps } from "./layout-props";
 import { useMirror } from "@/lib/mirror-context";
@@ -108,7 +105,6 @@ export function FocusLayout({
   allTasks,
   completedTasks,
   missedYesterday,
-  pointsToday,
   totalToday,
   currentTime,
   displayTime,
@@ -150,7 +146,6 @@ export function FocusLayout({
   const { isMirroring, viewState: mirrorViewState, sendViewChange } = useMirror();
   const [accCompleted, setAccCompleted] = useState(true);
   const [accMissed, setAccMissed] = useState(false);
-  const [accLeaderboard, setAccLeaderboard] = useState(false);
   const accSyncRef = useRef(false);
 
   // Sync accordion state FROM mirror context (mirror side: target → mirror)
@@ -160,7 +155,6 @@ export function FocusLayout({
     const a = mirrorViewState.accordions;
     if (a.completed !== undefined) setAccCompleted(a.completed);
     if (a.missed !== undefined) setAccMissed(a.missed);
-    if (a.leaderboard !== undefined) setAccLeaderboard(a.leaderboard);
     requestAnimationFrame(() => { accSyncRef.current = false; });
   }, [mirrorViewState?.accordions]);
 
@@ -173,7 +167,6 @@ export function FocusLayout({
       accSyncRef.current = true;
       if (a.completed !== undefined) setAccCompleted(a.completed);
       if (a.missed !== undefined) setAccMissed(a.missed);
-      if (a.leaderboard !== undefined) setAccLeaderboard(a.leaderboard);
       requestAnimationFrame(() => { accSyncRef.current = false; });
     };
     window.addEventListener("mirror:accordion-sync", handler);
@@ -183,7 +176,7 @@ export function FocusLayout({
   // Broadcast accordion changes
   useEffect(() => {
     if (accSyncRef.current) return;
-    const acc = { completed: accCompleted, missed: accMissed, leaderboard: accLeaderboard };
+    const acc = { completed: accCompleted, missed: accMissed };
     // Mirror side: send directly via mirror context
     if (isMirroring) {
       sendViewChange({ accordions: acc });
@@ -192,7 +185,7 @@ export function FocusLayout({
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("mirror:accordion-change", { detail: acc }));
     }
-  }, [accCompleted, accMissed, accLeaderboard, sendViewChange, isMirroring]);
+  }, [accCompleted, accMissed, sendViewChange, isMirroring]);
 
   const incompleteTasks = useMemo(
     () => allTasks.filter((t) => !t.isCompleted).sort((a, b) => a.dueTime.localeCompare(b.dueTime)),
@@ -231,10 +224,6 @@ export function FocusLayout({
             <div>
               <p className="text-lg font-black text-slate-900 dark:text-white">{completedTasks.length}/{totalToday}</p>
               <p className="text-[9px] text-slate-400 uppercase tracking-wider">Tasks done</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Trophy className="h-3 w-3 text-amber-500" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{pointsToday} pts</span>
-              </div>
             </div>
           </div>
         </div>
@@ -279,9 +268,7 @@ export function FocusLayout({
             )}
           </Accordion>
 
-          <Accordion title="Leaderboard" icon={Trophy} iconColor="text-amber-500" maxHeight={350} controlledOpen={accLeaderboard} onToggle={setAccLeaderboard}>
-            <Leaderboard currentLocationId={currentLocationId} compact />
-          </Accordion>
+
         </div>
 
         {/* Sticky quote at bottom */}
@@ -326,10 +313,6 @@ export function FocusLayout({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-black text-slate-900 dark:text-white">{completedTasks.length}/{totalToday} tasks</p>
-              <div className="flex items-center gap-1">
-                <Trophy className="h-2.5 w-2.5 text-amber-500" />
-                <span className="text-[9px] font-bold text-slate-500">{pointsToday} pts</span>
-              </div>
             </div>
           </div>
           <p className="text-lg font-extralight tabular-nums text-slate-800 dark:text-slate-100 shrink-0">
@@ -438,9 +421,6 @@ export function FocusLayout({
                       <span className="capitalize font-medium">{heroTask.type}</span>
                     </span>
                     <span className={cn("flex items-center gap-1 text-xs capitalize font-medium", heroTask.isOverdue || heroTask.isDueSoon ? "text-white/50" : "text-slate-500")}>{heroTask.priority}</span>
-                    <span className="flex items-center gap-1 text-xs font-bold text-amber-300">
-                      <Sparkles className="h-4 w-4" /> {heroTask.points} pts
-                    </span>
                   </div>
                 </div>
 
@@ -469,7 +449,7 @@ export function FocusLayout({
             >
               <CheckCircle2 className="h-14 w-14 text-emerald-400 mx-auto mb-3" />
               <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-1">All Clear!</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Every task is done. {pointsToday} points earned today.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Every task is done.</p>
             </motion.div>
           )}
         </div>
@@ -530,9 +510,6 @@ export function FocusLayout({
                         )}>
                           {formatTime12(task.dueTime)}
                         </span>
-                        <span className="flex items-center gap-0.5 text-[9px] text-amber-500 font-medium">
-                          <Sparkles className="h-2.5 w-2.5" /> {task.points}
-                        </span>
                       </div>
                       <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">{task.title}</p>
                       {task.description && (
@@ -579,7 +556,6 @@ export function FocusLayout({
                         {formatTime12(task.dueTime)}
                       </span>
                       <span className="flex-1 text-sm text-slate-700 dark:text-slate-300 truncate">{task.title}</span>
-                      <span className="text-[9px] text-amber-500 font-medium shrink-0">{task.points} pts</span>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

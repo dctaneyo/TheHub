@@ -1,16 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy, CheckCircle2, Clock, AlertTriangle } from "@/lib/icons";
+import { CheckCircle2, Clock, AlertTriangle } from "@/lib/icons";
 
 interface StatsWidgetProps {
   completed: number;
   total: number;
-  points: number;
   missed: number;
 }
 
-export function StatsWidget({ completed, total, points, missed }: StatsWidgetProps) {
+export function StatsWidget({ completed, total, missed }: StatsWidgetProps) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const cards = [
@@ -20,13 +19,6 @@ export function StatsWidget({ completed, total, points, missed }: StatsWidgetPro
       value: `${completed}/${total}`,
       tint: "text-emerald-500",
       bg: "bg-emerald-500/10",
-    },
-    {
-      icon: Trophy,
-      label: "Points today",
-      value: String(points),
-      tint: "text-yellow-500",
-      bg: "bg-yellow-500/10",
     },
     {
       icon: Clock,
@@ -45,7 +37,7 @@ export function StatsWidget({ completed, total, points, missed }: StatsWidgetPro
   ];
 
   return (
-    <div className="grid h-full grid-cols-2 gap-2 p-3 sm:grid-cols-4">
+    <div className="grid h-full grid-cols-2 gap-2 p-3 sm:grid-cols-3">
       {cards.map((c) => (
         <div
           key={c.label}

@@ -52,8 +52,6 @@ export async function GET(req: NextRequest) {
       meetingStarted: prefs.meetingStarted,
       meetingEnded: prefs.meetingEnded,
       meetingReminder: prefs.meetingReminder,
-      newShoutout: prefs.newShoutout,
-      leaderboardUpdate: prefs.leaderboardUpdate,
       systemAlert: prefs.systemAlert,
       weeklyReport: prefs.weeklyReport,
       priorityTypes: prefs.priorityTypes ? JSON.parse(prefs.priorityTypes) : [],
@@ -85,7 +83,6 @@ export async function POST(req: NextRequest) {
       "locationOnline", "locationOffline", "locationStatusChange",
       "emergencyBroadcast", "regularBroadcast",
       "meetingStarted", "meetingEnded", "meetingReminder",
-      "newShoutout", "leaderboardUpdate",
       "systemAlert", "weeklyReport",
       "priorityTypes",
       "emailNotifications", "pushNotifications", "inAppNotifications"
@@ -170,8 +167,6 @@ export async function POST(req: NextRequest) {
         meetingStarted: updatedPrefs.meetingStarted,
         meetingEnded: updatedPrefs.meetingEnded,
         meetingReminder: updatedPrefs.meetingReminder,
-        newShoutout: updatedPrefs.newShoutout,
-        leaderboardUpdate: updatedPrefs.leaderboardUpdate,
         systemAlert: updatedPrefs.systemAlert,
         weeklyReport: updatedPrefs.weeklyReport,
         priorityTypes: updatedPrefs.priorityTypes ? JSON.parse(updatedPrefs.priorityTypes) : [],
@@ -202,8 +197,6 @@ function getDefaultPreferences(userType: string): Partial<NotificationPreference
     meetingStarted: true,
     meetingEnded: false,
     meetingReminder: true,
-    newShoutout: true,
-    leaderboardUpdate: false,
     systemAlert: true,
     weeklyReport: false,
     priorityTypes: JSON.stringify(["urgent"]),
@@ -220,7 +213,6 @@ function getDefaultPreferences(userType: string): Partial<NotificationPreference
       locationOffline: true,
       locationStatusChange: true,
       meetingEnded: true,
-      leaderboardUpdate: true,
     };
   }
 

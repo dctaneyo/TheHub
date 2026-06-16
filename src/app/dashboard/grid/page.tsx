@@ -26,7 +26,6 @@ interface TasksResponse {
   completedToday: number;
   totalToday: number;
   missedYesterday: TaskItem[];
-  pointsToday: number;
 }
 
 function localParams() {
@@ -266,8 +265,7 @@ export default function GridDashboardPage() {
   }, []);
   const openForms = useCallback(() => setFormsOpen(true), []);
 
-  const currentLocationId =
-    user?.userType === "location" ? user.locationId || user.id : undefined;
+
 
   // ---- Build widget data bundle -------------------------------------------
   // Memoized so transient re-renders (e.g. socket connect/disconnect toggling
@@ -285,9 +283,7 @@ export default function GridDashboardPage() {
       onEarlyUncomplete: handleEarlyUncomplete,
       completedToday: tasks.filter((t) => t.isCompleted),
       missedYesterday: data?.missedYesterday ?? [],
-      pointsToday: data?.pointsToday ?? 0,
       totalToday: data?.totalToday ?? 0,
-      currentLocationId,
       chatUnread,
       onOpenChat: openChat,
       onOpenForms: openForms,
@@ -296,7 +292,6 @@ export default function GridDashboardPage() {
     data,
     upcomingTasks,
     chatUnread,
-    currentLocationId,
     handleComplete,
     handleUncomplete,
     handleEarlyComplete,

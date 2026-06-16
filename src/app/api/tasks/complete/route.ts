@@ -4,7 +4,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
-import { broadcastTaskCompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
+import { broadcastTaskCompleted } from "@/lib/socket-emit";
 import { sendPushToAllARLs } from "@/lib/push";
 import { createNotificationBulk } from "@/lib/notifications";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
@@ -44,9 +44,7 @@ export async function POST(req: NextRequest) {
       return ApiErrors.forbidden("This task cannot be completed early");
     }
 
-    // Early bird bonus: +25% when completing ahead of due date
     const isEarly = targetDate > todayStr;
-    const bonusPoints = isEarly ? Math.round(task.points * 0.25) : 0;
 
     const completion = {
       id: uuid(),
@@ -55,8 +53,8 @@ export async function POST(req: NextRequest) {
       completedAt: new Date().toISOString(),
       completedDate: targetDate,
       notes: notes || null,
-      pointsEarned: task.points,
-      bonusPoints,
+      pointsEarned: 0,
+      bonusPoints: 0,
     };
 
     db.insert(schema.taskCompletions).values(completion).run();
@@ -65,14 +63,12 @@ export async function POST(req: NextRequest) {
     // Use the effective location for broadcasts (target location in mirror mode)
     const broadcastLocationId = effectiveLocationId;
     const broadcastLocationName = session.userType === "arl" ? (body.mirrorLocationName as string || session.name) : session.name;
-    broadcastTaskCompleted(broadcastLocationId, taskId, task.title, task.points + bonusPoints, broadcastLocationName, session.tenantId);
-    broadcastLeaderboardUpdate(broadcastLocationId, session.tenantId);
+    broadcastTaskCompleted(broadcastLocationId, taskId, task.title, 0, broadcastLocationName, session.tenantId);
 
     // Push notification to all ARLs about the task completion
-    const pointsTotal = task.points + bonusPoints;
     await sendPushToAllARLs({
       title: `${session.name} completed a task! ✅`,
-      body: `${task.title} · +${pointsTotal} pts${bonusPoints > 0 ? ` (incl. +${bonusPoints} early bonus)` : ""}`,
+      body: task.title,
       url: `/arl`,
     });
 
@@ -84,7 +80,7 @@ export async function POST(req: NextRequest) {
         userType: "arl",
         type: "task_completed",
         title: `${session.name} completed a task`,
-        message: `${task.title} · +${pointsTotal} pts${bonusPoints > 0 ? ` (incl. +${bonusPoints} early bonus)` : ""}`,
+        message: task.title,
         actionUrl: "/arl?view=tasks",
         actionLabel: "View Tasks",
         priority: "normal",
@@ -92,7 +88,6 @@ export async function POST(req: NextRequest) {
           taskId,
           locationId: effectiveLocationId,
           locationName: broadcastLocationName,
-          points: pointsTotal,
         },
       }
     );
@@ -100,9 +95,6 @@ export async function POST(req: NextRequest) {
     refreshTaskTimers();
 
     return apiSuccess({
-      pointsEarned: task.points,
-      bonusPoints,
-      totalPoints: task.points + bonusPoints,
       isEarly,
       completion,
     });

@@ -4,19 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Store,
-  Users,
-  MessageCircle,
   AlertTriangle,
   CheckCircle2,
-  Clock,
-  Zap,
   TrendingUp,
-  Wifi,
-  WifiOff,
 } from "@/lib/icons";
 import { useSocket } from "@/lib/socket-context";
 import { cn } from "@/lib/utils";
-import { ShoutoutsFeed } from "@/components/shoutouts-feed";
 import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { TickerPush } from "@/components/arl/ticker-push";
 
@@ -27,7 +20,6 @@ interface OverviewData {
   completedToday: number;
   totalDueToday: number;
   completionRate: number;
-  pointsToday: number;
   activeEmergencies: number;
   trend: { date: string; completed: number; total: number }[];
   locationPerformance: {
@@ -35,7 +27,6 @@ interface OverviewData {
     name: string;
     storeNumber: string;
     completedToday: number;
-    pointsToday: number;
     isOnline: boolean;
   }[];
 }
@@ -170,15 +161,6 @@ export function OverviewDashboard() {
       borderColor: "border-border",
       sparkData: data.trend.map(t => t.completed),
     },
-    {
-      label: "Points Earned Today",
-      value: String(data.pointsToday),
-      subtext: "Across all locations",
-      icon: Zap,
-      color: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-      borderColor: "border-border",
-      sparkData: null,
-    },
   ];
 
   return (
@@ -203,7 +185,7 @@ export function OverviewDashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpiCards.map((card, i) => (
           <motion.div
             key={card.label}
@@ -253,10 +235,6 @@ export function OverviewDashboard() {
                   <span className="text-xs text-muted-foreground">
                     {loc.completedToday} tasks
                   </span>
-                  <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5">
-                    <Zap className="h-3 w-3 text-amber-500" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{loc.pointsToday}</span>
-                  </div>
                 </div>
               </div>
             ))}
@@ -302,14 +280,9 @@ export function OverviewDashboard() {
         <TickerPush />
       </div>
 
-      {/* Shoutouts and Live Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <ShoutoutsFeed />
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <LiveActivityFeed maxItems={15} />
-        </div>
+      {/* Live Activity */}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <LiveActivityFeed maxItems={15} />
       </div>
     </div>
   );

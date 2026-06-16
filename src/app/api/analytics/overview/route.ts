@@ -49,9 +49,6 @@ export async function GET() {
     const completedToday = todayCompletions.length;
     const completionRate = totalDueToday > 0 ? Math.round((completedToday / totalDueToday) * 100) : 0;
 
-    // Points earned today
-    const pointsToday = todayCompletions.reduce((sum, c) => sum + (c.pointsEarned || 0) + (c.bonusPoints || 0), 0);
-
     // Emergency alerts
     const activeEmergencies = db.select().from(schema.emergencyMessages)
       .where(eq(schema.emergencyMessages.isActive, true)).all();
@@ -80,16 +77,14 @@ export async function GET() {
     // Top performing locations today
     const locationPerformance = allLocations.map(loc => {
       const locCompletions = todayCompletions.filter(c => c.locationId === loc.id);
-      const locPoints = locCompletions.reduce((sum, c) => sum + (c.pointsEarned || 0) + (c.bonusPoints || 0), 0);
       return {
         id: loc.id,
         name: loc.name,
         storeNumber: loc.storeNumber,
         completedToday: locCompletions.length,
-        pointsToday: locPoints,
         isOnline: onlineLocations.some(ol => ol.id === loc.id),
       };
-    }).sort((a, b) => b.pointsToday - a.pointsToday);
+    }).sort((a, b) => b.completedToday - a.completedToday);
 
     return apiSuccess({
       locationsOnline: onlineLocations.length,
@@ -98,7 +93,6 @@ export async function GET() {
       completedToday,
       totalDueToday,
       completionRate,
-      pointsToday,
       activeEmergencies: activeEmergencies.length,
       trend,
       locationPerformance,
