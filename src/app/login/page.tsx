@@ -213,7 +213,8 @@ function RippleGrid() {
     const RIPPLE_WIDTH   = 55;  // px — thickness of the bright band
     const RIPPLE_OPACITY = 0.7; // peak opacity of a dot at the crest
     const BASE_OPACITY   = 0.10; // resting dot opacity
-    const SPAWN_INTERVAL = 1200; // ms between automatic ripple spawns
+    const SPAWN_INTERVAL = 2800; // ms between automatic ripple spawns
+    const MAX_RIPPLES    = 2;    // never more than 2 live at once
 
     // ── Ripple state ─────────────────────────────────────────────────────────
     interface Ripple { x: number; y: number; radius: number; born: number }
@@ -258,11 +259,9 @@ function RippleGrid() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Spawn new ripples on schedule
-      if (now - lastSpawn > SPAWN_INTERVAL) {
+      // Spawn new ripples on schedule, respecting the max-2 cap
+      if (now - lastSpawn > SPAWN_INTERVAL && ripples.length < MAX_RIPPLES) {
         spawnRipple(now);
-        // Occasionally spawn two close together for variety
-        if (Math.random() < 0.35) spawnRipple(now);
         lastSpawn = now;
       }
 
