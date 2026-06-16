@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Lock, CheckCircle2 } from "@/lib/icons";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Lock, CheckCircle2, Sun, Moon } from "@/lib/icons";
+import { useTheme } from "next-themes";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 
@@ -51,6 +51,15 @@ interface ResolvedTenant {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => setThemeMounted(true), []);
+  const cycleTheme = useCallback(() => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  }, [theme, setTheme]);
+
   const [step, setStep] = useState<LoginStep>("userId");
   const [userId, setUserId] = useState("");
   const [pin, setPin] = useState("");
@@ -621,7 +630,20 @@ export default function LoginPage() {
   if (orgChecked && !orgSlug) {
     return (
       <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center relative ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
-        <div className="absolute right-3 top-3 z-50"><ThemeToggle /></div>
+        {themeMounted && (
+          <button
+            onClick={cycleTheme}
+            title={`Theme: ${theme}`}
+            className="absolute right-4 top-4 z-50 flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
+          >
+            {theme === "dark"
+              ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+              : theme === "light"
+              ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+              : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
+          </button>
+        )}
         {/* Prominent floating particles */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {orgParticles.map((p) => (
@@ -766,8 +788,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4">
-      {/* Theme picker */}
-      <div className="absolute right-3 top-3 z-50"><ThemeToggle /></div>
       {/* Hidden input for keyboard support */}
       <input
         ref={keyboardInputRef}
@@ -781,15 +801,15 @@ export default function LoginPage() {
         style={{ position: 'absolute', left: -9999 }}
       />
 
-      {/* Top bar: connection + session ID — hidden on mobile (shown inside card instead) */}
-      <div className="absolute right-14 top-4 hidden sm:flex items-center gap-3">
+      {/* Top bar: session ID + connection + theme — hidden on mobile (shown inside card instead) */}
+      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-2">
         {pendingCode && (
           <motion.button
             onClick={handleSelfPing}
             title="Tap to signal your ARL which session is yours"
             animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
             transition={{ duration: 0.3 }}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-sm backdrop-blur-sm transition-colors cursor-pointer select-none ${
+            className={`flex h-9 items-center gap-2 rounded-full px-4 shadow-sm backdrop-blur-sm transition-colors cursor-pointer select-none ${
               selfPinged
                 ? "bg-[var(--hub-red)] text-white"
                 : "bg-card/80 hover:bg-card"
@@ -814,7 +834,7 @@ export default function LoginPage() {
         )}
         <div
           onClick={handleConnectionTap}
-          className="flex items-center gap-2 rounded-full bg-card/80 px-4 py-2 shadow-sm backdrop-blur-sm select-none"
+          className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm select-none"
         >
           {isOnline ? (
             <>
@@ -828,6 +848,20 @@ export default function LoginPage() {
             </>
           )}
         </div>
+        {themeMounted && (
+          <button
+            onClick={cycleTheme}
+            title={`Theme: ${theme}`}
+            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
+          >
+            {theme === "dark"
+              ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+              : theme === "light"
+              ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+              : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
+          </button>
+        )}
       </div>
 
       {/* Ping animation overlay */}
