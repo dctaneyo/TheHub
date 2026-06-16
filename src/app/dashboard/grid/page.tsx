@@ -70,9 +70,9 @@ function HeaderClock() {
   const hasClockWidget = widgets.some((w) => w.type === "clock");
   if (hasClockWidget) return null;
   return (
-    <div className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+    <motion.div layout className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
       <HeaderClockDisplay />
-    </div>
+    </motion.div>
   );
 }
 
@@ -192,8 +192,8 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
           transition={{ type: "spring", stiffness: 340, damping: 30 }}
           className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full bg-card/80 shadow-sm backdrop-blur-sm"
         >
-          {/* LIVE badge */}
-          <div className="flex h-full shrink-0 items-center gap-1.5 rounded-full bg-primary px-3">
+          {/* LIVE badge — rounded left, flat right so it sits flush against the ticker text */}
+          <div className="flex h-full shrink-0 items-center gap-1.5 rounded-l-full bg-primary px-3">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
@@ -481,8 +481,8 @@ export default function GridDashboardPage() {
       <div className="flex h-screen flex-col bg-background">
         {/* Floating pill header — no background, no border, elements float as pills */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
-          {/* Logo + name pill — flex-1 so it fills the remaining header space */}
-          <div className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+          {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
+          <motion.div layout className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
@@ -492,9 +492,10 @@ export default function GridDashboardPage() {
                 <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>
               )}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex items-center gap-2">
+          {/* Right cluster — layout-animated so clock and other pills shift smoothly */}
+          <motion.div layout className="flex items-center gap-2">
             {/* Clock pill — hidden when a Clock widget is on the grid */}
             <HeaderClock />
             {/* Settings panel: layout picker + customize + theme — animates out from cog */}
@@ -515,7 +516,7 @@ export default function GridDashboardPage() {
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
-          </div>
+          </motion.div>
         </header>
 
         {/* Grid — layout-animated so it smoothly resizes when ticker mounts/unmounts */}
