@@ -358,11 +358,11 @@ export function GridSurface({ data }: { data: WidgetData }) {
   };
 
   return (
-    <div className="relative h-full overflow-hidden p-2">
+    <div className="relative h-full overflow-hidden p-3">
       {/* Cell guide background (aligned, behind widgets) */}
       {editMode && (
         <div
-          className="pointer-events-none absolute inset-2 grid gap-2"
+          className="pointer-events-none absolute inset-3 grid gap-3"
           style={gridTemplate}
         >
           {Array.from({ length: GRID_COLS * GRID_ROWS }).map((_, i) => (
@@ -377,7 +377,7 @@ export function GridSurface({ data }: { data: WidgetData }) {
       {/* Widget layer */}
       <div
         ref={gridRef}
-        className="relative grid h-full w-full gap-2"
+        className="relative grid h-full w-full gap-3"
         style={gridTemplate}
       >
         <AnimatePresence>
