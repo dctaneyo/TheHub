@@ -1,4 +1,4 @@
-export { GridControls, GridSurface, GridSync } from "./grid-dashboard";
+export { GridControls, GridSurface, GridSync, SettingsPanel } from "./grid-dashboard";
 export { GridProvider, useGrid } from "./grid-context";
 export {
   PREDEFINED_LAYOUTS,

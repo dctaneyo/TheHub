@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSocket } from "@/lib/socket-context";
-import { Loader2, LogOut } from "@/lib/icons";
+import { Loader2, LogOut, Sun, Moon, Monitor } from "@/lib/icons";
+import { useTheme } from "next-themes";
 import { useGrid } from "@/components/dashboard/grid";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
@@ -12,7 +13,7 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import type { TaskItem } from "@/components/dashboard/timeline";
 import {
   GridProvider,
-  GridControls,
+  SettingsPanel,
   GridSurface,
   GridSync,
   getPredefinedLayout,
@@ -315,6 +316,16 @@ export default function GridDashboardPage() {
     openForms,
   ]);
 
+  const { theme, setTheme } = useTheme();
+  const cycleTheme = useCallback(() => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  }, [theme, setTheme]);
+
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => setThemeMounted(true), []);
+
   if (!user || !initialLayout) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -345,8 +356,13 @@ export default function GridDashboardPage() {
           <div className="flex items-center gap-2">
             {/* Clock pill — hidden when a Clock widget is on the grid */}
             <HeaderClock />
-            {/* Layout / edit controls — each button already styled as pills inside GridControls */}
-            <GridControls onSave={saveLayout} />
+            {/* Settings panel: layout picker + customize + theme — animates out from cog */}
+            <SettingsPanel
+              onSave={saveLayout}
+              theme={theme}
+              themeMounted={themeMounted}
+              onCycleTheme={cycleTheme}
+            />
             {/* Connection status */}
             <ConnectionStatus />
             {/* Sign out pill */}
