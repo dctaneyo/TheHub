@@ -29,9 +29,6 @@ import type { WidgetData } from "./widget-data";
 // ── Shared pill class ─────────────────────────────────────────────────────────
 const PILL = "flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground";
 
-// ── Shared pill class ─────────────────────────────────────────────────────────
-const PILL = "flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground";
-
 /**
  * SettingsPanel — a settings cog pill that, when clicked, slides left and
  * morphs out the layout picker, customize, and theme picker pills from itself.
