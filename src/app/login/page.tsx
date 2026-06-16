@@ -357,10 +357,10 @@ function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
   const [bg, setBgState] = useState<LoginBg>("ripple");
 
   useEffect(() => {
-    const stored = localStorage.getItem(BG_STORAGE_KEY) as LoginBg | null;
+    const stored = localStorage.getItem(BG_STORAGE_KEY);
     // "wave" was the previous key name — migrate to "ripple"
-    const mapped = stored === "wave" ? "ripple" : stored;
-    if (mapped && BG_OPTIONS.some((o) => o.value === mapped)) setBgState(mapped);
+    const mapped = stored === "wave" ? "ripple" : stored as LoginBg | null;
+    if (mapped && BG_OPTIONS.some((o) => o.value === mapped)) setBgState(mapped as LoginBg);
   }, []);
 
   const setBg = useCallback((v: LoginBg) => {
