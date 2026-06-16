@@ -74,7 +74,6 @@ export const WidgetRenderer = memo(function WidgetRenderer({
         <CompletedMissed
           completedToday={data.completedToday}
           missedYesterday={data.missedYesterday}
-          totalToday={data.totalToday}
         />
       );
 

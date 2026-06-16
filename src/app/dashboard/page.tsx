@@ -1074,7 +1074,6 @@ function DashboardPage() {
                 <CompletedMissed
                   completedToday={completedTasks}
                   missedYesterday={data?.missedYesterday || []}
-                  totalToday={data?.totalToday || 0}
                 />
               </div>
             </div>

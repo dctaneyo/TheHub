@@ -1,18 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  XCircle,
-  Flame,
-} from "@/lib/icons";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, XCircle } from "@/lib/icons";
 import { type TaskItem } from "./timeline";
 
 interface CompletedMissedProps {
   completedToday: TaskItem[];
   missedYesterday: TaskItem[];
-  totalToday: number;
 }
 
 function formatTime12(time: string): string {
@@ -25,49 +19,12 @@ function formatTime12(time: string): string {
 export function CompletedMissed({
   completedToday,
   missedYesterday,
-  totalToday,
 }: CompletedMissedProps) {
-  const completionRate = totalToday > 0
-    ? Math.round((completedToday.length / totalToday) * 100)
-    : 0;
-
   return (
-    <div className="flex h-full flex-col gap-4">
-      {/* Progress Card */}
-      <div className="rounded-2xl bg-gradient-to-br from-[var(--hub-red)] to-[#c4001f] p-4 text-white shadow-lg shadow-red-200">
-        {/* Progress bar */}
-        <div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-white/70">Progress</span>
-            <span className="font-bold">
-              {completedToday.length}/{totalToday} tasks
-            </span>
-          </div>
-          <div className="mt-1.5 h-2 rounded-full bg-white/20">
-            <motion.div
-              className="h-2 rounded-full bg-white"
-              initial={{ width: 0 }}
-              animate={{ width: `${completionRate}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-
-        {completionRate === 100 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 flex items-center gap-1.5 text-xs font-bold text-yellow-300"
-          >
-            <Flame className="h-3.5 w-3.5" />
-            All tasks completed! Amazing work!
-          </motion.div>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-4">
       {/* Completed Today */}
-      <div className="flex flex-[3] flex-col overflow-hidden">
-        <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
+      <div>
+        <div className="mb-2 flex items-center gap-2 px-1">
           <CheckCircle2 className="h-4 w-4 text-[var(--hub-green)]" />
           <h3 className="text-base font-bold text-foreground">
             Completed Today
@@ -76,7 +33,7 @@ export function CompletedMissed({
             </span>
           </h3>
         </div>
-        <div className="flex-1 space-y-1 overflow-y-auto">
+        <div className="space-y-1">
           {completedToday.length === 0 ? (
             <p className="rounded-xl bg-muted p-3 text-center text-sm text-muted-foreground">
               No tasks completed yet
@@ -103,8 +60,8 @@ export function CompletedMissed({
       </div>
 
       {/* Missed Yesterday */}
-      <div className="flex flex-[2] flex-col overflow-hidden">
-        <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
+      <div>
+        <div className="mb-2 flex items-center gap-2 px-1">
           <XCircle className="h-4 w-4 text-[var(--hub-red)]" />
           <h3 className="text-base font-bold text-foreground">
             Missed Yesterday
@@ -113,7 +70,7 @@ export function CompletedMissed({
             </span>
           </h3>
         </div>
-        <div className="flex-1 space-y-1 overflow-y-auto">
+        <div className="space-y-1">
           {missedYesterday.length === 0 ? (
             <p className="rounded-xl bg-muted p-3 text-center text-sm text-muted-foreground">
               No missed tasks - great job!
