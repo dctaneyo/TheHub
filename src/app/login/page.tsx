@@ -187,11 +187,128 @@ function ConcentricRings() {
   );
 }
 
-// ── Background picker ──────────────────────────────────────────────────────
+/**
+ * Travelling dot-wave background — a grid of dots whose scale and opacity are
+ * driven by two overlapping sine waves that travel diagonally across the field,
+ * creating the "digital dots form waves" effect. Implemented on a single canvas
+ * with requestAnimationFrame for smooth, GPU-composited animation without
+ * spawning hundreds of Framer Motion instances.
+ */
+function DotWaveGrid() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-type LoginBg = "mesh" | "dots" | "rings" | "none";
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let raf: number;
+    let stopped = false;
+
+    // Resolve the brand colour from the CSS variable once
+    const resolveBrandColor = () => {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--hub-red")
+        .trim();
+      // Expect a hex like #dc2626 or rgb(...)
+      return raw || "#dc2626";
+    };
+
+    const COLS = 28;
+    const ROWS = 18;
+    const DOT_R = 2.5;         // dot base radius (px)
+    const WAVE_SPEED_1 = 0.55; // radians/second for wave 1
+    const WAVE_SPEED_2 = 0.35; // radians/second for wave 2 (slower, opposite angle)
+
+    const draw = (t: number) => {
+      if (stopped) return;
+      const W = canvas.width;
+      const H = canvas.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const color = resolveBrandColor();
+
+      const cellW = W / (COLS - 1);
+      const cellH = H / (ROWS - 1);
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = c * cellW;
+          const y = r * cellH;
+
+          // Wave 1 — travels diagonally top-left → bottom-right
+          const phase1 = (c * 0.55 + r * 0.28) - t * WAVE_SPEED_1;
+          // Wave 2 — travels diagonally top-right → bottom-left (opposite)
+          const phase2 = (-c * 0.4 + r * 0.35) - t * WAVE_SPEED_2;
+
+          // Combine waves; result in [-2, 2], normalise to [0, 1]
+          const combined = (Math.sin(phase1) + Math.sin(phase2)) / 2; // [-1, 1]
+          const n = (combined + 1) / 2; // [0, 1]
+
+          // Map to visual properties
+          const opacity = 0.06 + n * 0.38;   // [0.06, 0.44] — subtle base, bright peaks
+          const radius  = DOT_R * (0.5 + n * 1.1); // [DOT_R*0.5, DOT_R*1.6]
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = hexOrVarToRgba(color, opacity);
+          ctx.fill();
+        }
+      }
+
+      raf = requestAnimationFrame((ts) => draw(ts / 1000));
+    };
+
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    raf = requestAnimationFrame((ts) => draw(ts / 1000));
+
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none fixed inset-0"
+      aria-hidden
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
+}
+
+/** Convert a CSS hex colour + alpha into rgba(...) for canvas fillStyle. */
+function hexOrVarToRgba(color: string, alpha: number): string {
+  // Already rgb/rgba — just change alpha
+  if (color.startsWith("rgb")) {
+    return color.replace(/rgba?\(([^)]+)\)/, (_, inner) => {
+      const parts = inner.split(",").slice(0, 3).join(",");
+      return `rgba(${parts},${alpha.toFixed(3)})`;
+    });
+  }
+  // Hex (#rrggbb or #rgb)
+  let hex = color.replace("#", "");
+  if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+}
+
+type LoginBg = "wave" | "mesh" | "dots" | "rings" | "none";
 
 const BG_OPTIONS: { value: LoginBg; label: string }[] = [
+  { value: "wave",  label: "Wave"  },
   { value: "mesh",  label: "Mesh"  },
   { value: "dots",  label: "Dots"  },
   { value: "rings", label: "Rings" },
@@ -201,7 +318,7 @@ const BG_OPTIONS: { value: LoginBg; label: string }[] = [
 const BG_STORAGE_KEY = "hub-login-bg";
 
 function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
-  const [bg, setBgState] = useState<LoginBg>("mesh");
+  const [bg, setBgState] = useState<LoginBg>("wave");
 
   useEffect(() => {
     const stored = localStorage.getItem(BG_STORAGE_KEY) as LoginBg | null;
@@ -217,6 +334,7 @@ function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
 }
 
 function ActiveBackground({ bg }: { bg: LoginBg }) {
+  if (bg === "wave")  return <DotWaveGrid />;
   if (bg === "mesh")  return <MeshGradient />;
   if (bg === "dots")  return <DotPulseGrid />;
   if (bg === "rings") return <ConcentricRings />;
