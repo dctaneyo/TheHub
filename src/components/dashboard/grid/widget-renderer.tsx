@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { FileText } from "@/lib/icons";
-import { StatsWidget } from "./stats-widget";
+import { ClockWidget } from "./grid-clock";
 import { GridTasksWidget } from "./grid-tasks";
 import { GridMessagesWidget } from "./grid-messages";
 import { GridUpcomingWidget } from "./grid-upcoming";
@@ -77,14 +77,8 @@ export const WidgetRenderer = memo(function WidgetRenderer({
         />
       );
 
-    case "stats":
-      return (
-        <StatsWidget
-          completed={data.completedToday.length}
-          total={data.totalToday}
-          missed={data.missedYesterday.length}
-        />
-      );
+    case "clock":
+      return <ClockWidget />;
 
     case "messages":
       return <GridMessagesWidget onOpen={data.onOpenChat} />;

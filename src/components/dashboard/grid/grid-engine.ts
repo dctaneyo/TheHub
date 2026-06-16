@@ -41,7 +41,7 @@ export type WidgetType =
   | "completed"
   | "messages"
   | "forms"
-  | "stats";
+  | "clock";
 
 export interface Widget {
   id: string;

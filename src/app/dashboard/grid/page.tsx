@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSocket } from "@/lib/socket-context";
 import { Loader2, LogOut } from "@/lib/icons";
+import { useGrid } from "@/components/dashboard/grid";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -38,7 +39,7 @@ function localParams() {
 
 // Live clock (updates every second, includes seconds). Isolated in its own
 // component so the 1s tick only re-renders the clock, not the whole page.
-function HeaderClock() {
+function HeaderClockDisplay() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -57,6 +58,15 @@ function HeaderClock() {
       {time}
     </span>
   );
+}
+
+// Hides the header clock when the user has placed a Clock widget on the grid.
+// Must be rendered inside <GridProvider> to access useGrid().
+function HeaderClock() {
+  const { widgets } = useGrid();
+  const hasClockWidget = widgets.some((w) => w.type === "clock");
+  if (hasClockWidget) return null;
+  return <HeaderClockDisplay />;
 }
 
 export default function GridDashboardPage() {

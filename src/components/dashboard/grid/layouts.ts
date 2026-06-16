@@ -12,7 +12,7 @@ export const WIDGET_CATALOG: {
   { type: "completed", title: "Completed & Missed", defaultW: 4, defaultH: 6 },
   { type: "messages", title: "Messages", defaultW: 4, defaultH: 3 },
   { type: "forms", title: "Forms", defaultW: 4, defaultH: 3 },
-  { type: "stats", title: "Overview", defaultW: 6, defaultH: 3 },
+  { type: "clock", title: "Clock", defaultW: 4, defaultH: 3 },
 ];
 
 export const PREDEFINED_LAYOUTS: GridLayout[] = [
@@ -31,23 +31,23 @@ export const PREDEFINED_LAYOUTS: GridLayout[] = [
   {
     id: "focus",
     name: "Focus",
-    description: "Big task list with supporting widgets",
+    description: "Big task list with clock and supporting widgets",
     widgets: [
-      { id: "stats", type: "stats", title: "Overview", w: 12, h: 3, position: { x: 0, y: 0 } },
-      { id: "tasks", type: "tasks", title: "Today's Tasks", w: 8, h: 8, position: { x: 0, y: 3 } },
-      { id: "calendar", type: "calendar", title: "Upcoming", w: 4, h: 4, position: { x: 8, y: 3 } },
-      { id: "messages", type: "messages", title: "Messages", w: 4, h: 4, position: { x: 8, y: 7 } },
+      { id: "clock", type: "clock", title: "Clock", w: 4, h: 3, position: { x: 0, y: 0 } },
+      { id: "tasks", type: "tasks", title: "Today's Tasks", w: 8, h: 9, position: { x: 4, y: 0 } },
+      { id: "calendar", type: "calendar", title: "Upcoming", w: 4, h: 4, position: { x: 0, y: 3 } },
+      { id: "messages", type: "messages", title: "Messages", w: 4, h: 2, position: { x: 0, y: 7 } },
     ],
   },
   {
     id: "overview",
     name: "Overview",
-    description: "Stats-first dashboard for a quick glance",
+    description: "Clock-first dashboard for a quick glance",
     widgets: [
-      { id: "stats", type: "stats", title: "Overview", w: 12, h: 3, position: { x: 0, y: 0 } },
-      { id: "tasks", type: "tasks", title: "Today's Tasks", w: 6, h: 6, position: { x: 0, y: 3 } },
-      { id: "completed", type: "completed", title: "Completed & Missed", w: 6, h: 3, position: { x: 6, y: 3 } },
-      { id: "calendar", type: "calendar", title: "Upcoming", w: 6, h: 3, position: { x: 6, y: 6 } },
+      { id: "clock", type: "clock", title: "Clock", w: 4, h: 3, position: { x: 0, y: 0 } },
+      { id: "tasks", type: "tasks", title: "Today's Tasks", w: 8, h: 6, position: { x: 4, y: 0 } },
+      { id: "completed", type: "completed", title: "Completed & Missed", w: 4, h: 6, position: { x: 0, y: 3 } },
+      { id: "calendar", type: "calendar", title: "Upcoming", w: 8, h: 3, position: { x: 4, y: 6 } },
     ],
   },
 ];
