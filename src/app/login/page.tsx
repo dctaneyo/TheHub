@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Lock, CheckCircle2 } from "@/lib/icons";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 
@@ -596,7 +597,7 @@ export default function LoginPage() {
           className={`h-5 w-5 rounded-full border-2 transition-colors duration-200 ${
             filled
               ? "border-[var(--hub-red)] bg-[var(--hub-red)]"
-              : "border-slate-300 bg-white"
+              : "border-border bg-background"
           }`}
           animate={filled ? { scale: [1, 1.3, 1] } : {}}
           transition={{ duration: 0.15 }}
@@ -610,7 +611,7 @@ export default function LoginPage() {
   // Loading state — waiting for localStorage check
   if (!orgChecked) {
     return (
-      <div className="min-h-screen min-h-dvh w-screen bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center justify-center">
+      <div className="min-h-screen min-h-dvh w-screen bg-background flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--hub-red)]" />
       </div>
     );
@@ -619,7 +620,8 @@ export default function LoginPage() {
   // Org Entry Screen — no org slug resolved yet
   if (orgChecked && !orgSlug) {
     return (
-      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4 justify-center ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
+      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center relative ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
+        <div className="absolute right-3 top-3 z-50"><ThemeToggle /></div>
         {/* Prominent floating particles */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {orgParticles.map((p) => (
@@ -669,9 +671,9 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-sm rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
+          className="w-full max-w-sm rounded-3xl bg-card/90 backdrop-blur-md shadow-2xl shadow-red-100/30 border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Welcome to The Hub</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Welcome to The Hub</h1>
 
           <div className="mt-3 sm:mt-4 w-full">
 
@@ -695,14 +697,14 @@ export default function LoginPage() {
                   }
                 }}
                 style={{ textTransform: "uppercase" }}
-                className="w-full max-w-[240px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-widest text-slate-800 outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
+                className="w-full max-w-[240px] rounded-xl border border-border bg-background px-4 py-3 text-center text-lg font-bold tracking-widest text-foreground outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
                   showOrgKeyboard
                     ? "bg-[var(--hub-red)] text-white shadow-md"
-                    : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                 }`}
                 title={showOrgKeyboard ? "Hide virtual keyboard" : "Show virtual keyboard"}
               >
@@ -732,7 +734,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-400"
+                className="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground"
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Validating organization...
@@ -763,7 +765,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-gradient-to-br from-[#fef2f2] via-[#fff7ed] to-[#fefce8] flex flex-col items-center py-6 px-4">
+    <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4">
+      {/* Theme picker */}
+      <div className="absolute right-3 top-3 z-50"><ThemeToggle /></div>
       {/* Hidden input for keyboard support */}
       <input
         ref={keyboardInputRef}
@@ -778,7 +782,7 @@ export default function LoginPage() {
       />
 
       {/* Top bar: connection + session ID — hidden on mobile (shown inside card instead) */}
-      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
+      <div className="absolute right-14 top-4 hidden sm:flex items-center gap-3">
         {pendingCode && (
           <motion.button
             onClick={handleSelfPing}
@@ -788,20 +792,20 @@ export default function LoginPage() {
             className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-sm backdrop-blur-sm transition-colors cursor-pointer select-none ${
               selfPinged
                 ? "bg-[var(--hub-red)] text-white"
-                : "bg-white/80 hover:bg-white"
+                : "bg-card/80 hover:bg-card"
             }`}
           >
-            <Monitor className={`h-3.5 w-3.5 ${selfPinged ? "text-white" : "text-slate-400"}`} />
-            <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-slate-400"}`}>
+            <Monitor className={`h-3.5 w-3.5 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
+            <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
               {selfPinged ? "Signaled!" : "Session ID"}
             </span>
-            <span className={`text-sm font-black tracking-widest ${selfPinged ? "text-white" : "text-slate-700"}`}>{pendingCode}</span>
+            <span className={`text-sm font-black tracking-widest ${selfPinged ? "text-white" : "text-foreground"}`}>{pendingCode}</span>
             <button
               onClick={(e) => { e.stopPropagation(); generateSession(); }}
               disabled={refreshing}
               title="Refresh session"
               className={`ml-1 flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                selfPinged ? "text-red-100 hover:bg-red-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                selfPinged ? "text-red-100 hover:bg-red-600" : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
@@ -810,7 +814,7 @@ export default function LoginPage() {
         )}
         <div
           onClick={handleConnectionTap}
-          className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm backdrop-blur-sm select-none"
+          className="flex items-center gap-2 rounded-full bg-card/80 px-4 py-2 shadow-sm backdrop-blur-sm select-none"
         >
           {isOnline ? (
             <>
@@ -857,10 +861,10 @@ export default function LoginPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="rounded-2xl bg-white px-6 py-3 shadow-xl text-center"
+                className="rounded-2xl bg-card px-6 py-3 shadow-xl text-center"
               >
-                <p className="text-lg font-black text-slate-800">Hey, that&apos;s you!</p>
-                <p className="text-sm text-slate-500">Your ARL is confirming your session</p>
+                <p className="text-lg font-black text-foreground">Hey, that&apos;s you!</p>
+                <p className="text-sm text-muted-foreground">Your ARL is confirming your session</p>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -873,12 +877,12 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm"
           >
             <div className="text-center">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-[var(--hub-red)]" />
-              <p className="mt-3 text-sm font-semibold text-slate-700">Logging you in remotely...</p>
-              <p className="text-xs text-slate-400">Please wait</p>
+              <p className="mt-3 text-sm font-semibold text-foreground">Logging you in remotely...</p>
+              <p className="text-xs text-muted-foreground">Please wait</p>
             </div>
           </motion.div>
         )}
@@ -889,7 +893,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-sm my-auto rounded-3xl bg-white/80 backdrop-blur-md shadow-2xl shadow-red-100/40 border border-white px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
+        className="w-full max-w-sm my-auto rounded-3xl bg-card/90 backdrop-blur-md shadow-2xl shadow-red-100/30 border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
         {/* Mobile-only: session ID + connection status inside card */}
         <div className="flex sm:hidden w-full justify-between items-center mb-4">
@@ -916,20 +920,20 @@ export default function LoginPage() {
               animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
               transition={{ duration: 0.3 }}
               className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
-                selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-slate-100"
+                selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-muted"
               }`}
             >
-              <Monitor className={`h-3 w-3 ${selfPinged ? "text-white" : "text-slate-400"}`} />
-              <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-slate-400"}`}>
+              <Monitor className={`h-3 w-3 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
+              <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
                 {selfPinged ? "Signaled!" : "Session"}
               </span>
-              {!selfPinged && <span className="text-xs font-black tracking-widest text-slate-700">{pendingCode}</span>}
+              {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground">{pendingCode}</span>}
               <button
                 onClick={(e) => { e.stopPropagation(); generateSession(); }}
                 disabled={refreshing}
                 title="Refresh session"
                 className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                  selfPinged ? "text-red-100" : "text-slate-400 hover:text-slate-600"
+                  selfPinged ? "text-red-100" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
@@ -962,7 +966,7 @@ export default function LoginPage() {
             {resolvedTenant.name}
           </h1>
         ) : (
-          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-slate-800">The Hub</h1>
+          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-foreground">The Hub</h1>
         )}
 
         {/* Step label + dots + error */}
@@ -976,23 +980,23 @@ export default function LoginPage() {
               transition={{ duration: 0.18 }}
               className="text-center"
             >
-              <p className="text-sm font-semibold text-slate-600">
+              <p className="text-sm font-semibold text-muted-foreground">
                 {step === "userId" ? "Enter your User ID" : "Enter your PIN"}
               </p>
               {step === "pin" && validatedUser && (
                 <div className="mt-1.5 flex items-center justify-center gap-1.5">
                   {validatedUser.userType === "location"
-                    ? <Store className="h-3.5 w-3.5 text-slate-400" />
-                    : <Users className="h-3.5 w-3.5 text-slate-400" />
+                    ? <Store className="h-3.5 w-3.5 text-muted-foreground" />
+                    : <Users className="h-3.5 w-3.5 text-muted-foreground" />
                   }
-                  <span className="text-xs font-semibold text-slate-700">{validatedUser.name}</span>
+                  <span className="text-xs font-semibold text-foreground">{validatedUser.name}</span>
                   {validatedUser.storeNumber && (
-                    <span className="text-[10px] text-slate-400">#{validatedUser.storeNumber}</span>
+                    <span className="text-[10px] text-muted-foreground">#{validatedUser.storeNumber}</span>
                   )}
                 </div>
               )}
               {step === "userId" && (
-                <p className="mt-1 text-xs text-slate-400">4-digit User ID</p>
+                <p className="mt-1 text-xs text-muted-foreground">4-digit User ID</p>
               )}
             </motion.div>
           </AnimatePresence>
@@ -1036,7 +1040,7 @@ export default function LoginPage() {
                     whileTap={{ scale: 0.92 }}
                     onClick={handleClearOrBack}
                     disabled={loading || validating}
-                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm transition-colors hover:bg-slate-200 active:bg-slate-300 disabled:opacity-50"
+                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 active:bg-muted disabled:opacity-50"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </motion.button>
@@ -1048,7 +1052,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleClearOrBack}
                   disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white/60 text-sm font-semibold text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card/60 text-sm font-semibold text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-card active:bg-muted disabled:opacity-50"
                 >
                   Clear
                 </motion.button>
@@ -1061,7 +1065,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleDelete}
                   disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white/60 text-slate-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white active:bg-slate-100 disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card/60 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-card active:bg-muted disabled:opacity-50"
                 >
                   <Delete className="h-5 w-5" />
                 </motion.button>
@@ -1079,7 +1083,7 @@ export default function LoginPage() {
                 onClick={() => handleDigit(btn)}
                 disabled={loading || validating}
                 {...(isLastDigit && step === "pin" && { "data-login-button": true })}
-                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-white text-xl font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
+                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card text-xl font-semibold text-foreground shadow-sm transition-colors hover:bg-accent active:bg-muted disabled:opacity-50"
               >
                 {showSpinner && isLastDigit ? (
                   <Loader2 className="h-5 w-5 animate-spin text-[var(--hub-red)]" />
@@ -1097,7 +1101,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-xs text-slate-400"
+              className="flex items-center gap-2 text-xs text-muted-foreground"
             >
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               {validating ? "Checking User ID..." : "Signing in..."}
@@ -1121,7 +1125,7 @@ export default function LoginPage() {
               setPin("");
               setError("");
             }}
-            className="mt-4 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            className="mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             Not {resolvedTenant.name}?{" "}
             <span className="underline">Change organization</span>
@@ -1148,16 +1152,16 @@ export default function LoginPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
               transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              className="w-full max-w-[280px] rounded-3xl bg-white px-6 py-8 shadow-2xl"
+              className="w-full max-w-[280px] rounded-3xl bg-card px-6 py-8 shadow-2xl border border-border"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex flex-col items-center gap-2 mb-5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
-                  <Lock className="h-6 w-6 text-slate-500" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+                  <Lock className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h2 className="text-base font-bold text-slate-800">Staff Unlock</h2>
-                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                <h2 className="text-base font-bold text-foreground">Staff Unlock</h2>
+                <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                   Enter the 4-digit bypass code to reset the login lockout
                 </p>
               </div>
@@ -1172,8 +1176,8 @@ export default function LoginPage() {
                     className="flex flex-col items-center gap-2 py-4"
                   >
                     <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-                    <p className="text-sm font-semibold text-slate-700">Lockout cleared!</p>
-                    <p className="text-xs text-slate-400">You may try again now</p>
+                    <p className="text-sm font-semibold text-foreground">Lockout cleared!</p>
+                    <p className="text-xs text-muted-foreground">You may try again now</p>
                   </motion.div>
                 ) : (
                   <motion.div key="form">
@@ -1184,8 +1188,8 @@ export default function LoginPage() {
                           key={i}
                           className={`h-3 w-3 rounded-full transition-all duration-150 ${
                             i < bypassCode.length
-                              ? "bg-slate-700 scale-110"
-                              : "bg-slate-200"
+                              ? "bg-foreground scale-110"
+                              : "bg-muted"
                           }`}
                         />
                       ))}
@@ -1221,7 +1225,7 @@ export default function LoginPage() {
                               whileTap={{ scale: 0.92 }}
                               onClick={closeBypassDialog}
                               disabled={bypassLoading}
-                              className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 text-xs font-semibold text-slate-500 shadow-sm transition-colors hover:bg-slate-200 disabled:opacity-50"
+                              className="flex h-12 items-center justify-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 disabled:opacity-50"
                             >
                               Cancel
                             </motion.button>
@@ -1235,7 +1239,7 @@ export default function LoginPage() {
                               whileTap={{ scale: 0.92 }}
                               onClick={handleBypassDelete}
                               disabled={bypassLoading}
-                              className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm transition-colors hover:bg-slate-200 disabled:opacity-50"
+                              className="flex h-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 disabled:opacity-50"
                             >
                               <Delete className="h-4 w-4" />
                             </motion.button>
@@ -1249,10 +1253,10 @@ export default function LoginPage() {
                             whileTap={{ scale: 0.92 }}
                             onClick={() => handleBypassDigit(btn)}
                             disabled={bypassLoading || bypassCode.length >= 4}
-                            className="flex h-12 items-center justify-center rounded-2xl border border-slate-100 bg-white text-lg font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50"
+                            className="flex h-12 items-center justify-center rounded-2xl border border-border bg-card text-lg font-semibold text-foreground shadow-sm transition-colors hover:bg-accent active:bg-muted disabled:opacity-50"
                           >
                             {isSubmitting && bypassCode[bypassCode.length - 1] === btn ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                             ) : (
                               btn
                             )}

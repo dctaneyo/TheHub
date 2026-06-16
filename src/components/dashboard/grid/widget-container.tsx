@@ -225,8 +225,8 @@ export function WidgetContainer({
           </div>
         )}
 
-        {/* Floating expand control — view mode only, always visible (no hover-only on touch) */}
-        {!editMode && !expanded && (
+        {/* Floating expand control — view mode only; hidden for clock (nothing useful to expand) */}
+        {!editMode && !expanded && widget.type !== "clock" && (
           <button
             type="button"
             onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
