@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket-context";
 import { setReloadBlocked } from "@/lib/reload-guard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -50,6 +50,53 @@ interface ResolvedTenant {
   appTitle: string | null;
 }
 
+/**
+ * Animated mesh-gradient background — four large blurred blobs in the Hub's
+ * brand palette (red/orange/yellow + neutral) that slowly drift in sinusoidal
+ * paths. Pure CSS transforms via Framer Motion; no canvas, no particle counts.
+ * Isolated component so it never re-renders with the rest of the login page.
+ */
+function MeshGradient() {
+  const blobs = [
+    // [x%, y%, w, h, color, xAmp, yAmp, duration, delay]
+    { id: 0, x: 15,  y: 20,  w: 600, h: 600, color: "rgba(220,38,38,0.13)",   xA: 60,  yA: 80,  dur: 22, delay: 0   },
+    { id: 1, x: 70,  y: 10,  w: 500, h: 500, color: "rgba(249,115,22,0.11)",  xA: -80, yA: 60,  dur: 28, delay: 5   },
+    { id: 2, x: 55,  y: 65,  w: 650, h: 650, color: "rgba(234,179,8,0.09)",   xA: 70,  yA: -70, dur: 25, delay: 10  },
+    { id: 3, x: 5,   y: 60,  w: 450, h: 450, color: "rgba(148,163,184,0.07)", xA: -50, yA: -60, dur: 32, delay: 3   },
+  ];
+
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      {blobs.map((b) => (
+        <motion.div
+          key={b.id}
+          style={{
+            position: "absolute",
+            left: `${b.x}%`,
+            top:  `${b.y}%`,
+            width:  b.w,
+            height: b.h,
+            borderRadius: "50%",
+            background: `radial-gradient(circle at center, ${b.color} 0%, transparent 70%)`,
+            filter: "blur(60px)",
+            transform: "translate(-50%, -50%)",
+          }}
+          animate={{
+            x: [0, b.xA, 0, -b.xA * 0.6, 0],
+            y: [0, b.yA * 0.5, b.yA, b.yA * 0.3, 0],
+          }}
+          transition={{
+            duration: b.dur,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: b.delay,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -90,19 +137,6 @@ export default function LoginPage() {
     setReloadBlocked(isActiveStep);
     return () => setReloadBlocked(false);
   }, [orgSlug]);
-
-  // Prominent floating particles for the org entry screen
-  const orgParticles = useMemo(() =>
-    Array.from({ length: 35 }, (_, i) => ({
-      id: i,
-      x: (i * 37.7 + 13) % 100,
-      y: (i * 53.1 + 7) % 100,
-      size: 6 + (i % 5) * 4,
-      duration: 12 + (i % 7) * 3,
-      delay: (i * 1.3) % 6,
-      drift: ((i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 8)),
-    })),
-  []);
 
   const userIdRef = useRef("");
   const pinRef = useRef("");
@@ -655,38 +689,8 @@ export default function LoginPage() {
             <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
           </button>
         )}
-        {/* Prominent floating particles */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          {orgParticles.map((p) => (
-            <motion.div
-              key={p.id}
-              className="absolute rounded-full"
-              style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: p.size,
-                height: p.size,
-                background: p.id % 3 === 0
-                  ? "radial-gradient(circle, rgba(239,68,68,0.35), rgba(239,68,68,0.08))"
-                  : p.id % 3 === 1
-                  ? "radial-gradient(circle, rgba(249,115,22,0.3), rgba(249,115,22,0.06))"
-                  : "radial-gradient(circle, rgba(234,179,8,0.25), rgba(234,179,8,0.05))",
-              }}
-              animate={{
-                y: [0, -(20 + p.size * 2), 0],
-                x: [0, p.drift, 0],
-                opacity: [0.4, 0.8, 0.4],
-                scale: [1, 1.3, 1],
-              }}
-              transition={{
-                duration: p.duration,
-                repeat: Infinity,
-                delay: p.delay,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </div>
+        {/* Animated mesh gradient background */}
+        <MeshGradient />
 
         {/* Spacer to push content above keyboard on mobile */}
         {showOrgKeyboard && <div className="flex-1 min-h-4 sm:hidden" />}
@@ -799,6 +803,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4">
+      {/* Animated mesh gradient background */}
+      <MeshGradient />
       {/* Hidden input for keyboard support */}
       <input
         ref={keyboardInputRef}
