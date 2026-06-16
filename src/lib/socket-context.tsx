@@ -142,8 +142,11 @@ export function SocketProvider({ children, guestName, guestMeetingId }: { childr
       if (!clientBuildId || clientBuildId === "dev") return;
       if (reloadScheduled) return;
 
-      // Never auto-reload on the login page — it disrupts the login flow.
-      if (typeof window !== "undefined" && window.location.pathname.startsWith("/login")) return;
+      // Never reload on the login page while the user is in an active input step
+      // (user ID / PIN entry). The login page itself manages setReloadBlocked()
+      // based on whether an org has been resolved — so we respect that here by
+      // checking isReloadBlocked() rather than hard-coding the pathname.
+      // The org entry screen (no org resolved yet) is idle and allows reloads.
 
       // Server matches the bundle we're running — fully up to date. Cancel any
       // pending settle and clear the attempted-target marker.

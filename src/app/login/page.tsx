@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/lib/socket-context";
+import { setReloadBlocked } from "@/lib/reload-guard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users, Monitor, RefreshCw, Keyboard, Lock, CheckCircle2, Sun, Moon } from "@/lib/icons";
 import { useTheme } from "next-themes";
@@ -79,6 +80,16 @@ export default function LoginPage() {
   const [orgChecked, setOrgChecked] = useState(false);
   // True when the org is fixed by the subdomain — hides the "change org" control.
   const [lockedToSubdomain, setLockedToSubdomain] = useState(false);
+
+  // Block build-update auto-reload while the user is actively entering a user
+  // ID or PIN — losing a partially-typed code would be confusing. The org entry
+  // screen (orgSlug === null) is idle enough to allow a reload safely.
+  // The block is always cleared on unmount (navigation / successful login).
+  useEffect(() => {
+    const isActiveStep = orgSlug !== null; // org resolved → user ID or PIN step
+    setReloadBlocked(isActiveStep);
+    return () => setReloadBlocked(false);
+  }, [orgSlug]);
 
   // Prominent floating particles for the org entry screen
   const orgParticles = useMemo(() =>
