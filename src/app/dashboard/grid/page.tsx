@@ -22,7 +22,7 @@ import {
   type WidgetData,
   type UpcomingTask,
 } from "@/components/dashboard/grid";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -496,7 +496,9 @@ export default function GridDashboardPage() {
     <GridProvider initialLayout={initialLayout}>
       <GridSync socket={socket} deviceId={deviceIdRef.current} />
       <div className="flex h-screen flex-col bg-background">
-        {/* Floating pill header — no background, no border, elements float as pills */}
+        {/* Floating pill header — all layout elements share a LayoutGroup so
+            Framer Motion coordinates repositioning across component boundaries */}
+        <LayoutGroup id="grid-header">
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
           {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
           <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
@@ -542,6 +544,7 @@ export default function GridDashboardPage() {
             </button>
           </div>
         </header>
+        </LayoutGroup>
 
         {/* Grid — layout-animated so it smoothly resizes when ticker mounts/unmounts */}
         <motion.div layout className="min-h-0 flex-1">
