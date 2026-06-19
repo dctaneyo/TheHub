@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle2 } from "@/lib/icons";
+import { X, CheckCircle2, XCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
@@ -81,12 +81,14 @@ function CompletionRing({
 
 export function GridTasksWidget({
   tasks,
+  missedYesterday,
   onComplete,
   onUncomplete,
   externalModalOpen,
   onExternalModalClose,
 }: {
   tasks: TaskItem[];
+  missedYesterday: TaskItem[];
   onComplete: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
   /** When true, the fullscreen modal is forced open (e.g. via the expand button). */
@@ -94,6 +96,9 @@ export function GridTasksWidget({
   onExternalModalClose?: () => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [missedOpen, setMissedOpen] = useState(false);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
+  const missedBtnRef = useRef<HTMLButtonElement>(null);
 
   // Sync external trigger — when the parent flips externalModalOpen to true,
   // open the modal; the parent resets it when we call onExternalModalClose.
@@ -148,6 +153,30 @@ export function GridTasksWidget({
               {completedCount} {completedCount === 1 ? "task" : "tasks"}
             </span>
           </div>
+          {/* Missed Yesterday — clickable row that opens a popover */}
+          <button
+            ref={missedBtnRef}
+            type="button"
+            onClick={() => {
+              if (missedBtnRef.current) {
+                const r = missedBtnRef.current.getBoundingClientRect();
+                setPopoverPos({ top: r.bottom + 6, left: r.left, width: r.width });
+              }
+              setMissedOpen((o) => !o);
+            }}
+            className="flex w-full items-center justify-between rounded-lg px-0 py-0.5 transition-colors hover:text-[var(--hub-red)]"
+          >
+            <span className="flex items-center gap-2 font-medium text-foreground">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: "var(--hub-red)" }}
+              />
+              Missed (Yesterday):
+            </span>
+            <span className={cn("font-semibold tabular-nums", missedYesterday.length > 0 ? "text-[var(--hub-red)]" : "text-foreground")}>
+              {missedYesterday.length} {missedYesterday.length === 1 ? "task" : "tasks"}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -280,6 +309,64 @@ export function GridTasksWidget({
                     </div>
                   );
                 })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Missed Yesterday popover — fixed so it escapes the overflow-hidden card */}
+      <AnimatePresence>
+        {missedOpen && (
+          <>
+            {/* Backdrop — click anywhere to close */}
+            <div
+              className="fixed inset-0 z-[300]"
+              onClick={() => setMissedOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="fixed z-[301] min-w-[240px] overflow-hidden rounded-2xl border border-border bg-card shadow-xl"
+              style={{
+                top: popoverPos.top,
+                left: popoverPos.left,
+                width: Math.max(popoverPos.width, 260),
+              }}
+            >
+              <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+                <span className="text-sm font-bold text-foreground">Missed Yesterday</span>
+                <button
+                  type="button"
+                  onClick={() => setMissedOpen(false)}
+                  className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="max-h-64 space-y-1 overflow-y-auto p-2">
+                {missedYesterday.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Nothing missed yesterday
+                  </p>
+                ) : (
+                  missedYesterday.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-2 rounded-xl bg-red-50/60 px-3 py-2 dark:bg-red-950/30"
+                    >
+                      <XCircle className="h-4 w-4 shrink-0 text-[var(--hub-red)]" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                        {task.title}
+                      </span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {formatTime(task.dueTime)}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </>

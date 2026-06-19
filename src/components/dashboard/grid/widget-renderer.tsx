@@ -60,6 +60,7 @@ export const WidgetRenderer = memo(function WidgetRenderer({
       return (
         <GridTasksWidget
           tasks={data.tasks}
+          missedYesterday={data.missedYesterday}
           onComplete={data.onComplete}
           onUncomplete={data.onUncomplete}
           externalModalOpen={tasksModalOpen}
