@@ -265,16 +265,16 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
       const ctx = audioCtxRef.current ?? new AudioContext();
       audioCtxRef.current = ctx;
       const t = ctx.currentTime;
-      // Loud triple-tone alert for noisy kitchen environments
-      [[880, 0, 0.18], [1100, 0.22, 0.18], [880, 0.44, 0.18], [1100, 0.66, 0.18], [1320, 0.88, 0.25]].forEach(([freq, delay, dur]) => {
+      // Two-tone ascending triangle-wave chime — distinct from the square-wave overdue alarm
+      ([[784, 0, 0.22], [1046, 0.26, 0.28]] as [number, number, number][]).forEach(([freq, delay, dur]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = "square";
+        osc.type = "triangle";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.5, t + delay);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + delay + dur);
+        gain.gain.setValueAtTime(0.4, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
         osc.start(t + delay);
         osc.stop(t + delay + dur);
       });
