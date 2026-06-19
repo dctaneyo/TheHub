@@ -27,7 +27,8 @@ import { PREDEFINED_LAYOUTS, WIDGET_CATALOG } from "./layouts";
 import type { WidgetData } from "./widget-data";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
-const PILL = "flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground";
+// Layout/typography via Tailwind; glass surface via .glass-pill in globals.css
+const PILL = "glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground";
 
 /**
  * SettingsPanel — a settings cog pill that, when clicked, slides left and
@@ -379,7 +380,7 @@ export function GridControls({
               setShowLayouts((v) => !v);
               setShowAdd(false);
             }}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{layout.name}</span>
@@ -464,7 +465,7 @@ export function GridControls({
               setShowAdd((v) => !v);
               setShowLayouts(false);
             }}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add</span>
@@ -517,7 +518,7 @@ export function GridControls({
         <button
           type="button"
           onClick={() => compact()}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
           title="Pull widgets up to close gaps"
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -539,7 +540,7 @@ export function GridControls({
               isCustom: true,
             });
           }}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
           title="Reset custom layout"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -552,7 +553,7 @@ export function GridControls({
         <button
           type="button"
           onClick={startEditing}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           <Settings className="h-3.5 w-3.5" />
           Customize
@@ -566,7 +567,7 @@ export function GridControls({
             type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground disabled:opacity-50"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
             Cancel

@@ -517,9 +517,9 @@ export default function GridDashboardPage() {
         {/* Floating pill header — all layout elements share a LayoutGroup so
             Framer Motion coordinates repositioning across component boundaries */}
         <LayoutGroup id="grid-header">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-2 bg-background px-4">
+        <header className="glass-header flex h-14 shrink-0 items-center justify-between gap-2 px-4">
           {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
-          <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="flex h-9 flex-1 items-center gap-2.5 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+          <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="glass-pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black text-primary-foreground">H</span>
             </div>
@@ -555,7 +555,7 @@ export default function GridDashboardPage() {
             <button
               type="button"
               onClick={() => logout()}
-              className="flex h-9 items-center gap-1.5 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm text-xs font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+              className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign Out</span>

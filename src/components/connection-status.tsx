@@ -210,7 +210,7 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCode((v) => !v)}
-            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm cursor-pointer hover:bg-card transition-colors"
+            className="glass-pill flex h-9 items-center gap-2 rounded-full px-3 cursor-pointer"
           >
             <div className="relative">
               <Wifi className="h-3.5 w-3.5 text-emerald-500" />
@@ -234,7 +234,7 @@ export function ConnectionStatus() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm"
+            className="glass-pill flex h-9 items-center gap-2 rounded-full px-3"
           >
             {isReconnecting ? (
               <RefreshCw className="h-3.5 w-3.5 animate-spin text-red-500" />
