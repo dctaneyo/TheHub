@@ -23,7 +23,8 @@ export function ClockWidget() {
       // Time string is ~7-8 characters in "H:MM:SS AM" format.
       // A monospace em is ~0.6× wide, so fontSize ≈ width / (chars * 0.6).
       // We also cap by height so it doesn't overflow vertically.
-      const byWidth = Math.floor(width / 5.2);
+      // "12:00:00 PM" = 11 chars; monospace em ≈ 0.6× → need width / (11 * 0.6) ≈ /6.6
+      const byWidth = Math.floor(width / 6.5);
       const byHeight = Math.floor(height / 2.4);
       setFontSize(Math.max(16, Math.min(byWidth, byHeight)));
     });
@@ -49,7 +50,7 @@ export function ClockWidget() {
       className="flex h-full w-full select-none flex-col items-center justify-center gap-1 overflow-hidden p-3"
     >
       <span
-        className="font-mono font-black tabular-nums leading-none text-foreground"
+        className="whitespace-nowrap font-mono font-black tabular-nums leading-none text-foreground"
         style={{ fontSize }}
       >
         {time}
