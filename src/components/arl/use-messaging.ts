@@ -241,10 +241,22 @@ export function useMessaging() {
       : null;
     const visible = searchFiltered ?? (showAllMessages
       ? messages
-      : messages.filter((m) => new Date(m.createdAt).getTime() >= yesterdayStart));
-    const past = !searchFiltered && messages.some((m) => new Date(m.createdAt).getTime() < yesterdayStart);
+      : messages.filter((m) => {
+          const msgTime = new Date(m.createdAt).getTime();
+          if (msgTime >= yesterdayStart) return true;
+          // Always show unread messages regardless of age
+          if (user?.id && !m.reads.some((r) => r.readerId === user.id)) return true;
+          return false;
+        }));
+    const past = !searchFiltered && messages.some((m) => {
+      const msgTime = new Date(m.createdAt).getTime();
+      if (msgTime >= yesterdayStart) return false;
+      // If this old message is already visible because it's unread, it isn't "hidden past"
+      if (user?.id && !m.reads.some((r) => r.readerId === user.id)) return false;
+      return true;
+    });
     return { visibleMessages: visible, hasPast: past };
-  }, [messages, searchQuery, showAllMessages]);
+  }, [messages, searchQuery, showAllMessages, user?.id]);
 
   // ── Scroll on new messages ──
   useEffect(() => {

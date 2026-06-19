@@ -894,11 +894,17 @@ function ActiveConvoView({
     ? messages
     : messages.filter((m) => {
         const msgTime = new Date(m.createdAt).getTime();
-        return msgTime >= yesterdayStart;
+        if (msgTime >= yesterdayStart) return true;
+        // Always show unread messages regardless of age
+        if (currentUserId && !m.reads.some((r) => r.readerId === currentUserId)) return true;
+        return false;
       }));
   const hasPast = !searchFiltered && messages.some((m) => {
     const msgTime = new Date(m.createdAt).getTime();
-    return msgTime < yesterdayStart;
+    if (msgTime >= yesterdayStart) return false;
+    // If this old message is already visible because it's unread, it isn't "hidden past"
+    if (currentUserId && !m.reads.some((r) => r.readerId === currentUserId)) return false;
+    return true;
   });
 
   return (
