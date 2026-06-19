@@ -553,6 +553,10 @@ function runMigrations() {
     try { s.exec(`ALTER TABLE scheduled_meetings ADD COLUMN timezone TEXT`); } catch {}
   });
 
+  migrate("051_task_is_all_day", () => {
+    s.exec(`ALTER TABLE tasks ADD COLUMN is_all_day INTEGER NOT NULL DEFAULT 0`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

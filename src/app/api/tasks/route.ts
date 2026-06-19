@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       type,
       priority,
       dueTime,
+      isAllDay,
       dueDate,
       isRecurring,
       recurringType,
@@ -77,7 +78,8 @@ export async function POST(req: NextRequest) {
       description: description || null,
       type,
       priority,
-      dueTime,
+      dueTime: isAllDay ? "00:00" : dueTime,
+      isAllDay,
       dueDate: dueDate || null,
       isRecurring,
       recurringType: recurringType || null,
@@ -136,7 +138,8 @@ export async function PUT(req: NextRequest) {
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.type !== undefined) updateData.type = updates.type;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
-    if (updates.dueTime !== undefined) updateData.dueTime = updates.dueTime;
+    if (updates.isAllDay !== undefined) updateData.isAllDay = updates.isAllDay;
+    if (updates.dueTime !== undefined) updateData.dueTime = updates.isAllDay ? "00:00" : updates.dueTime;
     if (updates.dueDate !== undefined) updateData.dueDate = updates.dueDate;
     if (updates.recurringType !== undefined) updateData.recurringType = updates.recurringType;
     if (updates.isRecurring !== undefined) updateData.isRecurring = updates.isRecurring;

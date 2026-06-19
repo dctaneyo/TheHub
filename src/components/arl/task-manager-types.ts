@@ -3,6 +3,7 @@ import {
   SprayCan,
   ClipboardList,
   Sparkles,
+  Info,
 } from "@/lib/icons";
 
 export interface Task {
@@ -54,6 +55,7 @@ export const TYPES = [
   { value: "cleaning", label: "Cleaning", icon: SprayCan },
   { value: "reminder", label: "Reminder", icon: Clock },
   { value: "training", label: "Training", icon: Sparkles },
+  { value: "information", label: "Information", icon: Info },
 ];
 
 export const PRIORITIES = [

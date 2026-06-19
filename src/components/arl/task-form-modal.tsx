@@ -27,6 +27,7 @@ interface TaskFormModalProps {
     priority: string;
     dueTime: string;
     dueDate: string;
+    isAllDay: boolean;
     isRecurring: boolean;
     recurringType: string;
     recurringDays: string[];
@@ -49,6 +50,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
   const [type, setType] = useState(initialValues?.type ?? "task");
   const [priority, setPriority] = useState(initialValues?.priority ?? "normal");
   const [dueTime, setDueTime] = useState(initialValues?.dueTime ?? "09:00");
+  const [isAllDay, setIsAllDay] = useState(initialValues?.isAllDay ?? false);
   const [dueDate, setDueDate] = useState(initialValues?.dueDate ?? "");
   const [isRecurring, setIsRecurring] = useState(initialValues?.isRecurring ?? true);
   const [recurringType, setRecurringType] = useState(initialValues?.recurringType ?? "daily");
@@ -64,6 +66,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
   const [showInCalendar, setShowInCalendar] = useState(initialValues?.showInCalendar ?? true);
 
   const isReminder = type === "reminder";
+  const isInformation = type === "information";
 
   const toggleDay = (day: string) => {
     setRecurringDays((prev) =>
@@ -73,14 +76,15 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
-    if (type !== "reminder" && !dueTime) return;
+    if (!isReminder && !isAllDay && !dueTime) return;
 
     const baseBody = {
       title: title.trim(),
       description: description.trim() || null,
       type,
       priority,
-      dueTime: isReminder && !dueTime ? "00:00" : dueTime,
+      dueTime: isReminder && !dueTime ? "00:00" : isAllDay ? "00:00" : dueTime,
+      isAllDay,
       dueDate: isRecurring ? null : (dueDate || null),
       isRecurring,
       recurringType: isRecurring ? recurringType : null,
@@ -244,12 +248,37 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             {!isReminder && (
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Time</label>
-                <Input
-                  type="time"
-                  value={dueTime}
-                  onChange={(e) => setDueTime(e.target.value)}
-                  className="rounded-xl"
-                />
+                {/* Time / All Day toggle */}
+                <div className="mb-2 flex rounded-xl border border-border bg-muted/40 p-0.5 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setIsAllDay(false)}
+                    className={cn(
+                      "flex-1 rounded-lg py-1.5 transition-colors",
+                      !isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                    )}
+                  >
+                    Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAllDay(true)}
+                    className={cn(
+                      "flex-1 rounded-lg py-1.5 transition-colors",
+                      isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                    )}
+                  >
+                    All Day
+                  </button>
+                </div>
+                {!isAllDay && (
+                  <Input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="rounded-xl"
+                  />
+                )}
               </div>
             )}
           </div>

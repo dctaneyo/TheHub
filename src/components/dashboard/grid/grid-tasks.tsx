@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle2, XCircle } from "@/lib/icons";
+import { X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
@@ -16,7 +16,8 @@ import type { TaskItem } from "@/components/dashboard/timeline";
  * - Clicking the ring opens a fullscreen modal with the full day in order
  */
 
-function formatTime(time: string): string {
+function formatTime(time: string, isAllDay?: boolean): string {
+  if (isAllDay) return "All Day";
   const [h, m] = time.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
   const hour = h % 12 || 12;
@@ -206,17 +207,24 @@ export function GridTasksWidget({
                     task.isOverdue ? "text-[var(--hub-red)]" : "text-foreground"
                   )}
                 >
-                  [{formatTime(task.dueTime)}] {task.title}
+                  [{formatTime(task.dueTime, task.isAllDay)}] {task.title}
                 </span>
-                {/* Touch-friendly complete button — same CheckCircle2 icon as completed state, muted until hovered */}
-                <button
-                  type="button"
-                  onClick={() => onComplete(task.id)}
-                  title="Mark complete"
-                  className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
-                >
-                  <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
-                </button>
+                {task.type === "information" ? (
+                  /* Information tasks are not actionable — show a static info icon */
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center">
+                    <Info className="h-6 w-6 text-blue-400" />
+                  </span>
+                ) : (
+                  /* Touch-friendly complete button */
+                  <button
+                    type="button"
+                    onClick={() => onComplete(task.id)}
+                    title="Mark complete"
+                    className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
+                  >
+                    <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
+                  </button>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>
@@ -274,7 +282,7 @@ export function GridTasksWidget({
                       className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
                     >
                       <span className="w-24 shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
-                        {formatTime(task.dueTime)}
+                        {formatTime(task.dueTime, task.isAllDay)}
                       </span>
                       <span
                         className={cn(
@@ -286,7 +294,11 @@ export function GridTasksWidget({
                       >
                         {task.title}
                       </span>
-                      {done ? (
+                      {task.type === "information" ? (
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center">
+                          <Info className="h-6 w-6 text-blue-400" />
+                        </span>
+                      ) : done ? (
                         <button
                           type="button"
                           onClick={() => onUncomplete(task.id)}

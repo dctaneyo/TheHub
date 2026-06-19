@@ -81,7 +81,7 @@ export const tasks = sqliteTable("tasks", {
   tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description"), // details/notes/instructions
-  type: text("type").notNull().default("task"), // 'task' | 'reminder' | 'cleaning'
+  type: text("type").notNull().default("task"), // 'task' | 'reminder' | 'cleaning' | 'information'
   priority: text("priority").notNull().default("normal"), // 'low' | 'normal' | 'high' | 'urgent'
   dueTime: text("due_time").notNull(), // ISO time string (HH:mm) for daily scheduling
   dueDate: text("due_date"), // ISO date string - null means recurring daily
@@ -93,6 +93,7 @@ export const tasks = sqliteTable("tasks", {
   createdBy: text("created_by").notNull(), // ARL id or location id who created it
   createdByType: text("created_by_type").notNull().default("arl"), // 'arl' | 'location'
   isHidden: integer("is_hidden", { mode: "boolean" }).notNull().default(false), // hide from dashboard/calendar
+  isAllDay: integer("is_all_day", { mode: "boolean" }).notNull().default(false), // true = no specific time; dueTime stored as "00:00"
   allowEarlyComplete: integer("allow_early_complete", { mode: "boolean" }).notNull().default(false), // can be completed before due date
   showInToday: integer("show_in_today", { mode: "boolean" }).notNull().default(true), // show in Today's Tasks timeline
   showIn7Day: integer("show_in_7day", { mode: "boolean" }).notNull().default(true), // show in 7-day upcoming view

@@ -95,9 +95,11 @@ export async function GET(req: Request) {
 
     const tasksWithStatus = todayTasks.map((task) => {
       const taskMinutes = timeToMinutes(task.dueTime);
-      const isCompleted = completedTaskIds.has(task.id);
-      const isOverdue = !isCompleted && taskMinutes < nowMinutes;
-      const isDueSoon = !isCompleted && !isOverdue && taskMinutes >= nowMinutes && taskMinutes <= nowMinutes + 30;
+      const isInformation = task.type === "information";
+      // Information tasks are never completable or overdue
+      const isCompleted = isInformation ? false : completedTaskIds.has(task.id);
+      const isOverdue = isInformation ? false : !isCompleted && taskMinutes < nowMinutes;
+      const isDueSoon = isInformation ? false : !isCompleted && !isOverdue && taskMinutes >= nowMinutes && taskMinutes <= nowMinutes + 30;
       
       return {
         ...task,
