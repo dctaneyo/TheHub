@@ -493,9 +493,10 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!socket) return;
-    const handleNew = () => {
+    const handleNew = (data: { senderId?: string }) => {
       fetchUnread();
-      if (activeViewRef.current !== "messages") playMessageChime();
+      // Only chime when not viewing messages AND someone else sent it
+      if (activeViewRef.current !== "messages" && data.senderId !== user?.id) playMessageChime();
     };
     const handler = () => fetchUnread();
     socket.on("message:new", handleNew);

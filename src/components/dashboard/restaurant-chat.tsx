@@ -281,6 +281,47 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
     } catch {}
   }, []);
 
+  // Soft two-note ascending ping — played when a new message arrives in the currently-open thread
+  const playReceiveTone = useCallback(() => {
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = ctx;
+      const t = ctx.currentTime;
+      ([[880, 0, 0.09], [1100, 0.07, 0.09]] as [number, number, number][]).forEach(([freq, delay, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.04, t + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
+        osc.start(t + delay);
+        osc.stop(t + delay + dur);
+      });
+    } catch {}
+  }, []);
+
+  // Single quiet descending note — subtle confirmation when a message is sent
+  const playSendTone = useCallback(() => {
+    try {
+      const ctx = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = ctx;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, t);
+      osc.frequency.exponentialRampToValueAtTime(660, t + 0.08);
+      gain.gain.setValueAtTime(0.03, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc.start(t);
+      osc.stop(t + 0.09);
+    } catch {}
+  }, []);
+
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/messages");
@@ -306,16 +347,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
         
         const deduplicatedConvs = Array.from(conversationMap.values());
         const total = deduplicatedConvs.reduce((s, c) => s + c.unreadCount, 0);
-        if (initializedRef.current && total > prevUnreadRef.current) {
-          playMessageChime();
-        }
         prevUnreadRef.current = total;
         initializedRef.current = true;
         setConversations(deduplicatedConvs);
         onUnreadChange(total);
       }
     } catch {}
-  }, [onUnreadChange, playMessageChime]);
+  }, [onUnreadChange]);
 
   const fetchMessages = useCallback(async (convId: string) => {
     try {
@@ -354,8 +392,15 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
         fetchMessages(activeConvo.id);
       }
     };
-    const handleNewMessage = (data: { conversationId: string }) => {
-      // Immediate conversation update for unread count
+    const handleNewMessage = (data: { conversationId: string; senderId?: string }) => {
+      // Play appropriate sound — skip for our own messages (send tone fires separately)
+      if (data.senderId !== currentUserId) {
+        if (activeConvo && data.conversationId === activeConvo.id) {
+          playReceiveTone();   // subtle ping — viewing this thread
+        } else {
+          playMessageChime();  // loud kitchen alert — different/no thread open
+        }
+      }
       fetchConversations();
       if (activeConvo && data.conversationId === activeConvo.id) {
         fetchMessages(activeConvo.id);
@@ -392,7 +437,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
-  }, [socket, fetchConversations, fetchMessages, activeConvo]);
+  }, [socket, fetchConversations, fetchMessages, activeConvo, playReceiveTone, playMessageChime, currentUserId]);
 
   // Join/leave conversation rooms
   useEffect(() => {
@@ -425,6 +470,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
         body: JSON.stringify({ conversationId: activeConvo.id, content }),
       });
       if (res.ok) {
+        playSendTone();
         setNewMessage("");
         await fetchMessages(activeConvo.id);
         fetchConversations();
