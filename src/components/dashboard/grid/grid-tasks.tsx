@@ -133,24 +133,23 @@ export function GridTasksWidget({
             <span className="flex items-center gap-2 font-medium text-foreground">
               <span
                 className="h-2.5 w-2.5 rounded-full"
-                style={{ background: "var(--hub-red)" }}
-              />
-              Remaining:
-            </span>
-            <span className="font-semibold tabular-nums text-foreground">
-              {remainingCount} {remainingCount === 1 ? "task" : "tasks"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 font-medium text-foreground">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
                 style={{ background: "var(--hub-green)" }}
               />
               Completed:
             </span>
             <span className="font-semibold tabular-nums text-foreground">
               {completedCount} {completedCount === 1 ? "task" : "tasks"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 font-medium text-foreground">
+              <span
+                className="h-2.5 w-2.5 rounded-full bg-yellow-400"
+              />
+              Remaining:
+            </span>
+            <span className="font-semibold tabular-nums text-foreground">
+              {remainingCount} {remainingCount === 1 ? "task" : "tasks"}
             </span>
           </div>
           {/* Missed Yesterday — clickable row that opens a popover */}
