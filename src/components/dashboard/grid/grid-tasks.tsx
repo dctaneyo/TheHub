@@ -114,10 +114,13 @@ export function GridTasksWidget({
 
   const { total, completedCount, remainingCount, pct, pending, allSorted } =
     useMemo(() => {
-      const total = tasks.length;
-      const completedCount = tasks.filter((t) => t.isCompleted).length;
+      // Information tasks are not actionable — exclude from all counts/progress
+      const actionable = tasks.filter((t) => t.type !== "information");
+      const total = actionable.length;
+      const completedCount = actionable.filter((t) => t.isCompleted).length;
       const remainingCount = total - completedCount;
       const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+      // Pending list still shows information tasks (with info icon, no checkmark)
       const pending = tasks.filter((t) => !t.isCompleted).slice().sort(byDueTime);
       const allSorted = tasks.slice().sort(byDueTime);
       return { total, completedCount, remainingCount, pct, pending, allSorted };
