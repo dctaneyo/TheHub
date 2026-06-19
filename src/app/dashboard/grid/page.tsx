@@ -26,8 +26,6 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 interface TasksResponse {
   tasks: TaskItem[];
-  completedToday: number;
-  totalToday: number;
   missedYesterday: TaskItem[];
 }
 
@@ -474,9 +472,7 @@ export default function GridDashboardPage() {
       upcomingTasks,
       onEarlyComplete: handleEarlyComplete,
       onEarlyUncomplete: handleEarlyUncomplete,
-      completedToday: tasks.filter((t) => t.isCompleted),
       missedYesterday: data?.missedYesterday ?? [],
-      totalToday: data?.totalToday ?? 0,
       chatUnread,
       onOpenChat: openChat,
       onOpenForms: openForms,

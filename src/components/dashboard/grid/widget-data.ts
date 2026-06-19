@@ -25,10 +25,8 @@ export interface WidgetData {
   onEarlyComplete: (taskId: string, dateStr: string) => void;
   onEarlyUncomplete: (taskId: string, dateStr: string) => void;
 
-  // completed / missed / stats
-  completedToday: TaskItem[];
+  // missed yesterday (shown in the tasks widget popover)
   missedYesterday: TaskItem[];
-  totalToday: number;
 
   // launchers (open the existing overlay components unchanged)
   chatUnread: number;

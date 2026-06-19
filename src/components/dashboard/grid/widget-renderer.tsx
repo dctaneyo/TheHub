@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import { CompletedMissed } from "@/components/dashboard/completed-missed";
 import { FileText } from "@/lib/icons";
 import { ClockWidget } from "./grid-clock";
 import { GridTasksWidget } from "./grid-tasks";
@@ -74,14 +73,6 @@ export const WidgetRenderer = memo(function WidgetRenderer({
           upcomingTasks={data.upcomingTasks}
           onEarlyComplete={data.onEarlyComplete}
           onEarlyUncomplete={data.onEarlyUncomplete}
-        />
-      );
-
-    case "completed":
-      return (
-        <CompletedMissed
-          completedToday={data.completedToday}
-          missedYesterday={data.missedYesterday}
         />
       );
 
