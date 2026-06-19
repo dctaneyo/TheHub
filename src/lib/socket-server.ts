@@ -378,43 +378,43 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 export { _findActiveMeetingByCode as findActiveMeetingByCode };
 
 // ── Emit helpers ──
-// Each helper emits to BOTH tenant-scoped and legacy rooms so events
-// reach all connected sockets regardless of which rooms they joined.
-// Once all clients connect with tenant context, the legacy rooms can be removed.
+// Prefer tenant-scoped rooms; fall back to legacy rooms only when tenantId
+// is absent. All connected clients join both sets of rooms, so emitting to
+// both simultaneously would deliver every event twice.
 
 export function emitToAll(event: string, data: any, tenantId?: string) {
   const io = getIO();
   if (!io) return;
   if (tenantId) io.to(`tenant:${tenantId}:all`).emit(event, data);
-  io.to("all").emit(event, data);
+  else io.to("all").emit(event, data);
 }
 
 export function emitToLocations(event: string, data: any, tenantId?: string) {
   const io = getIO();
   if (!io) return;
   if (tenantId) io.to(`tenant:${tenantId}:locations`).emit(event, data);
-  io.to("locations").emit(event, data);
+  else io.to("locations").emit(event, data);
 }
 
 export function emitToArls(event: string, data: any, tenantId?: string) {
   const io = getIO();
   if (!io) return;
   if (tenantId) io.to(`tenant:${tenantId}:arls`).emit(event, data);
-  io.to("arls").emit(event, data);
+  else io.to("arls").emit(event, data);
 }
 
 export function emitToLocation(locationId: string, event: string, data: any, tenantId?: string) {
   const io = getIO();
   if (!io) return;
   if (tenantId) io.to(`tenant:${tenantId}:location:${locationId}`).emit(event, data);
-  io.to(`location:${locationId}`).emit(event, data);
+  else io.to(`location:${locationId}`).emit(event, data);
 }
 
 export function emitToArl(arlId: string, event: string, data: any, tenantId?: string) {
   const io = getIO();
   if (!io) return;
   if (tenantId) io.to(`tenant:${tenantId}:arl:${arlId}`).emit(event, data);
-  io.to(`arl:${arlId}`).emit(event, data);
+  else io.to(`arl:${arlId}`).emit(event, data);
 }
 
 export function emitToConversation(conversationId: string, event: string, data: any) {
