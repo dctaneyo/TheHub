@@ -123,8 +123,9 @@ export function TaskManager() {
       selectedLocationIds: [],
       allowEarlyComplete: task.allowEarlyComplete ?? false,
       showInToday: task.showInToday ?? true,
-      showIn7Day: task.showIn7Day ?? true,
-      showInCalendar: task.showInCalendar ?? true,
+      // Keep both in sync — Calendar & 7-Day is now a single toggle
+      showIn7Day: (task.showIn7Day ?? true) && (task.showInCalendar ?? true),
+      showInCalendar: (task.showInCalendar ?? true) && (task.showIn7Day ?? true),
     });
     setShowForm(true);
   };

@@ -38,6 +38,7 @@ export type WidgetSize = keyof typeof WIDGET_SIZES;
 export type WidgetType =
   | "tasks"
   | "calendar"
+  | "month"
   | "messages"
   | "forms"
   | "clock";

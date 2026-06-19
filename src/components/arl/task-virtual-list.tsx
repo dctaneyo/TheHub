@@ -74,9 +74,9 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                         Early OK
                       </Badge>
                     )}
-                    {(!task.showInToday || !task.showIn7Day || !task.showInCalendar) && (
+                    {(!task.showInToday || !task.showInCalendar) && (
                       <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
-                        {[!task.showInToday && "Today", !task.showIn7Day && "7-Day", !task.showInCalendar && "Cal"].filter(Boolean).join("/")} hidden
+                        {[!task.showInToday && "Today", !task.showInCalendar && "Cal/7-Day"].filter(Boolean).join("/")} hidden
                       </Badge>
                     )}
                   </div>

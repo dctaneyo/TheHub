@@ -480,11 +480,11 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
               <div className="flex flex-wrap gap-2">
                 {([
                   { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
-                  { key: "showIn7Day", label: "7-Day View", value: showIn7Day, set: setShowIn7Day },
-                  { key: "showInCalendar", label: "Calendar", value: showInCalendar, set: setShowInCalendar },
+                  { key: "showInCalendar", label: "Calendar & 7-Day", value: showInCalendar, set: (v: boolean) => { setShowInCalendar(v); setShowIn7Day(v); } },
                 ] as const).map((opt) => (
                   <button
                     key={opt.key}
+                    type="button"
                     onClick={() => opt.set(!opt.value)}
                     className={cn(
                       "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
@@ -497,9 +497,9 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                   </button>
                 ))}
               </div>
-              {(!showInToday || !showIn7Day || !showInCalendar) && (
+              {(!showInToday || !showInCalendar) && (
                 <p className="mt-1 text-[10px] text-amber-600">
-                  Hidden from: {[!showInToday && "Today's Tasks", !showIn7Day && "7-Day View", !showInCalendar && "Calendar"].filter(Boolean).join(", ")}
+                  Hidden from: {[!showInToday && "Today's Tasks", !showInCalendar && "Calendar & 7-Day"].filter(Boolean).join(", ")}
                 </p>
               )}
             </div>

@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { FileText } from "@/lib/icons";
 import { ClockWidget } from "./grid-clock";
+import { GridCalendarWidget } from "./grid-calendar";
 import { GridTasksWidget } from "./grid-tasks";
 import { GridMessagesWidget } from "./grid-messages";
 import { GridUpcomingWidget } from "./grid-upcoming";
@@ -75,6 +76,9 @@ export const WidgetRenderer = memo(function WidgetRenderer({
           onEarlyUncomplete={data.onEarlyUncomplete}
         />
       );
+
+    case "month":
+      return <GridCalendarWidget />;
 
     case "clock":
       return <ClockWidget />;
