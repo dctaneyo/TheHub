@@ -33,8 +33,14 @@ function localParams() {
   const now = new Date();
   const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  const localDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
-  return { localDate, localTime, query: `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}` };
+  const localDay = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][
+    now.getDay()
+  ];
+  return {
+    localDate,
+    localTime,
+    query: `localDate=${localDate}&localTime=${localTime}&localDay=${localDay}`,
+  };
 }
 
 // Live clock (updates every second, includes seconds). Isolated in its own
@@ -68,7 +74,11 @@ function HeaderClock() {
   const hasClockWidget = widgets.some((w) => w.type === "clock");
   if (hasClockWidget) return null;
   return (
-    <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm">
+    <motion.div
+      layout
+      transition={{ type: "spring", stiffness: 100, damping: 30 }}
+      className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm"
+    >
       <HeaderClockDisplay />
     </motion.div>
   );
@@ -103,12 +113,18 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
       .then((r) => (r.ok ? r.json() : { messages: [] }))
       .then((data) => {
         const arlItems: TickerItem[] = (data.messages || []).map(
-          (m: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => ({
+          (m: {
+            id: string;
+            icon: string;
+            content: string;
+            arlName: string;
+            createdAt: string;
+          }) => ({
             id: `arl-${m.id}`,
             text: `${m.content} — ${m.arlName}`,
             icon: m.icon,
             timestamp: new Date(m.createdAt).getTime(),
-          })
+          }),
         );
         if (arlItems.length > 0) setItems(arlItems.slice(0, MAX_TICKER_ITEMS));
       })
@@ -122,15 +138,38 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
     const add = (item: TickerItem) =>
       setItems((prev) => [item, ...prev].slice(0, MAX_TICKER_ITEMS));
 
-    const onTaskCompleted = (d: { locationId?: string; locationName?: string; taskTitle?: string; taskId?: string }) => {
+    const onTaskCompleted = (d: {
+      locationId?: string;
+      locationName?: string;
+      taskTitle?: string;
+      taskId?: string;
+    }) => {
       if (currentLocationId && d.locationId === currentLocationId) return;
-      add({ id: `task-${d.taskId}-${Date.now()}`, text: `${d.locationName || "A location"} completed "${d.taskTitle}"`, icon: "✅", timestamp: Date.now() });
+      add({
+        id: `task-${d.taskId}-${Date.now()}`,
+        text: `${d.locationName || "A location"} completed "${d.taskTitle}"`,
+        icon: "✅",
+        timestamp: Date.now(),
+      });
     };
     const onTaskUncompleted = (d: { taskId?: string }) => {
-      if (d.taskId) setItems((prev) => prev.filter((i) => !i.id.startsWith(`task-${d.taskId}-`)));
+      if (d.taskId)
+        setItems((prev) =>
+          prev.filter((i) => !i.id.startsWith(`task-${d.taskId}-`)),
+        );
     };
-    const onTickerNew = (d: { id: string; icon: string; content: string; arlName: string }) => {
-      add({ id: `arl-${d.id}`, text: `${d.content} — ${d.arlName}`, icon: d.icon, timestamp: Date.now() });
+    const onTickerNew = (d: {
+      id: string;
+      icon: string;
+      content: string;
+      arlName: string;
+    }) => {
+      add({
+        id: `arl-${d.id}`,
+        text: `${d.content} — ${d.arlName}`,
+        icon: d.icon,
+        timestamp: Date.now(),
+      });
     };
     const onTickerDelete = (d: { id: string }) => {
       setItems((prev) => prev.filter((i) => i.id !== `arl-${d.id}`));
@@ -154,11 +193,16 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
   const tickerTextRef = useRef("");
 
   const fmt = (ts: number) =>
-    new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    new Date(ts).toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
 
   const hasItems = items.length > 0;
   const tickerText = hasItems
-    ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
+    ? items
+        .map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`)
+        .join("          ")
     : "";
 
   // Keep the ref in sync with the latest text (no effect restart needed)
@@ -228,10 +272,16 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+              Live
+            </span>
           </div>
           {/* Scrolling text — single copy, RAF, starts off-screen right */}
-          <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: "100%" }}>
+          <div
+            ref={containerRef}
+            className="relative min-w-0 flex-1 overflow-hidden"
+            style={{ height: "100%" }}
+          >
             <span
               ref={spanRef}
               className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-medium text-foreground/80"
@@ -255,7 +305,9 @@ export default function GridDashboardPage() {
   const { socket } = useSocket();
 
   const [data, setData] = useState<TasksResponse | null>(null);
-  const [upcomingTasks, setUpcomingTasks] = useState<Record<string, UpcomingTask[]>>({});
+  const [upcomingTasks, setUpcomingTasks] = useState<
+    Record<string, UpcomingTask[]>
+  >({});
   const [chatUnread, setChatUnread] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
@@ -268,7 +320,7 @@ export default function GridDashboardPage() {
   const deviceIdRef = useRef<string>(
     typeof crypto !== "undefined" && crypto.randomUUID
       ? crypto.randomUUID()
-      : `dev-${Math.random().toString(36).slice(2)}-${Date.now()}`
+      : `dev-${Math.random().toString(36).slice(2)}-${Date.now()}`,
   );
 
   // ---- Data fetching -------------------------------------------------------
@@ -295,8 +347,9 @@ export default function GridDashboardPage() {
       if (res.ok) {
         const json = await res.json();
         const total = (json.conversations || []).reduce(
-          (sum: number, c: { unreadCount?: number }) => sum + (c.unreadCount || 0),
-          0
+          (sum: number, c: { unreadCount?: number }) =>
+            sum + (c.unreadCount || 0),
+          0,
         );
         setChatUnread(total);
       }
@@ -364,10 +417,17 @@ export default function GridDashboardPage() {
           ? {
               ...prev,
               tasks: prev.tasks.map((t) =>
-                t.id === taskId ? { ...t, isCompleted: true, isOverdue: false, isDueSoon: false } : t
+                t.id === taskId
+                  ? {
+                      ...t,
+                      isCompleted: true,
+                      isOverdue: false,
+                      isDueSoon: false,
+                    }
+                  : t,
               ),
             }
-          : prev
+          : prev,
       );
       try {
         await fetch("/api/tasks/complete", {
@@ -380,7 +440,7 @@ export default function GridDashboardPage() {
         console.error("Failed to complete task:", err);
       }
     },
-    [fetchTasks]
+    [fetchTasks],
   );
 
   const handleUncomplete = useCallback(
@@ -397,7 +457,7 @@ export default function GridDashboardPage() {
         console.error("Failed to uncomplete task:", err);
       }
     },
-    [fetchTasks]
+    [fetchTasks],
   );
 
   const handleEarlyComplete = useCallback(
@@ -413,7 +473,7 @@ export default function GridDashboardPage() {
         console.error("Failed to early-complete task:", err);
       }
     },
-    [fetchTasks]
+    [fetchTasks],
   );
 
   const handleEarlyUncomplete = useCallback(
@@ -429,7 +489,7 @@ export default function GridDashboardPage() {
         console.error("Failed to early-uncomplete task:", err);
       }
     },
-    [fetchTasks]
+    [fetchTasks],
   );
 
   // ---- Save layout (explicit, on demand) -----------------------------------
@@ -455,8 +515,6 @@ export default function GridDashboardPage() {
     setChatOpen(true);
   }, []);
   const openForms = useCallback(() => setFormsOpen(true), []);
-
-
 
   // ---- Build widget data bundle -------------------------------------------
   // Memoized so transient re-renders (e.g. socket connect/disconnect toggling
@@ -508,7 +566,7 @@ export default function GridDashboardPage() {
   }
 
   const currentLocationId =
-    user.userType === "location" ? (user.locationId || user.id) : undefined;
+    user.userType === "location" ? user.locationId || user.id : undefined;
 
   return (
     <GridProvider initialLayout={initialLayout}>
@@ -517,51 +575,61 @@ export default function GridDashboardPage() {
         {/* Floating pill header — all layout elements share a LayoutGroup so
             Framer Motion coordinates repositioning across component boundaries */}
         <LayoutGroup id="grid-header">
-        <header className="glass-header flex h-14 shrink-0 items-center justify-between gap-2 px-4">
-          {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
-          <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="glass-pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
-              <span className="text-xs font-black text-primary-foreground">H</span>
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
-              {user.name && (
-                <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Right side: settings group (layout-animated, grows leftward) + fixed pills */}
-          <div className="flex items-center gap-2">
-            {/* Settings group — only these animate; connection+signout stay fixed */}
+          <header className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
+            {/* Logo + name pill — layout-animated so it smoothly shrinks when settings pills appear */}
             <motion.div
               layout
               transition={{ type: "spring", stiffness: 100, damping: 30 }}
-              className="flex items-center gap-2"
+              className="glass-pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4"
             >
-              {/* Clock pill — hidden when a Clock widget is on the grid */}
-              <HeaderClock />
-              {/* Settings panel: layout picker + customize + theme — animates out from cog */}
-              <SettingsPanel
-                onSave={saveLayout}
-                theme={theme}
-                themeMounted={themeMounted}
-                onCycleTheme={cycleTheme}
-              />
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
+                <span className="text-xs font-black text-primary-foreground">
+                  H
+                </span>
+              </div>
+              <div className="leading-tight">
+                <p className="text-sm font-bold text-foreground leading-none">
+                  Dashboard
+                </p>
+                {user.name && (
+                  <p className="text-[10px] text-muted-foreground leading-none mt-0.5">
+                    {user.name}
+                  </p>
+                )}
+              </div>
             </motion.div>
-            {/* Connection status — not layout-animated, always pinned */}
-            <ConnectionStatus />
-            {/* Sign out pill — not layout-animated, always pinned */}
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
-          </div>
-        </header>
+
+            {/* Right side: settings group (layout-animated, grows leftward) + fixed pills */}
+            <div className="flex items-center gap-2">
+              {/* Settings group — only these animate; connection+signout stay fixed */}
+              <motion.div
+                layout
+                transition={{ type: "spring", stiffness: 100, damping: 30 }}
+                className="flex items-center gap-2"
+              >
+                {/* Clock pill — hidden when a Clock widget is on the grid */}
+                <HeaderClock />
+                {/* Settings panel: layout picker + customize + theme — animates out from cog */}
+                <SettingsPanel
+                  onSave={saveLayout}
+                  theme={theme}
+                  themeMounted={themeMounted}
+                  onCycleTheme={cycleTheme}
+                />
+              </motion.div>
+              {/* Connection status — not layout-animated, always pinned */}
+              <ConnectionStatus />
+              {/* Sign out pill — not layout-animated, always pinned */}
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          </header>
         </LayoutGroup>
 
         {/* Grid — layout-animated so it smoothly resizes when ticker mounts/unmounts */}
