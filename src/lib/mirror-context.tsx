@@ -35,6 +35,8 @@ export interface MirrorViewState {
   // Connection status sync fields
   sessionCode?: string | null;
   sessions?: { id: string; code: string; isOnline: boolean; isCurrent: boolean; deviceType: string | null; createdAt: string; lastSeen: string }[];
+  // Grid layout sync — full layout object (not just the ID) so the embed mirror shows the exact widget arrangement
+  gridLayout?: { id: string; name: string; description: string; widgets: unknown[]; isCustom?: boolean } | null;
 }
 
 interface MirrorState {

@@ -698,3 +698,63 @@ export function GridSurface({ data }: { data: WidgetData }) {
     </div>
   );
 }
+
+/**
+ * GridMirrorSync — bidirectional grid layout sync for the remote-view / mirror system.
+ * Must be rendered inside a <GridProvider>.
+ *
+ * TARGET side (location being viewed):
+ *   When remoteViewActive=true, broadcasts the current full GridLayout object via
+ *   captureManager.broadcastViewState({ gridLayout }) so the embed iframe can apply it.
+ *   Also re-broadcasts whenever the layout changes while being viewed.
+ *
+ * EMBED side (ARL's iframe):
+ *   When mirrorViewState.gridLayout arrives from the target, calls replaceLayout()
+ *   to apply the exact widget arrangement inside this GridProvider instance.
+ */
+export function GridMirrorSync({
+  isEmbed,
+  isMirroring,
+  remoteViewActive,
+  mirrorViewState,
+  captureManager,
+}: {
+  isEmbed: boolean;
+  isMirroring: boolean;
+  remoteViewActive: boolean;
+  mirrorViewState: { gridLayout?: { id: string; name: string; description: string; widgets: unknown[]; isCustom?: boolean } | null } | null;
+  captureManager: { broadcastViewState: (state: Record<string, unknown>) => void } | null;
+}) {
+  const { layout, replaceLayout, editMode } = useGrid();
+  const editingRef = useRef(editMode);
+  editingRef.current = editMode;
+
+  // TARGET side: broadcast current layout to the mirror whenever remote view is active.
+  // Also fires when layout changes while being viewed.
+  useEffect(() => {
+    if (!remoteViewActive || !captureManager || isMirroring) return;
+    captureManager.broadcastViewState({ gridLayout: layout });
+  }, [layout, remoteViewActive, captureManager, isMirroring]);
+
+  // EMBED side: apply the target's layout when it arrives via view state.
+  // Guard against clobbering an in-progress edit session.
+  const lastAppliedLayoutId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isEmbed || !isMirroring || !mirrorViewState?.gridLayout) return;
+    if (editingRef.current) return; // never clobber an active edit
+
+    const incoming = mirrorViewState.gridLayout;
+    // Use a stable key so we don't re-apply the same layout on every re-render.
+    // For custom layouts the widgets array may differ, so we compare by JSON.
+    const key = incoming.isCustom
+      ? JSON.stringify(incoming.widgets)
+      : incoming.id;
+
+    if (lastAppliedLayoutId.current === key) return;
+    lastAppliedLayoutId.current = key;
+
+    replaceLayout(incoming as GridLayout);
+  }, [isEmbed, isMirroring, mirrorViewState?.gridLayout, replaceLayout]);
+
+  return null;
+}

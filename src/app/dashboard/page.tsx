@@ -26,6 +26,7 @@ import {
   SettingsPanel,
   GridSurface,
   GridSync,
+  GridMirrorSync,
   getPredefinedLayout,
   DEFAULT_LAYOUT_ID,
   type GridLayout,
@@ -699,6 +700,14 @@ function GridDashboardPage() {
   const dashboardContent = (
     <GridProvider initialLayout={initialLayout}>
       <GridSync socket={socket} deviceId={deviceIdRef.current} />
+      {/* Layout sync for remote-view / mirror: broadcasts target's layout to embed, applies it in embed */}
+      <GridMirrorSync
+        isEmbed={isEmbed}
+        isMirroring={isMirroring}
+        remoteViewActive={remoteViewActive}
+        mirrorViewState={mirrorViewState}
+        captureManager={captureManagerRef.current}
+      />
       <div className="flex h-screen flex-col bg-background">
         <LayoutGroup id="grid-header">
           <header className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
