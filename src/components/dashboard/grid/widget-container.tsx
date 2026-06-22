@@ -217,7 +217,7 @@ export function WidgetContainer({
             <button
               type="button"
               onClick={() => removeWidget(widget.id)}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-destructive/10 active:text-destructive"
               title="Remove"
             >
               <X className="h-4 w-4" />
@@ -242,7 +242,7 @@ export function WidgetContainer({
           <button
             type="button"
             onClick={() => toggleExpand(widget.id)}
-            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors active:bg-muted active:text-foreground"
             title="Collapse"
           >
             <Minimize2 className="h-5 w-5" />

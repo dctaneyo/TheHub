@@ -19,8 +19,11 @@ export function GridQuoteWidget() {
 
   return (
     <div className="flex h-full flex-col items-start justify-center gap-3 p-4">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/50">
-        <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        style={{ background: "var(--hub-purple-light)", color: "var(--hub-purple)" }}
+      >
+        <Sparkles className="h-4 w-4" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground leading-relaxed line-clamp-4">

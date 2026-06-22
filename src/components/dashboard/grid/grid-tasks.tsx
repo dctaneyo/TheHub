@@ -45,7 +45,7 @@ function CompletionRing({
       type="button"
       onClick={onClick}
       title="View all tasks for today"
-      className="relative inline-flex shrink-0 items-center justify-center rounded-full transition-transform hover:scale-[1.03]"
+      className="relative inline-flex shrink-0 items-center justify-center rounded-full transition-transform active:scale-[0.97]"
       style={{ width: size, height: size }}
     >
       <svg width={size} height={size} className="-rotate-90">
@@ -167,7 +167,7 @@ export function GridTasksWidget({
               }
               setMissedOpen((o) => !o);
             }}
-            className="flex w-full items-center justify-between rounded-lg px-0 py-0.5 transition-colors hover:text-[var(--hub-red)]"
+            className="flex w-full items-center justify-between rounded-lg px-0 py-0.5 transition-colors active:text-[var(--hub-red)]"
           >
             <span className="flex items-center gap-2 font-medium text-foreground">
               <span
@@ -263,7 +263,7 @@ export function GridTasksWidget({
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
                   title="Close"
                 >
                   <X className="h-5 w-5" />
@@ -355,7 +355,7 @@ export function GridTasksWidget({
                 <button
                   type="button"
                   onClick={() => setMissedOpen(false)}
-                  className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                  className="rounded-full p-0.5 text-muted-foreground transition-colors active:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>

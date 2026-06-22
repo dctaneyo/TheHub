@@ -525,7 +525,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     // Emit view change for mirror sync - back to conversation list
                     sendViewChange({ chatOpen: true, chatThreadId: null, chatThreadName: null });
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
@@ -547,7 +547,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               {!activeConvo && !showNewChat && (
                 <button
                   onClick={() => { setShowNewChat(true); fetchParticipants(); }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground"
                   title="New chat"
                 >
                   <Plus className="h-4 w-4" />
@@ -556,7 +556,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               {activeConvo && (activeConvo.type === "group" || activeConvo.type === "global") && (
                 <button
                   onClick={() => setShowGroupInfo(true)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground"
                   title="Group info"
                 >
                   <Info className="h-4 w-4" />
@@ -567,7 +567,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                   onClick={() => { setShowSearch((v) => !v); setSearchQuery(""); }}
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                    showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"
+                    showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground active:bg-muted"
                   )}
                   title="Search messages"
                 >
@@ -581,7 +581,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                     mutedConvos.has(activeConvo.id)
                       ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-                      : "text-muted-foreground hover:bg-muted"
+                      : "text-muted-foreground active:bg-muted"
                   )}
                   title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
                 >
@@ -590,12 +590,12 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               )}
               <button
                 onClick={() => setIsFullscreen((f) => !f)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
                 title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
-              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -609,13 +609,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                 <button
                   onClick={() => setNewChatMode("direct")}
                   className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
-                    newChatMode === "direct" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+                    newChatMode === "direct" ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
                   )}
                 >Direct</button>
                 <button
                   onClick={() => setNewChatMode("group")}
                   className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
-                    newChatMode === "group" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+                    newChatMode === "group" ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
                   )}
                 >Group</button>
               </div>
@@ -683,7 +683,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                           disabled={startingChat && newChatMode === "direct"}
                           className={cn(
                             "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors disabled:opacity-50",
-                            isSelected && newChatMode === "group" ? "bg-red-50 dark:bg-red-950/50" : "hover:bg-muted/50"
+                            isSelected && newChatMode === "group" ? "bg-red-50 dark:bg-red-950/50" : "active:bg-muted/50"
                           )}
                         >
                           <div className={cn(
@@ -760,7 +760,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                       }}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
-                        convo.unreadCount > 0 ? "bg-red-50 dark:bg-red-950/40" : "hover:bg-muted/50"
+                        convo.unreadCount > 0 ? "bg-red-50 dark:bg-red-950/40" : "active:bg-muted/50"
                       )}
                     >
                       <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
@@ -988,7 +988,7 @@ function ActiveConvoView({
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground active:bg-muted/80 transition-colors"
               >
                 View Past Messages
               </button>
@@ -1141,7 +1141,7 @@ function ActiveConvoView({
               "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
               showKeyboard
                 ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted text-muted-foreground active:bg-muted/80"
             )}
             title="Onscreen keyboard"
           >

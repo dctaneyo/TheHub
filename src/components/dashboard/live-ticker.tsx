@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/lib/socket-context";
-import { Zap } from "@/lib/icons";
 
 interface TickerItem {
   id: string;
@@ -12,174 +12,186 @@ interface TickerItem {
 }
 
 const MAX_ITEMS = 20;
-const TICKER_SPEED = 60; // pixels per second
+const TICKER_SPEED_PX = 65; // px/s — matches GridTickerBar
 
 export function LiveTicker({ currentLocationId }: { currentLocationId?: string }) {
   const [items, setItems] = useState<TickerItem[]>([]);
   const { socket } = useSocket();
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
   const animRef = useRef<number>(0);
-  const posRef = useRef(0);
+  const posRef = useRef<number | null>(null);
 
-  // Load from localStorage on mount, then merge ARL-pushed messages
+  // Hydrate from localStorage + ARL-pushed messages on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("dashboard-ticker");
       if (stored) setItems(JSON.parse(stored).slice(0, MAX_ITEMS));
     } catch {}
-    // Fetch persisted ARL-pushed ticker messages
+
     fetch("/api/ticker")
-      .then((r) => r.ok ? r.json() : { messages: [] })
+      .then((r) => (r.ok ? r.json() : { messages: [] }))
       .then((data) => {
-        const arlItems: TickerItem[] = (data.messages || []).map((m: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => ({
-          id: `arl-${m.id}`,
-          text: `${m.content} — ${m.arlName}`,
-          icon: m.icon,
-          timestamp: new Date(m.createdAt).getTime(),
-        }));
-        if (arlItems.length > 0) {
-          setItems((prev) => [...arlItems, ...prev].slice(0, MAX_ITEMS));
-        }
+        const arlItems: TickerItem[] = (data.messages || []).map(
+          (m: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => ({
+            id: `arl-${m.id}`,
+            text: `${m.content} — ${m.arlName}`,
+            icon: m.icon,
+            timestamp: new Date(m.createdAt).getTime(),
+          }),
+        );
+        if (arlItems.length > 0) setItems((prev) => [...arlItems, ...prev].slice(0, MAX_ITEMS));
       })
       .catch(() => {});
   }, []);
 
-  // Save to localStorage
+  // Persist to localStorage
   useEffect(() => {
-    if (items.length > 0) {
-      localStorage.setItem("dashboard-ticker", JSON.stringify(items));
-    }
+    if (items.length > 0) localStorage.setItem("dashboard-ticker", JSON.stringify(items));
   }, [items]);
 
-  // Listen for events
+  // Socket events — task completions + ARL ticker messages only (no gamification)
   useEffect(() => {
     if (!socket) return;
 
-    const addItem = (item: TickerItem) => {
-      setItems(prev => [item, ...prev].slice(0, MAX_ITEMS));
-    };
+    const add = (item: TickerItem) =>
+      setItems((prev) => [item, ...prev].slice(0, MAX_ITEMS));
 
-    const handleTaskCompleted = (data: { locationId?: string; locationName?: string; taskTitle?: string; taskId?: string }) => {
-      // Only show other restaurants' and ARLs' activity, not our own
-      if (currentLocationId && data.locationId === currentLocationId) return;
-      addItem({
-        id: `task-${data.taskId}-${Date.now()}`,
-        text: `${data.locationName || "A location"} completed "${data.taskTitle}"`,
+    const onTaskCompleted = (d: { locationId?: string; locationName?: string; taskTitle?: string; taskId?: string }) => {
+      if (currentLocationId && d.locationId === currentLocationId) return;
+      add({
+        id: `task-${d.taskId}-${Date.now()}`,
+        text: `${d.locationName || "A location"} completed "${d.taskTitle}"`,
         icon: "✅",
         timestamp: Date.now(),
       });
     };
 
-    const handleHighFive = (data: { from_user_name?: string; to_user_name?: string; id?: string }) => {
-      addItem({
-        id: `hf-${data.id}-${Date.now()}`,
-        text: `${data.from_user_name} sent a high-five to ${data.to_user_name}!`,
-        icon: "🙌",
+    const onTaskUncompleted = (d: { taskId?: string }) => {
+      if (d.taskId) setItems((prev) => prev.filter((i) => !i.id.startsWith(`task-${d.taskId}-`)));
+    };
+
+    const onTickerNew = (d: { id: string; icon: string; content: string; arlName: string }) => {
+      add({
+        id: `arl-${d.id}`,
+        text: `${d.content} — ${d.arlName}`,
+        icon: d.icon,
         timestamp: Date.now(),
       });
     };
 
-    const handleShoutout = (data: { from_user_name?: string; to_location_name?: string; id?: string; message?: string }) => {
-      addItem({
-        id: `shout-${data.id}-${Date.now()}`,
-        text: `${data.from_user_name} gave a shoutout to ${data.to_location_name}: "${data.message}"`,
-        icon: "📣",
-        timestamp: Date.now(),
-      });
+    const onTickerDelete = (d: { id: string }) => {
+      setItems((prev) => prev.filter((i) => i.id !== `arl-${d.id}`));
     };
 
-    const handleTickerNew = (data: { id: string; icon: string; content: string; arlName: string; createdAt: string }) => {
-      addItem({
-        id: `arl-${data.id}`,
-        text: `${data.content} — ${data.arlName}`,
-        icon: data.icon,
-        timestamp: Date.now(),
-      });
-    };
-
-    const handleTaskUncompleted = (data: { taskId?: string }) => {
-      if (!data.taskId) return;
-      setItems((prev) => prev.filter((item) => !item.id.startsWith(`task-${data.taskId}-`)));
-    };
-
-    const handleTickerDelete = (data: { id: string }) => {
-      setItems((prev) => prev.filter((item) => item.id !== `arl-${data.id}`));
-    };
-
-    socket.on("task:completed", handleTaskCompleted);
-    socket.on("task:uncompleted", handleTaskUncompleted);
-    socket.on("high-five:received", handleHighFive);
-    socket.on("shoutout:new", handleShoutout);
-    socket.on("ticker:new", handleTickerNew);
-    socket.on("ticker:delete", handleTickerDelete);
+    socket.on("task:completed", onTaskCompleted);
+    socket.on("task:uncompleted", onTaskUncompleted);
+    socket.on("ticker:new", onTickerNew);
+    socket.on("ticker:delete", onTickerDelete);
 
     return () => {
-      socket.off("task:completed", handleTaskCompleted);
-      socket.off("task:uncompleted", handleTaskUncompleted);
-      socket.off("high-five:received", handleHighFive);
-      socket.off("shoutout:new", handleShoutout);
-      socket.off("ticker:new", handleTickerNew);
-      socket.off("ticker:delete", handleTickerDelete);
+      socket.off("task:completed", onTaskCompleted);
+      socket.off("task:uncompleted", onTaskUncompleted);
+      socket.off("ticker:new", onTickerNew);
+      socket.off("ticker:delete", onTickerDelete);
     };
-  }, [socket]);
+  }, [socket, currentLocationId]);
 
-  // Scrolling animation
+  // RAF scroll: single copy, starts at container right edge, exits left, loops.
+  // Gated on `hasItems` only — never restarts when item list grows.
+  const hasItems = items.length > 0;
+
+  const fmt = (ts: number) =>
+    new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  const tickerText = hasItems
+    ? items.map((i) => `${i.icon}  ${i.text}  ·  ${fmt(i.timestamp)}`).join("          ")
+    : "";
+
   useEffect(() => {
-    if (items.length === 0) return;
+    if (!hasItems) return;
 
-    let lastTime = performance.now();
-    const animate = (now: number) => {
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
+    if (posRef.current === null) posRef.current = 0;
 
-      const content = contentRef.current;
+    let last = performance.now();
+    let running = true;
+
+    const tick = (now: number) => {
+      if (!running) return;
+      const dt = (now - last) / 1000;
+      last = now;
+
       const container = containerRef.current;
-      if (!content || !container) {
-        animRef.current = requestAnimationFrame(animate);
-        return;
+      const span = spanRef.current;
+      if (container && span) {
+        const cw = container.clientWidth;
+        const sw = span.offsetWidth;
+
+        if (posRef.current === null || posRef.current === 0) {
+          posRef.current = cw;
+        }
+
+        posRef.current -= TICKER_SPEED_PX * dt;
+
+        if (posRef.current < -sw) posRef.current = cw;
+
+        span.style.transform = `translateX(${posRef.current}px)`;
       }
 
-      const contentWidth = content.scrollWidth / 2; // we duplicate content
-      posRef.current -= TICKER_SPEED * dt;
-
-      // Reset when first copy scrolls fully off
-      if (Math.abs(posRef.current) >= contentWidth) {
-        posRef.current += contentWidth;
-      }
-
-      content.style.transform = `translateX(${posRef.current}px)`;
-      animRef.current = requestAnimationFrame(animate);
+      animRef.current = requestAnimationFrame(tick);
     };
 
-    animRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [items.length]);
+    animRef.current = requestAnimationFrame(tick);
 
-  if (items.length === 0) return null;
-
-  // Build ticker string with timestamps — duplicate for seamless loop
-  const formatTime = (ts: number) => new Date(ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  const tickerContent = items.map(item => `${item.icon} ${item.text}  ⏐  ${formatTime(item.timestamp)}`).join("     •     ");
+    return () => {
+      running = false;
+      cancelAnimationFrame(animRef.current);
+      posRef.current = null;
+    };
+  }, [hasItems]);
 
   return (
-    <div className="w-full bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-b border-slate-700/50 overflow-hidden shrink-0">
-      <div className="flex items-center h-8">
-        <div className="flex items-center gap-1.5 px-3 bg-red-600 h-full shrink-0 z-10">
-          <Zap className="h-3 w-3 text-white" />
-          <span className="text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap">Live</span>
-        </div>
-        <div ref={containerRef} className="flex-1 overflow-hidden relative">
-          <div ref={contentRef} className="flex whitespace-nowrap will-change-transform">
-            <span className="text-xs text-slate-300 font-medium px-4">
-              {tickerContent}
+    <AnimatePresence initial={false}>
+      {hasItems && (
+        <motion.div
+          key="ticker"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ type: "spring", stiffness: 340, damping: 30 }}
+          className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full bg-card/80 shadow-sm"
+        >
+          {/* LIVE badge — rounded left, flat right */}
+          <div className="flex h-full shrink-0 items-center gap-1.5 rounded-l-full bg-primary px-3">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
             </span>
-            <span className="text-xs text-slate-300 font-medium px-4">
-              {tickerContent}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+              Live
             </span>
           </div>
-        </div>
-      </div>
-    </div>
+
+          {/* Scrolling text — single copy, RAF */}
+          <div
+            ref={containerRef}
+            className="relative min-w-0 flex-1 overflow-hidden"
+            style={{ height: "100%" }}
+          >
+            <span
+              ref={spanRef}
+              className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-medium text-foreground/80"
+              style={{
+                paddingLeft: "1.5rem",
+                paddingRight: "1.5rem",
+                transform: "translateX(9999px)",
+              }}
+            >
+              {tickerText}
+            </span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

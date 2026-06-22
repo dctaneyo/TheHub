@@ -112,7 +112,7 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -128,7 +128,7 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                 "rounded-lg px-3 py-1 text-[11px] font-medium transition-colors",
                 filterCat === cat
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  : "bg-muted text-muted-foreground active:bg-muted/80"
               )}
             >
               {cat === "all" ? "All" : categoryLabel(cat)}
@@ -200,7 +200,7 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                       "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
                       sentId === form.id
                         ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20"
+                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400 active:bg-blue-500/20"
                     )}
                   >
                     {sendingId === form.id ? (

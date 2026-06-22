@@ -148,21 +148,21 @@ export function GridCalendarWidget() {
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <button
           type="button"
           onClick={() => openModal()}
-          className="text-sm font-bold text-foreground transition-colors hover:text-primary"
+          className="text-sm font-bold text-foreground transition-colors active:text-primary"
         >
           {format(currentMonth, "MMMM yyyy")}
         </button>
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -199,7 +199,7 @@ export function GridCalendarWidget() {
               type="button"
               onClick={() => openModal(date)}
               className={cn(
-                "flex flex-col items-center gap-px rounded-lg py-0.5 transition-colors hover:bg-muted/60",
+                "flex flex-col items-center gap-px rounded-lg py-0.5 transition-colors active:bg-muted/60",
                 !inMonth && "pointer-events-none opacity-25",
                 selected && inMonth && !today && "bg-muted/40",
               )}
@@ -292,7 +292,7 @@ function CalendarModal({
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -302,14 +302,14 @@ function CalendarModal({
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <X className="h-5 w-5" />
         </button>
@@ -347,7 +347,7 @@ function CalendarModal({
                   disabled={!inMonth}
                   className={cn(
                     "flex flex-col items-center rounded-xl py-1 transition-colors",
-                    inMonth && "hover:bg-muted/60",
+                    inMonth && "active:bg-muted/60",
                     !inMonth && "opacity-20",
                     sel && inMonth && "bg-muted",
                   )}

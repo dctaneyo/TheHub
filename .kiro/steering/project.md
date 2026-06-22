@@ -28,13 +28,16 @@ Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 
 - Header: `bg-background`, no border — pills float on background
 - Pills: `h-9 rounded-full bg-card/80 shadow-sm` (plain card surface, no blur/glass); logo pill is `flex-1`
 - Grid: 12×12 CSS grid, `gap-3 p-3`; widgets `rounded-2xl border bg-card shadow-sm`
-- Text: `text-base` for primary rows, `text-sm` for content, `text-xs` minimum for labels
+- Text: `text-base` for primary rows, `text-sm` for content, `text-xs` minimum for labels — avoid arbitrary sizes below `text-xs`
 - Checkboxes: `CheckCircle2` at `h-7 w-7`, same icon for done/undone — color-only change
-- Live ticker: `h-9 rounded-full` pill at bottom, RAF scroll (single copy, `hasItems`-gated), LIVE badge `rounded-l-full`
+- Live ticker: `h-9 rounded-full` pill at bottom (classic) / bottom of grid, RAF scroll (single copy, `hasItems`-gated), LIVE badge `rounded-l-full`, theme-aware `bg-card/80` — no hardcoded dark palette
 - Settings panel: cog pill rotates icon only (not pill), pills morph out with `AnimatePresence`; spring `stiffness:120 damping:28`
 - Header layout springs: `stiffness:100 damping:30`; `LayoutGroup id="grid-header"` coordinates cross-component layout shifts
 - Clock pill hides (unmounts) when clock widget is on grid — logic inside `HeaderClock`, not header JSX
 - Connection Status + Sign Out are **outside** the layout group — never animate them
+- **Border radius rule**: rows/list items = `rounded-xl`; panels/drawers/widget shells = `rounded-2xl`; fullscreen modals = `rounded-3xl`; small chips/badges = `rounded-lg`; circle controls = `rounded-full`
+- **Interactive states**: kiosk routes (`/dashboard`, `/dashboard/grid`) must always use `active:` states, never `hover:`-only — kiosks have no hover. ARL routes may use `hover:`.
+- **Icons**: `X` and `Plus` intentionally use Phosphor `regular` weight (not duotone) — do not change them
 
 **Login page**
 - Flow: org entry → user ID → PIN

@@ -16,6 +16,12 @@ function formatTime12(time: string): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+// Shared row enter animation — same for both completed and missed
+const rowVariants = {
+  hidden: { opacity: 0, x: 10 },
+  visible: { opacity: 1, x: 0 },
+};
+
 export function CompletedMissed({
   completedToday,
   missedYesterday,
@@ -42,11 +48,12 @@ export function CompletedMissed({
             completedToday.map((task) => (
               <motion.div
                 key={task.id}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 px-3 py-2.5"
+                variants={rowVariants}
+                initial="hidden"
+                animate="visible"
+                className="flex items-center gap-2 rounded-xl bg-[var(--hub-green-light)] px-3 py-2.5"
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--hub-green)]" />
                 <span className="flex-1 truncate text-sm font-medium text-muted-foreground line-through">
                   {task.title}
                 </span>
@@ -77,18 +84,21 @@ export function CompletedMissed({
             </p>
           ) : (
             missedYesterday.map((task) => (
-              <div
+              <motion.div
                 key={task.id}
-                className="flex items-center gap-2 rounded-xl bg-red-50/50 dark:bg-red-950/30 px-3 py-2.5"
+                variants={rowVariants}
+                initial="hidden"
+                animate="visible"
+                className="flex items-center gap-2 rounded-xl bg-[var(--hub-red-light)] px-3 py-2.5"
               >
-                <XCircle className="h-4 w-4 shrink-0 text-red-400" />
+                <XCircle className="h-4 w-4 shrink-0 text-[var(--hub-red)]" />
                 <span className="flex-1 truncate text-sm font-medium text-muted-foreground">
                   {task.title}
                 </span>
-                <span className="shrink-0 text-xs text-red-400">
+                <span className="shrink-0 text-xs text-[var(--hub-red)]">
                   {formatTime12(task.dueTime)}
                 </span>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
