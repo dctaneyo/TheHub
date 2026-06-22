@@ -26,7 +26,7 @@ Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 
 **Kiosk (dashboard/grid)**
 - Min 44px tap targets everywhere
 - Header: `bg-background`, no border — pills float on background
-- Pills: `h-9 rounded-full bg-card/80 backdrop-blur-sm shadow-sm`; logo pill is `flex-1`
+- Pills: `h-9 rounded-full bg-card/80 shadow-sm` (plain card surface, no blur/glass); logo pill is `flex-1`
 - Grid: 12×12 CSS grid, `gap-3 p-3`; widgets `rounded-2xl border bg-card shadow-sm`
 - Text: `text-base` for primary rows, `text-sm` for content, `text-xs` minimum for labels
 - Checkboxes: `CheckCircle2` at `h-7 w-7`, same icon for done/undone — color-only change
@@ -63,6 +63,9 @@ Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 
 
 ## Deployment
 Railway auto-deploys `main`. Build ID written to `build-id.txt` (`RAILWAY_GIT_COMMIT_SHA`). Socket broadcasts `build:id` on connect; clients auto-reload on mismatch (guarded by `reload-guard.ts`). Always push directly to `main`. Sentry auth token is currently expired (source maps fail but build succeeds).
+
+## Tabled Features (code preserved, not active)
+- **Idle Screensaver + Color Time Tags** (`src/components/dashboard/idle-screensaver.tsx`): fullscreen screensaver with animated clock, color time-tag sequence (Red/Orange/Yellow/Green/Blue/Purple/Brown/Grey/White, 30-min slots), hold-time reference table, and countdown to next color change. Currently only wired into `/dashboard`; intentionally not added to `/dashboard/grid` yet. All code is intact for easy re-integration.
 
 ## Known Debt (don't regress)
 - Rate limiter is in-memory — resets on deploy

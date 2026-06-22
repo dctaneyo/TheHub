@@ -7,6 +7,7 @@ import { GridCalendarWidget } from "./grid-calendar";
 import { GridTasksWidget } from "./grid-tasks";
 import { GridMessagesWidget } from "./grid-messages";
 import { GridUpcomingWidget } from "./grid-upcoming";
+import { GridQuoteWidget } from "./grid-quote";
 import type { Widget } from "./grid-engine";
 import type { WidgetData } from "./widget-data";
 
@@ -95,6 +96,9 @@ export const WidgetRenderer = memo(function WidgetRenderer({
           onClick={data.onOpenForms}
         />
       );
+
+    case "quote":
+      return <GridQuoteWidget />;
 
     default:
       return (

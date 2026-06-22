@@ -18,17 +18,13 @@ import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { useHapticFeedback, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
-import { ConfettiBurst } from "@/components/dashboard/celebrations";
 import { IdleScreensaver, useIdleTimer } from "@/components/dashboard/idle-screensaver";
 import { MotivationalQuote } from "@/components/dashboard/motivational-quote";
 
-import { AnimatedBackground } from "@/components/animated-background";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
 import { LiveTicker } from "@/components/dashboard/live-ticker";
 import { playTaskSound } from "@/lib/sound-effects";
 import { OfflineIndicator } from "@/components/offline-indicator";
-import { getRandomTaskCompletionPun, getCelebrationMessage } from "@/lib/funny-messages";
-import { SeasonalTheme } from "@/components/dashboard/seasonal-theme";
 import { MinimalHeader } from "@/components/dashboard/minimal-header";
 import { CalendarModal } from "@/components/dashboard/calendar-modal";
 import { RemoteViewBanner } from "@/components/dashboard/remote-view-banner";
@@ -246,124 +242,6 @@ function DashboardPage() {
     }).catch(() => {});
   };
 
-  // ── Color expiry toast state ──
-  const [colorExpiryToast, setColorExpiryToast] = useState<{ color: string; bg: string; text: string } | null>(null);
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // ── Shared AudioContext — created fresh per-call inside a user-gesture-safe wrapper ──
-  // We do NOT use a persistent ref because Chrome suspends contexts created outside
-  // a user gesture. Instead we create a fresh one each time and immediately resume it.
-  const playChime = useCallback((onDone: () => void) => {
-    try {
-      const ctx = new AudioContext();
-      const go = () => {
-        // Rising 3-note chime: C5 → E5 → G5
-        const notes = [
-          { freq: 523.25, start: 0,    dur: 0.55 },
-          { freq: 659.25, start: 0.35, dur: 0.55 },
-          { freq: 783.99, start: 0.70, dur: 0.90 },
-        ];
-        notes.forEach(({ freq, start, dur }) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0, ctx.currentTime + start);
-          gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + start);
-          osc.stop(ctx.currentTime + start + dur);
-        });
-        setTimeout(() => { onDone(); ctx.close(); }, 1800 + 150);
-      };
-      if (ctx.state === 'suspended') {
-        ctx.resume().then(go).catch(() => { onDone(); });
-      } else {
-        go();
-      }
-    } catch {
-      onDone();
-    }
-  }, []);
-
-  // ── Voice announcements: speak 5 min before each color slot boundary ──
-  const voiceAnnouncedRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-    const COLOR_DATA = [
-      { name: "Red",    bg: "#ef4444", text: "#fff" },
-      { name: "Orange", bg: "#f97316", text: "#fff" },
-      { name: "Yellow", bg: "#eab308", text: "#000" },
-      { name: "Green",  bg: "#22c55e", text: "#fff" },
-      { name: "Blue",   bg: "#3b82f6", text: "#fff" },
-      { name: "Purple", bg: "#a855f7", text: "#fff" },
-      { name: "Brown",  bg: "#92400e", text: "#fff" },
-      { name: "Grey",   bg: "#9ca3af", text: "#fff" },
-      { name: "White",  bg: "#f8fafc", text: "#000" },
-    ];
-    const ANCHOR_MINUTES = 10 * 60;
-    const SLOT_MINS = 30;
-    const ANNOUNCE_BEFORE_SECS = 5 * 60;
-
-    function getSlotIndex(now: Date) {
-      const mins = now.getHours() * 60 + now.getMinutes();
-      const delta = ((mins - ANCHOR_MINUTES) % (9 * SLOT_MINS) + 9 * SLOT_MINS) % (9 * SLOT_MINS);
-      return Math.floor(delta / SLOT_MINS);
-    }
-
-    function secsToNextBoundary(now: Date) {
-      const totalSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-      const secsIntoSlot = totalSecs % (SLOT_MINS * 60);
-      return SLOT_MINS * 60 - secsIntoSlot;
-    }
-
-    function speak(text: string) {
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.rate = 0.92;
-      utt.pitch = 1.05;
-      utt.volume = 1;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v =>
-        /google us english/i.test(v.name) ||
-        /samantha/i.test(v.name) ||
-        /karen/i.test(v.name) ||
-        /daniel/i.test(v.name) ||
-        /moira/i.test(v.name)
-      ) ?? voices.find(v => v.lang === 'en-US') ?? voices[0];
-      if (preferred) utt.voice = preferred;
-      window.speechSynthesis.speak(utt);
-    }
-
-    const interval = setInterval(() => {
-      if (!soundEnabled) return;
-      const now = new Date();
-      const secs = secsToNextBoundary(now);
-      if (secs > ANNOUNCE_BEFORE_SECS || secs <= ANNOUNCE_BEFORE_SECS - 5) return;
-
-      const slotIdx = getSlotIndex(now);
-      const colorData = COLOR_DATA[slotIdx];
-      const boundaryMin = Math.floor((now.getHours() * 60 + now.getMinutes() + 5) / SLOT_MINS) * SLOT_MINS;
-      const key = `${boundaryMin}`;
-      if (voiceAnnouncedRef.current.has(key)) return;
-      voiceAnnouncedRef.current.add(key);
-
-      setColorExpiryToast({ color: colorData.name, bg: colorData.bg, text: colorData.text });
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = setTimeout(() => setColorExpiryToast(null), 12000);
-
-      // Silence audible alert between 11 PM and 9 AM
-      const hour = now.getHours();
-      if (hour >= 23 || hour < 9) return;
-      playChime(() => speak(`Heads up — ${colorData.name} is expiring in 5 minutes.`));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [soundEnabled, playChime]);
-
   // Settings and mobile menu state/effects are now inside DashboardHeader + DashboardSettings
 
   const { user, logout } = useAuth();
@@ -376,7 +254,6 @@ function DashboardPage() {
   const [upcomingTasks, setUpcomingTasks] = useState<Record<string, Array<{ id: string; title: string; dueTime: string; type: string; priority: string }>>>({});
   const [currentTime, setCurrentTime] = useState("");
   const [displayTime, setDisplayTime] = useState("");
-  const [showConfetti, setShowConfetti] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
@@ -422,13 +299,6 @@ function DashboardPage() {
     // Sync theme from target
     if (mirrorViewState.theme) {
       setTheme(mirrorViewState.theme);
-    }
-    // Sync celebrations from target
-    if (mirrorViewState.celebration) {
-      if (mirrorViewState.celebration === "confetti" || mirrorViewState.celebration === "fireworks" || mirrorViewState.celebration === "coinRain") {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2800);
-      }
     }
     // Sync idle/screensaver from target
     if (mirrorViewState.idle !== undefined) {
@@ -744,12 +614,6 @@ function DashboardPage() {
         }),
       });
       if (res.ok) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2800);
-        if (remoteViewActive && captureManagerRef.current) {
-          captureManagerRef.current.broadcastViewState({ celebration: "confetti" });
-          setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
-        }
         await fetchTasks();
       }
     } catch (err) {
@@ -824,12 +688,6 @@ function DashboardPage() {
         if (updatedRes.ok) {
           const updated = await updatedRes.json();
           setData(updated);
-        }
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2800);
-        if (remoteViewActive && captureManagerRef.current) {
-          captureManagerRef.current.broadcastViewState({ celebration: "confetti" });
-          setTimeout(() => captureManagerRef.current?.broadcastViewState({ celebration: null }), 2800);
         }
       } else {
         // Revert optimistic update on failure — bypass the lock
@@ -998,9 +856,6 @@ function DashboardPage() {
       {/* Offline indicator with sync status */}
       <OfflineIndicator />
 
-      {/* Animated Background */}
-      <AnimatedBackground variant="subtle" />
-
       {/* Header — All layouts use MinimalHeader */}
       <MinimalHeader
         user={user}
@@ -1083,9 +938,6 @@ function DashboardPage() {
               "flex-1 flex flex-col overflow-hidden",
               useTargetMobile ? (targetIsMobile && mobilePanelOpen ? "hidden" : "flex") : (mobilePanelOpen ? "hidden md:flex" : "flex")
             )}>
-              <div className="shrink-0 px-5 pt-5">
-                <SeasonalTheme showFloating={false} />
-              </div>
               <div data-scroll-sync="main" className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
                 {currentTime && (
                   <Timeline
@@ -1142,48 +994,11 @@ function DashboardPage() {
       {/* Live Activity Ticker — hidden during remote view to reduce capture noise */}
       {!remoteViewActive && !isMirroring && <LiveTicker currentLocationId={effectiveLocationId} />}
 
-      {/* Celebrations */}
-      <ConfettiBurst active={showConfetti} onComplete={() => setShowConfetti(false)} />
-
       {/* Full Calendar Modal */}
       {calOpen && <CalendarModal onClose={() => setCalOpen(false)} locationId={user?.id} />}
 
       {/* Forms Viewer Modal */}
       {formsOpen && <FormsViewer onClose={() => setFormsOpen(false)} />}
-
-      {/* Color expiry toast — only shown when screensaver is not active */}
-      <AnimatePresence>
-        {colorExpiryToast && !idle && (
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl"
-            style={{ background: "rgba(15,15,25,0.92)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}
-          >
-            {/* Color chip */}
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-black text-sm"
-              style={{ background: colorExpiryToast.bg, color: colorExpiryToast.text, boxShadow: `0 0 16px ${colorExpiryToast.bg}99` }}
-            >
-              {colorExpiryToast.color[0]}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white leading-tight">
-                {colorExpiryToast.color} expiring in 5 min
-              </p>
-              <p className="text-[11px] text-white/50 mt-0.5">Discard {colorExpiryToast.color} tags at the next color change</p>
-            </div>
-            <button
-              onClick={() => setColorExpiryToast(null)}
-              className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white/30 hover:text-white/70 transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Idle Screensaver */}
       <AnimatePresence>

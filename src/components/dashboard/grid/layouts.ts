@@ -13,6 +13,7 @@ export const WIDGET_CATALOG: {
   { type: "messages", title: "Messages", defaultW: 4, defaultH: 3 },
   { type: "forms", title: "Forms", defaultW: 4, defaultH: 3 },
   { type: "clock", title: "Clock", defaultW: 4, defaultH: 3 },
+  { type: "quote", title: "Daily Quote", defaultW: 4, defaultH: 2 },
 ];
 
 export const PREDEFINED_LAYOUTS: GridLayout[] = [
