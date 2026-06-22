@@ -705,8 +705,10 @@ export function GridSurface({ data }: { data: WidgetData }) {
  *
  * TARGET side (location being viewed):
  *   When remoteViewActive=true, broadcasts the current full GridLayout object via
- *   captureManager.broadcastViewState({ gridLayout }) so the embed iframe can apply it.
- *   Also re-broadcasts whenever the layout changes while being viewed.
+ *   captureManagerRef.current.broadcastViewState({ gridLayout }) so the embed iframe
+ *   can apply it. Re-broadcasts whenever the layout changes while being viewed.
+ *   Accepts a React ref so it always reads the latest manager instance, not a stale
+ *   snapshot captured at render time.
  *
  * EMBED side (ARL's iframe):
  *   When mirrorViewState.gridLayout arrives from the target, calls replaceLayout()
@@ -717,41 +719,62 @@ export function GridMirrorSync({
   isMirroring,
   remoteViewActive,
   mirrorViewState,
-  captureManager,
+  captureManagerRef,
 }: {
   isEmbed: boolean;
   isMirroring: boolean;
   remoteViewActive: boolean;
   mirrorViewState: { gridLayout?: { id: string; name: string; description: string; widgets: unknown[]; isCustom?: boolean } | null } | null;
-  captureManager: { broadcastViewState: (state: Record<string, unknown>) => void } | null;
+  /** Pass the ref itself (not .current) so we always read the latest manager. */
+  captureManagerRef: React.RefObject<{ broadcastViewState: (state: Record<string, unknown>) => void } | null>;
 }) {
   const { layout, replaceLayout, editMode } = useGrid();
   const editingRef = useRef(editMode);
   editingRef.current = editMode;
 
-  // TARGET side: broadcast current layout to the mirror whenever remote view is active.
-  // Also fires when layout changes while being viewed.
+  // TARGET side: broadcast current layout whenever remote view is active.
+  // We read captureManagerRef.current inside the effect so we always get the
+  // latest manager even if it was null when the component first rendered.
+  // A short retry handles the race where remoteViewActive becomes true slightly
+  // before RemoteViewBanner finishes creating the RemoteCaptureManager.
   useEffect(() => {
-    if (!remoteViewActive || !captureManager || isMirroring) return;
-    captureManager.broadcastViewState({ gridLayout: layout });
-  }, [layout, remoteViewActive, captureManager, isMirroring]);
+    if (!remoteViewActive || isMirroring) return;
+
+    const broadcast = () => {
+      const mgr = captureManagerRef.current;
+      if (mgr) {
+        mgr.broadcastViewState({ gridLayout: layout });
+        return true;
+      }
+      return false;
+    };
+
+    if (broadcast()) return;
+
+    // Manager not ready yet — retry up to 10 times at 200ms intervals
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts++;
+      if (broadcast() || attempts >= 10) clearInterval(timer);
+    }, 200);
+    return () => clearInterval(timer);
+  }, [layout, remoteViewActive, captureManagerRef, isMirroring]);
 
   // EMBED side: apply the target's layout when it arrives via view state.
   // Guard against clobbering an in-progress edit session.
-  const lastAppliedLayoutId = useRef<string | null>(null);
+  const lastAppliedKey = useRef<string | null>(null);
   useEffect(() => {
     if (!isEmbed || !isMirroring || !mirrorViewState?.gridLayout) return;
     if (editingRef.current) return; // never clobber an active edit
 
     const incoming = mirrorViewState.gridLayout;
-    // Use a stable key so we don't re-apply the same layout on every re-render.
-    // For custom layouts the widgets array may differ, so we compare by JSON.
+    // Stable key: widget JSON for custom, layout ID for predefined.
     const key = incoming.isCustom
       ? JSON.stringify(incoming.widgets)
       : incoming.id;
 
-    if (lastAppliedLayoutId.current === key) return;
-    lastAppliedLayoutId.current = key;
+    if (lastAppliedKey.current === key) return;
+    lastAppliedKey.current = key;
 
     replaceLayout(incoming as GridLayout);
   }, [isEmbed, isMirroring, mirrorViewState?.gridLayout, replaceLayout]);

@@ -706,7 +706,7 @@ function GridDashboardPage() {
         isMirroring={isMirroring}
         remoteViewActive={remoteViewActive}
         mirrorViewState={mirrorViewState}
-        captureManager={captureManagerRef.current}
+        captureManagerRef={captureManagerRef}
       />
       <div className="flex h-screen flex-col bg-background">
         <LayoutGroup id="grid-header">
