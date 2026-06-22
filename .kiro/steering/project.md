@@ -26,7 +26,7 @@ Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 
 **Kiosk (dashboard/grid)**
 - Min 44px tap targets everywhere
 - Header: `bg-background`, no border — pills float on background
-- Pills: `h-9 rounded-full bg-card/80 shadow-sm` (plain card surface, no blur/glass); logo pill is `flex-1`
+- Pills: `h-9 rounded-full bg-card border border-border shadow-sm` (solid card surface via `.glass-pill`); logo pill is `flex-1`
 - Grid: 12×12 CSS grid, `gap-3 p-3`; widgets `rounded-2xl border bg-card shadow-sm`
 - Text: `text-base` for primary rows, `text-sm` for content, `text-xs` minimum for labels — avoid arbitrary sizes below `text-xs`
 - Checkboxes: `CheckCircle2` at `h-7 w-7`, same icon for done/undone — color-only change

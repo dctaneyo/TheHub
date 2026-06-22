@@ -168,36 +168,38 @@ html {
 }
 
 /* ── Pill surface ─────────────────────────────────────────────────────────────
- * Plain card-surface pill used in the grid dashboard header.
- * No liquid glass / backdrop-filter — clean and performant.
+ * Solid card-surface pill used in the grid dashboard header.
+ * Note: --card is defined as hex (#ffffff / #1e293b), so the hsl(var / alpha)
+ * syntax does NOT work — use the semantic Tailwind var directly via bg-card,
+ * or use color-mix for any transparency. Here we keep it fully opaque.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 .glass-pill {
-  background: hsl(var(--card) / 0.80);
-  border: 1px solid hsl(var(--border) / 0.6);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .glass-pill:hover {
-  background: hsl(var(--card) / 0.95);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10);
+  background-color: var(--card);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
 }
 .glass-pill:active {
-  background: hsl(var(--muted) / 0.80);
+  background-color: var(--muted);
   box-shadow: none;
 }
 
 .dark .glass-pill {
-  background: hsl(var(--card) / 0.80);
-  border: 1px solid hsl(var(--border) / 0.5);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30);
 }
 .dark .glass-pill:hover {
-  background: hsl(var(--card) / 0.95);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.30);
+  background-color: var(--card);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.40);
 }
 .dark .glass-pill:active {
-  background: hsl(var(--muted) / 0.60);
+  background-color: var(--muted);
   box-shadow: none;
 }
 
