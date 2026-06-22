@@ -4,7 +4,7 @@ inclusion: always
 
 # The Hub — Project Steering
 
-Multi-tenant franchise management platform. Two UX modes: **Location Dashboard** (`/dashboard`, `/dashboard/grid`) — fullscreen kiosk, touch-only, 24/7; **ARL Hub** (`/arl`) — responsive management UI. Deployed on Railway, SQLite, single Node instance. Domain: `*.meetthehub.com`.
+Multi-tenant franchise management platform. Two UX modes: **Location Dashboard** (`/dashboard`) — fullscreen kiosk, touch-only, 24/7, grid-based widget layout; **ARL Hub** (`/arl`) — responsive management UI. Deployed on Railway, SQLite, single Node instance. Domain: `*.meetthehub.com`.
 
 ## Stack
 Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 + shadcn/ui · SQLite (better-sqlite3) + Drizzle ORM · Socket.io · Framer Motion · JWT httpOnly cookie auth · `@phosphor-icons/react` v2 duotone · LiveKit · Sentry
@@ -61,7 +61,7 @@ Next.js 16.1.6 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 
 - `src/lib/api-response.ts` — `apiSuccess`, `ApiErrors`
 - `src/lib/task-utils.ts` — shared `taskAppliesToday()` (do not duplicate)
 - `src/lib/timezone.ts` — tenant-aware timezone helpers (`tzNow`, `tzTodayStr`, etc.)
-- `src/app/dashboard/grid/page.tsx` — grid dashboard + `GridTickerBar` + `HeaderClock`
+- `src/app/dashboard/page.tsx` — location dashboard (grid-based, replaces the old classic dashboard; `/dashboard/grid` permanently redirects here)
 - `src/components/dashboard/grid/grid-dashboard.tsx` — `SettingsPanel`, `GridControls`, `GridSurface`
 
 ## Deployment
