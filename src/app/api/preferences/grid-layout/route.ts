@@ -5,13 +5,54 @@ import { locations, arls } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { broadcastGridLayoutUpdate } from "@/lib/socket-emit";
+import { remoteViewSessions } from "@/lib/socket-handlers/state";
 
 // Returns the user's saved custom grid layout (JSON) or null if none saved.
-export async function GET() {
+//
+// Mirror/embed mode: when ?locationId=X&sessionId=Y is provided and the
+// caller is an authenticated ARL with an active mirror session for that
+// location, return the *location's* layout instead of the ARL's own layout.
+// This is the only way the embed iframe can load the correct layout, because
+// it runs in the ARL's browser and the cookie authenticates as the ARL.
+export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session) return ApiErrors.unauthorized();
 
+    const { searchParams } = req.nextUrl;
+    const mirrorLocationId = searchParams.get("locationId");
+    const mirrorSessionId = searchParams.get("sessionId");
+
+    // ── Mirror mode: ARL fetching a location's layout ──
+    if (
+      mirrorLocationId &&
+      mirrorSessionId &&
+      session.userType === "arl"
+    ) {
+      // Validate that an active remote-view session exists for this ARL + location
+      const rvSession = remoteViewSessions.get(mirrorSessionId);
+      if (
+        rvSession &&
+        rvSession.status === "active" &&
+        rvSession.arlId === session.id &&
+        rvSession.locationId === mirrorLocationId
+      ) {
+        const loc = db
+          .select({ gridLayout: locations.gridLayout })
+          .from(locations)
+          .where(eq(locations.id, mirrorLocationId))
+          .get();
+
+        let layout: unknown = null;
+        if (loc?.gridLayout) {
+          try { layout = JSON.parse(loc.gridLayout); } catch { layout = null; }
+        }
+        return apiSuccess({ layout });
+      }
+      // Session not found or mismatched — fall through to own layout
+    }
+
+    // ── Normal mode: return the authenticated user's own layout ──
     let raw: string | null = null;
     if (session.userType === "location") {
       const loc = db
@@ -31,11 +72,7 @@ export async function GET() {
 
     let layout: unknown = null;
     if (raw) {
-      try {
-        layout = JSON.parse(raw);
-      } catch {
-        layout = null;
-      }
+      try { layout = JSON.parse(raw); } catch { layout = null; }
     }
 
     return apiSuccess({ layout });

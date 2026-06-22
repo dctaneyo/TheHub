@@ -403,13 +403,19 @@ function GridDashboardPage() {
   }, []);
 
   // Load persisted grid layout
+  // In embed/mirror mode, pass the location ID + session ID so the API returns
+  // the *location's* layout instead of the ARL's own saved layout.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     (async () => {
       let resolved: GridLayout | null = null;
       try {
-        const res = await fetch("/api/preferences/grid-layout");
+        let url = "/api/preferences/grid-layout";
+        if (isEmbed && mirrorLocationId && mirrorSessionId) {
+          url += `?locationId=${encodeURIComponent(mirrorLocationId)}&sessionId=${encodeURIComponent(mirrorSessionId)}`;
+        }
+        const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
           if (json?.layout && Array.isArray(json.layout.widgets)) resolved = json.layout as GridLayout;
@@ -418,7 +424,7 @@ function GridDashboardPage() {
       if (!cancelled) setInitialLayout(resolved ?? getPredefinedLayout(DEFAULT_LAYOUT_ID)!);
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, isEmbed, mirrorLocationId, mirrorSessionId]);
 
   useEffect(() => {
     if (!user) return;
