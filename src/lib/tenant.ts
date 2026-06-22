@@ -84,8 +84,8 @@ export function resolveTenantByHost(host: string): { id: string; slug: string } 
   // Known system subdomains that aren't tenants
   const systemHosts = ["join", "www", "admin", "api"];
 
-  // Extract subdomain from *.meetthehub.com or *.meethehub.com
-  const hubDomains = ["meetthehub.com", "meethehub.com"];
+  // Extract subdomain from *.meetthehub.com
+  const hubDomains = ["meetthehub.com"];
   for (const domain of hubDomains) {
     if (hostname.endsWith(`.${domain}`)) {
       const sub = hostname.replace(`.${domain}`, "");

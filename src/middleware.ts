@@ -18,7 +18,7 @@ export function buildCspHeader(nonce: string): string {
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "media-src 'self' blob:",
-    "connect-src 'self' wss: ws: https://*.meetthehub.com https://*.meethehub.com https://*.sentry.io https://*.ingest.sentry.io",
+    "connect-src 'self' wss: ws: https://*.meetthehub.com https://*.sentry.io https://*.ingest.sentry.io",
     "frame-src 'self'",
     "worker-src 'self' blob:",
     "object-src 'none'",
@@ -29,7 +29,7 @@ export function buildCspHeader(nonce: string): string {
 }
 
 const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token"];
-const hubDomains = ["meetthehub.com", "meethehub.com"];
+const hubDomains = ["meetthehub.com"];
 
 // Edge-compatible JWT decode (no crypto verification — cookie is httpOnly,
 // full verification happens in API routes via jsonwebtoken)

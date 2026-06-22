@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import LandingPage from "@/components/landing-page";
 
-const hubDomains = ["meetthehub.com", "meethehub.com"];
+const hubDomains = ["meetthehub.com"];
 
 export default async function Home() {
   const h = await headers();

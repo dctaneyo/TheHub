@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 
 type LoginStep = "userId" | "pin";
 
-const HUB_DOMAINS = ["meetthehub.com", "meethehub.com"];
+const HUB_DOMAINS = ["meetthehub.com"];
 
 /**
  * Extract a per-org slug from the current subdomain (kazi.meetthehub.com → "kazi").

@@ -209,11 +209,11 @@ describe("middleware — root domain handler", () => {
     expect(res.status).toBe(200);
   });
 
-  // ── meethehub.com (alternate domain) works the same ──
+  // ── www.meetthehub.com (www prefix) is treated as root domain ──
 
-  it("handles root domain on meethehub.com the same way", () => {
+  it("handles root domain on www.meetthehub.com the same way", () => {
     const res = middleware(
-      makeRequest("https://meethehub.com/dashboard", { host: "meethehub.com" })
+      makeRequest("https://www.meetthehub.com/dashboard", { host: "www.meetthehub.com" })
     );
     expect(res.status).toBe(307);
     expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
@@ -315,14 +315,13 @@ describe("middleware — per-org subdomain resolution", () => {
     expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 
-  it("works the same on a subdomain of the alternate domain", () => {
-    const token = fakeJwt({ tenantId: "kazi", userType: "location" });
+  it("works the same on a subdomain with www prefix (not treated as org)", () => {
     const res = middleware(
-      makeRequest("https://kazi.meethehub.com/dashboard", {
-        host: "kazi.meethehub.com",
-        cookies: { "hub-token": token },
+      makeRequest("https://www.meetthehub.com/dashboard", {
+        host: "www.meetthehub.com",
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 });

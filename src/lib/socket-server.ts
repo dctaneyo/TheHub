@@ -42,9 +42,7 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
   // Build allowed origins for CORS — restrict in production, allow localhost in dev
   const allowedOrigins: (string | RegExp)[] = [
     /\.meetthehub\.com$/,
-    /\.meethehub\.com$/,
     "https://meetthehub.com",
-    "https://meethehub.com",
   ];
   if (process.env.NODE_ENV !== "production") {
     allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
