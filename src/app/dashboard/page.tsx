@@ -567,8 +567,8 @@ function GridDashboardPage() {
   // ── Mirror: send ARL local changes back to target ─────────────────────────
   useEffect(() => {
     if (!isMirroring || mirrorSyncingRef.current) return;
-    sendViewChange({ chatOpen, formsOpen, chatThreadId, soundEnabled });
-  }, [isMirroring, chatOpen, formsOpen, chatThreadId, soundEnabled, sendViewChange]);
+    sendViewChange({ chatOpen, formsOpen, chatThreadId, soundEnabled, theme: currentTheme });
+  }, [isMirroring, chatOpen, formsOpen, chatThreadId, soundEnabled, currentTheme, sendViewChange]);
 
   // ── Mirror: receive reverse view changes from ARL → target ────────────────
   const { socket: viewSyncSocket } = useSocket();
@@ -582,10 +582,18 @@ function GridDashboardPage() {
       if (vs.connectionOpen !== undefined) {
         window.dispatchEvent(new CustomEvent("mirror:panel-sync", { detail: { connectionOpen: vs.connectionOpen } }));
       }
+      // Theme change from ARL — apply on the location's screen
+      if (vs.theme && typeof vs.theme === "string") {
+        setTheme(vs.theme);
+      }
+      // Grid layout change from ARL — relay into GridProvider via DOM event
+      if (vs.gridLayout) {
+        window.dispatchEvent(new CustomEvent("mirror:grid-layout-from-arl", { detail: vs.gridLayout }));
+      }
     };
     viewSyncSocket.on("mirror:view-change", onReverseView);
     return () => { viewSyncSocket.off("mirror:view-change", onReverseView); };
-  }, [isMirroring, remoteViewActive, viewSyncSocket]);
+  }, [isMirroring, remoteViewActive, viewSyncSocket, setTheme]);
 
   // ── Mirror embed: ARL cursor tracking ────────────────────────────────────
   const { socket: scrollSocket } = useSocket();
@@ -713,6 +721,7 @@ function GridDashboardPage() {
         remoteViewActive={remoteViewActive}
         mirrorViewState={mirrorViewState}
         captureManagerRef={captureManagerRef}
+        sendViewChange={sendViewChange}
       />
       <div className="flex h-screen flex-col bg-background">
         <LayoutGroup id="grid-header">

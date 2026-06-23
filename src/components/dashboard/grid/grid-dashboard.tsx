@@ -720,6 +720,7 @@ export function GridMirrorSync({
   remoteViewActive,
   mirrorViewState,
   captureManagerRef,
+  sendViewChange,
 }: {
   isEmbed: boolean;
   isMirroring: boolean;
@@ -727,6 +728,8 @@ export function GridMirrorSync({
   mirrorViewState: { gridLayout?: { id: string; name: string; description: string; widgets: unknown[]; isCustom?: boolean } | null } | null;
   /** Pass the ref itself (not .current) so we always read the latest manager. */
   captureManagerRef: React.RefObject<{ broadcastViewState: (state: Record<string, unknown>) => void } | null>;
+  /** sendViewChange from useMirror() — used by embed side to push layout changes to the location. */
+  sendViewChange?: (viewState: Record<string, unknown>) => void;
 }) {
   const { layout, replaceLayout, editMode } = useGrid();
   const editingRef = useRef(editMode);
@@ -760,6 +763,20 @@ export function GridMirrorSync({
     return () => clearInterval(timer);
   }, [layout, remoteViewActive, captureManagerRef, isMirroring]);
 
+  // TARGET side: apply layout pushed from the ARL embed via DOM event.
+  // The location's onReverseView dispatches "mirror:grid-layout-from-arl" when
+  // the ARL changes the layout in the embed (SettingsPanel, selectCustom, etc.).
+  useEffect(() => {
+    if (isMirroring || !remoteViewActive) return;
+    const handler = (e: Event) => {
+      const incoming = (e as CustomEvent).detail;
+      if (!incoming || editingRef.current) return;
+      replaceLayout(incoming as GridLayout);
+    };
+    window.addEventListener("mirror:grid-layout-from-arl", handler);
+    return () => window.removeEventListener("mirror:grid-layout-from-arl", handler);
+  }, [isMirroring, remoteViewActive, replaceLayout]);
+
   // EMBED side: apply the target's layout when it arrives via view state.
   // Guard against clobbering an in-progress edit session.
   const lastAppliedKey = useRef<string | null>(null);
@@ -777,7 +794,21 @@ export function GridMirrorSync({
     lastAppliedKey.current = key;
 
     replaceLayout(incoming as GridLayout);
-  }, [isEmbed, isMirroring, mirrorViewState?.gridLayout, replaceLayout]);
+    // Also push the layout back to the location so its GridProvider stays in sync
+    sendViewChange?.({ gridLayout: incoming });
+  }, [isEmbed, isMirroring, mirrorViewState?.gridLayout, replaceLayout, sendViewChange]);
+
+  // EMBED side: when ARL changes layout locally (e.g. via SettingsPanel), push it to location.
+  // This runs whenever the layout changes in the embed and we're in mirror mode.
+  const prevLayoutKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isEmbed || !isMirroring) return;
+    const key = layout.isCustom ? JSON.stringify(layout.widgets) : layout.id;
+    if (prevLayoutKeyRef.current === null) { prevLayoutKeyRef.current = key; return; } // skip init
+    if (prevLayoutKeyRef.current === key) return;
+    prevLayoutKeyRef.current = key;
+    sendViewChange?.({ gridLayout: layout });
+  }, [isEmbed, isMirroring, layout, sendViewChange]);
 
   return null;
 }
