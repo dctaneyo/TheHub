@@ -949,7 +949,7 @@ export default function LoginPage() {
             }
             const isLastDigit =
               (step === "userId" && userId.length === maxLength - 1 && btn === userId[maxLength - 1]) ||
-              (step === "pin" && pin.length === maxLength);
+              (step === "pin" && pin.length === maxLength && btn === pin[maxLength - 1]);
             const showSpinner = (validating && step === "userId" && userId.length === maxLength) ||
               (loading && step === "pin" && pin.length === maxLength);
             return (
