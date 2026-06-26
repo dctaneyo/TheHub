@@ -223,11 +223,13 @@ html {
     0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* Onscreen keyboard slide-up (iOS-style). Keeps the -50% X-centering
- * throughout so the panel rises straight up without a horizontal shift. */
+/* Onscreen keyboard slide-up (iOS-style). Only animates the Y axis via
+ * `transform` so it composes with Tailwind's `-translate-x-1/2` (which in
+ * Tailwind v4 sets the standalone `translate` property for X-centering).
+ * Animating X here too would double up the offset and shove it off-screen. */
 @keyframes keyboard-slide-up {
-  from { transform: translate(-50%, 100%); }
-  to   { transform: translate(-50%, 0); }
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 .animate-keyboard-slide-up {
   animation: keyboard-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
