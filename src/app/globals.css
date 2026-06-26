@@ -222,3 +222,16 @@ html {
     0 1px 0 rgba(255, 255, 255, 0.06),
     0 4px 24px rgba(0, 0, 0, 0.35);
 }
+
+/* Onscreen keyboard slide-up (iOS-style). Keeps the -50% X-centering
+ * throughout so the panel rises straight up without a horizontal shift. */
+@keyframes keyboard-slide-up {
+  from { transform: translate(-50%, 100%); }
+  to   { transform: translate(-50%, 0); }
+}
+.animate-keyboard-slide-up {
+  animation: keyboard-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-keyboard-slide-up { animation: none; }
+}
