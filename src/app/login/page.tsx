@@ -947,25 +947,17 @@ export default function LoginPage() {
                 </motion.button>
               );
             }
-            const isLastDigit =
-              (step === "userId" && userId.length === maxLength - 1 && btn === userId[maxLength - 1]) ||
-              (step === "pin" && pin.length === maxLength && btn === pin[maxLength - 1]);
-            const showSpinner = (validating && step === "userId" && userId.length === maxLength) ||
-              (loading && step === "pin" && pin.length === maxLength);
+            const isLastDigit = step === "pin" && pin.length === maxLength && btn === pin[maxLength - 1];
             return (
               <motion.button
                 key={btn}
                 whileTap={{ scale: 0.92 }}
                 onClick={() => handleDigit(btn)}
                 disabled={loading || validating}
-                {...(isLastDigit && step === "pin" && { "data-login-button": true })}
+                {...(isLastDigit && { "data-login-button": true })}
                 className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-background text-xl font-semibold text-foreground transition-colors active:bg-muted disabled:opacity-50"
               >
-                {showSpinner && isLastDigit ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-[var(--hub-red)]" />
-                ) : (
-                  btn
-                )}
+                {btn}
               </motion.button>
             );
           })}
