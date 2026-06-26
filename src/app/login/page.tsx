@@ -767,68 +767,6 @@ export default function LoginPage() {
         style={{ position: 'absolute', left: -9999 }}
       />
 
-      {/* Top bar: session ID + connection + theme — hidden on mobile (shown inside card instead) */}
-      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
-        {pendingCode && (
-          <motion.button
-            onClick={handleSelfPing}
-            title="Tap to signal your ARL which session is yours"
-            animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
-            transition={{ duration: 0.3 }}
-            className={`flex h-8 items-center gap-2 rounded-full px-3 transition-colors cursor-pointer select-none ${
-              selfPinged
-                ? "bg-[var(--hub-red)] text-white"
-                : "bg-transparent active:bg-muted"
-            }`}
-          >
-            <Monitor className={`h-3.5 w-3.5 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
-            <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
-              {selfPinged ? "Signaled!" : "Session ID"}
-            </span>
-            <span className={`text-sm font-black tracking-widest ${selfPinged ? "text-white" : "text-foreground"}`}>{pendingCode}</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); generateSession(); }}
-              disabled={refreshing}
-              title="Refresh session"
-              className={`ml-1 flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                selfPinged ? "text-red-100 active:bg-red-600" : "text-muted-foreground active:text-foreground active:bg-muted"
-              }`}
-            >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
-          </motion.button>
-        )}
-        <div
-          onClick={handleConnectionTap}
-          className="flex items-center gap-1.5 px-1 select-none"
-        >
-          {isOnline ? (
-            <>
-              <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-xs font-medium text-emerald-600">Connected</span>
-            </>
-          ) : (
-            <>
-              <WifiOff className="h-3.5 w-3.5 text-[var(--hub-red)]" />
-              <span className="text-xs font-medium text-[var(--hub-red)]">Offline</span>
-            </>
-          )}
-        </div>
-        {themeMounted && (
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${theme}`}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
-          >
-            {theme === "dark"
-              ? <Moon className="h-4 w-4" />
-              : theme === "light"
-              ? <Sun className="h-4 w-4" />
-              : <Monitor className="h-4 w-4" />}
-          </button>
-        )}
-      </div>
-
       {/* Ping animation overlay */}
       <AnimatePresence>
         {pinged && (
@@ -885,65 +823,16 @@ export default function LoginPage() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
-        {/* Mobile-only: session ID + connection status inside card */}
-        <div className="flex sm:hidden w-full justify-between items-center mb-4">
-          <div
-            onClick={handleConnectionTap}
-            className="flex items-center gap-1.5 select-none"
-          >
-            {isOnline ? (
-              <>
-                <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[11px] font-medium text-emerald-600">Connected</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-3.5 w-3.5 text-[var(--hub-red)]" />
-                <span className="text-[11px] font-medium text-[var(--hub-red)]">Offline</span>
-              </>
-            )}
-          </div>
-          {pendingCode && (
-            <motion.button
-              onClick={handleSelfPing}
-              title="Tap to signal your ARL which session is yours"
-              animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
-              transition={{ duration: 0.3 }}
-              className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
-                selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-muted"
-              }`}
-            >
-              <Monitor className={`h-3 w-3 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
-              <span className={`text-[10px] font-medium ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
-                {selfPinged ? "Signaled!" : "Session"}
-              </span>
-              {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground">{pendingCode}</span>}
-              <button
-                onClick={(e) => { e.stopPropagation(); generateSession(); }}
-                disabled={refreshing}
-                title="Refresh session"
-                className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                  selfPinged ? "text-red-100" : "text-muted-foreground"
-                }`}
-              >
-                <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
-              </button>
-            </motion.button>
-          )}
-        </div>
-
         {/* Icon + Title — show tenant branding when resolved */}
         {resolvedTenant?.logoUrl ? (
           <motion.img
             src={resolvedTenant.logoUrl}
             alt={`${resolvedTenant.name} logo`}
             className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain"
-            whileHover={{ scale: 1.05 }}
           />
         ) : (
           <motion.div
             className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
-            whileHover={{ scale: 1.05 }}
           >
             <HubMark className="h-7 w-7 sm:h-9 sm:w-9" />
           </motion.div>
@@ -984,9 +873,6 @@ export default function LoginPage() {
                     <span className="text-[10px] text-muted-foreground">#{validatedUser.storeNumber}</span>
                   )}
                 </div>
-              )}
-              {step === "userId" && (
-                <p className="mt-1 text-xs text-muted-foreground">4-digit User ID</p>
               )}
             </motion.div>
           </AnimatePresence>
@@ -1096,6 +982,71 @@ export default function LoginPage() {
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               {validating ? "Checking User ID..." : "Signing in..."}
             </motion.div>
+          )}
+        </div>
+
+        {/* Footer status row: connection + session pairing (left, grouped — both
+            "what's going on" info) vs. theme (right, a setting — different
+            category, hence the larger gap from justify-between rather than
+            uniform spacing across all three). */}
+        <div className="mt-4 w-full flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              onClick={handleConnectionTap}
+              className="flex items-center gap-1 select-none shrink-0"
+            >
+              {isOnline ? (
+                <>
+                  <Wifi className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] font-medium text-emerald-600">Connected</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3 w-3 text-[var(--hub-red)]" />
+                  <span className="text-[10px] font-medium text-[var(--hub-red)]">Offline</span>
+                </>
+              )}
+            </div>
+            {pendingCode && (
+              <motion.button
+                onClick={handleSelfPing}
+                title="Tap to signal your ARL which session is yours"
+                animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
+                transition={{ duration: 0.3 }}
+                className={`flex items-center gap-1 rounded-2xl px-2 py-1 transition-colors min-w-0 ${
+                  selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-muted"
+                }`}
+              >
+                <Monitor className={`h-3 w-3 shrink-0 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
+                <span className={`text-[10px] font-medium truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
+                  {selfPinged ? "Signaled!" : "Session"}
+                </span>
+                {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
+                <button
+                  onClick={(e) => { e.stopPropagation(); generateSession(); }}
+                  disabled={refreshing}
+                  title="Refresh session"
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                    selfPinged ? "text-red-100" : "text-muted-foreground"
+                  }`}
+                >
+                  <RefreshCw className={`h-2.5 w-2.5 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+              </motion.button>
+            )}
+          </div>
+          {themeMounted && (
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${theme}`}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+            >
+              {theme === "dark"
+                ? <Moon className="h-3.5 w-3.5" />
+                : theme === "light"
+                ? <Sun className="h-3.5 w-3.5" />
+                : <Monitor className="h-3.5 w-3.5" />}
+            </button>
           )}
         </div>
 
