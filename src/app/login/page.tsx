@@ -8,6 +8,7 @@ import { Delete, Loader2, AlertCircle, Wifi, WifiOff, ChevronLeft, Store, Users,
 import { useTheme } from "next-themes";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
+import { HubMark } from "@/components/icons/hub-mark";
 
 type LoginStep = "userId" | "pin";
 
@@ -50,389 +51,6 @@ interface ResolvedTenant {
   appTitle: string | null;
 }
 
-/**
- * Animated mesh-gradient background — four large blurred blobs in the Hub's
- * brand palette (red/orange/yellow + neutral) that slowly drift in sinusoidal
- * paths. Pure CSS transforms via Framer Motion; no canvas, no particle counts.
- * Isolated component so it never re-renders with the rest of the login page.
- */
-function MeshGradient() {
-  const blobs = [
-    // [x%, y%, w, h, color, xAmp, yAmp, duration, delay]
-    { id: 0, x: 15,  y: 20,  w: 600, h: 600, color: "rgba(220,38,38,0.13)",   xA: 60,  yA: 80,  dur: 22, delay: 0   },
-    { id: 1, x: 70,  y: 10,  w: 500, h: 500, color: "rgba(249,115,22,0.11)",  xA: -80, yA: 60,  dur: 28, delay: 5   },
-    { id: 2, x: 55,  y: 65,  w: 650, h: 650, color: "rgba(234,179,8,0.09)",   xA: 70,  yA: -70, dur: 25, delay: 10  },
-    { id: 3, x: 5,   y: 60,  w: 450, h: 450, color: "rgba(148,163,184,0.07)", xA: -50, yA: -60, dur: 32, delay: 3   },
-  ];
-
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-      {blobs.map((b) => (
-        <motion.div
-          key={b.id}
-          style={{
-            position: "absolute",
-            left: `${b.x}%`,
-            top:  `${b.y}%`,
-            width:  b.w,
-            height: b.h,
-            borderRadius: "50%",
-            background: `radial-gradient(circle at center, ${b.color} 0%, transparent 70%)`,
-            filter: "blur(60px)",
-            transform: "translate(-50%, -50%)",
-          }}
-          animate={{
-            x: [0, b.xA, 0, -b.xA * 0.6, 0],
-            y: [0, b.yA * 0.5, b.yA, b.yA * 0.3, 0],
-          }}
-          transition={{
-            duration: b.dur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: b.delay,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/**
- * Dot-pulse grid background — a grid of small dots whose opacity/scale pulses
- * outward from the centre in a radial ripple wave, like a sonar ping. The dots
- * are fixed; only colour changes animate.
- */
-function DotPulseGrid() {
-  const COLS = 22;
-  const ROWS = 14;
-  const cx = COLS / 2 - 0.5;
-  const cy = ROWS / 2 - 0.5;
-  const maxDist = Math.sqrt(cx * cx + cy * cy);
-
-  // Build dot definitions once — deterministic, no randomness
-  const dots = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const dist = Math.sqrt((c - cx) ** 2 + (r - cy) ** 2);
-      // Stagger delay based on distance from center so the ripple radiates out
-      const delay = (dist / maxDist) * 2.4;
-      dots.push({ id: `${r}-${c}`, x: (c / (COLS - 1)) * 100, y: (r / (ROWS - 1)) * 100, delay });
-    }
-  }
-
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-      {dots.map((d) => (
-        <motion.div
-          key={d.id}
-          style={{
-            position: "absolute",
-            left:  `${d.x}%`,
-            top:   `${d.y}%`,
-            width:  4,
-            height: 4,
-            borderRadius: "50%",
-            backgroundColor: "var(--hub-red)",
-            transform: "translate(-50%, -50%)",
-          }}
-          animate={{
-            opacity: [0.07, 0.32, 0.07],
-            scale:   [0.8,  1.6,  0.8],
-          }}
-          transition={{
-            duration: 3.2,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: d.delay,
-            repeatDelay: 1.2,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/**
- * Concentric rings background — a set of rings centred on the screen that
- * continuously expand and fade outward, like a sonar ping / WiFi signal.
- */
-function ConcentricRings() {
-  const rings = [0, 1, 2, 3, 4];
-
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden flex items-center justify-center" aria-hidden>
-      {rings.map((i) => (
-        <motion.div
-          key={i}
-          style={{
-            position: "absolute",
-            borderRadius: "50%",
-            border: "1.5px solid var(--hub-red)",
-          }}
-          initial={{ width: 80, height: 80, opacity: 0 }}
-          animate={{
-            width:   [80, 900],
-            height:  [80, 900],
-            opacity: [0.28, 0],
-          }}
-          transition={{
-            duration: 4.5,
-            repeat: Infinity,
-            ease: "easeOut",
-            delay: i * 0.9,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/**
- * Auto-ripple dot grid — a calm grid of small dots where ripples spawn
- * automatically from random grid points on a timer. Each ripple expands
- * outward as a circular wavefront; dots along the front scale up and
- * brighten as the ring passes through them, then settle back to rest.
- * Multiple ripples coexist, creating an ambient "raindrops on still water"
- * feel. Implemented on a single canvas with requestAnimationFrame.
- */
-function RippleGrid() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    let raf: number;
-    let stopped = false;
-
-    // ── Config ──────────────────────────────────────────────────────────────
-    const SPACING   = 38;   // px between dots
-    const DOT_BASE  = 1.8;  // resting dot radius (px)
-    const DOT_PEAK  = 5.5;  // max radius at ripple crest
-    const RIPPLE_SPEED   = 90;  // px/s — how fast the ring expands
-    const RIPPLE_WIDTH   = 55;  // px — thickness of the bright band
-    const RIPPLE_OPACITY = 0.45; // peak opacity at the crest
-    const BASE_OPACITY   = 0.08; // resting dot opacity
-    const SPAWN_INTERVAL = 2800; // ms between automatic ripple spawns
-    const MAX_RIPPLES    = 2;    // never more than 2 live at once
-
-    // ── Ripple state ─────────────────────────────────────────────────────────
-    interface Ripple { x: number; y: number; radius: number; born: number }
-    const ripples: Ripple[] = [];
-
-    // Resolve foreground colour from CSS variable — adapts to light/dark theme
-    const getFgColor = (): [number, number, number] => {
-      const raw = getComputedStyle(document.documentElement)
-        .getPropertyValue("--foreground").trim() || "#1e293b";
-      if (raw.startsWith("rgb")) {
-        const m = raw.match(/\d+/g);
-        if (m) return [+m[0], +m[1], +m[2]];
-      }
-      let hex = raw.replace("#", "");
-      if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
-      return [
-        parseInt(hex.slice(0,2), 16),
-        parseInt(hex.slice(2,4), 16),
-        parseInt(hex.slice(4,6), 16),
-      ];
-    };
-
-    // ── Spawn helper — picks a random grid cell ───────────────────────────────
-    const spawnRipple = (now: number) => {
-      const W = canvas.width;
-      const H = canvas.height;
-      const cols = Math.floor(W / SPACING) + 1;
-      const rows = Math.floor(H / SPACING) + 1;
-      const c = Math.floor(Math.random() * cols);
-      const r = Math.floor(Math.random() * rows);
-      const xOff = (W - (cols - 1) * SPACING) / 2;
-      const yOff = (H - (rows - 1) * SPACING) / 2;
-      ripples.push({ x: xOff + c * SPACING, y: yOff + r * SPACING, radius: 0, born: now });
-    };
-
-    // ── Draw loop ─────────────────────────────────────────────────────────────
-    let lastSpawn = 0;
-    const draw = (now: number) => {
-      if (stopped) return;
-      const W = canvas.width;
-      const H = canvas.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      // Spawn new ripples on schedule, respecting the max-2 cap
-      if (now - lastSpawn > SPAWN_INTERVAL && ripples.length < MAX_RIPPLES) {
-        spawnRipple(now);
-        lastSpawn = now;
-      }
-
-      // Advance ripple radii; prune dead ones
-      const maxR = Math.sqrt(W * W + H * H) / 2 + RIPPLE_WIDTH;
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const elapsed = (now - ripples[i].born) / 1000;
-        ripples[i].radius = elapsed * RIPPLE_SPEED;
-        if (ripples[i].radius - RIPPLE_WIDTH > maxR) ripples.splice(i, 1);
-      }
-
-      ctx.clearRect(0, 0, W, H);
-
-      const [rr, gg, bb] = getFgColor();
-      const cols = Math.floor(W / SPACING) + 1;
-      const rows = Math.floor(H / SPACING) + 1;
-      const xOff = (W - (cols - 1) * SPACING) / 2;
-      const yOff = (H - (rows - 1) * SPACING) / 2;
-
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const x = xOff + col * SPACING;
-          const y = yOff + row * SPACING;
-
-          // Sum influence of all live ripples on this dot
-          let influence = 0;
-          for (const rp of ripples) {
-            const dist = Math.sqrt((x - rp.x) ** 2 + (y - rp.y) ** 2);
-            const delta = dist - rp.radius; // negative = inside ring, positive = outside
-            // Bell curve centred on the wavefront
-            if (Math.abs(delta) < RIPPLE_WIDTH) {
-              const t = 1 - Math.abs(delta) / RIPPLE_WIDTH;
-              influence = Math.max(influence, t * t * (3 - 2 * t)); // smoothstep
-            }
-          }
-
-          const opacity = BASE_OPACITY + influence * (RIPPLE_OPACITY - BASE_OPACITY);
-          const radius  = DOT_BASE   + influence * (DOT_PEAK - DOT_BASE);
-
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${rr},${gg},${bb},${opacity.toFixed(3)})`;
-          ctx.fill();
-        }
-      }
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    // ── Resize ────────────────────────────────────────────────────────────────
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    // Seed the first ripple immediately so the screen isn't blank
-    spawnRipple(performance.now());
-    raf = requestAnimationFrame(draw);
-
-    return () => {
-      stopped = true;
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0"
-      aria-hidden
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
-}
-
-type LoginBg = "ripple" | "mesh" | "dots" | "rings" | "none";
-
-const BG_OPTIONS: { value: LoginBg; label: string }[] = [
-  { value: "ripple", label: "Ripple" },
-  { value: "mesh",   label: "Mesh"   },
-  { value: "dots",   label: "Dots"   },
-  { value: "rings",  label: "Rings"  },
-  { value: "none",   label: "None"   },
-];
-
-const BG_STORAGE_KEY = "hub-login-bg";
-
-function useBgPreference(): [LoginBg, (v: LoginBg) => void] {
-  const [bg, setBgState] = useState<LoginBg>("ripple");
-
-  useEffect(() => {
-    const stored = localStorage.getItem(BG_STORAGE_KEY);
-    // "wave" was the previous key name — migrate to "ripple"
-    const mapped = stored === "wave" ? "ripple" : stored as LoginBg | null;
-    if (mapped && BG_OPTIONS.some((o) => o.value === mapped)) setBgState(mapped as LoginBg);
-  }, []);
-
-  const setBg = useCallback((v: LoginBg) => {
-    setBgState(v);
-    localStorage.setItem(BG_STORAGE_KEY, v);
-  }, []);
-
-  return [bg, setBg];
-}
-
-function ActiveBackground({ bg }: { bg: LoginBg }) {
-  if (bg === "ripple") return <RippleGrid />;
-  if (bg === "mesh")   return <MeshGradient />;
-  if (bg === "dots")   return <DotPulseGrid />;
-  if (bg === "rings")  return <ConcentricRings />;
-  return null;
-}
-
-function BgPicker({ bg, setBg }: { bg: LoginBg; setBg: (v: LoginBg) => void }) {
-  const [open, setOpen] = useState(false);
-  const current = BG_OPTIONS.find((o) => o.value === bg)!;
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        title="Change background"
-        className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
-      >
-        {/* Small animated preview dot */}
-        <motion.span
-          className="h-2 w-2 rounded-full bg-[var(--hub-red)]"
-          animate={bg !== "none" ? { opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] } : { opacity: 0.3, scale: 1 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <span className="text-[10px] font-medium text-muted-foreground">{current.label}</span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Click-outside dismiss */}
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -6, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full z-50 mt-1.5 flex flex-col gap-0.5 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md min-w-[110px]"
-            >
-              {BG_OPTIONS.map((o) => (
-                <button
-                  key={o.value}
-                  onClick={() => { setBg(o.value); setOpen(false); }}
-                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors ${
-                    o.value === bg
-                      ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {o.value === bg && <span className="h-1.5 w-1.5 rounded-full bg-[var(--hub-red)]" />}
-                  {o.value !== bg && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />}
-                  {o.label}
-                </button>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export default function LoginPage() {
   const { login } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -443,8 +61,6 @@ export default function LoginPage() {
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
   }, [theme, setTheme]);
-
-  const [bg, setBg] = useBgPreference();
 
   const [step, setStep] = useState<LoginStep>("userId");
   const [userId, setUserId] = useState("");
@@ -1014,24 +630,18 @@ export default function LoginPage() {
     return (
       <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center relative ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
         {themeMounted && (
-          <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
-            <BgPicker bg={bg} setBg={setBg} />
-            <button
-              onClick={cycleTheme}
-              title={`Theme: ${theme}`}
-              className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
-            >
-              {theme === "dark"
-                ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
-                : theme === "light"
-                ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-                : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
-              <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
-            </button>
-          </div>
+          <button
+            onClick={cycleTheme}
+            title={`Theme: ${theme}`}
+            className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+          >
+            {theme === "dark"
+              ? <Moon className="h-4 w-4" />
+              : theme === "light"
+              ? <Sun className="h-4 w-4" />
+              : <Monitor className="h-4 w-4" />}
+          </button>
         )}
-        {/* Active background */}
-        <ActiveBackground bg={bg} />
 
         {/* Spacer to push content above keyboard on mobile */}
         {showOrgKeyboard && <div className="flex-1 min-h-4 sm:hidden" />}
@@ -1040,16 +650,16 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+          className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
         >
-          <span className="text-2xl sm:text-3xl font-black text-white">H</span>
+          <HubMark className="h-7 w-7 sm:h-8 sm:w-8" />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-sm rounded-3xl bg-card/90 backdrop-blur-md shadow-2xl shadow-red-100/30 border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
+          className="w-full max-w-sm rounded-3xl bg-card border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Welcome to The Hub</h1>
 
@@ -1075,14 +685,14 @@ export default function LoginPage() {
                   }
                 }}
                 style={{ textTransform: "uppercase" }}
-                className="w-full max-w-[240px] rounded-xl border border-border bg-background px-4 py-3 text-center text-lg font-bold tracking-widest text-foreground outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
+                className="w-full max-w-[240px] rounded-2xl border border-border bg-background px-4 py-3 text-center text-lg font-bold tracking-widest text-foreground outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
                   showOrgKeyboard
-                    ? "bg-[var(--hub-red)] text-white shadow-md"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    ? "bg-[var(--hub-red)] text-white"
+                    : "bg-muted text-muted-foreground active:bg-muted/80 active:text-foreground"
                 }`}
                 title={showOrgKeyboard ? "Hide virtual keyboard" : "Show virtual keyboard"}
               >
@@ -1099,7 +709,7 @@ export default function LoginPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="mt-3 flex w-full items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600"
+                  className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span>{orgError}</span>
@@ -1144,8 +754,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4">
-      {/* Active background */}
-      <ActiveBackground bg={bg} />
       {/* Hidden input for keyboard support */}
       <input
         ref={keyboardInputRef}
@@ -1160,17 +768,17 @@ export default function LoginPage() {
       />
 
       {/* Top bar: session ID + connection + theme — hidden on mobile (shown inside card instead) */}
-      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-2">
+      <div className="absolute right-4 top-4 hidden sm:flex items-center gap-3">
         {pendingCode && (
           <motion.button
             onClick={handleSelfPing}
             title="Tap to signal your ARL which session is yours"
             animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
             transition={{ duration: 0.3 }}
-            className={`flex h-9 items-center gap-2 rounded-full px-4 shadow-sm backdrop-blur-sm transition-colors cursor-pointer select-none ${
+            className={`flex h-8 items-center gap-2 rounded-full px-3 transition-colors cursor-pointer select-none ${
               selfPinged
                 ? "bg-[var(--hub-red)] text-white"
-                : "bg-card/80 hover:bg-card"
+                : "bg-transparent active:bg-muted"
             }`}
           >
             <Monitor className={`h-3.5 w-3.5 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
@@ -1183,7 +791,7 @@ export default function LoginPage() {
               disabled={refreshing}
               title="Refresh session"
               className={`ml-1 flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                selfPinged ? "text-red-100 hover:bg-red-600" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                selfPinged ? "text-red-100 active:bg-red-600" : "text-muted-foreground active:text-foreground active:bg-muted"
               }`}
             >
               <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
@@ -1192,36 +800,32 @@ export default function LoginPage() {
         )}
         <div
           onClick={handleConnectionTap}
-          className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-4 shadow-sm backdrop-blur-sm select-none"
+          className="flex items-center gap-1.5 px-1 select-none"
         >
           {isOnline ? (
             <>
-              <Wifi className="h-4 w-4 text-emerald-500" />
+              <Wifi className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-xs font-medium text-emerald-600">Connected</span>
             </>
           ) : (
             <>
-              <WifiOff className="h-4 w-4 text-[var(--hub-red)]" />
+              <WifiOff className="h-3.5 w-3.5 text-[var(--hub-red)]" />
               <span className="text-xs font-medium text-[var(--hub-red)]">Offline</span>
             </>
           )}
         </div>
         {themeMounted && (
-          <>
-            <button
-              onClick={cycleTheme}
-              title={`Theme: ${theme}`}
-              className="flex h-9 items-center gap-2 rounded-full bg-card/80 px-3 shadow-sm backdrop-blur-sm transition-colors hover:bg-card select-none"
-            >
-              {theme === "dark"
-                ? <Moon className="h-3.5 w-3.5 text-muted-foreground" />
-                : theme === "light"
-                ? <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-                : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
-              <span className="text-[10px] font-medium capitalize text-muted-foreground">{theme}</span>
-            </button>
-            <BgPicker bg={bg} setBg={setBg} />
-          </>
+          <button
+            onClick={cycleTheme}
+            title={`Theme: ${theme}`}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+          >
+            {theme === "dark"
+              ? <Moon className="h-4 w-4" />
+              : theme === "light"
+              ? <Sun className="h-4 w-4" />
+              : <Monitor className="h-4 w-4" />}
+          </button>
         )}
       </div>
 
@@ -1234,31 +838,22 @@ export default function LoginPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full border-4 border-[var(--hub-red)]"
-                initial={{ width: 80, height: 80, opacity: 0.8 }}
-                animate={{ width: 500, height: 500, opacity: 0 }}
-                transition={{ duration: 1.2, delay: i * 0.3, ease: "easeOut" }}
-              />
-            ))}
             <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: [0, 1.3, 1], rotate: [-20, 10, 0] }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="relative flex flex-col items-center gap-3"
             >
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--hub-red)] shadow-2xl shadow-red-300">
-                <span className="text-4xl">👋</span>
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--hub-red)]">
+                <CheckCircle2 className="h-9 w-9 text-white" />
               </div>
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-2xl bg-card px-6 py-3 shadow-xl text-center"
+                transition={{ delay: 0.15 }}
+                className="rounded-2xl bg-card border border-border px-6 py-3 shadow-sm text-center"
               >
-                <p className="text-lg font-black text-foreground">Hey, that&apos;s you!</p>
+                <p className="text-base font-semibold text-foreground">That&apos;s you</p>
                 <p className="text-sm text-muted-foreground">Your ARL is confirming your session</p>
               </motion.div>
             </motion.div>
@@ -1288,7 +883,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-sm my-auto rounded-3xl bg-card/90 backdrop-blur-md shadow-2xl shadow-red-100/30 border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
+        className="w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
         {/* Mobile-only: session ID + connection status inside card */}
         <div className="flex sm:hidden w-full justify-between items-center mb-4">
@@ -1328,7 +923,7 @@ export default function LoginPage() {
                 disabled={refreshing}
                 title="Refresh session"
                 className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                  selfPinged ? "text-red-100" : "text-muted-foreground hover:text-foreground"
+                  selfPinged ? "text-red-100" : "text-muted-foreground"
                 }`}
               >
                 <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
@@ -1342,15 +937,15 @@ export default function LoginPage() {
           <motion.img
             src={resolvedTenant.logoUrl}
             alt={`${resolvedTenant.name} logo`}
-            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain shadow-lg shadow-red-200"
+            className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain"
             whileHover={{ scale: 1.05 }}
           />
         ) : (
           <motion.div
-            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] shadow-lg shadow-red-200"
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
             whileHover={{ scale: 1.05 }}
           >
-            <span className="text-xl sm:text-2xl font-black text-white">H</span>
+            <HubMark className="h-7 w-7 sm:h-9 sm:w-9" />
           </motion.div>
         )}
         {resolvedTenant ? (
@@ -1414,7 +1009,7 @@ export default function LoginPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="flex w-full items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600"
+                  className="flex w-full items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span>{error}</span>
@@ -1435,7 +1030,7 @@ export default function LoginPage() {
                     whileTap={{ scale: 0.92 }}
                     onClick={handleClearOrBack}
                     disabled={loading || validating}
-                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 active:bg-muted disabled:opacity-50"
+                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </motion.button>
@@ -1447,7 +1042,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleClearOrBack}
                   disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card/60 text-sm font-semibold text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-card active:bg-muted disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-sm font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
                 >
                   Clear
                 </motion.button>
@@ -1460,7 +1055,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={handleDelete}
                   disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card/60 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-card active:bg-muted disabled:opacity-50"
+                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
                 >
                   <Delete className="h-5 w-5" />
                 </motion.button>
@@ -1478,7 +1073,7 @@ export default function LoginPage() {
                 onClick={() => handleDigit(btn)}
                 disabled={loading || validating}
                 {...(isLastDigit && step === "pin" && { "data-login-button": true })}
-                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-card text-xl font-semibold text-foreground shadow-sm transition-colors hover:bg-accent active:bg-muted disabled:opacity-50"
+                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-background text-xl font-semibold text-foreground transition-colors active:bg-muted disabled:opacity-50"
               >
                 {showSpinner && isLastDigit ? (
                   <Loader2 className="h-5 w-5 animate-spin text-[var(--hub-red)]" />
@@ -1520,7 +1115,7 @@ export default function LoginPage() {
               setPin("");
               setError("");
             }}
-            className="mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="mt-4 text-xs text-muted-foreground active:text-foreground transition-colors"
           >
             Not {resolvedTenant.name}?{" "}
             <span className="underline">Change organization</span>
@@ -1547,7 +1142,7 @@ export default function LoginPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
               transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              className="w-full max-w-[280px] rounded-3xl bg-card px-6 py-8 shadow-2xl border border-border"
+              className="w-full max-w-[280px] rounded-3xl bg-card px-6 py-8 shadow-lg border border-border"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1600,7 +1195,7 @@ export default function LoginPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-1.5 text-xs text-red-600"
+                            className="flex items-center gap-2 rounded-2xl bg-red-50 px-3 py-1.5 text-xs text-red-600"
                           >
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             <span>{bypassError}</span>
@@ -1620,7 +1215,7 @@ export default function LoginPage() {
                               whileTap={{ scale: 0.92 }}
                               onClick={closeBypassDialog}
                               disabled={bypassLoading}
-                              className="flex h-12 items-center justify-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 disabled:opacity-50"
+                              className="flex h-12 items-center justify-center rounded-2xl border border-border bg-background text-xs font-semibold text-muted-foreground transition-colors active:bg-muted/80 disabled:opacity-50"
                             >
                               Cancel
                             </motion.button>
@@ -1634,7 +1229,7 @@ export default function LoginPage() {
                               whileTap={{ scale: 0.92 }}
                               onClick={handleBypassDelete}
                               disabled={bypassLoading}
-                              className="flex h-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 disabled:opacity-50"
+                              className="flex h-12 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted/80 disabled:opacity-50"
                             >
                               <Delete className="h-4 w-4" />
                             </motion.button>
@@ -1648,7 +1243,7 @@ export default function LoginPage() {
                             whileTap={{ scale: 0.92 }}
                             onClick={() => handleBypassDigit(btn)}
                             disabled={bypassLoading || bypassCode.length >= 4}
-                            className="flex h-12 items-center justify-center rounded-2xl border border-border bg-card text-lg font-semibold text-foreground shadow-sm transition-colors hover:bg-accent active:bg-muted disabled:opacity-50"
+                            className="flex h-12 items-center justify-center rounded-2xl bg-background text-lg font-semibold text-foreground transition-colors active:bg-muted disabled:opacity-50"
                           >
                             {isSubmitting && bypassCode[bypassCode.length - 1] === btn ? (
                               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />

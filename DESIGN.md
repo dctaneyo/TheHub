@@ -69,9 +69,21 @@ non-negotiable.
 ## 3. Spacing & Shape
 
 Spacing follows one base unit and its multiples — no arbitrary one-off
-values. Radius and shadow/elevation logic is applied by role (how
-"close" something sits, what it's separating), not copy-pasted as one
-global value onto everything regardless of purpose.
+values.
+
+Radius: this product's house style is a **heavy, near-uniform radius**
+— large, soft corners across cards, containers, and controls, rather
+than a tightly differentiated scale per role. This is a deliberate,
+stated choice (per Section 0), not the default-because-nobody-decided
+version of heavy rounding the Do Not Use list warns about — the
+difference is that here every surface uses the *same* considered
+radius on purpose, consistently, as a named part of the visual
+identity. True circles (dots, avatars, status indicators, pill-shaped
+chips) remain `rounded-full` as before. Shadow/elevation is otherwise
+minimal-to-flat — prefer fill-color contrast between surfaces over
+shadow to establish separation (see Section 8 for how this extends to
+dark mode); reserve shadow for true overlays (modals, dropdowns) where
+something needs to read as floating above the page.
 
 ---
 
@@ -104,12 +116,28 @@ spacing.
 
 ## 6. Affordances & Signifiers
 
-Every interactive element looks different at rest vs. hover vs. active
-vs. disabled — a real state change, not a 5% opacity shift. Elements
-that act as a connected set (tabs, segmented controls, toggle pairs)
-are visually contained as one unit, not floating as separate pieces
-that happen to be near each other. Disabled state is unmistakable at a
+This product is used on kiosk touchscreens — there is no mouse, no
+cursor, no pointer that can ever be "over" an element without also
+pressing it. **Hover is not part of this product's input model and
+should not be designed as a feedback state.** Beyond just being
+invisible to real users, `:hover` on touch devices is actively buggy:
+many mobile/tablet browsers fire it on tap and then leave it "stuck"
+until something else is tapped, so a hover-styled button can look
+permanently active/highlighted for no reason. Design every interactive
+element's feedback around rest → active/press → disabled instead — that
+sequence is fully meaningful on a touchscreen, and hover isn't.
+
+Every interactive element looks different at rest vs. active/press vs.
+disabled — a real state change, not a 5% opacity shift. Elements that
+act as a connected set (tabs, segmented controls, toggle pairs) are
+visually contained as one unit, not floating as separate pieces that
+happen to be near each other. Disabled state is unmistakable at a
 glance.
+
+**Check:** any `hover:` class that is the *only* place a piece of
+feedback is defined (no corresponding active/press treatment) is a
+violation — that feedback is invisible on this product's actual
+hardware.
 
 ---
 
@@ -145,15 +173,36 @@ wasn't designed as its own pass.
 
 ## 9. Motion
 
-Every interactive element with a hover/press state has a transition
-defined — instant, untransitioned state changes are a tell. A single
-standard duration/easing should govern ordinary feedback (a reasonable
-default until something more specific is decided: ~150-200ms,
-ease-out); motion exists to communicate something, not to decorate.
+Every interactive element with a press state has a transition defined —
+instant, untransitioned state changes are a tell. (Not hover — see
+Section 6; this is a touchscreen product.) A single standard
+duration/easing should govern ordinary feedback (a reasonable default
+until something more specific is decided: ~150-200ms, ease-out); motion
+exists to communicate something, not to decorate.
 
 ---
 
-## 10. Do Not Use
+## 10. Selection & Status Patterns
+
+Two small, reusable atomic patterns — apply wherever a list needs them,
+independent of any single screen's broader style:
+
+- **Selected state = solid inverted fill**, not a border, checkmark, or
+  tint. When one item in a list/group is the active/selected one, give
+  it a full solid fill (the page's high-contrast neutral, inverted —
+  e.g. a light row turning solid dark with light text) rather than
+  outlining it or bolting on a separate indicator icon. Reserve this
+  for genuine single-selection state, not for hover (this product has
+  none, see Section 6) or static emphasis.
+- **Status = a small colored dot + plain-weight label**, not a heavy
+  colored badge or colored block of text. The dot's color carries the
+  semantic signal; the label stays normal weight. Group in a light pill
+  only if the surrounding layout needs the grouping — the dot+label is
+  the unit, not the pill.
+
+---
+
+## 11. Do Not Use
 
 The canonical list. These are named because they're the empirically
 most-flagged "this looks AI-made" patterns (sourced from large-scale
@@ -181,9 +230,12 @@ it's inconvenient in the moment.
 - **The centered-hero-then-three-feature-card grid skeleton**
   (`grid-cols-1 md:grid-cols-3` directly under a centered hero) — the
   single most recognizable layout tell.
-- **Large rounded corners/pill shapes applied broadly**
-  (`rounded-2xl`/`rounded-3xl`/`rounded-full`) on anything that isn't a
-  small status dot, avatar, or icon.
+- **Large rounding used inconsistently** — some surfaces heavily
+  rounded, others sharp or lightly rounded, with no stated logic tying
+  the choice together. (This product's house style, per Section 3, IS
+  heavy/near-uniform rounding — the tell is *inconsistency without a
+  stated reason*, not heavy rounding itself once it's been deliberately
+  adopted everywhere.)
 - **Unprompted neon glow** — colored `box-shadow`/`text-shadow` blur on
   dark-mode headings or buttons that wasn't a deliberate design call.
 - **Emoji used as functional icons** or section bullets, instead of a
@@ -199,6 +251,10 @@ it's inconvenient in the moment.
   structurally (a fixed header that needs to stay legible over
   scrolling content is structural; blur for its own sake is not).
 - **Redundant icon+label pairs** where the icon adds no information.
+- **Hover-only feedback** — any interactive treatment defined only on
+  `:hover` with no active/press equivalent. This product runs on
+  touchscreen kiosks with no pointer; hover-only feedback is invisible
+  in practice and risks the "stuck hover" bug on touch browsers.
 
 ### Non-Tells — do not flag these as slop
 
@@ -229,7 +285,7 @@ triage, not ground truth to blindly fix.
 ## Testing Protocol
 
 Validate against one isolated component first — e.g. a single button in
-its rest/hover/active/disabled states — before generating a full
+its rest/active-press/disabled states — before generating a full
 screen. Catching a wrong choice on one component is cheap; catching it
 after it's been copied across twenty is not.
 
@@ -252,9 +308,20 @@ after it's been copied across twenty is not.
 - Don't treat dark mode as light mode with colors flipped.
 - Don't let two elements on the same screen both claim to be "the
   primary action."
+- Don't design feedback that only exists on `:hover` — this is a
+  touchscreen kiosk product with no pointer device. Use active/press
+  states instead (Section 6).
 
 ---
 
 ## Changelog
 
 - `[DATE]` — initial principles-based structure drafted.
+- 2026-06-26 — added touchscreen-kiosk input model: no hover states,
+  feedback must use active/press instead (Section 6, Section 9, Do Not
+  Use, Behavior Rules, Testing Protocol).
+- 2026-06-26 — adopted heavy, near-uniform corner radius as a
+  deliberate house style (flat-design direction); revised Section 3 and
+  the rounding entry in Do Not Use to distinguish "heavy rounding,
+  stated and applied consistently" from "heavy rounding, unconsidered
+  and inconsistent."
