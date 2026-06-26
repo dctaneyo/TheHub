@@ -10,6 +10,7 @@
     "build": "node -e \"require('fs').writeFileSync('build-id.txt', process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now()))\" && next build && node scripts/build-server.js",
     "start": "NODE_ENV=production node scripts/migrate.js && NODE_ENV=production node dist/startup.js && NODE_ENV=production node dist/server.js",
     "lint": "eslint",
+    "design:scan": "python3 scripts/devibe-scan.py src --severity medium",
     "db:seed": "npx tsx src/lib/db/seed.ts",
     "db:push": "npx drizzle-kit push",
     "db:backup": "npx tsx scripts/backup-database.ts backup",
