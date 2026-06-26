@@ -821,7 +821,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
+        className="relative w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
         {/* Icon + Title — show tenant branding when resolved */}
         {resolvedTenant?.logoUrl ? (
@@ -985,70 +985,74 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Footer status row: connection + session pairing (left, grouped — both
-            "what's going on" info) vs. theme (right, a setting — different
-            category, hence the larger gap from justify-between rather than
-            uniform spacing across all three). */}
-        <div className="mt-4 w-full flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div
-              onClick={handleConnectionTap}
-              className="flex items-center gap-1 select-none shrink-0"
-            >
-              {isOnline ? (
-                <>
-                  <Wifi className="h-3 w-3 text-emerald-500" />
-                  <span className="text-[10px] font-medium text-emerald-600">Connected</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3 text-[var(--hub-red)]" />
-                  <span className="text-[10px] font-medium text-[var(--hub-red)]">Offline</span>
-                </>
-              )}
-            </div>
-            {pendingCode && (
-              <motion.button
-                onClick={handleSelfPing}
-                title="Tap to signal your ARL which session is yours"
-                animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
-                transition={{ duration: 0.3 }}
-                className={`flex items-center gap-1 rounded-2xl px-2 py-1 transition-colors min-w-0 ${
-                  selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-muted"
-                }`}
-              >
-                <Monitor className={`h-3 w-3 shrink-0 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
-                <span className={`text-[10px] font-medium truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
-                  {selfPinged ? "Signaled!" : "Session"}
-                </span>
-                {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
-                <button
-                  onClick={(e) => { e.stopPropagation(); generateSession(); }}
-                  disabled={refreshing}
-                  title="Refresh session"
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
-                    selfPinged ? "text-red-100" : "text-muted-foreground"
-                  }`}
-                >
-                  <RefreshCw className={`h-2.5 w-2.5 ${refreshing ? "animate-spin" : ""}`} />
-                </button>
-              </motion.button>
+        {/* Footer status row: connection + session pairing — both are
+            specific to this login attempt, right now, so they're one real
+            group, centered together. Theme is a global, persistent
+            preference unrelated to this particular login flow — it lives
+            in the card's top-right corner instead (see below), matching
+            the standard convention for app-level settings. */}
+        <div className="mt-4 w-full flex items-center justify-center gap-3">
+          <div
+            onClick={handleConnectionTap}
+            className="flex items-center gap-1 select-none shrink-0"
+          >
+            {isOnline ? (
+              <>
+                <Wifi className="h-3 w-3 text-emerald-500" />
+                <span className="text-[10px] font-medium text-emerald-600">Connected</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3 text-[var(--hub-red)]" />
+                <span className="text-[10px] font-medium text-[var(--hub-red)]">Offline</span>
+              </>
             )}
           </div>
-          {themeMounted && (
-            <button
-              onClick={cycleTheme}
-              title={`Theme: ${theme}`}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+          {pendingCode && (
+            <motion.button
+              onClick={handleSelfPing}
+              title="Tap to signal your ARL which session is yours"
+              animate={selfPinged ? { scale: [1, 1.06, 1] } : {}}
+              transition={{ duration: 0.3 }}
+              className={`flex items-center gap-1 rounded-2xl px-2 py-1 transition-colors min-w-0 ${
+                selfPinged ? "bg-[var(--hub-red)]" : "bg-transparent active:bg-muted"
+              }`}
             >
-              {theme === "dark"
-                ? <Moon className="h-3.5 w-3.5" />
-                : theme === "light"
-                ? <Sun className="h-3.5 w-3.5" />
-                : <Monitor className="h-3.5 w-3.5" />}
-            </button>
+              <Monitor className={`h-3 w-3 shrink-0 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
+              <span className={`text-[10px] font-medium truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
+                {selfPinged ? "Signaled!" : "Session"}
+              </span>
+              {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
+              <button
+                onClick={(e) => { e.stopPropagation(); generateSession(); }}
+                disabled={refreshing}
+                title="Refresh session"
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                  selfPinged ? "text-red-100" : "text-muted-foreground"
+                }`}
+              >
+                <RefreshCw className={`h-2.5 w-2.5 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+            </motion.button>
           )}
         </div>
+
+        {/* Theme toggle — anchored to the card's top-right corner, not the
+            screen's, so it stays in one consistent position across
+            breakpoints without separate desktop/mobile code. */}
+        {themeMounted && (
+          <button
+            onClick={cycleTheme}
+            title={`Theme: ${theme}`}
+            className="absolute right-4 top-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+          >
+            {theme === "dark"
+              ? <Moon className="h-3.5 w-3.5" />
+              : theme === "light"
+              ? <Sun className="h-3.5 w-3.5" />
+              : <Monitor className="h-3.5 w-3.5" />}
+          </button>
+        )}
 
         {/* Change Organization link — hidden when the org is fixed by the subdomain */}
         {resolvedTenant && !lockedToSubdomain && (
