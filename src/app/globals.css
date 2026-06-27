@@ -105,6 +105,8 @@ html {
   --hub-amber-light: #fffbeb;
   --hub-purple: #8b5cf6;
   --hub-purple-light: #f5f3ff;
+  --hub-teal: #0d9488;
+  --hub-teal-light: #f0fdfa;
 }
 
 .dark {
@@ -150,6 +152,8 @@ html {
   --hub-amber-light: #422006;
   --hub-purple: #a78bfa;
   --hub-purple-light: #2e1065;
+  --hub-teal: #2dd4bf;
+  --hub-teal-light: #042f2e;
 }
 
 @layer base {

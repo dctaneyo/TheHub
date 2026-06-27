@@ -99,12 +99,12 @@ export function MirrorToolbar() {
             transition={{ duration: 0.2 }}
             className={cn(
               "flex items-center gap-2 rounded-full border px-3 py-2 backdrop-blur-xl shadow-lg",
-              "bg-indigo-600/90 border-indigo-400/50 dark:bg-indigo-900/90 dark:border-indigo-600/50"
+              "bg-[var(--hub-teal)]/90 border-[var(--hub-teal)]/50"
             )}
           >
             {/* Pulsing glow ring */}
             <div className="absolute inset-0 rounded-full animate-pulse" style={{
-              boxShadow: "0 0 12px 3px rgba(99,102,241,0.5), 0 0 24px 6px rgba(99,102,241,0.2)",
+              boxShadow: "0 0 12px 3px rgba(13,148,136,0.5), 0 0 24px 6px rgba(13,148,136,0.2)",
             }} />
 
             <div className="relative flex items-center gap-2">
@@ -133,7 +133,7 @@ export function MirrorToolbar() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-3 rounded-2xl border border-indigo-300 dark:border-indigo-800 bg-card/95 backdrop-blur-xl shadow-2xl px-4 py-2"
+            className="flex items-center gap-3 rounded-2xl border border-[var(--hub-teal)]/30 bg-card/95 backdrop-blur-xl shadow-2xl px-4 py-2"
           >
             {/* Status indicator */}
             <div className="flex items-center gap-2">
@@ -141,12 +141,12 @@ export function MirrorToolbar() {
                 "flex h-8 w-8 items-center justify-center rounded-xl",
                 connectionStatus === "reconnecting"
                   ? "bg-amber-100 dark:bg-amber-950"
-                  : "bg-indigo-100 dark:bg-indigo-950"
+                  : "bg-[var(--hub-teal-light)]"
               )}>
                 {connectionStatus === "reconnecting" ? (
                   <WifiOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 ) : (
-                  <Monitor className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <Monitor className="h-4 w-4 text-[var(--hub-teal)]" />
                 )}
               </div>
               <div>
@@ -204,7 +204,7 @@ export function MirrorToolbar() {
               className={cn(
                 "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
                 cursorVisible
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-800"
+                  ? "bg-[var(--hub-teal-light)] text-[var(--hub-teal)] ring-1 ring-[var(--hub-teal)]/30"
                   : "bg-muted text-muted-foreground active:bg-accent"
               )}
               title={cursorVisible ? "Hide cursor on target" : "Show cursor on target"}

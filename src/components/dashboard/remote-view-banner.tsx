@@ -99,7 +99,7 @@ export function RemoteViewBanner({ onSessionChange, onCaptureManagerChange }: Re
   if (!activeSession) return null;
 
   const isControl = activeSession.controlEnabled;
-  const borderColor = isControl ? "#f59e0b" : "#6366f1"; // amber-500 / indigo-500
+  const borderColor = isControl ? "#f59e0b" : "var(--hub-teal)"; // amber-500 / remote-mirroring teal
 
   return (
     <div

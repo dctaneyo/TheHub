@@ -64,6 +64,16 @@ made by size, position, or weight — it's never the only signal.
 Minimum contrast is WCAG AA (4.5:1 body text, 3:1 large/UI text),
 non-negotiable.
 
+**Claimed semantic colors** — check this list before introducing a new
+color for a new meaning; reuse before adding.
+
+| Color | Meaning | Token |
+|---|---|---|
+| Red | Brand / urgent / destructive / active-selected | `--hub-red` |
+| Amber | Priority warning / "you are in control" (remote sessions) | Tailwind `amber-*` |
+| Emerald | Success / online / connected | Tailwind `emerald-*` |
+| Teal | Remote mirroring/viewing session is active | `--hub-teal`, `--hub-teal-light` |
+
 ---
 
 ## 3. Spacing & Shape
@@ -325,3 +335,7 @@ after it's been copied across twenty is not.
   the rounding entry in Do Not Use to distinguish "heavy rounding,
   stated and applied consistently" from "heavy rounding, unconsidered
   and inconsistent."
+- 2026-06-26 — replaced unstated indigo (used across the remote
+  mirroring/viewing feature with no actual decision behind it) with a
+  deliberate `--hub-teal` token; added the claimed-semantic-colors
+  table to Section 2.

@@ -64,18 +64,18 @@ export function ArlCursorOverlay({ remoteViewActive }: { remoteViewActive: boole
         <svg width="24" height="24" viewBox="0 0 24 24" className="drop-shadow-lg" style={{ transform: "translate(-2px, -2px)" }}>
           <path
             d="M5 3l14 8-6.5 2L9 19.5 5 3z"
-            fill="rgba(99, 102, 241, 0.9)"
+            fill="var(--hub-teal)"
             stroke="white"
             strokeWidth="1.5"
             strokeLinejoin="round"
           />
         </svg>
         {/* Label */}
-        <div className="absolute left-5 top-4 whitespace-nowrap rounded-md bg-indigo-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md">
+        <div className="absolute left-5 top-4 whitespace-nowrap rounded-md bg-[var(--hub-teal)] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md">
           Admin
         </div>
         {/* Ripple ring */}
-        <div className="absolute -left-2 -top-2 h-8 w-8 rounded-full border-2 border-indigo-400/50 animate-ping" />
+        <div className="absolute -left-2 -top-2 h-8 w-8 rounded-full border-2 border-[var(--hub-teal)]/50 animate-ping" />
       </motion.div>
     </AnimatePresence>
   );

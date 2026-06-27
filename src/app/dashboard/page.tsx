@@ -286,7 +286,7 @@ function GridMirrorShell() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="h-8 w-8 border-2 border-[var(--hub-teal)] border-t-transparent rounded-full animate-spin" />
             <p className="text-white/60 text-sm">Connecting to {mirrorLocationName}...</p>
           </div>
         )}
