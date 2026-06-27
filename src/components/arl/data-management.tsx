@@ -330,7 +330,7 @@ export function DataManagement() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Data Management</h2>
+          <h2 className="text-2xl font-semibold text-foreground">Data Management</h2>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
         </div>
         <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
@@ -417,7 +417,7 @@ export function DataManagement() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground">{showConfirm.title}</h3>
+              <h3 className="text-lg font-semibold text-foreground">{showConfirm.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{showConfirm.confirmText} This action cannot be undone.</p>
               <div className="mt-6 flex gap-3">
                 <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50">Cancel</button>

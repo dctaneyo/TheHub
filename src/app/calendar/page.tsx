@@ -167,7 +167,7 @@ export default function CalendarPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <h2 className="text-base font-semibold text-slate-800">
+            <h2 className="text-lg font-semibold text-slate-800">
               {format(currentMonth, "MMMM yyyy")}
             </h2>
             <button

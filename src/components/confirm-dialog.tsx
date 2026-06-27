@@ -86,7 +86,7 @@ export function ConfirmDialog({
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-foreground">{title}</h3>
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
                 <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{description}</p>
               </div>
               <button

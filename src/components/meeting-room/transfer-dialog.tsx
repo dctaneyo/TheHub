@@ -30,7 +30,7 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
         className="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-sm"
         onClick={e => e.stopPropagation()}
       >
-        <h3 className="text-white font-semibold text-base mb-1">Transfer Host Role</h3>
+        <h3 className="text-white font-semibold text-lg mb-1">Transfer Host Role</h3>
         <p className="text-slate-400 text-xs mb-4">Select a participant to become the new host. You will become a co-host.</p>
         <div className="space-y-1 max-h-60 overflow-y-auto">
           {others.map(p => {

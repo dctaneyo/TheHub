@@ -254,7 +254,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
               <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">Remote View</h2>
+              <h2 className="text-lg font-semibold text-foreground">Remote View</h2>
               <p className="text-xs text-muted-foreground">
                 {targets.length === 0
                   ? "No locations online"
@@ -456,7 +456,7 @@ function MirrorModal({
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
               </div>
               <div className="text-center">
-                <p className="text-base font-semibold text-white">Connecting to {target.name}</p>
+                <p className="text-lg font-semibold text-white">Connecting to {target.name}</p>
                 <p className="mt-1 text-sm text-white/40">Starting mirror session…</p>
               </div>
             </motion.div>

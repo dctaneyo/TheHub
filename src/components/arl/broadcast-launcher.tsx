@@ -167,7 +167,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
             <Button
               onClick={goLive}
               disabled={!title.trim()}
-              className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white h-12 text-base font-semibold rounded-xl"
+              className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white h-12 text-lg font-semibold rounded-xl"
             >
               <Radio className="h-5 w-5 mr-2" />
               Go Live

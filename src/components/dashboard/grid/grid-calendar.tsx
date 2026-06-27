@@ -384,7 +384,7 @@ function CalendarModal({
 
         {/* Selected day task list */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
-          <h3 className="mb-3 shrink-0 text-base font-semibold text-foreground">
+          <h3 className="mb-3 shrink-0 text-lg font-semibold text-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {isToday(selectedDate) && (
               <span className="ml-2 rounded-full bg-[var(--hub-red)]/15 px-2 py-0.5 text-xs font-semibold text-[var(--hub-red)]">
@@ -396,7 +396,7 @@ function CalendarModal({
           {selectedTasks.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
               <span className="text-4xl">📅</span>
-              <p className="text-base text-muted-foreground">No tasks this day</p>
+              <p className="text-sm text-muted-foreground">No tasks this day</p>
             </div>
           ) : (
             <div className="space-y-2">

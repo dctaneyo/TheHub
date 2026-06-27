@@ -412,7 +412,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                 </div>
                 <div className="px-6 pb-6">
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleDismissOverdue}
-                    className="w-full rounded-2xl border-2 border-border py-4 text-base font-semibold text-muted-foreground hover:bg-muted transition-colors">
+                    className="w-full rounded-2xl border-2 border-border py-4 text-lg font-semibold text-muted-foreground hover:bg-muted transition-colors">
                     Acknowledge &amp; Dismiss
                   </motion.button>
                 </div>

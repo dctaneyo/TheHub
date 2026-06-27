@@ -483,7 +483,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Settings className="w-6 h-6" />
                   Notification Settings
                 </h2>

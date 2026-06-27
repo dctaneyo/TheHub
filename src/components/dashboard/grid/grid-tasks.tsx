@@ -137,7 +137,7 @@ export function GridTasksWidget({
       <div className="flex shrink-0 flex-col items-center gap-3 pb-3">
         <CompletionRing pct={pct} onClick={() => setModalOpen(true)} />
 
-        <div className="flex w-full max-w-[240px] flex-col gap-1 text-base">
+        <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 font-semibold text-foreground">
               <span
@@ -196,7 +196,7 @@ export function GridTasksWidget({
               className="h-8 w-8"
               style={{ color: "var(--hub-green)" }}
             />
-            <p className="text-base font-semibold text-muted-foreground">
+            <p className="text-sm font-semibold text-muted-foreground">
               {total === 0 ? "No tasks today" : "All tasks complete"}
             </p>
           </div>
@@ -211,7 +211,7 @@ export function GridTasksWidget({
               >
                 <span
                   className={cn(
-                    "min-w-0 flex-1 truncate text-base font-semibold",
+                    "min-w-0 flex-1 truncate text-sm font-semibold",
                     task.isOverdue ? "text-[var(--hub-red)]" : "text-foreground"
                   )}
                 >
@@ -281,7 +281,7 @@ export function GridTasksWidget({
 
               <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
                 {allSorted.length === 0 && (
-                  <p className="py-8 text-center text-base text-muted-foreground">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     No tasks scheduled today
                   </p>
                 )}
@@ -298,7 +298,7 @@ export function GridTasksWidget({
                       </span>
                       <span
                         className={cn(
-                          "min-w-0 flex-1 truncate text-base font-semibold",
+                          "min-w-0 flex-1 truncate text-sm font-semibold",
                           done && "text-[var(--hub-green)] line-through opacity-70",
                           overdue && "text-[var(--hub-red)]",
                           !done && !overdue && "text-foreground"

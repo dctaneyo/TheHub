@@ -23,7 +23,7 @@ export default function MeetingsPage() {
             <Radio className="h-6 w-6" />
           </div>
           <div className="text-left flex-1">
-            <p className="text-base font-semibold">Go Live</p>
+            <p className="text-lg font-semibold">Go Live</p>
             <p className="text-sm text-white/80">Broadcast to all online locations</p>
           </div>
           <div className="h-3 w-3 rounded-full bg-white animate-pulse" />
@@ -31,7 +31,7 @@ export default function MeetingsPage() {
 
         {activeMeetings.length > 0 && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
               Active Meetings
             </h2>

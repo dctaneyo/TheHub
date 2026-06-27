@@ -76,7 +76,7 @@ export function Messaging() {
           <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-semibold text-foreground">New Group Chat</h3>
+          <h3 className="text-lg font-semibold text-foreground">New Group Chat</h3>
         </div>
 
         <div>
@@ -147,7 +147,7 @@ export function Messaging() {
           <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-semibold text-foreground">New Direct Message</h3>
+          <h3 className="text-lg font-semibold text-foreground">New Direct Message</h3>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
           <Hash className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -198,7 +198,7 @@ export function Messaging() {
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-foreground">Messages</h3>
+            <h3 className="text-lg font-semibold text-foreground">Messages</h3>
             <p className="text-xs text-muted-foreground">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -222,7 +222,7 @@ export function FormsRepository() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Forms Repository</h3>
+          <h3 className="text-lg font-semibold text-foreground">Forms Repository</h3>
           <p className="text-xs text-muted-foreground">{forms.length} forms · {filtered.length} shown</p>
         </div>
         <Button
@@ -332,7 +332,7 @@ export function FormsRepository() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-foreground">Email Form</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Email Form</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm.title}</p>
                 </div>
                 <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">

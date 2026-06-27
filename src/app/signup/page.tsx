@@ -203,7 +203,7 @@ export default function SignupPage() {
                     <Building2 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Your Organization</h2>
+                    <h2 className="text-2xl font-semibold text-white">Your Organization</h2>
                     <p className="text-sm text-slate-400">Tell us about your franchise</p>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export default function SignupPage() {
                     <Palette className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Brand Your Hub</h2>
+                    <h2 className="text-2xl font-semibold text-white">Brand Your Hub</h2>
                     <p className="text-sm text-slate-400">Customize the look and feel (you can change this later)</p>
                   </div>
                 </div>
@@ -337,7 +337,7 @@ export default function SignupPage() {
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Create Your Admin Account</h2>
+                    <h2 className="text-2xl font-semibold text-white">Create Your Admin Account</h2>
                     <p className="text-sm text-slate-400">This will be the first admin user for your organization</p>
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export default function SignupPage() {
                     <Zap className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Choose Your Plan</h2>
+                    <h2 className="text-2xl font-semibold text-white">Choose Your Plan</h2>
                     <p className="text-sm text-slate-400">You can upgrade anytime</p>
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function SignupPage() {
                           </p>
                         </div>
                         <div className="text-right shrink-0 ml-4">
-                          <span className="text-xl font-black text-white">{plan.price}</span>
+                          <span className="text-2xl font-black text-white">{plan.price}</span>
                           {selectedPlan === plan.id && (
                             <div className="mt-1">
                               <Check className="h-5 w-5 text-red-400 ml-auto" />

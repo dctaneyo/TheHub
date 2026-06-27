@@ -244,7 +244,7 @@ export function AnalyticsDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Analytics Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Analytics Dashboard</h1>
           <p className="text-sm text-muted-foreground">Track performance across your locations</p>
         </div>
         <div className="flex items-center gap-2">

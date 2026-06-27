@@ -234,7 +234,7 @@ export default function AdminPortal() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 shadow-lg mb-4">
                 <Shield className="h-7 w-7 text-white" />
               </div>
-              <h1 className="text-xl font-semibold text-white">Super Admin</h1>
+              <h1 className="text-2xl font-semibold text-white">Super Admin</h1>
               <p className="text-sm text-slate-400 mt-1">Enter your admin secret to continue</p>
             </div>
 
@@ -255,7 +255,7 @@ export default function AdminPortal() {
               <Button
                 type="submit"
                 disabled={loginLoading || !loginSecret}
-                className="w-full bg-red-600 hover:bg-red-700 h-12 text-base gap-2"
+                className="w-full bg-red-600 hover:bg-red-700 h-12 text-lg gap-2"
               >
                 {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
                 Authenticate

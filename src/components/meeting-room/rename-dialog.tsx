@@ -35,7 +35,7 @@ export function RenameDialog({ identity, currentName, onRename, onClose }: Renam
         onClick={(e) => e.stopPropagation()}
         className="bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
       >
-        <h3 className="text-white font-semibold text-base mb-1">Rename Participant</h3>
+        <h3 className="text-white font-semibold text-lg mb-1">Rename Participant</h3>
         <p className="text-slate-400 text-xs mb-4">Set a nickname for this participant. Original name will be preserved.</p>
         <Input
           value={input}

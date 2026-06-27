@@ -152,7 +152,7 @@ export function EmergencyBroadcast() {
           <Radio className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-foreground">Emergency Broadcast</h3>
+          <h3 className="text-lg font-semibold text-foreground">Emergency Broadcast</h3>
           <p className="text-xs text-muted-foreground">Send urgent alerts to all restaurants with repeating alarm</p>
         </div>
       </div>

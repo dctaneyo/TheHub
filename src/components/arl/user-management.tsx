@@ -296,7 +296,7 @@ export function UserManagement() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-foreground">User Management</h3>
+          <h3 className="text-lg font-semibold text-foreground">User Management</h3>
           <p className="text-xs text-muted-foreground">{arls.length} ARLs · {locations.length} locations</p>
         </div>
         <Button onClick={openCreate} size="sm" className="flex items-center gap-1.5 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]">
@@ -424,7 +424,7 @@ export function UserManagement() {
               className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
             >
               <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-base font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
                 <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
@@ -576,7 +576,7 @@ export function UserManagement() {
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div>
-                  <h3 className="text-base font-semibold text-foreground">Permissions</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Permissions</h3>
                   <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
                 </div>
                 <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">

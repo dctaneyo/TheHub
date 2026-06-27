@@ -82,14 +82,14 @@ export function GridUpcomingWidget({
     <div className="flex h-full flex-col">
       <div className="mb-2 flex shrink-0 items-center gap-2 px-3 pt-3">
         <CalendarDays className="h-4 w-4 text-[var(--hub-blue)]" />
-        <h2 className="text-base font-semibold text-foreground">Upcoming 7 Days</h2>
+        <h2 className="text-lg font-semibold text-foreground">Upcoming 7 Days</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
         {items.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <CalendarDays className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-base text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Nothing scheduled in the next 7 days
             </p>
           </div>
@@ -104,7 +104,7 @@ export function GridUpcomingWidget({
                 <span className="text-xs font-semibold uppercase leading-none text-muted-foreground">
                   {format(date, "EEE")}
                 </span>
-                <span className="text-base font-semibold leading-tight text-foreground">
+                <span className="text-sm font-semibold leading-tight text-foreground">
                   {format(date, "d")}
                 </span>
               </div>
@@ -148,7 +148,7 @@ export function GridUpcomingWidget({
               {/* Title */}
               <span
                 className={cn(
-                  "min-w-0 flex-1 truncate text-base font-semibold",
+                  "min-w-0 flex-1 truncate text-sm font-semibold",
                   task.isCompleted
                     ? "text-muted-foreground line-through"
                     : "text-foreground"

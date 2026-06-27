@@ -224,14 +224,14 @@ export function EmergencyOverlay() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleReveal}
-                    className="w-full rounded-2xl bg-[var(--hub-red)] py-4 text-base font-semibold text-white shadow-lg active:bg-[#c4001f] transition-colors"
+                    className="w-full rounded-2xl bg-[var(--hub-red)] py-4 text-lg font-semibold text-white shadow-lg active:bg-[#c4001f] transition-colors"
                   >
                     Tap to View Message
                   </motion.button>
                 </div>
               ) : (
                 <div>
-                  <p className="text-base font-semibold text-neutral-800 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-lg font-semibold text-neutral-800 leading-relaxed whitespace-pre-wrap">
                     {activeMessage.message}
                   </p>
                   <button

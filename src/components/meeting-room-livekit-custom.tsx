@@ -344,7 +344,7 @@ function MeetingSetup({
       <div className="w-full max-w-lg mx-4">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-xl font-semibold text-white mb-1">Ready to join?</h1>
+          <h1 className="text-2xl font-semibold text-white mb-1">Ready to join?</h1>
           <p className="text-slate-400 text-sm">{title}</p>
           <p className="text-slate-500 text-xs font-mono mt-1">ID: {meetingId.replace(/^scheduled-/, "")}</p>
         </div>
@@ -1001,7 +1001,7 @@ function MeetingUI({
           <div className="h-20 w-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
             <Users className="h-10 w-10 text-slate-400" />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">{title}</h2>
+          <h2 className="text-2xl font-semibold text-white mb-2">{title}</h2>
           <div className="inline-flex items-center gap-2 bg-yellow-600/20 text-yellow-400 rounded-full px-5 py-2.5 text-sm font-semibold mb-4">
             <Loader2 className="h-4 w-4 animate-spin" />
             Waiting for host to start the meeting...
@@ -1497,7 +1497,7 @@ function MeetingUI({
             <div className="h-16 w-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
               <Loader2 className="h-8 w-8 text-amber-400 animate-spin" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Connection Lost</h3>
+            <h3 className="text-2xl font-semibold text-white mb-2">Connection Lost</h3>
             <p className="text-slate-300 text-sm">
               Attempting to reconnect to the meeting. Please wait...
             </p>

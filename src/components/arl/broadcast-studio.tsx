@@ -142,7 +142,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5 text-center">
-                <span className="font-mono text-xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
+                <span className="font-mono text-2xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}
                 className="p-2.5 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
@@ -173,7 +173,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           <Button
             onClick={startMeeting}
             disabled={!title.trim()}
-            className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold rounded-xl"
+            className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-lg font-semibold rounded-xl"
           >
             <Play className="h-5 w-5 mr-2" />
             Start Meeting

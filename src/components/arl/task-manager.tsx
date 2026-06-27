@@ -165,7 +165,7 @@ export function TaskManager() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-foreground">All Tasks & Reminders</h3>
+          <h3 className="text-lg font-semibold text-foreground">All Tasks & Reminders</h3>
           <p className="text-xs text-muted-foreground">{filteredTasks.length} of {tasks.length} tasks</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

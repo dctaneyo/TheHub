@@ -549,7 +549,7 @@ function GuestMeetingPageWithParams() {
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Clock className="h-7 w-7" />
                   </div>
-                  <h1 className="text-xl font-semibold">Meeting Hasn&apos;t Started Yet</h1>
+                  <h1 className="text-2xl font-semibold">Meeting Hasn&apos;t Started Yet</h1>
                   <p className="text-sm text-amber-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
@@ -619,7 +619,7 @@ function GuestMeetingPageWithParams() {
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Video className="h-7 w-7" />
                   </div>
-                  <h1 className="text-xl font-semibold">Waiting for Host</h1>
+                  <h1 className="text-2xl font-semibold">Waiting for Host</h1>
                   <p className="text-sm text-blue-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
@@ -679,7 +679,7 @@ function GuestMeetingPageWithParams() {
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <CheckCircle2 className="h-7 w-7" />
                 </div>
-                <h1 className="text-xl font-semibold">Meeting Ended</h1>
+                <h1 className="text-2xl font-semibold">Meeting Ended</h1>
                 <p className="text-sm text-slate-300 mt-1">{meetingInfo?.title || "Video Meeting"}</p>
               </div>
 
@@ -728,7 +728,7 @@ function GuestMeetingPageWithParams() {
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <Video className="h-7 w-7" />
                 </div>
-                <h1 className="text-xl font-semibold">
+                <h1 className="text-2xl font-semibold">
                   {isOneClickJoin ? "You're Invited!" : "Join a Meeting"}
                 </h1>
                 <p className="text-sm text-red-100 mt-1">

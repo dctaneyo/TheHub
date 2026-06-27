@@ -142,7 +142,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 <Menu className="h-4.5 w-4.5" />
               </button>
             )}
-            <h2 className="text-base font-semibold text-foreground hidden sm:block">
+            <h2 className="text-lg font-semibold text-foreground hidden sm:block">
               {navItems.find((n) => n.id === displayView)?.label ?? ""}
             </h2>
           </div>
