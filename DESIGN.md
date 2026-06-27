@@ -380,12 +380,25 @@ it's inconvenient in the moment.
   `:hover` with no active/press equivalent. This product runs on
   touchscreen kiosks with no pointer; hover-only feedback is invisible
   in practice and risks the "stuck hover" bug on touch browsers.
+- **Identical container chrome for every tile in a modular grid**,
+  regardless of what each one actually contains ("bento overload" —
+  every widget crammed into the same bordered rounded box). The tell
+  isn't the grid itself (see Non-Tells) — it's treating "card with a
+  border" as the mandatory default presentation for every tile instead
+  of letting content drive it. An ambient/glanceable widget (a clock,
+  a quote) doesn't need the same boxed treatment as a dense, scrollable
+  one (a task list) just because they're both rectangles in a grid.
 
 ### Non-Tells — do not flag these as slop
 
 Don't over-correct into banning ordinary modern design: mesh/blob
-gradient backgrounds used deliberately, bento-grid layouts, dark mode
-itself, and shadcn/Tailwind as tools.
+gradient backgrounds used deliberately, dark mode itself, and
+shadcn/Tailwind as tools. **A grid of varying-sized tiles is also fine
+on its own** — it's a legitimate, common pattern for an actual data
+dashboard, not a tell by itself. What *is* a tell is uniform,
+undifferentiated box styling applied to every tile in that grid
+regardless of content (see the Do Not Use entry above) — a more
+specific claim than "bento grids are bad."
 
 ---
 
@@ -484,3 +497,16 @@ after it's been copied across twenty is not.
   block's pill wrapper and the spring `layout` animations on the
   dashboard header that were causing it to visibly stretch whenever an
   unrelated sibling (the clock, the settings panel) changed.
+- 2026-06-26 — differentiated dashboard widget chrome by role (Clock
+  and Quote go borderless/ambient in normal view; Tasks, Calendar,
+  Messages, and Forms keep the card boundary they actually need) after
+  finding the "every widget gets identical rounded-box chrome"
+  bento-overload pattern, sourced from umamii.design's 8 AI-slop
+  signals. Removed the quote widget's purple-sparkle-in-a-box icon —
+  a scanner blind spot (it used a CSS variable, not a Tailwind class,
+  so devibe-scan.py's regex never caught it) and the same cliché
+  pattern already identified in the dead motivational-quote.tsx.
+  Corrected the Non-Tells section, which previously contradicted this
+  finding by blanket-exempting "bento-grid layouts" — the grid pattern
+  itself isn't the tell, uniform undifferentiated box styling within
+  it is, which is a narrower and more accurate claim.

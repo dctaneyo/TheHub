@@ -46,6 +46,15 @@ export function WidgetContainer({
   const expanded = isExpanded(widget.id);
   const { w: width, h: height } = widget;
 
+  // Ambient/glanceable widgets (a giant clock, a quote) don't need a card
+  // boundary — they read fine sitting directly on the grid background, and
+  // boxing them identically to data-dense widgets (Tasks, Calendar,
+  // Messages) is exactly the "every feature crammed into a rounded box"
+  // sameness that reads as generic (DESIGN.md Section 11, Non-Tells).
+  // Still gets full chrome while editing/dragging/expanded, since the user
+  // needs a visible boundary to grab, resize, or view it as an overlay then.
+  const isAmbient = widget.type === "clock" || widget.type === "quote";
+
   // Latest widgets snapshot for collision checks inside pointer handlers
   // (avoids stale closures while a drag/resize is in flight).
   const widgetsRef = useRef(widgets);
@@ -177,25 +186,36 @@ export function WidgetContainer({
         )}
       </AnimatePresence>
 
-      <motion.div
-        layout={!active}
-        style={gridStyle}
-        className={cn(
-          // Tight bottom-right corner marks where the resize handle lives —
-          // same logic as the chat bubble's pinched corner pointing toward
-          // its sender, just pointed at a different fact (an interactive
-          // corner, not a side). Reset to uniform when expanded, since the
-          // resize handle isn't shown in that state.
-          "group relative flex flex-col overflow-hidden rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card",
-          !active && "border-border",
-          active && "border-transparent",
-          active && !blocked && "shadow-lg ring-2 ring-primary/40",
-          active && blocked && "shadow-lg ring-2 ring-destructive",
-          expanded &&
-            "fixed inset-4 z-[151] rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-3xl shadow-2xl md:inset-8",
-          editMode && !active && !expanded && "ring-1 ring-primary/20"
-        )}
-      >
+      {(() => {
+        // Ambient widgets only need their card boundary while there's a
+        // reason to see one: editing (to grab/resize it), an active drag/
+        // resize, or expanded into the fullscreen overlay. Otherwise no
+        // border, no fill, no shadow — content sits straight on the grid.
+        const showChrome = !isAmbient || editMode || active || expanded;
+        return (
+          <motion.div
+            layout={!active}
+            style={gridStyle}
+            className={cn(
+              "group relative flex flex-col overflow-hidden",
+              showChrome && [
+                // Tight bottom-right corner marks where the resize handle
+                // lives — same logic as the chat bubble's pinched corner
+                // pointing toward its sender, just pointed at a different
+                // fact (an interactive corner, not a side). Reset to
+                // uniform when expanded, since the resize handle isn't
+                // shown in that state.
+                "rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card",
+                !active && "border-border",
+                active && "border-transparent",
+                active && !blocked && "shadow-lg ring-2 ring-primary/40",
+                active && blocked && "shadow-lg ring-2 ring-destructive",
+                editMode && !active && !expanded && "ring-1 ring-primary/20",
+              ],
+              expanded &&
+                "fixed inset-4 z-[151] rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-3xl border bg-card shadow-2xl md:inset-8"
+            )}
+          >
         {/* Header — only while editing (drag handle / size / remove).
             Removed in normal view for a cleaner, chrome-free tile. */}
         {editMode && !expanded && (
@@ -296,7 +316,9 @@ export function WidgetContainer({
             </div>
           </IconTip>
         )}
-      </motion.div>
+          </motion.div>
+        );
+      })()}
     </>
   );
 }
