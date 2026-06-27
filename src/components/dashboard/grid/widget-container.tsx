@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2, X, Hand } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import { useGrid } from "./grid-context";
 import {
   GRID_COLS,
@@ -219,39 +220,45 @@ export function WidgetContainer({
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => removeWidget(widget.id)}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-destructive/10 active:text-destructive"
-              title="Remove"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <IconTip label="Remove widget">
+              <button
+                type="button"
+                onClick={() => removeWidget(widget.id)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-destructive/10 active:text-destructive"
+                title="Remove"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </IconTip>
           </div>
         )}
 
         {/* Floating expand control — view mode only; hidden for clock (nothing useful to expand) */}
         {!editMode && !expanded && widget.type !== "clock" && (
-          <button
-            type="button"
-            onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
-            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground backdrop-blur-sm transition-colors active:text-foreground active:bg-muted"
-            title="Expand"
-          >
-            <Maximize2 className="h-4 w-4" />
-          </button>
+          <IconTip label="Expand">
+            <button
+              type="button"
+              onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
+              className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground backdrop-blur-sm transition-colors active:text-foreground active:bg-muted"
+              title="Expand"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          </IconTip>
         )}
 
         {/* Floating collapse control — while expanded */}
         {expanded && (
-          <button
-            type="button"
-            onClick={() => toggleExpand(widget.id)}
-            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-            title="Collapse"
-          >
-            <Minimize2 className="h-5 w-5" />
-          </button>
+          <IconTip label="Collapse">
+            <button
+              type="button"
+              onClick={() => toggleExpand(widget.id)}
+              className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+              title="Collapse"
+            >
+              <Minimize2 className="h-5 w-5" />
+            </button>
+          </IconTip>
         )}
 
         {/* Content — non-interactive while editing so layout taps/drags don't
@@ -270,22 +277,24 @@ export function WidgetContainer({
 
         {/* Resize handle (edit mode only, bottom-right corner) — larger for touch */}
         {editMode && !expanded && (
-          <div
-            onPointerDown={handleResizePointerDown}
-            className="absolute bottom-0 right-0 z-20 flex h-8 w-8 cursor-nwse-resize items-end justify-end p-1"
-            title="Drag to resize"
-          >
-            <span
-              className={cn(
-                "block h-4 w-4 rounded-br-md border-b-2 border-r-2 transition-colors",
-                active && blocked
-                  ? "border-destructive"
-                  : active
-                  ? "border-primary"
-                  : "border-primary/60"
-              )}
-            />
-          </div>
+          <IconTip label="Drag to resize" side="top">
+            <div
+              onPointerDown={handleResizePointerDown}
+              className="absolute bottom-0 right-0 z-20 flex h-8 w-8 cursor-nwse-resize items-end justify-end p-1"
+              title="Drag to resize"
+            >
+              <span
+                className={cn(
+                  "block h-4 w-4 rounded-br-md border-b-2 border-r-2 transition-colors",
+                  active && blocked
+                    ? "border-destructive"
+                    : active
+                    ? "border-primary"
+                    : "border-primary/60"
+                )}
+              />
+            </div>
+          </IconTip>
         )}
       </motion.div>
     </>

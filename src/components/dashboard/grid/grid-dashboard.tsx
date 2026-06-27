@@ -14,11 +14,10 @@ import {
   Save,
   X,
   Loader2,
-  Sun,
-  Moon,
-  Monitor,
+  MoreVertical,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import { useGrid } from "./grid-context";
 import { WidgetContainer } from "./widget-container";
 import { WidgetRenderer } from "./widget-renderer";
@@ -38,14 +37,8 @@ const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-
  */
 export function SettingsPanel({
   onSave,
-  theme,
-  themeMounted,
-  onCycleTheme,
 }: {
   onSave?: (layout: GridLayout) => Promise<void> | void;
-  theme: string | undefined;
-  themeMounted: boolean;
-  onCycleTheme: () => void;
 }) {
   const {
     layout,
@@ -64,6 +57,7 @@ export function SettingsPanel({
   const [open, setOpen] = useState(false);
   const [showLayouts, setShowLayouts] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showOverflow, setShowOverflow] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isCustom = !!layout.isCustom;
@@ -211,22 +205,51 @@ export function SettingsPanel({
         </div>
       ),
     });
+    // Tidy/Reset are real but lower-frequency than Add/Cancel/Save — tucked
+    // one step deeper in an overflow instead of sitting at equal visibility
+    // inline (DESIGN.md Section 12: progressive disclosure / spectrum of
+    // explicitness — these don't deserve the same prominence as Save/Cancel,
+    // which a user mid-edit actually needs to find immediately).
     panelItems.push({
-      key: "tidy",
+      key: "overflow",
       node: (
-        <button type="button" onClick={() => compact()} className={PILL} title="Pull widgets up to close gaps">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Tidy</span>
-        </button>
-      ),
-    });
-    panelItems.push({
-      key: "reset",
-      node: (
-        <button type="button" onClick={() => replaceLayout({ ...PREDEFINED_LAYOUTS[0], id: "custom", name: "Custom", description: "Your personalized layout", isCustom: true })} className={PILL} title="Reset custom layout">
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Reset</span>
-        </button>
+        <div className="relative">
+          <IconTip label="More layout actions">
+            <button type="button" onClick={() => setShowOverflow((v) => !v)} className={cn(PILL, "px-2.5")}>
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          </IconTip>
+          <AnimatePresence>
+            {showOverflow && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="absolute right-0 top-full z-[60] mt-1 w-44 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
+              >
+                <button
+                  type="button"
+                  onClick={() => { compact(); setShowOverflow(false); }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors active:bg-muted"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  Tidy up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    replaceLayout({ ...PREDEFINED_LAYOUTS[0], id: "custom", name: "Custom", description: "Your personalized layout", isCustom: true });
+                    setShowOverflow(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors active:bg-muted"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                  Reset layout
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       ),
     });
     panelItems.push({
@@ -244,18 +267,6 @@ export function SettingsPanel({
         <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60">
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           {saving ? "Saving…" : "Save"}
-        </button>
-      ),
-    });
-  }
-
-  if (themeMounted) {
-    panelItems.push({
-      key: "theme",
-      node: (
-        <button onClick={onCycleTheme} title={`Theme: ${theme}`} className={PILL}>
-          {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-          <span className="capitalize">{theme}</span>
         </button>
       ),
     });
@@ -279,307 +290,29 @@ export function SettingsPanel({
       </AnimatePresence>
 
       {/* Cog pill — plain button, only the icon rotates */}
-      <button
-        type="button"
-        onClick={() => { setOpen((v) => !v); if (open) { setShowLayouts(false); setShowAdd(false); } }}
-        className={cn(PILL, open && "bg-card text-foreground")}
-        title={open ? "Close settings" : "Settings"}
-      >
-        <motion.span
-          animate={{ rotate: open ? 90 : 0 }}
-          transition={{ type: "spring", stiffness: 120, damping: 22 }}
-          className="inline-flex"
+      <IconTip label={open ? "Close settings" : "Settings"}>
+        <button
+          type="button"
+          onClick={() => { setOpen((v) => !v); if (open) { setShowLayouts(false); setShowAdd(false); setShowOverflow(false); } }}
+          className={cn(PILL, open && "bg-card text-foreground")}
+          title={open ? "Close settings" : "Settings"}
         >
-          <Settings className="h-3.5 w-3.5" />
-        </motion.span>
-      </button>
+          <motion.span
+            animate={{ rotate: open ? 90 : 0 }}
+            transition={{ type: "spring", stiffness: 120, damping: 22 }}
+            className="inline-flex"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </motion.span>
+        </button>
+      </IconTip>
     </div>
   );
 }
 
-/**
- * Header controls: layout picker (presets + Custom) and — only while the
- * editable Custom layout is active — the customize/save/cancel affordances.
- * Editing uses explicit Save/Cancel (no auto-save) so that, when a location is
- * signed in on multiple devices, the others only refresh when a layout is
- * actually saved. Must be rendered inside a <GridProvider>.
- */
-export function GridControls({
-  onSave,
-}: {
-  onSave?: (layout: GridLayout) => Promise<void> | void;
-}) {
-  const {
-    layout,
-    widgets,
-    editMode,
-    setEditMode,
-    addWidget,
-    replaceLayout,
-    selectCustom,
-    beginEdit,
-    commitEdit,
-    cancelEdit,
-    compact,
-  } = useGrid();
-
-  const [showLayouts, setShowLayouts] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const isCustom = !!layout.isCustom;
-  const usedTypes = new Set(widgets.map((w) => w.type));
-
-  const startEditing = () => {
-    beginEdit();
-    setEditMode(true);
-    setShowLayouts(false);
-    setShowAdd(false);
-  };
-
-  const handleSave = async () => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await onSave?.(layout);
-      commitEdit();
-      setEditMode(false);
-      setShowAdd(false);
-    } catch (err) {
-      console.error("Failed to save layout:", err);
-      // Stay in edit mode so the user can retry.
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    cancelEdit();
-    setEditMode(false);
-    setShowAdd(false);
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {/* Layout picker — hidden while editing to avoid switching mid-edit */}
-      {!editMode && (
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setShowLayouts((v) => !v);
-              setShowAdd(false);
-            }}
-            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{layout.name}</span>
-            <span className="sm:hidden">Layouts</span>
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          <AnimatePresence>
-            {showLayouts && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-lg border border-border bg-card p-1.5 shadow-lg"
-              >
-                {PREDEFINED_LAYOUTS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      replaceLayout({ ...preset, isCustom: false });
-                      setEditMode(false);
-                      setShowLayouts(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors active:bg-muted",
-                      !isCustom && layout.id === preset.id && "bg-primary/10"
-                    )}
-                  >
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-foreground">
-                        {preset.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {preset.description}
-                      </div>
-                    </div>
-                    {!isCustom && layout.id === preset.id && (
-                      <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                    )}
-                  </button>
-                ))}
-
-                {/* Divider */}
-                <div className="my-1 h-px bg-border" />
-
-                {/* Custom (editable) layout */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    selectCustom();
-                    setShowLayouts(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors active:bg-muted",
-                    isCustom && "bg-primary/10"
-                  )}
-                >
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">
-                      Custom
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Build and arrange your own layout
-                    </div>
-                  </div>
-                  {isCustom && (
-                    <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                  )}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Add widget (editing only) */}
-      {editMode && (
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setShowAdd((v) => !v);
-              setShowLayouts(false);
-            }}
-            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Add</span>
-          </button>
-          <AnimatePresence>
-            {showAdd && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg"
-              >
-                {WIDGET_CATALOG.map((item) => {
-                  const used = usedTypes.has(item.type);
-                  return (
-                    <button
-                      key={item.type}
-                      type="button"
-                      disabled={used}
-                      onClick={() => {
-                        addWidget({
-                          id: `${item.type}-${Date.now()}`,
-                          type: item.type,
-                          title: item.title,
-                          w: item.defaultW,
-                          h: item.defaultH,
-                        });
-                        setShowAdd(false);
-                      }}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors",
-                        used
-                          ? "cursor-not-allowed text-muted-foreground/50"
-                          : "active:bg-muted"
-                      )}
-                    >
-                      {item.title}
-                      {used && <span className="text-[10px]">added</span>}
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Tidy up / compact (editing only) */}
-      {editMode && (
-        <button
-          type="button"
-          onClick={() => compact()}
-          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
-          title="Pull widgets up to close gaps"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Tidy up</span>
-        </button>
-      )}
-
-      {/* Reset (editing only) — reseed the custom layout */}
-      {editMode && (
-        <button
-          type="button"
-          onClick={() => {
-            const base = PREDEFINED_LAYOUTS[0];
-            replaceLayout({
-              ...base,
-              id: "custom",
-              name: "Custom",
-              description: "Your personalized layout",
-              isCustom: true,
-            });
-          }}
-          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
-          title="Reset custom layout"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Reset</span>
-        </button>
-      )}
-
-      {/* Customize — only on the Custom layout, when not already editing */}
-      {isCustom && !editMode && (
-        <button
-          type="button"
-          onClick={startEditing}
-          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          Customize
-        </button>
-      )}
-
-      {/* Save / Cancel — while editing */}
-      {editMode && (
-        <>
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={saving}
-            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground disabled:opacity-50"
-          >
-            <X className="h-3.5 w-3.5" />
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60"
-          >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
+// NOTE: GridControls (a near-duplicate of SettingsPanel's layout/add/tidy/
+// reset/save/cancel controls) was removed here — it had zero consumers
+// anywhere in the app, confirmed via grep before deletion.
 
 /**
  * Listens for layout changes saved on other devices for the same account and

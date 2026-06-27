@@ -4,11 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
 /**
- * Minimal Today's Tasks widget for the GRID dashboard only.
- * (The classic dashboard route still uses <Timeline>, untouched.)
+ * Minimal Today's Tasks widget — the only tasks widget in the app. The
+ * pre-grid <Timeline> component this comment used to reference was dead
+ * code (zero consumers) and has been removed; TaskItem is the only thing
+ * still shared from that file.
  *
  * - Completion ring + remaining/completed counts at the top
  * - One-line bold task rows with a checkbox to complete
@@ -41,6 +44,7 @@ function CompletionRing({
   const offset = c * (1 - pct / 100);
 
   return (
+    <IconTip label="View all tasks for today">
     <button
       type="button"
       onClick={onClick}
@@ -77,6 +81,7 @@ function CompletionRing({
         </span>
       </span>
     </button>
+    </IconTip>
   );
 }
 
@@ -219,14 +224,16 @@ export function GridTasksWidget({
                   </span>
                 ) : (
                   /* Touch-friendly complete button */
-                  <button
-                    type="button"
-                    onClick={() => onComplete(task.id)}
-                    title="Mark complete"
-                    className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
-                  >
-                    <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
-                  </button>
+                  <IconTip label="Mark complete">
+                    <button
+                      type="button"
+                      onClick={() => onComplete(task.id)}
+                      title="Mark complete"
+                      className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
+                    >
+                      <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-active/cb:text-[var(--hub-green)]" />
+                    </button>
+                  </IconTip>
                 )}
               </motion.div>
             ))}
@@ -260,14 +267,16 @@ export function GridTasksWidget({
                     {pct}% complete · {completedCount}/{total} done
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-                  title="Close"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <IconTip label="Close">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+                    title="Close"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </IconTip>
               </header>
 
               <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
@@ -302,23 +311,27 @@ export function GridTasksWidget({
                           <Info className="h-6 w-6 text-blue-400" />
                         </span>
                       ) : done ? (
-                        <button
-                          type="button"
-                          onClick={() => onUncomplete(task.id)}
-                          title="Undo — mark as not complete"
-                          className="group/undo flex h-11 w-11 shrink-0 items-center justify-center"
-                        >
-                          <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors group-hover/undo:text-[var(--hub-red)] group-active/undo:text-[var(--hub-red)]" />
-                        </button>
+                        <IconTip label="Undo — mark as not complete">
+                          <button
+                            type="button"
+                            onClick={() => onUncomplete(task.id)}
+                            title="Undo — mark as not complete"
+                            className="group/undo flex h-11 w-11 shrink-0 items-center justify-center"
+                          >
+                            <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors group-active/undo:text-[var(--hub-red)]" />
+                          </button>
+                        </IconTip>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => onComplete(task.id)}
-                          title="Mark complete"
-                          className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
-                        >
-                          <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-hover/cb:text-[var(--hub-green)] group-active/cb:text-[var(--hub-green)]" />
-                        </button>
+                        <IconTip label="Mark complete">
+                          <button
+                            type="button"
+                            onClick={() => onComplete(task.id)}
+                            title="Mark complete"
+                            className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
+                          >
+                            <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-active/cb:text-[var(--hub-green)]" />
+                          </button>
+                        </IconTip>
                       )}
                     </div>
                   );

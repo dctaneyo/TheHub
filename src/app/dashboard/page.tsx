@@ -10,6 +10,7 @@ import { HubMark } from "@/components/icons/hub-mark";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { ConnectionStatus } from "@/components/connection-status";
+import { IconTip } from "@/components/ui/icon-tip";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
@@ -742,8 +743,20 @@ function GridDashboardPage() {
             <div className="flex items-center gap-2">
               <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="flex items-center gap-2">
                 <HeaderClock />
-                <SettingsPanel onSave={saveLayout} theme={theme} themeMounted={themeMounted} onCycleTheme={cycleTheme} />
+                <SettingsPanel onSave={saveLayout} />
               </motion.div>
+              {themeMounted && (
+                <IconTip label={`Theme: ${theme}`}>
+                  <button
+                    type="button"
+                    onClick={cycleTheme}
+                    title={`Theme: ${theme}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                  >
+                    {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+                  </button>
+                </IconTip>
+              )}
               <ConnectionStatus />
               <button type="button" onClick={() => logout()}
                 className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
