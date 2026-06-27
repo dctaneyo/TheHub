@@ -45,7 +45,7 @@ export function OfflineIndicator() {
             <span>{pendingCount} pending</span>
             <button
               onClick={syncNow}
-              className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] hover:bg-white/30 transition-colors"
+              className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] active:bg-white/30 transition-colors"
             >
               Sync Now
             </button>

@@ -28,7 +28,7 @@ import type { WidgetData } from "./widget-data";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
 // Layout/typography via Tailwind; glass surface via .glass-pill in globals.css
-const PILL = "glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground";
+const PILL = "glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground";
 
 /**
  * SettingsPanel — a settings cog pill that, when clicked, slides left and
@@ -141,7 +141,7 @@ export function SettingsPanel({
                     key={preset.id}
                     type="button"
                     onClick={() => { replaceLayout({ ...preset, isCustom: false }); setEditMode(false); setShowLayouts(false); }}
-                    className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-muted", !isCustom && layout.id === preset.id && "bg-primary/10")}
+                    className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", !isCustom && layout.id === preset.id && "bg-primary/10")}
                   >
                     <div className="flex-1">
                       <div className="text-sm font-medium text-foreground">{preset.name}</div>
@@ -154,7 +154,7 @@ export function SettingsPanel({
                 <button
                   type="button"
                   onClick={() => { selectCustom(); setShowLayouts(false); }}
-                  className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-muted", isCustom && "bg-primary/10")}
+                  className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", isCustom && "bg-primary/10")}
                 >
                   <div className="flex-1">
                     <div className="text-sm font-medium text-foreground">Custom</div>
@@ -207,7 +207,7 @@ export function SettingsPanel({
                       type="button"
                       disabled={used}
                       onClick={() => { addWidget({ id: `${item.type}-${Date.now()}`, type: item.type, title: item.title, w: item.defaultW, h: item.defaultH }); setShowAdd(false); }}
-                      className={cn("flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-sm transition-colors", used ? "cursor-not-allowed text-muted-foreground/50" : "hover:bg-muted")}
+                      className={cn("flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-sm transition-colors", used ? "cursor-not-allowed text-muted-foreground/50" : "active:bg-muted")}
                     >
                       {item.title}
                       {used && <span className="text-[10px]">added</span>}
@@ -250,7 +250,7 @@ export function SettingsPanel({
     panelItems.push({
       key: "save",
       node: (
-        <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60">
+        <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60">
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           {saving ? "Saving…" : "Save"}
         </button>
@@ -380,7 +380,7 @@ export function GridControls({
               setShowLayouts((v) => !v);
               setShowAdd(false);
             }}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{layout.name}</span>
@@ -405,7 +405,7 @@ export function GridControls({
                       setShowLayouts(false);
                     }}
                     className={cn(
-                      "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                      "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors active:bg-muted",
                       !isCustom && layout.id === preset.id && "bg-primary/10"
                     )}
                   >
@@ -434,7 +434,7 @@ export function GridControls({
                     setShowLayouts(false);
                   }}
                   className={cn(
-                    "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                    "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors active:bg-muted",
                     isCustom && "bg-primary/10"
                   )}
                 >
@@ -465,7 +465,7 @@ export function GridControls({
               setShowAdd((v) => !v);
               setShowLayouts(false);
             }}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add</span>
@@ -499,7 +499,7 @@ export function GridControls({
                         "flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors",
                         used
                           ? "cursor-not-allowed text-muted-foreground/50"
-                          : "hover:bg-muted"
+                          : "active:bg-muted"
                       )}
                     >
                       {item.title}
@@ -518,7 +518,7 @@ export function GridControls({
         <button
           type="button"
           onClick={() => compact()}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           title="Pull widgets up to close gaps"
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -540,7 +540,7 @@ export function GridControls({
               isCustom: true,
             });
           }}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           title="Reset custom layout"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -553,7 +553,7 @@ export function GridControls({
         <button
           type="button"
           onClick={startEditing}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
         >
           <Settings className="h-3.5 w-3.5" />
           Customize
@@ -567,7 +567,7 @@ export function GridControls({
             type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -576,7 +576,7 @@ export function GridControls({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60"
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

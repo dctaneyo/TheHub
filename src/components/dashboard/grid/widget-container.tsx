@@ -230,7 +230,7 @@ export function WidgetContainer({
           <button
             type="button"
             onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
-            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-foreground active:bg-muted"
+            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors active:text-foreground active:bg-muted"
             title="Expand"
           >
             <Maximize2 className="h-4 w-4" />
@@ -275,7 +275,9 @@ export function WidgetContainer({
                 "block h-4 w-4 rounded-br-md border-b-2 border-r-2 transition-colors",
                 active && blocked
                   ? "border-destructive"
-                  : "border-primary/60 group-hover:border-primary"
+                  : active
+                  ? "border-primary"
+                  : "border-primary/60"
               )}
             />
           </div>

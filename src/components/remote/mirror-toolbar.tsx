@@ -84,7 +84,7 @@ export function MirrorToolbar() {
         "fixed z-[9998] select-none transition-opacity duration-300",
         dragging && "cursor-grabbing",
         !dragging && "cursor-grab",
-        collapsed ? "opacity-60 hover:opacity-90" : "opacity-100"
+        collapsed ? "opacity-60 active:opacity-90" : "opacity-100"
       )}
       style={{ left: position.x, top: position.y }}
     >
@@ -119,7 +119,7 @@ export function MirrorToolbar() {
 
             <button
               onClick={() => setCollapsed(false)}
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white active:bg-white/30 transition-colors"
               title="Expand toolbar"
             >
               <Maximize2 className="h-3 w-3" />
@@ -191,7 +191,7 @@ export function MirrorToolbar() {
                 "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
                 controlEnabled
                   ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
+                  : "bg-muted text-muted-foreground active:bg-accent"
               )}
             >
               {controlEnabled ? <Hand className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -205,7 +205,7 @@ export function MirrorToolbar() {
                 "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
                 cursorVisible
                   ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-800"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
+                  : "bg-muted text-muted-foreground active:bg-accent"
               )}
               title={cursorVisible ? "Hide cursor on target" : "Show cursor on target"}
             >
@@ -216,7 +216,7 @@ export function MirrorToolbar() {
             {/* Collapse */}
             <button
               onClick={() => setCollapsed(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent active:text-foreground transition-colors"
               title="Collapse toolbar"
             >
               <Minimize2 className="h-3.5 w-3.5" />
@@ -225,7 +225,7 @@ export function MirrorToolbar() {
             {/* End session */}
             <button
               onClick={endMirror}
-              className="flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:active:bg-red-900 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               End

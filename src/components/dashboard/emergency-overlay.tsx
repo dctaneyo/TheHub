@@ -220,23 +220,23 @@ export function EmergencyOverlay() {
             <div className="px-6 py-6">
               {!revealed ? (
                 <div className="text-center">
-                  <p className="text-sm text-slate-500 mb-4">An urgent message has been sent to your location.</p>
+                  <p className="text-sm text-neutral-500 mb-4">An urgent message has been sent to your location.</p>
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleReveal}
-                    className="w-full rounded-2xl bg-[var(--hub-red)] py-4 text-base font-bold text-white shadow-lg hover:bg-[#c4001f] transition-colors"
+                    className="w-full rounded-2xl bg-[var(--hub-red)] py-4 text-base font-bold text-white shadow-lg active:bg-[#c4001f] transition-colors"
                   >
                     Tap to View Message
                   </motion.button>
                 </div>
               ) : (
                 <div>
-                  <p className="text-base font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-base font-semibold text-neutral-800 leading-relaxed whitespace-pre-wrap">
                     {activeMessage.message}
                   </p>
                   <button
                     onClick={handleDismiss}
-                    className="mt-5 w-full rounded-2xl border-2 border-slate-200 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
+                    className="mt-5 w-full rounded-2xl border-2 border-neutral-200 py-3 text-sm font-semibold text-neutral-500 active:bg-neutral-50 transition-colors"
                   >
                     Dismiss
                   </button>

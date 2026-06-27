@@ -633,7 +633,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     <div className="mt-2 flex flex-wrap gap-1">
                       {groupMembers.map((m) => (
                         <button key={m.id} onClick={() => toggleGroupMember(m)}
-                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950"
+                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground active:bg-red-100 active:text-red-600 dark:active:bg-red-950"
                         >
                           {m.name} <X className="h-2.5 w-2.5" />
                         </button>
@@ -714,7 +714,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                   <Button
                     onClick={createGroupChat}
                     disabled={!groupName.trim() || groupMembers.length === 0 || startingChat}
-                    className="w-full rounded-xl bg-[var(--hub-red)] text-sm hover:bg-[#c4001f]"
+                    className="w-full rounded-xl bg-[var(--hub-red)] text-sm active:bg-[#c4001f]"
                   >
                     {startingChat ? "Creating..." : `Create Group (${groupMembers.length} members)`}
                   </Button>
@@ -785,7 +785,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     {convo.type !== "global" && (
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
-                        className="absolute right-2 top-2 flex md:hidden h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 md:group-hover:flex"
+                        className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-400 active:bg-red-100 active:text-red-600"
                         title="Delete conversation"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -970,7 +970,7 @@ function ActiveConvoView({
             />
             {searchQuery && (
               <button onClick={() => onSearchChange?.("")}
-                className="text-muted-foreground hover:text-foreground">
+                className="text-muted-foreground active:text-foreground">
                 <XCircle className="h-3.5 w-3.5" />
               </button>
             )}
@@ -1052,7 +1052,7 @@ function ActiveConvoView({
                   })()}
                   
                   <div className={cn("mt-0.5 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-slate-400")}>
+                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-neutral-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
                     {isMe && (hasBeenRead
@@ -1062,14 +1062,14 @@ function ActiveConvoView({
                     {/* Reaction button */}
                     <button
                       onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                      className={cn("transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-slate-400")}
+                      className={cn("transition-opacity active:opacity-70", isMe ? "text-white/60" : "text-neutral-400")}
                       title="Add reaction"
                     >
                       <Smile className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
-                  
+
                 {/* Reaction picker */}
                 <AnimatePresence>
                   {showReactions === msg.id && (
@@ -1078,14 +1078,14 @@ function ActiveConvoView({
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: 5 }}
                       className={cn(
-                        "mt-1 flex gap-1.5 rounded-full bg-white border border-slate-200 shadow-lg px-2.5 py-1.5",
+                        "mt-1 flex gap-1.5 rounded-full bg-white border border-neutral-200 shadow-lg px-2.5 py-1.5",
                       )}
                     >
                       {reactions.map((emoji) => (
                         <button
                           key={emoji}
                           onClick={() => addReaction(msg.id, emoji)}
-                          className="hover:scale-125 transition-transform"
+                          className="active:scale-125 transition-transform"
                         >
                           <Emoji emoji={emoji} size={24} />
                         </button>
@@ -1157,7 +1157,7 @@ function ActiveConvoView({
           <VoiceRecorder onSend={handleVoiceSend} />
           <Shake trigger={sendError} intensity="medium">
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
-              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />
