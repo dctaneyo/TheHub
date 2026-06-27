@@ -237,6 +237,14 @@ chip appears or disappears next to it). If something needs to look
 stable, don't give it a width that depends on its neighbors, rather
 than papering over the resulting jiggle with a spring.
 
+**Micro-interactions communicate a result, not a mood.** A small animation
+on a meaningful state change (a task checking off, a save completing) is
+worth having — it confirms the action landed — but it earns its place by
+marking *that specific event*, not by existing everywhere as ambient
+polish. If the same flourish would play whether the action succeeded,
+failed, or did nothing, it isn't a micro-interaction, it's decoration with
+extra steps.
+
 ---
 
 ## 10. Selection & Status Patterns
@@ -343,7 +351,74 @@ just a `title` attribute and hoping.
 
 ---
 
-## 14. Do Not Use
+## 14. Icons
+
+One icon library, one default treatment, used everywhere — `src/lib/icons.tsx`
+is the only place an icon set gets imported (currently Phosphor, wrapped with
+a `duotone` default), re-exported under familiar Lucide-style names. No
+component imports `lucide-react` or `@phosphor-icons/react` directly; if a
+needed icon isn't in the barrel file yet, it gets added there, not
+hand-imported locally. This isn't a hypothetical rule — it's already true
+across the codebase and worth keeping true on purpose rather than by accident.
+
+- **Same icon = same meaning, everywhere.** Don't reuse an icon already
+  standing for one action (e.g. the settings gear) for a different,
+  unrelated one elsewhere, and don't introduce a second icon for an action
+  that already has one (two different "remove" icons in two different
+  files is a sign nobody checked).
+- **Size comes from the existing scale, not a one-off.** This app already
+  converges on a handful of sizes used for the same kind of control
+  everywhere (`h-3.5 w-3.5` inline-with-text, `h-4 w-4` standalone buttons,
+  `h-5 w-5` larger touch targets). A new icon usage should match the size
+  already used for that role, not introduce `h-4.5` because it looked right
+  in isolation.
+- **Icon-only controls still need the Section 13 treatment** — a real icon
+  doesn't make a control self-explanatory by itself; it still needs a
+  touch-compatible label (`IconTip`, not `title`).
+
+**Check:** grep for `lucide-react` or `@phosphor-icons/react` outside
+`src/lib/icons.tsx` — any hit is a violation. Grep for a given action's icon
+(e.g. `X` for remove/close) and confirm every screen using that action uses
+the same one.
+
+---
+
+## 15. Component Consistency
+
+The same kind of element should look and behave the same way everywhere it
+appears, independent of which screen or file it was built in. This is a
+different failure mode from Section 3's rounding-consistency rule (one
+property, applied unevenly) — this is the same *component* drifting into
+several slightly different implementations because nobody reused the first
+one.
+
+**A concrete instance already in this codebase:** the status-dot pattern
+from Section 10 (small colored dot + plain-weight label) is consistently
+*designed*, but not consistently *sized* — `h-1.5 w-1.5`, `h-2 w-2`, and
+`h-2.5 w-2.5` all show up as "the" status dot across different files, with
+no stated reason one context gets a bigger dot than another. The pattern is
+right; the repeated-by-hand execution of it drifted. The fix isn't a rule
+that didn't exist — Section 10 already states the pattern — it's actually
+extracting it into one shared piece so every consumer gets the same size for
+free instead of re-guessing it.
+
+- Before adding a new instance of a pattern that already exists elsewhere
+  (a badge, a status dot, a pill button, an empty state), check how it's
+  already built somewhere else in the app and match it — or extract a
+  shared component if a third near-duplicate is about to get created.
+- A semantic action (remove, save, cancel, expand) should use the same
+  icon, the same label wording, and roughly the same control shape on every
+  screen that has it — not "Cancel" in one place and "Discard" in another
+  for the same action.
+
+**Check:** pick a pattern that recurs across screens (a status dot, a
+destructive action button, an empty state) and diff its actual class list
+between two unrelated files. Any unexplained difference is drift, not a
+deliberate per-screen decision.
+
+---
+
+## 16. Do Not Use
 
 The canonical list. These are named because they're the empirically
 most-flagged "this looks AI-made" patterns (sourced from large-scale
@@ -391,7 +466,18 @@ it's inconvenient in the moment.
 - **Glassmorphism/backdrop-blur used decoratively** rather than
   structurally (a fixed header that needs to stay legible over
   scrolling content is structural; blur for its own sake is not).
-- **Redundant icon+label pairs** where the icon adds no information.
+- **Redundant elements that say the same thing twice** — an icon+label
+  pair where the icon adds no information beyond the label, a heading that
+  restates the section it's already inside, a "0 results" empty state that
+  repeats the filter text already visible above it. If covering one of the
+  two leaves no information lost, one of them is decoration.
+- **Stacking more than one decorative effect on the same element** without
+  a specific reason for each — blur + gradient + shadow + glow-ring all on
+  one card reads as "tried every effect," not as a considered choice. Each
+  effect used elsewhere in this doc (shadow in Section 3, blur in the
+  glassmorphism bullet above) is fine on its own, applied for the reason
+  stated where it's introduced; the tell is several of them compounding on
+  one surface with no individual justification.
 - **Hover-only feedback** — any interactive treatment defined only on
   `:hover` with no active/press equivalent. This product runs on
   touchscreen kiosks with no pointer; hover-only feedback is invisible
@@ -496,10 +582,10 @@ after it's been copied across twenty is not.
   from an abandoned liquid-glass redesign attempt; also caught real CSS
   `:hover` rules in that class the earlier Tailwind-only hover sweeps
   had missed.
-- 2026-06-26 — added Sections 12-14 (data drives the UI, progressive
+- 2026-06-26 — added Sections 11-13 (data drives the UI, progressive
   disclosure & spectrum of explicitness, UI is what you can't see),
   sourced from a second design-principles video. Identified a concrete
-  instance of Section 14's problem already in this codebase: 13
+  instance of Section 13's problem already in this codebase: 13
   icon-only controls relying solely on the hover-triggered native
   `title` attribute for explanation, which doesn't function on a
   touchscreen kiosk.
@@ -569,3 +655,26 @@ after it's been copied across twenty is not.
   layout to switch away from — `isCustom` still exists and still gates
   what gets persisted (an untouched default layout saves as `null`,
   matching prior behavior).
+- 2026-06-26 — added Section 14 (Icons) and Section 15 (Component
+  Consistency), prompted by a user-supplied checklist of topics to
+  consider. Icons codifies the icon system that already existed in
+  practice (`src/lib/icons.tsx` as the sole Phosphor import point,
+  `duotone` as the default weight, no direct `lucide-react`/
+  `@phosphor-icons/react` imports elsewhere — verified by grep before
+  writing the section) rather than inventing a new rule. Component
+  Consistency cites a real instance already in this codebase: the
+  Section 10 status-dot pattern is consistently designed but
+  inconsistently sized (`h-1.5 w-1.5`/`h-2 w-2`/`h-2.5 w-2.5` all used
+  as "the" status dot with no stated reason). Also added a
+  micro-interactions paragraph to Section 9, and two Do Not Use
+  entries: redundant elements generalized beyond the existing
+  icon+label bullet, and decorative-effect stacking. Skipped adding a
+  standalone "Spacing" or "Interactive Feedback" section from that
+  checklist — both are already covered by Sections 5/3 and 6/9
+  respectively; a duplicate section would have fragmented existing,
+  enforced rules rather than adding anything new. "User Flow" from the
+  same checklist was deliberately deferred rather than added
+  here — unlike the other topics, it doesn't reduce to a "grep for
+  this" check without first auditing this app's actual flows, and
+  writing it without that groundwork would have produced generic UX
+  advice instead of a falsifiable rule.
