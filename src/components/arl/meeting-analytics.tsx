@@ -164,7 +164,7 @@ export function MeetingAnalyticsDashboard() {
 
         {/* Meeting header */}
         <div className="bg-card rounded-xl p-4 border border-border">
-          <h3 className="text-lg font-bold text-foreground mb-1">{m.title}</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-1">{m.title}</h3>
           <p className="text-sm text-muted-foreground">Hosted by {m.hostName}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {formatDate(m.startedAt)}
@@ -193,21 +193,21 @@ export function MeetingAnalyticsDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground text-xs border-b border-border">
-                  <th className="text-left px-4 py-2 font-medium">Name</th>
-                  <th className="text-left px-4 py-2 font-medium">Type</th>
-                  <th className="text-left px-4 py-2 font-medium">Role</th>
-                  <th className="text-center px-4 py-2 font-medium">Duration</th>
-                  <th className="text-center px-4 py-2 font-medium">Msgs</th>
-                  <th className="text-center px-4 py-2 font-medium">Q&A</th>
-                  <th className="text-center px-4 py-2 font-medium">Reactions</th>
-                  <th className="text-center px-4 py-2 font-medium">Hands</th>
-                  <th className="text-center px-4 py-2 font-medium">Muted</th>
+                  <th className="text-left px-4 py-2 font-semibold">Name</th>
+                  <th className="text-left px-4 py-2 font-semibold">Type</th>
+                  <th className="text-left px-4 py-2 font-semibold">Role</th>
+                  <th className="text-center px-4 py-2 font-semibold">Duration</th>
+                  <th className="text-center px-4 py-2 font-semibold">Msgs</th>
+                  <th className="text-center px-4 py-2 font-semibold">Q&A</th>
+                  <th className="text-center px-4 py-2 font-semibold">Reactions</th>
+                  <th className="text-center px-4 py-2 font-semibold">Hands</th>
+                  <th className="text-center px-4 py-2 font-semibold">Muted</th>
                 </tr>
               </thead>
               <tbody>
                 {participants.map(p => (
                   <tr key={p.id} className="border-b border-border hover:bg-muted/50">
-                    <td className="px-4 py-2 text-foreground font-medium">{p.participantName}</td>
+                    <td className="px-4 py-2 text-foreground font-semibold">{p.participantName}</td>
                     <td className="px-4 py-2">
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
@@ -276,30 +276,30 @@ export function MeetingAnalyticsDashboard() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duration:</span>
-                  <span className="font-medium text-foreground">{formatDuration(p.duration)}</span>
+                  <span className="font-semibold text-foreground">{formatDuration(p.duration)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Messages:</span>
-                  <span className="font-medium text-foreground">{p.messagesSent}</span>
+                  <span className="font-semibold text-foreground">{p.messagesSent}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Q&A:</span>
-                  <span className="font-medium text-foreground">{p.questionsSent}</span>
+                  <span className="font-semibold text-foreground">{p.questionsSent}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Reactions:</span>
-                  <span className="font-medium text-foreground">{p.reactionsSent}</span>
+                  <span className="font-semibold text-foreground">{p.reactionsSent}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Hand Raises:</span>
-                  <span className="font-medium text-foreground">{p.handRaiseCount}</span>
+                  <span className="font-semibold text-foreground">{p.handRaiseCount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Muted by Host:</span>
                   {p.wasMutedByHost ? (
-                    <span className="text-red-400 font-medium">Yes</span>
+                    <span className="text-red-400 font-semibold">Yes</span>
                   ) : (
-                    <span className="text-muted-foreground font-medium">No</span>
+                    <span className="text-muted-foreground font-semibold">No</span>
                   )}
                 </div>
               </div>
@@ -314,14 +314,14 @@ export function MeetingAnalyticsDashboard() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Meeting Analytics
         </h2>
         {meetings.length > 0 && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
           >
             <Trash2 className="h-4 w-4" />
             Delete All
@@ -338,7 +338,7 @@ export function MeetingAnalyticsDashboard() {
                 <Trash2 className="h-6 w-6 text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">Delete All Meeting Data?</h3>
+                <h3 className="text-lg font-semibold text-foreground">Delete All Meeting Data?</h3>
                 <p className="text-sm text-muted-foreground">This action cannot be undone</p>
               </div>
             </div>
@@ -354,14 +354,14 @@ export function MeetingAnalyticsDashboard() {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-sm font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAll}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -415,9 +415,9 @@ export function MeetingAnalyticsDashboard() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground truncate">{m.title}</span>
+                    <span className="text-sm font-semibold text-foreground truncate">{m.title}</span>
                     {!m.endedAt && (
-                      <span className="text-[10px] bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
+                      <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
@@ -428,16 +428,16 @@ export function MeetingAnalyticsDashboard() {
                 </div>
                 <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-2 sm:ml-4">
                   <div className="text-center">
-                    <p className="text-sm font-bold text-foreground">{m.peakParticipants}</p>
-                    <p className="text-[10px] text-muted-foreground">joined</p>
+                    <p className="text-sm font-semibold text-foreground">{m.peakParticipants}</p>
+                    <p className="text-xs text-muted-foreground">joined</p>
                   </div>
                   <div className="text-center hidden sm:block">
-                    <p className="text-sm font-bold text-foreground">{formatDuration(m.duration)}</p>
-                    <p className="text-[10px] text-muted-foreground">duration</p>
+                    <p className="text-sm font-semibold text-foreground">{formatDuration(m.duration)}</p>
+                    <p className="text-xs text-muted-foreground">duration</p>
                   </div>
                   <div className="text-center hidden sm:block">
-                    <p className="text-sm font-bold text-foreground">{m.totalMessages}</p>
-                    <p className="text-[10px] text-muted-foreground">messages</p>
+                    <p className="text-sm font-semibold text-foreground">{m.totalMessages}</p>
+                    <p className="text-xs text-muted-foreground">messages</p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -472,8 +472,8 @@ function StatCard({ icon: Icon, label, value, color }: {
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className="text-lg font-bold text-foreground">{value}</p>
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-semibold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
     </div>
   );
 }

@@ -142,7 +142,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 <Menu className="h-4.5 w-4.5" />
               </button>
             )}
-            <h2 className="text-base font-bold text-foreground hidden sm:block">
+            <h2 className="text-base font-semibold text-foreground hidden sm:block">
               {navItems.find((n) => n.id === displayView)?.label ?? ""}
             </h2>
           </div>
@@ -194,11 +194,11 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                           <p className="text-xs font-semibold text-foreground">
                             {isOnline && socketConnected ? "Connected" : "Offline"}
                           </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {isOnline && socketConnected
                               ? sessionCode
                                 ? <>
-                                    <span className="font-mono font-bold tracking-wider">#{sessionCode}</span>
+                                    <span className="font-mono font-semibold tracking-wider">#{sessionCode}</span>
                                     {sessionCount > 1 && <span> · +{sessionCount - 1} other{sessionCount > 2 ? "s" : ""}</span>}
                                   </>
                                 : "Server reachable"
@@ -228,9 +228,9 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <p className="text-xs font-semibold text-foreground">Theme</p>
-                        <p className="text-[10px] text-muted-foreground capitalize">{theme || "system"}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{theme || "system"}</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">Tap to cycle</span>
+                      <span className="text-xs text-muted-foreground">Tap to cycle</span>
                     </button>
 
                     {/* Push Notifications */}
@@ -241,7 +241,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Enabled</p>
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400">Enabled</p>
                         </div>
                         <div className="h-2 w-2 rounded-full bg-emerald-500" />
                       </div>
@@ -252,7 +252,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-[10px] text-red-600 dark:text-red-400">Blocked by browser</p>
+                          <p className="text-xs text-red-600 dark:text-red-400">Blocked by browser</p>
                         </div>
                       </div>
                     ) : (
@@ -265,7 +265,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                         <div className="flex-1 min-w-0 text-left">
                           <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-[10px] text-muted-foreground">Tap to enable</p>
+                          <p className="text-xs text-muted-foreground">Tap to enable</p>
                         </div>
                       </button>
                     )}
@@ -381,7 +381,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             className={cn(
-              "fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] rounded-2xl border px-5 py-3 shadow-xl text-sm font-medium",
+              "fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] rounded-2xl border px-5 py-3 shadow-xl text-sm font-semibold",
               notifToast.type === "success"
                 ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
                 : "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300"
@@ -409,9 +409,9 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs font-bold text-red-600 uppercase">Live Now</span>
+                    <span className="text-xs font-semibold text-red-600 uppercase">Live Now</span>
                   </div>
-                  <p className="text-sm font-bold text-foreground truncate">{activeBroadcast.title}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{activeBroadcast.title}</p>
                   <p className="text-xs text-muted-foreground">by {activeBroadcast.arlName}</p>
                 </div>
               </div>
@@ -427,7 +427,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={() => setShowBroadcastNotification(false)}
-                  className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
+                  className="px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
                 >
                   Dismiss
                 </button>

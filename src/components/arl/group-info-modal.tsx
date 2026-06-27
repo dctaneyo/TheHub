@@ -405,7 +405,7 @@ export function GroupInfoModal({
               {showAddMember && (
                 <div className="mb-4 p-4 border rounded-lg bg-muted/50">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Add Members</h4>
+                    <h4 className="font-semibold">Add Members</h4>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -466,7 +466,7 @@ export function GroupInfoModal({
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <p className="font-medium">{member.name}</p>
+                        <p className="font-semibold">{member.name}</p>
                         <div className="flex gap-2 mt-1">
                           {groupInfo.createdBy === member.memberId &&
                             groupInfo.createdByType === member.memberType && (

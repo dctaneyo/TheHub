@@ -30,7 +30,7 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
         className="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-sm"
         onClick={e => e.stopPropagation()}
       >
-        <h3 className="text-white font-bold text-base mb-1">Transfer Host Role</h3>
+        <h3 className="text-white font-semibold text-base mb-1">Transfer Host Role</h3>
         <p className="text-slate-400 text-xs mb-4">Select a participant to become the new host. You will become a co-host.</p>
         <div className="space-y-1 max-h-60 overflow-y-auto">
           {others.map(p => {
@@ -42,14 +42,14 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
                 className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-700/50 transition-colors text-left"
               >
                 <div className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
+                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white",
                   metadata.userType === "arl" ? "bg-blue-600" : metadata.userType === "guest" ? "bg-purple-600" : "bg-slate-600"
                 )}>
                   {p.name?.charAt(0) || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm text-white font-medium truncate block">{p.name}</span>
-                  <span className="text-[10px] text-slate-400 capitalize">{metadata.userType || "participant"}</span>
+                  <span className="text-sm text-white font-semibold truncate block">{p.name}</span>
+                  <span className="text-xs text-slate-400 capitalize">{metadata.userType || "participant"}</span>
                 </div>
                 <ArrowRightLeft className="h-4 w-4 text-slate-500" />
               </button>
@@ -61,7 +61,7 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
         </div>
         <button
           onClick={onClose}
-          className="mt-3 w-full h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors"
+          className="mt-3 w-full h-9 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-colors"
         >
           Cancel
         </button>

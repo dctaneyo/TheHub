@@ -242,14 +242,14 @@ export function RemoteLogin() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-foreground">Remote Login</h2>
+          <h2 className="text-lg font-semibold text-foreground">Remote Login</h2>
           <p className="text-xs text-muted-foreground">
             Log in devices remotely using their Session ID from the login screen
           </p>
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
+          className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -260,21 +260,21 @@ export function RemoteLogin() {
       {successMsg && (
         <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{successMsg}</span>
+          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{successMsg}</span>
         </div>
       )}
       {errorMsg && (
         <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3">
-          <span className="text-sm font-medium text-red-700 dark:text-red-300">{errorMsg}</span>
+          <span className="text-sm font-semibold text-red-700 dark:text-red-300">{errorMsg}</span>
         </div>
       )}
 
       {/* Pending sessions */}
       <div>
-        <h3 className="mb-3 text-sm font-bold text-foreground">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">
           Waiting Sessions
           {pendingSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
               {pendingSessions.length}
             </span>
           )}
@@ -323,7 +323,7 @@ export function RemoteLogin() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.8 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-white shadow-md"
+                          className="flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-white shadow-md"
                         >
                           <Hand className="h-3 w-3" />
                           That&apos;s me!
@@ -337,7 +337,7 @@ export function RemoteLogin() {
                     >
                       <Monitor className={cn("h-6 w-6", isSelfPinging ? "text-amber-500" : isSelected ? "text-[var(--hub-red)]" : "text-muted-foreground")} />
                       <span className={cn("text-2xl font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700" : "text-foreground")}>{ps.code}</span>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         <p>{getDeviceHint(ps.userAgent)}</p>
                         <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
                       </div>
@@ -346,7 +346,7 @@ export function RemoteLogin() {
                       onClick={() => handlePing(ps.id)}
                       disabled={pingingId === ps.id}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all",
+                        "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
                         pingingId === ps.id
                           ? "bg-amber-400 text-white scale-95"
                           : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
@@ -370,7 +370,7 @@ export function RemoteLogin() {
           <div className="mb-4 flex items-center gap-3">
             <Zap className="h-5 w-5 text-[var(--hub-red)]" />
             <div>
-              <h3 className="text-sm font-bold text-foreground">
+              <h3 className="text-sm font-semibold text-foreground">
                 Assign Session <span className="font-black tracking-widest">{selectedSession.code}</span>
               </h3>
               <p className="text-xs text-muted-foreground">Choose an account to log this device into</p>
@@ -420,9 +420,9 @@ export function RemoteLogin() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">{loc.name}</p>
-                    <p className="text-[10px] text-muted-foreground">Store #{loc.storeNumber}</p>
+                    <p className="text-xs text-muted-foreground">Store #{loc.storeNumber}</p>
                   </div>
-                  <span className="text-[10px] font-bold text-[var(--hub-red)]">→ Dashboard</span>
+                  <span className="text-xs font-semibold text-[var(--hub-red)]">→ Dashboard</span>
                 </button>
               ))
             ) : (
@@ -438,9 +438,9 @@ export function RemoteLogin() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">{arl.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{arl.role === "admin" ? "Admin" : "ARL"}</p>
+                    <p className="text-xs text-muted-foreground">{arl.role === "admin" ? "Admin" : "ARL"}</p>
                   </div>
-                  <span className="text-[10px] font-bold text-purple-600">→ ARL Hub</span>
+                  <span className="text-xs font-semibold text-purple-600">→ ARL Hub</span>
                 </button>
               ))
             )}
@@ -457,10 +457,10 @@ export function RemoteLogin() {
 
       {/* Active Sessions — Force Management */}
       <div>
-        <h3 className="mb-3 text-sm font-bold text-foreground">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">
           Active Sessions
           {activeSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+            <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               {activeSessions.length}
             </span>
           )}
@@ -493,9 +493,9 @@ export function RemoteLogin() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">{sess.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {sess.userType === "location" ? `Store #${sess.storeNumber}` : "ARL"}
-                        {sess.sessionCode && <> · <span className="font-mono font-bold">{sess.sessionCode}</span></>}
+                        {sess.sessionCode && <> · <span className="font-mono font-semibold">{sess.sessionCode}</span></>}
                         {sess.deviceType && <> · {sess.deviceType}</>}
                         {" · "}
                         {formatDistanceToNow(new Date(sess.lastSeen), { addSuffix: true })}
@@ -505,7 +505,7 @@ export function RemoteLogin() {
                       <button
                         onClick={() => { setForceTarget(isForceTarget ? null : sess); setForceAction(isForceTarget ? null : "reassign"); }}
                         className={cn(
-                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "reassign"
                             ? "bg-amber-200 text-amber-800"
                             : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
@@ -526,7 +526,7 @@ export function RemoteLogin() {
                         }}
                         disabled={forcing}
                         className={cn(
-                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "logout"
                             ? "bg-red-500 text-white"
                             : "bg-muted text-muted-foreground hover:bg-red-100 hover:text-red-700"
@@ -544,7 +544,7 @@ export function RemoteLogin() {
                     <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50/30 p-4">
                       <div className="mb-3 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-amber-600" />
-                        <span className="text-xs font-bold text-amber-800">
+                        <span className="text-xs font-semibold text-amber-800">
                           Reassign {sess.name} to a different account
                         </span>
                       </div>
@@ -587,8 +587,8 @@ export function RemoteLogin() {
                               className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
                             >
                               <Store className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="flex-1 text-xs font-medium text-foreground">{loc.name}</span>
-                              <span className="text-[10px] text-muted-foreground">#{loc.storeNumber}</span>
+                              <span className="flex-1 text-xs font-semibold text-foreground">{loc.name}</span>
+                              <span className="text-xs text-muted-foreground">#{loc.storeNumber}</span>
                             </button>
                           ))
                         ) : (
@@ -600,8 +600,8 @@ export function RemoteLogin() {
                               className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
                             >
                               <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                              <span className="flex-1 text-xs font-medium text-foreground">{arl.name}</span>
-                              <span className="text-[10px] text-muted-foreground">{arl.role === "admin" ? "Admin" : "ARL"}</span>
+                              <span className="flex-1 text-xs font-semibold text-foreground">{arl.name}</span>
+                              <span className="text-xs text-muted-foreground">{arl.role === "admin" ? "Admin" : "ARL"}</span>
                             </button>
                           ))
                         )}
@@ -616,7 +616,7 @@ export function RemoteLogin() {
 
                       <button
                         onClick={() => { setForceTarget(null); setForceAction(null); }}
-                        className="mt-2 w-full rounded-lg py-1.5 text-[10px] font-medium text-muted-foreground hover:bg-card hover:text-foreground"
+                        className="mt-2 w-full rounded-lg py-1.5 text-xs font-semibold text-muted-foreground hover:bg-card hover:text-foreground"
                       >
                         Cancel
                       </button>
@@ -631,22 +631,22 @@ export function RemoteLogin() {
 
       {/* How it works */}
       <div className="rounded-2xl bg-muted p-5">
-        <h3 className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">How it works</h3>
+        <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">How it works</h3>
         <ol className="space-y-2 text-xs text-muted-foreground">
           <li className="flex items-start gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-[10px] font-bold text-foreground">1</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-xs font-semibold text-foreground">1</span>
             The device opens the login screen and a <strong>Session ID</strong> appears in the top-right corner
           </li>
           <li className="flex items-start gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-[10px] font-bold text-foreground">2</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-xs font-semibold text-foreground">2</span>
             The restaurant tells you their Session ID (e.g. over the phone)
           </li>
           <li className="flex items-start gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-[10px] font-bold text-foreground">3</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-xs font-semibold text-foreground">3</span>
             Find the Session ID here, select it, and choose which location or ARL to log in as
           </li>
           <li className="flex items-start gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-[10px] font-bold text-foreground">4</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-xs font-semibold text-foreground">4</span>
             The device automatically logs in and redirects to the dashboard or ARL Hub
           </li>
         </ol>

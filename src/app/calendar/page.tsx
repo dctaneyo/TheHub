@@ -144,8 +144,8 @@ export default function CalendarPage() {
             <span className="text-sm font-black text-white">H</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-800">Full Calendar</h1>
-            <p className="text-[10px] text-slate-400">{user?.name}</p>
+            <h1 className="text-sm font-semibold text-slate-800">Full Calendar</h1>
+            <p className="text-xs text-slate-400">{user?.name}</p>
           </div>
         </div>
         <button
@@ -167,7 +167,7 @@ export default function CalendarPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <h2 className="text-base font-bold text-slate-800">
+            <h2 className="text-base font-semibold text-slate-800">
               {format(currentMonth, "MMMM yyyy")}
             </h2>
             <button
@@ -181,7 +181,7 @@ export default function CalendarPage() {
           {/* Day headers */}
           <div className="grid grid-cols-7 border-b border-slate-100">
             {DAYS.map((d) => (
-              <div key={d} className="py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
                 {d}
               </div>
             ))}
@@ -224,7 +224,7 @@ export default function CalendarPage() {
                             <div
                               key={task.id}
                               className={cn(
-                                "flex items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium truncate",
+                                "flex items-center gap-1 rounded px-1 py-0.5 text-xs font-semibold truncate",
                                 task.priority === "urgent" ? "bg-red-100 text-red-700" :
                                 task.priority === "high" ? "bg-orange-100 text-orange-700" :
                                 task.type === "cleaning" ? "bg-purple-100 text-purple-700" :
@@ -249,10 +249,10 @@ export default function CalendarPage() {
         {/* Day detail panel */}
         <div className="w-[300px] shrink-0 border-l border-slate-200 bg-white flex flex-col overflow-hidden">
           <div className="border-b border-slate-100 px-4 py-3">
-            <h3 className="text-sm font-bold text-slate-800">
+            <h3 className="text-sm font-semibold text-slate-800">
               {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Select a day"}
             </h3>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-xs text-slate-400">
               {selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -299,12 +299,12 @@ export default function CalendarPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-slate-800 truncate">{task.title}</p>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className="flex items-center gap-1 text-[10px] text-slate-500">
+                          <span className="flex items-center gap-1 text-xs text-slate-500">
                             <Clock className="h-2.5 w-2.5" />
                             {formatTime12(task.dueTime)}
                           </span>
                           {task.isRecurring && (
-                            <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                            <span className="flex items-center gap-1 text-xs text-slate-400">
                               <Repeat className="h-2.5 w-2.5" />
                               Recurring
                             </span>

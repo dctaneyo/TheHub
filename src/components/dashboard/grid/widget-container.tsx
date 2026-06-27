@@ -231,7 +231,7 @@ export function WidgetContainer({
               </span>
               <span
                 className={cn(
-                  "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium",
+                  "shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold",
                   active && blocked
                     ? "bg-destructive/15 text-destructive"
                     : "bg-muted text-muted-foreground"

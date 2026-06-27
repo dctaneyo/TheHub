@@ -118,7 +118,7 @@ export function ControlsBar({
               title="Transfer host role to another participant"
             >
               <ArrowRightLeft className="h-5 w-5" />
-              <span className="text-xs font-medium hidden sm:inline">Transfer</span>
+              <span className="text-xs font-semibold hidden sm:inline">Transfer</span>
             </button>
             <button
               onClick={onLeaveMeeting}
@@ -126,7 +126,7 @@ export function ControlsBar({
               title="Leave meeting (meeting continues)"
             >
               <LogOut className="h-5 w-5" />
-              <span className="text-xs font-medium hidden sm:inline">Leave</span>
+              <span className="text-xs font-semibold hidden sm:inline">Leave</span>
             </button>
             <button
               onClick={onEndMeeting}
@@ -134,7 +134,7 @@ export function ControlsBar({
               title="End meeting for all"
             >
               <PhoneOff className="h-5 w-5" />
-              <span className="text-xs font-medium hidden sm:inline">End</span>
+              <span className="text-xs font-semibold hidden sm:inline">End</span>
             </button>
           </>
         ) : (
@@ -144,7 +144,7 @@ export function ControlsBar({
             title="Leave meeting"
           >
             <PhoneOff className="h-5 w-5" />
-            <span className="text-xs font-medium hidden sm:inline">Leave</span>
+            <span className="text-xs font-semibold hidden sm:inline">Leave</span>
           </button>
         )}
       </div>

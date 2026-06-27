@@ -18,7 +18,7 @@ export function OfflineIndicator() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         className={cn(
-          "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full px-4 py-2 shadow-lg backdrop-blur-md text-xs font-medium",
+          "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full px-4 py-2 shadow-lg backdrop-blur-md text-xs font-semibold",
           isOnline
             ? "bg-amber-500/90 text-white"
             : "bg-red-600/90 text-white"
@@ -29,7 +29,7 @@ export function OfflineIndicator() {
             <WifiOff className="h-3.5 w-3.5" />
             <span>Offline</span>
             {pendingCount > 0 && (
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px]">
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
                 {pendingCount} queued
               </span>
             )}
@@ -45,7 +45,7 @@ export function OfflineIndicator() {
             <span>{pendingCount} pending</span>
             <button
               onClick={syncNow}
-              className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] active:bg-white/30 transition-colors"
+              className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs active:bg-white/30 transition-colors"
             >
               Sync Now
             </button>

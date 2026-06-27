@@ -218,12 +218,12 @@ export function ConnectionStatus() {
             </div>
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Connected</span>
             {sessionCode && (
-              <span className="ml-0.5 font-mono text-xs font-bold text-muted-foreground tracking-wider">
+              <span className="ml-0.5 font-mono text-xs font-semibold text-muted-foreground tracking-wider">
                 #{sessionCode}
               </span>
             )}
             {multiSession && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-white">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-xs font-semibold text-white">
                 {sessions.length}
               </span>
             )}
@@ -259,13 +259,13 @@ export function ConnectionStatus() {
             style={dropdownPos ? { top: dropdownPos.top, right: dropdownPos.right } : {}}
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Active Sessions ({sessions.length})
               </p>
               {multiSession && (
                 <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5">
                   <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
-                  <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">Multiple active</span>
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Multiple active</span>
                 </div>
               )}
             </div>
@@ -285,10 +285,10 @@ export function ConnectionStatus() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <Hash className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                      <span className="font-mono text-xs font-bold tracking-widest text-foreground">{s.code}</span>
-                      {s.isCurrent && <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">(this)</span>}
+                      <span className="font-mono text-xs font-semibold tracking-widest text-foreground">{s.code}</span>
+                      {s.isCurrent && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">(this)</span>}
                     </div>
-                    <p className="text-[9px] text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {s.deviceType ?? "unknown"} · {formatDistanceToNow(new Date(s.lastSeen), { addSuffix: true })}
                     </p>
                   </div>

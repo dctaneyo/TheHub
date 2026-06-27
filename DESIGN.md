@@ -56,17 +56,69 @@ Both are self-hosted the same way (`next/font/local`, static `.woff2`
 in `src/app/fonts/`) for kiosk/offline reliability — no Google Fonts
 CDN at runtime.
 
-A small, fixed set of sizes and weights, each with a defined job — not
-a size or weight picked per-component on the fly. Tighter scales for
-dense/functional UI, more expressive range only where content (e.g.
-marketing headlines) actually calls for it. Body text wraps at roughly
-75 characters per line.
+**Four sizes, named by job, not by how they were used last time:**
 
-**Check:** any inline font-size or font-weight that isn't traceable to
-a named scale entry is a violation, not a judgment call. Any digit-only
-display (time, codes, IDs) using `--font-sans` with `tabular-nums`
-instead of `--font-mono` is also a violation — that's the "one safe
-font" tell, just disguised with a CSS property.
+| Role | Size | Tailwind | Used for |
+|---|---|---|---|
+| Caption | 12px | `text-xs` | metadata, timestamps, badges |
+| Body | 14px | `text-sm` | the default for UI text — labels, list items, controls |
+| Title | 18px | `text-lg` | widget/card/modal titles |
+| Display | 24px | `text-2xl` | page-level headings |
+
+`text-base`/`text-xl`/`text-3xl`+ are not part of the scale — round to
+the nearest tier above instead of reaching for an in-between size.
+Marketing/landing-page headlines are the one stated exception (per
+Section 0's "more expressive range only where content calls for it"),
+not a license to use an in-between size in ordinary UI.
+
+**Two weights — Regular (400) and Semibold (600).** Checked against
+actual usage before picking these: `font-medium`/`font-semibold`/
+`font-bold` were nearly evenly split across the *same* size tiers with
+no consistent role separating them (e.g. `text-sm font-medium` and
+`text-sm font-semibold` both showing up ~20+ times for what was
+evidently the same job) — that's drift, not a deliberate 3-tier
+hierarchy, so it collapsed to two: Regular for body/secondary text,
+Semibold for everything that needs emphasis (labels, titles, buttons).
+
+**Stated exception — `font-black` (900), a display register, not a
+third UI weight.** Reserved for: numeral/code displays (clock, stat
+numbers, session codes — usually paired with `tabular-nums` or
+`font-mono`), single-character brand marks (logo monograms, avatar
+initials), marketing headlines, and safety-critical alert headings
+(emergency overlay, overdue-tasks banner). The common thread is "not
+ordinary UI text" — if it's a label, a button, or a paragraph, it
+doesn't qualify no matter how much emphasis it seems to want.
+
+**Font floor — never shrink to compensate for space.** 12px is the
+absolute minimum anywhere, reserved for captions only; body text has a
+14px floor. Mobile gets the *same* floors as kiosk/desktop, not smaller
+ones — the failure mode this guards against is a future `sm:text-base
+text-xs` pattern that shrinks text specifically because the viewport
+got smaller, which is the opposite of what a smaller, closer-held
+screen needs. Form inputs have their own stricter 16px floor
+(`globals.css`'s `@supports (-webkit-touch-callout: none)` block) to
+stop iOS from auto-zooming on focus — that's a platform constraint, not
+a style choice, and it's a higher floor than body text's because it's
+solving a different problem.
+
+**Stated exception — the on-screen keyboard's keys (`onscreen-
+keyboard.tsx`).** `text-[15px]` on every key, applied via one shared
+constant, not picked per-key — a deliberate, single, already-consistent
+choice for tap-target legibility on a touch keyboard, where rounding
+down to Body (14px) would make a legibility-critical control marginally
+harder to read for no actual benefit. Don't extend this 15px value
+anywhere else; it's scoped to this one component.
+
+Both typefaces are self-hosted the same way (`next/font/local`, static
+`.woff2` in `src/app/fonts/`) for kiosk/offline reliability — no Google
+Fonts CDN at runtime. Body text wraps at roughly 75 characters per line.
+
+**Check:** any inline font-size or font-weight that isn't one of the
+four sizes/two weights above (or a named, stated exception) is a
+violation, not a judgment call. Any digit-only display (time, codes,
+IDs) using `--font-sans` with `tabular-nums` instead of `--font-mono`
+is also a violation — that's the "one safe font" tell, just disguised
+with a CSS property.
 
 ---
 
@@ -94,8 +146,25 @@ color for a new meaning; reuse before adding.
 
 ## 3. Spacing & Shape
 
-Spacing follows one base unit and its multiples — no arbitrary one-off
-values.
+**8pt grid.** Spacing (padding, margin, gap) is primarily a multiple of
+8px — `gap-2`/`p-4`/`m-6`/`gap-8` (8/16/24/32px), and so on. A **4px
+half-step is a stated exception**, not a loophole: real 8pt systems are
+usually documented exactly this way (Material's is "4dp base unit, 8dp
+grid for layout") because 8px alone is too coarse for icon gaps and
+dense-control padding. So `gap-1`/`p-3`/`gap-5` (4/12/20px) are fine.
+What's an actual violation is anything *finer* than the 4px half-step —
+`gap-1.5`/`p-2.5`/`gap-3.5` (6/10/14px) — those read as an eyeballed
+pixel nudge, not a value taken from the scale. (Audited at 994 instances
+on the primary 8px grid, 831 on the accepted 4px half-step, and 395 true
+violations finer than that — the violations are a real, sizeable
+minority, not a rounding error, and worth a deliberate retrofit pass
+rather than a blanket sed: which direction a `gap-1.5` should round to
+depends on what's next to it, not just the number.)
+
+**Check:** any spacing value finer than 4px (i.e. ending in `.5` below
+the 4px step — `0.5`, `1.5`, `2.5`, `3.5`) is a violation. `0`/`1`/`2`/
+`3`/`4`/`5`/`6`/`8`/`10`/`12`+ are all fine (every whole Tailwind unit
+from here up is already a multiple of 4px).
 
 Radius: this product's house style is a **heavy, near-uniform radius**
 — large, soft corners across cards, containers, and controls, rather
@@ -804,3 +873,32 @@ after it's been copied across twenty is not.
   desktop grid and the new mobile stack agree on which widgets are
   ambient from one shared check instead of two copies of the same
   type comparison.
+- 2026-06-26 — canonized a 4-size/2-weight type scale and an 8pt
+  spacing grid (Sections 1 and 3), then ran the safe, mechanical part
+  of a full-codebase retrofit immediately rather than letting the new
+  rule and old code drift apart from day one:
+  - `font-medium` and `font-bold` collapsed into `font-semibold`
+    globally (421 instances, 79 files) — checked first that this was
+    actually drift and not a real 3-tier hierarchy: the same size tier
+    (`text-sm`, `text-xs`) had near-identical counts of `font-medium`
+    and `font-semibold` doing the same job, with no consistent role
+    separating them. `font-black` was audited and kept, but its stated
+    exception is broader than originally proposed (not just numerals —
+    also brand monograms and safety-critical alert headings, which is
+    what it was actually already being used for).
+  - Every arbitrary sub-12px font size (`text-[7px]` through
+    `text-[11px]`, 575 instances, 82 files) collapsed to `text-xs` —
+    mechanical and unambiguous since all of them were already below
+    the new 12px floor regardless of context. `text-[15px]` (7
+    instances, all in `onscreen-keyboard.tsx`, all the same shared
+    constant) was kept as a stated exception rather than forced down
+    to Body, since it's already a single deliberate, consistent
+    choice for touch-keyboard legibility.
+  - **Deliberately not done in this pass:** reassigning `text-base`
+    (58 instances) and `text-xl` (28 instances) to the nearest real
+    tier, and fixing the 395 true spacing violations (`gap-1.5`,
+    `p-2.5`, etc.). Both need contextual judgment per instance — which
+    tier a `text-base` should round to, which direction a `gap-1.5`
+    should round — that a blind find-and-replace would get wrong as
+    often as right. Scoped as a deliberate follow-up pass, file by
+    file, rather than rushed alongside the safe part.

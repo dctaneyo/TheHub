@@ -23,7 +23,7 @@ export function GridQuoteWidget() {
 
   return (
     <div className="flex h-full flex-col items-start justify-center gap-1.5 p-4">
-      <p className="text-sm font-medium text-foreground leading-relaxed line-clamp-4">
+      <p className="text-sm font-semibold text-foreground leading-relaxed line-clamp-4">
         &ldquo;{quote.text}&rdquo;
       </p>
       <p className="text-xs text-muted-foreground">— {quote.author}</p>

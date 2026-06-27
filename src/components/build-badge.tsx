@@ -8,7 +8,7 @@ export function BuildBadge() {
 
   return (
     <div className="fixed bottom-1 right-2 z-[9998] select-none pointer-events-none">
-      <span className="text-[9px] text-slate-300/60 dark:text-slate-600/40 font-mono">
+      <span className="text-xs text-slate-300/60 dark:text-slate-600/40 font-mono">
         Build: {short}
       </span>
     </div>

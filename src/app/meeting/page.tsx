@@ -549,7 +549,7 @@ function GuestMeetingPageWithParams() {
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Clock className="h-7 w-7" />
                   </div>
-                  <h1 className="text-xl font-bold">Meeting Hasn&apos;t Started Yet</h1>
+                  <h1 className="text-xl font-semibold">Meeting Hasn&apos;t Started Yet</h1>
                   <p className="text-sm text-amber-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
@@ -557,14 +557,14 @@ function GuestMeetingPageWithParams() {
                   <div className="text-center">
                     <p className="text-lg font-semibold text-foreground mb-3">Welcome, {authenticatedUser ? authenticatedUser.name : guestName}!</p>
                     <p className="text-sm text-muted-foreground mb-1">Meeting starts in</p>
-                    <p className="text-3xl font-bold font-mono text-foreground tracking-wide">{countdown}</p>
+                    <p className="text-3xl font-semibold font-mono text-foreground tracking-wide">{countdown}</p>
                     <p className="text-xs text-muted-foreground mt-2">
                       Starts at {formatTimeInZone(meetingInfo.scheduledAt, viewerTz)} (your time)
                     </p>
                     {meetingInfo.timezone &&
                       tzAbbrev(meetingInfo.scheduledAt, meetingInfo.timezone) !==
                         tzAbbrev(meetingInfo.scheduledAt, viewerTz) && (
-                        <p className="text-[11px] text-muted-foreground/70">
+                        <p className="text-xs text-muted-foreground/70">
                           {formatTimeInZone(meetingInfo.scheduledAt, meetingInfo.timezone)} (host&apos;s time)
                         </p>
                       )}
@@ -619,7 +619,7 @@ function GuestMeetingPageWithParams() {
                   <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <Video className="h-7 w-7" />
                   </div>
-                  <h1 className="text-xl font-bold">Waiting for Host</h1>
+                  <h1 className="text-xl font-semibold">Waiting for Host</h1>
                   <p className="text-sm text-blue-100 mt-1">{meetingInfo.title}</p>
                 </div>
 
@@ -628,7 +628,7 @@ function GuestMeetingPageWithParams() {
                     <div className="h-16 w-16 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center mx-auto mb-3">
                       <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
                     </div>
-                    <p className="text-sm font-medium text-foreground">The host hasn&apos;t started the meeting yet</p>
+                    <p className="text-sm font-semibold text-foreground">The host hasn&apos;t started the meeting yet</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       You&apos;ll be connected automatically once it begins
                     </p>
@@ -640,14 +640,14 @@ function GuestMeetingPageWithParams() {
                   </div>
 
                   <div className="bg-muted rounded-xl p-3 text-center">
-                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {formatTimeInZone(meetingInfo.scheduledAt, viewerTz)} (your time)
                     </p>
                     {meetingInfo.timezone &&
                       tzAbbrev(meetingInfo.scheduledAt, meetingInfo.timezone) !==
                         tzAbbrev(meetingInfo.scheduledAt, viewerTz) && (
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {formatTimeInZone(meetingInfo.scheduledAt, meetingInfo.timezone)} (host&apos;s time)
                         </p>
                       )}
@@ -679,7 +679,7 @@ function GuestMeetingPageWithParams() {
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <CheckCircle2 className="h-7 w-7" />
                 </div>
-                <h1 className="text-xl font-bold">Meeting Ended</h1>
+                <h1 className="text-xl font-semibold">Meeting Ended</h1>
                 <p className="text-sm text-slate-300 mt-1">{meetingInfo?.title || "Video Meeting"}</p>
               </div>
 
@@ -688,7 +688,7 @@ function GuestMeetingPageWithParams() {
                   <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                     <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-foreground">The meeting has ended</p>
+                  <p className="text-sm font-semibold text-foreground">The meeting has ended</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Thank you for joining!
                   </p>
@@ -728,7 +728,7 @@ function GuestMeetingPageWithParams() {
                 <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
                   <Video className="h-7 w-7" />
                 </div>
-                <h1 className="text-xl font-bold">
+                <h1 className="text-xl font-semibold">
                   {isOneClickJoin ? "You're Invited!" : "Join a Meeting"}
                 </h1>
                 <p className="text-sm text-red-100 mt-1">
@@ -793,7 +793,7 @@ function GuestMeetingPageWithParams() {
                       type="password"
                       autoFocus
                     />
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    <p className="mt-1.5 text-xs text-muted-foreground">
                       This meeting is password protected.
                     </p>
                   </motion.div>
@@ -813,7 +813,7 @@ function GuestMeetingPageWithParams() {
                 {/* Choice: Login or Join as Guest */}
                 {!showGuestInput && !showPinPad && (
                   <div className="space-y-3">
-                    <div className="text-center text-sm font-medium text-muted-foreground mb-2">How would you like to join?</div>
+                    <div className="text-center text-sm font-semibold text-muted-foreground mb-2">How would you like to join?</div>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => { setShowPinPad(true); setError(""); }}

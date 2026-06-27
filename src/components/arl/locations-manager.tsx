@@ -163,7 +163,7 @@ export function LocationsManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-foreground">Restaurant Locations</h3>
+          <h3 className="text-base font-semibold text-foreground">Restaurant Locations</h3>
           <p className="text-xs text-muted-foreground">
             {onlineCount} of {locations.length} online
           </p>
@@ -171,11 +171,11 @@ export function LocationsManager() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">{onlineCount} Online</span>
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{onlineCount} Online</span>
           </div>
           <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
             <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">{locations.length - onlineCount} Offline</span>
+            <span className="text-xs font-semibold text-muted-foreground">{locations.length - onlineCount} Offline</span>
           </div>
         </div>
       </div>
@@ -212,7 +212,7 @@ export function LocationsManager() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">{loc.name}</h4>
+                  <h4 className="text-sm font-semibold text-foreground">{loc.name}</h4>
                   <p className="text-xs text-muted-foreground">Store #{loc.storeNumber}</p>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export function LocationsManager() {
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "text-[10px]",
+                    "text-xs",
                     loc.isOnline
                       ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       : "bg-muted text-muted-foreground"
@@ -303,7 +303,7 @@ export function LocationsManager() {
               {/* Inline PIN reset form */}
               {resetPinId === loc.id && (
                 <div className="mt-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 space-y-2">
-                  <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                     <KeyRound className="h-3 w-3" />
                     Reset 4-digit PIN
                   </p>
@@ -331,11 +331,11 @@ export function LocationsManager() {
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  {pinError && <p className="text-[10px] text-red-500">{pinError}</p>}
+                  {pinError && <p className="text-xs text-red-500">{pinError}</p>}
                 </div>
               )}
               {pinSuccess === loc.id && (
-                <p className="mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                   <Check className="h-3 w-3" /> PIN reset successfully
                 </p>
               )}

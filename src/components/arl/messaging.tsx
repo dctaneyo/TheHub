@@ -76,11 +76,11 @@ export function Messaging() {
           <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-bold text-foreground">New Group Chat</h3>
+          <h3 className="text-base font-semibold text-foreground">New Group Chat</h3>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Group Name</label>
+          <label className="mb-1 block text-xs font-semibold text-muted-foreground">Group Name</label>
           <Input
             value={newGroup.name}
             onChange={(e) => setNewGroup((p) => ({ ...p, name: e.target.value }))}
@@ -90,7 +90,7 @@ export function Messaging() {
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-medium text-muted-foreground">Add Members ({newGroup.memberIds.length} selected)</label>
+          <label className="mb-2 block text-xs font-semibold text-muted-foreground">Add Members ({newGroup.memberIds.length} selected)</label>
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {participants.length === 0 && (
               <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
@@ -108,14 +108,14 @@ export function Messaging() {
                     selected ? "border-[var(--hub-red)]/30 bg-red-50" : "border-border bg-card hover:bg-muted"
                   )}
                 >
-                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
                     p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
                   )}>
                     {p.type === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{p.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
+                    <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
                   </div>
                   {selected && <div className="h-4 w-4 rounded-full bg-[var(--hub-red)]" />}
                 </button>
@@ -147,7 +147,7 @@ export function Messaging() {
           <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h3 className="text-base font-bold text-foreground">New Direct Message</h3>
+          <h3 className="text-base font-semibold text-foreground">New Direct Message</h3>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
           <Hash className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -178,8 +178,8 @@ export function Messaging() {
                 {p.type === "location" ? <Store className="h-4 w-4" /> : <Users className="h-4 w-4" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{p.name}</p>
-                <p className="text-[10px] text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
+                <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                <p className="text-xs text-muted-foreground">{p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}</p>
               </div>
               {startingDirect && <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" />}
             </button>
@@ -198,13 +198,13 @@ export function Messaging() {
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-foreground">Messages</h3>
+            <h3 className="text-base font-semibold text-foreground">Messages</h3>
             <p className="text-xs text-muted-foreground">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Direct</span>
@@ -212,7 +212,7 @@ export function Messaging() {
             </button>
             <button
               onClick={() => { setShowNewGroup(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               Group
@@ -255,8 +255,8 @@ export function Messaging() {
           {convIcon(activeConvo.type)}
         </div>
         <div className="flex-1">
-          <h4 className="text-sm font-bold text-foreground">{activeConvo.name}</h4>
-          <p className="text-[10px] text-muted-foreground">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
+          <h4 className="text-sm font-semibold text-foreground">{activeConvo.name}</h4>
+          <p className="text-xs text-muted-foreground">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
         </div>
         {isGroup && (
           <button
@@ -313,7 +313,7 @@ export function Messaging() {
             )}
           </div>
           {searchQuery && (
-            <p className="mt-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               {messages.filter((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase())).length} result(s)
             </p>
           )}
@@ -325,7 +325,7 @@ export function Messaging() {
           <div className="flex justify-center pb-3">
             <button
               onClick={() => setShowAllMessages(true)}
-              className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80"
+              className="rounded-full bg-muted px-4 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               View Past Messages
             </button>
@@ -352,7 +352,7 @@ export function Messaging() {
                 >
                   <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
                     {isGroup && !isMe && (
-                      <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
+                      <span className="mb-0.5 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
                     )}
                     <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
                       isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
@@ -378,7 +378,7 @@ export function Messaging() {
                                 isMe ? "bg-white/20" : "bg-card border border-border"
                               )}>
                                 <Emoji emoji={emoji} size={14} />
-                                {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-muted-foreground")}>{count}</span>}
+                                {count > 1 && <span className={cn("text-xs font-semibold", isMe ? "text-white/80" : "text-muted-foreground")}>{count}</span>}
                               </div>
                             ))}
                           </div>
@@ -386,7 +386,7 @@ export function Messaging() {
                       })()}
 
                       <div className={cn("mt-1 flex items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                        <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-muted-foreground")}>
+                        <span className={cn("text-xs", isMe ? "text-white/60" : "text-muted-foreground")}>
                           {format(new Date(msg.createdAt), "h:mm a")}
                         </span>
                         {isMe && (
@@ -414,7 +414,7 @@ export function Messaging() {
                               >
                                 {receiptDetail.readMembers.length > 0 && (
                                   <div className="mb-2">
-                                    <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1">Read by</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 mb-1">Read by</p>
                                     {receiptDetail.readMembers.map((rm) => {
                                       const info = memberInfoMap.get(rm.memberId);
                                       return (
@@ -428,7 +428,7 @@ export function Messaging() {
                                 )}
                                 {receiptDetail.unreadMembers.length > 0 && (
                                   <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Not yet read</p>
                                     {receiptDetail.unreadMembers.map((um) => {
                                       const info = memberInfoMap.get(um.memberId);
                                       return (
@@ -497,7 +497,7 @@ export function Messaging() {
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
                 </span>
               </motion.div>

@@ -254,7 +254,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
               <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">Remote View</h2>
+              <h2 className="text-base font-semibold text-foreground">Remote View</h2>
               <p className="text-xs text-muted-foreground">
                 {targets.length === 0
                   ? "No locations online"
@@ -286,7 +286,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-semibold text-foreground truncate">{t.name}</p>
                     {t.userKind === "arl" && (
-                      <span className="shrink-0 rounded-full bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 text-[9px] font-bold text-purple-700 dark:text-purple-300 uppercase">ARL</span>
+                      <span className="shrink-0 rounded-full bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">ARL</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -297,7 +297,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
                       : ""}
                   </p>
                   {t.currentPage && (
-                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-0.5 truncate">
+                    <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5 truncate">
                       {t.currentPage}
                     </p>
                   )}
@@ -394,7 +394,7 @@ function MirrorModal({
             <span className="shrink-0 text-xs text-white/40">Store #{target.storeNumber}</span>
           )}
           {!isConnecting && !isEnded && (
-            <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/60">
+            <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white/60">
               Mirror
             </span>
           )}
@@ -407,7 +407,7 @@ function MirrorModal({
             <button
               onClick={onToggleControl}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
                 controlEnabled
                   ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40"
                   : "bg-white/10 text-white/70 hover:bg-white/15"
@@ -420,7 +420,7 @@ function MirrorModal({
             {/* End button */}
             <button
               onClick={onEnd}
-              className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 ring-1 ring-red-500/30 transition-colors hover:bg-red-500/30"
+              className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-400 ring-1 ring-red-500/30 transition-colors hover:bg-red-500/30"
             >
               <X className="h-3.5 w-3.5" />
               End
@@ -432,7 +432,7 @@ function MirrorModal({
         {isConnecting && (
           <button
             onClick={onEnd}
-            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/15 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/60 hover:bg-white/15 transition-colors"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -475,7 +475,7 @@ function MirrorModal({
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
                 <X className="h-7 w-7 text-white/60" />
               </div>
-              <p className="text-sm font-medium text-white/60">Session ended</p>
+              <p className="text-sm font-semibold text-white/60">Session ended</p>
             </motion.div>
           )}
         </AnimatePresence>

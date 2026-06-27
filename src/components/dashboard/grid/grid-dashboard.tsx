@@ -29,7 +29,7 @@ import { useDeviceType } from "@/hooks/use-device-type";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
 // Layout/typography via Tailwind; glass surface via .pill in globals.css
-const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground";
+const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground active:text-foreground";
 
 /**
  * SettingsPanel — two distinct surfaces depending on mode, not one cog that
@@ -155,7 +155,7 @@ export function SettingsPanel({
                       className={cn("flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-sm transition-colors", used ? "cursor-not-allowed text-muted-foreground/50" : "active:bg-muted")}
                     >
                       {item.title}
-                      {used && <span className="text-[10px]">added</span>}
+                      {used && <span className="text-xs">added</span>}
                     </button>
                   );
                 })}
@@ -177,7 +177,7 @@ export function SettingsPanel({
     panelItems.push({
       key: "save",
       node: (
-        <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-medium text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60">
+        <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 shadow-sm text-xs font-semibold text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60">
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           {saving ? "Saving…" : "Save"}
         </button>
@@ -238,7 +238,7 @@ export function SettingsPanel({
               <button
                 type="button"
                 onClick={startEditing}
-                className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
               >
                 <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                 Customize widgets
@@ -247,7 +247,7 @@ export function SettingsPanel({
             <button
               type="button"
               onClick={handleReset}
-              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
             >
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
               Reset dashboard to default
@@ -258,7 +258,7 @@ export function SettingsPanel({
                 <button
                   type="button"
                   onClick={onCycleTheme}
-                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
                 >
                   {theme === "dark" ? <Moon className="h-3.5 w-3.5 text-muted-foreground" /> : theme === "light" ? <Sun className="h-3.5 w-3.5 text-muted-foreground" /> : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
                   Theme: {theme ?? "system"}
@@ -267,7 +267,7 @@ export function SettingsPanel({
                   <button
                     type="button"
                     onClick={onSignOut}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
                   >
                     <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
                     Sign Out

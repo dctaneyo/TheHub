@@ -96,8 +96,8 @@ export function ArlSidebar({
             <span className="text-sm font-black text-white">{brandInitial}</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-foreground">{brandTitle}</h1>
-            <p className="text-[10px] text-muted-foreground">ARL Dashboard</p>
+            <h1 className="text-sm font-semibold text-foreground">{brandTitle}</h1>
+            <p className="text-xs text-muted-foreground">ARL Dashboard</p>
           </div>
         </div>
         {isMobileOrTablet && (
@@ -140,7 +140,7 @@ export function ArlSidebar({
                 if (isMobileOrTablet) onClose();
               }}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
                 isActive
                   ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
                   : "text-muted-foreground hover:bg-muted"
@@ -150,7 +150,7 @@ export function ArlSidebar({
               <span className="flex-1 text-left">{item.label}</span>
               {badge > 0 && (
                 <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
                   isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
                 )}>
                   {badge > 99 ? "99+" : badge}
@@ -158,7 +158,7 @@ export function ArlSidebar({
               )}
               {onlineBadge > 0 && (
                 <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
                   isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
                 )}>
                   {onlineBadge}
@@ -173,7 +173,7 @@ export function ArlSidebar({
       <div className="border-t border-border p-3 space-y-1">
         <button
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
         >
           <LogOut className="h-4.5 w-4.5" />
           Sign Out

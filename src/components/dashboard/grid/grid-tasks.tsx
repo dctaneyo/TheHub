@@ -139,7 +139,7 @@ export function GridTasksWidget({
 
         <div className="flex w-full max-w-[240px] flex-col gap-1 text-base">
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 font-medium text-foreground">
+            <span className="flex items-center gap-2 font-semibold text-foreground">
               <span
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ background: "var(--hub-green)" }}
@@ -151,7 +151,7 @@ export function GridTasksWidget({
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 font-medium text-foreground">
+            <span className="flex items-center gap-2 font-semibold text-foreground">
               <span
                 className="h-2.5 w-2.5 rounded-full bg-yellow-400"
               />
@@ -174,7 +174,7 @@ export function GridTasksWidget({
             }}
             className="flex w-full items-center justify-between rounded-lg px-0 py-0.5 transition-colors active:text-[var(--hub-red)]"
           >
-            <span className="flex items-center gap-2 font-medium text-foreground">
+            <span className="flex items-center gap-2 font-semibold text-foreground">
               <span
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ background: "var(--hub-red)" }}
@@ -196,7 +196,7 @@ export function GridTasksWidget({
               className="h-8 w-8"
               style={{ color: "var(--hub-green)" }}
             />
-            <p className="text-base font-medium text-muted-foreground">
+            <p className="text-base font-semibold text-muted-foreground">
               {total === 0 ? "No tasks today" : "All tasks complete"}
             </p>
           </div>
@@ -211,7 +211,7 @@ export function GridTasksWidget({
               >
                 <span
                   className={cn(
-                    "min-w-0 flex-1 truncate text-base font-bold",
+                    "min-w-0 flex-1 truncate text-base font-semibold",
                     task.isOverdue ? "text-[var(--hub-red)]" : "text-foreground"
                   )}
                 >
@@ -260,7 +260,7 @@ export function GridTasksWidget({
             >
               <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">
+                  <h2 className="text-lg font-semibold text-foreground">
                     Today&apos;s Tasks
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -293,7 +293,7 @@ export function GridTasksWidget({
                       key={task.id}
                       className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
                     >
-                      <span className="w-24 shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
+                      <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
                         {formatTime(task.dueTime, task.isAllDay)}
                       </span>
                       <span
@@ -364,7 +364,7 @@ export function GridTasksWidget({
               }}
             >
               <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-                <span className="text-sm font-bold text-foreground">Missed Yesterday</span>
+                <span className="text-sm font-semibold text-foreground">Missed Yesterday</span>
                 <button
                   type="button"
                   onClick={() => setMissedOpen(false)}
@@ -385,7 +385,7 @@ export function GridTasksWidget({
                       className="flex items-center gap-2 rounded-xl bg-red-50/60 px-3 py-2 dark:bg-red-950/30"
                     >
                       <XCircle className="h-4 w-4 shrink-0 text-[var(--hub-red)]" />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
                         {task.title}
                       </span>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">

@@ -165,7 +165,7 @@ export function TenantSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Organization Settings</h2>
+          <h2 className="text-2xl font-semibold text-foreground">Organization Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Customize your hub's branding and configuration
           </p>
@@ -220,22 +220,22 @@ export function TenantSettings() {
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-xl bg-muted/50 p-3">
             <p className="text-xs text-muted-foreground">Plan</p>
-            <p className="text-lg font-bold capitalize text-foreground">{tenant.plan}</p>
+            <p className="text-lg font-semibold capitalize text-foreground">{tenant.plan}</p>
           </div>
           <div className="rounded-xl bg-muted/50 p-3">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><Store className="h-3 w-3" /> Max Locations</p>
-            <p className="text-lg font-bold text-foreground">{tenant.maxLocations}</p>
+            <p className="text-lg font-semibold text-foreground">{tenant.maxLocations}</p>
           </div>
           <div className="rounded-xl bg-muted/50 p-3">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> Max Users</p>
-            <p className="text-lg font-bold text-foreground">{tenant.maxUsers}</p>
+            <p className="text-lg font-semibold text-foreground">{tenant.maxUsers}</p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {tenant.features.map((f: string) => (
             <span
               key={f}
-              className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 capitalize"
+              className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
             >
               {f}
             </span>
@@ -263,7 +263,7 @@ export function TenantSettings() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">Organization Name</label>
+              <label className="mb-1 block text-sm font-semibold text-foreground">Organization Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -271,19 +271,19 @@ export function TenantSettings() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">App Title</label>
+              <label className="mb-1 block text-sm font-semibold text-foreground">App Title</label>
               <Input
                 value={appTitle}
                 onChange={(e) => setAppTitle(e.target.value)}
                 placeholder={`${name || "Your"} Hub`}
                 className="h-10"
               />
-              <p className="text-[10px] text-muted-foreground mt-0.5">Shown in browser tab & sidebar</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Shown in browser tab & sidebar</p>
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Brand Color</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Brand Color</label>
             <div className="flex items-center gap-3 flex-wrap">
               <input
                 type="color"
@@ -323,7 +323,7 @@ export function TenantSettings() {
               >
                 {(name || "H").charAt(0).toUpperCase()}
               </div>
-              <span className="font-bold text-foreground">{appTitle || `${name || "Your"} Hub`}</span>
+              <span className="font-semibold text-foreground">{appTitle || `${name || "Your"} Hub`}</span>
             </div>
             <div className="flex gap-2">
               <div
@@ -378,7 +378,7 @@ export function TenantSettings() {
             <option value={timezone}>{timezone}</option>
           )}
         </select>
-        <p className="text-[10px] text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Task due-soon and overdue notifications fire based on this timezone
         </p>
       </motion.div>
@@ -402,7 +402,7 @@ export function TenantSettings() {
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Hub URL</label>
+            <label className="mb-1 block text-sm font-semibold text-foreground">Hub URL</label>
             <div className="flex items-center gap-2">
               <Input
                 value={`${tenant.slug}.meetthehub.com`}
@@ -421,19 +421,19 @@ export function TenantSettings() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Custom Domain (optional)</label>
+            <label className="mb-1 block text-sm font-semibold text-foreground">Custom Domain (optional)</label>
             <Input
               value={customDomain}
               onChange={(e) => setCustomDomain(e.target.value)}
               placeholder="hub.yourcompany.com"
               className="h-10"
             />
-            <p className="text-[10px] text-muted-foreground mt-0.5">Point a CNAME record to meetthehub.com</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Point a CNAME record to meetthehub.com</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">Logo URL (optional)</label>
+              <label className="mb-1 block text-sm font-semibold text-foreground">Logo URL (optional)</label>
               <Input
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
@@ -442,7 +442,7 @@ export function TenantSettings() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">Favicon URL (optional)</label>
+              <label className="mb-1 block text-sm font-semibold text-foreground">Favicon URL (optional)</label>
               <Input
                 value={faviconUrl}
                 onChange={(e) => setFaviconUrl(e.target.value)}

@@ -222,7 +222,7 @@ export function FormsRepository() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-foreground">Forms Repository</h3>
+          <h3 className="text-base font-semibold text-foreground">Forms Repository</h3>
           <p className="text-xs text-muted-foreground">{forms.length} forms · {filtered.length} shown</p>
         </div>
         <Button
@@ -242,7 +242,7 @@ export function FormsRepository() {
             key={cat}
             onClick={() => setFilterCat(cat)}
             className={cn(
-              "rounded-lg px-3 py-1 text-[11px] font-medium capitalize transition-colors",
+              "rounded-lg px-3 py-1 text-xs font-semibold capitalize transition-colors",
               filterCat === cat
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -277,14 +277,14 @@ export function FormsRepository() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium", categoryColor(form.category))}>
+                <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
                   {categoryLabel(form.category)}
                 </span>
               </div>
               {form.description && (
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{form.description}</p>
               )}
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {form.fileName} · {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
               </p>
             </div>
@@ -332,7 +332,7 @@ export function FormsRepository() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Email Form</h3>
+                  <h3 className="text-base font-semibold text-foreground">Email Form</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm.title}</p>
                 </div>
                 <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
@@ -345,11 +345,11 @@ export function FormsRepository() {
                   <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
                     <Send className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
-                  <p className="text-sm font-medium text-foreground">{emailSuccess}</p>
+                  <p className="text-sm font-semibold text-foreground">{emailSuccess}</p>
                 </div>
               ) : (
                 <>
-                  <p className="mb-3 text-xs font-medium text-muted-foreground">Select recipients to send this form to:</p>
+                  <p className="mb-3 text-xs font-semibold text-muted-foreground">Select recipients to send this form to:</p>
                   <div className="max-h-72 overflow-y-auto space-y-1 rounded-2xl border border-border p-2">
                     {recipients.length === 0 && (
                       <div className="flex h-16 items-center justify-center">
@@ -381,8 +381,8 @@ export function FormsRepository() {
                             {r.kind === "location" ? "🏪" : "👤"}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="flex-1 truncate text-xs font-medium text-foreground">{r.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{r.email || "No email"}</p>
+                            <p className="flex-1 truncate text-xs font-semibold text-foreground">{r.name}</p>
+                            <p className="text-xs text-muted-foreground">{r.email || "No email"}</p>
                           </div>
                         </button>
                       );

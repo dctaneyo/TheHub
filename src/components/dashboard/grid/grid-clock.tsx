@@ -56,7 +56,7 @@ export function ClockWidget() {
         {time}
       </span>
       <span
-        className="font-medium text-muted-foreground"
+        className="font-semibold text-muted-foreground"
         style={{ fontSize: Math.max(10, Math.floor(fontSize * 0.28)) }}
       >
         {date}

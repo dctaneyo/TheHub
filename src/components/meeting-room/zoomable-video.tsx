@@ -184,7 +184,7 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
           </button>
         )}
         <div className="bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-          <span className="text-xs text-white font-medium">
+          <span className="text-xs text-white font-semibold">
             {Math.round(scale * 100)}%
           </span>
         </div>

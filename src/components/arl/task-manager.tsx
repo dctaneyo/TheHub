@@ -165,7 +165,7 @@ export function TaskManager() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-foreground">All Tasks & Reminders</h3>
+          <h3 className="text-base font-semibold text-foreground">All Tasks & Reminders</h3>
           <p className="text-xs text-muted-foreground">{filteredTasks.length} of {tasks.length} tasks</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -181,7 +181,7 @@ export function TaskManager() {
           </select>
           <button
             onClick={() => setShowTemplates((t) => !t)}
-            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm hover:bg-muted transition-colors"
           >
             <BookOpen className="h-3.5 w-3.5" />
             Templates
@@ -202,7 +202,7 @@ export function TaskManager() {
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
-                <h4 className="text-sm font-bold text-foreground">Task Templates</h4>
+                <h4 className="text-sm font-semibold text-foreground">Task Templates</h4>
                 <p className="text-xs text-muted-foreground">Click to pre-fill the form</p>
               </div>
               {/* Category tabs */}
@@ -235,10 +235,10 @@ export function TaskManager() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-foreground group-hover:text-[var(--hub-red)] transition-colors">{tpl.label}</p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground">{tpl.fields.dueTime}</span>
-                        {tpl.fields.isRecurring && <span className="text-[10px] text-muted-foreground capitalize">{tpl.fields.recurringType}</span>}
+                        <span className="text-xs text-muted-foreground">{tpl.fields.dueTime}</span>
+                        {tpl.fields.isRecurring && <span className="text-xs text-muted-foreground capitalize">{tpl.fields.recurringType}</span>}
                       </div>
                     </div>
                   </button>

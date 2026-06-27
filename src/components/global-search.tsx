@@ -143,7 +143,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
       >
         <Search className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Search...</span>
-        <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium sm:inline">⌘K</kbd>
+        <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-semibold sm:inline">⌘K</kbd>
       </button>
 
       {/* Search modal */}
@@ -189,7 +189,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                       key={f.id}
                       onClick={() => setFilter(f.id)}
                       className={cn(
-                        "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+                        "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
                         filter === f.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
                       )}
                     >
@@ -225,10 +225,10 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground">{result.title}</p>
+                            <p className="truncate text-sm font-semibold text-foreground">{result.title}</p>
                             <p className="truncate text-xs text-muted-foreground">{result.subtitle}</p>
                           </div>
-                          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
                             {typeLabels[result.type]}
                           </span>
                         </button>
@@ -238,7 +238,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
                   <span>↑↓ to navigate • Enter to select • Esc to close</span>
                   <span>{results.length} result{results.length !== 1 ? "s" : ""}</span>
                 </div>

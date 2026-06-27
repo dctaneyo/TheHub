@@ -57,25 +57,25 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-foreground">{task.title}</span>
-                    <Badge variant="secondary" className={cn("text-[10px]", priorityStyle?.color)}>
+                    <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
                       {task.priority}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px] capitalize">
+                    <Badge variant="outline" className="text-xs capitalize">
                       {task.type}
                     </Badge>
                     {task.isRecurring && (
-                      <Badge variant="outline" className="gap-1 text-[10px]">
+                      <Badge variant="outline" className="gap-1 text-xs">
                         <Repeat className="h-2.5 w-2.5" />
                         Recurring
                       </Badge>
                     )}
                     {task.allowEarlyComplete && (
-                      <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700">
+                      <Badge variant="outline" className="text-xs border-emerald-200 bg-emerald-50 text-emerald-700">
                         Early OK
                       </Badge>
                     )}
                     {(!task.showInToday || !task.showInCalendar) && (
-                      <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
+                      <Badge variant="outline" className="text-xs border-amber-200 bg-amber-50 text-amber-700">
                         {[!task.showInToday && "Today", !task.showInCalendar && "Cal/7-Day"].filter(Boolean).join("/")} hidden
                       </Badge>
                     )}

@@ -101,7 +101,7 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
           <button
             onClick={handleDeleteClick}
             className={cn(
-              "flex h-full w-full items-center justify-center gap-1 rounded-xl text-white text-xs font-bold transition-colors",
+              "flex h-full w-full items-center justify-center gap-1 rounded-xl text-white text-xs font-semibold transition-colors",
               confirming ? "bg-red-700" : "bg-red-500"
             )}
           >
@@ -129,12 +129,12 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
             {convo.lastMessage && (
-              <span className="shrink-0 text-[10px] text-muted-foreground">
+              <span className="shrink-0 text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: true })}
               </span>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">{convo.subtitle}</p>
+          <p className="text-xs text-muted-foreground">{convo.subtitle}</p>
           {convo.lastMessage && (
             <p className="mt-0.5 truncate text-xs text-muted-foreground">
               <span className="text-muted-foreground">{convo.lastMessage.senderName}: </span>
@@ -143,7 +143,7 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
           )}
         </div>
         {convo.unreadCount > 0 && (
-          <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
+          <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-xs font-semibold text-white">
             {convo.unreadCount}
           </span>
         )}

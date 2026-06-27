@@ -34,7 +34,7 @@ export function ChatPanel({
   return (
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        <h3 className="text-white font-bold text-sm">Chat</h3>
+        <h3 className="text-white font-semibold text-sm">Chat</h3>
         <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
           <X className="h-4 w-4" />
         </button>
@@ -47,7 +47,7 @@ export function ChatPanel({
             <div key={msg.id}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-xs font-semibold text-slate-300">{msg.senderName}</span>
-                {msg.senderType === "arl" && <span className="text-[9px] font-bold bg-red-600/30 text-red-400 px-1 py-0.5 rounded">ARL</span>}
+                {msg.senderType === "arl" && <span className="text-xs font-semibold bg-red-600/30 text-red-400 px-1 py-0.5 rounded">ARL</span>}
               </div>
               <div className="text-sm text-slate-200 bg-slate-700/50 rounded-lg p-2">{msg.content}</div>
             </div>

@@ -24,7 +24,7 @@ export default function LandingPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 shadow-sm">
               <span className="text-sm font-black text-white">H</span>
             </div>
-            <span className="text-lg font-bold text-slate-900">The Hub</span>
+            <span className="text-lg font-semibold text-slate-900">The Hub</span>
           </div>
           <div className="flex items-center gap-3">
             <a href="mailto:hello@meetthehub.com" className="text-sm text-slate-500 hover:text-slate-900 transition-colors hidden sm:block">
@@ -63,7 +63,7 @@ export default function LandingPage() {
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href="/signup"
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
           >
             Get Started Free <ChevronRight className="h-4 w-4" />
           </a>
@@ -103,7 +103,7 @@ export default function LandingPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 mb-3">
                   <f.icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-sm">{f.title}</h3>
+                <h3 className="font-semibold text-slate-900 text-sm">{f.title}</h3>
                 <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{f.desc}</p>
               </div>
             ))}
@@ -122,14 +122,14 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {["kazi", "brand-a", "brand-b"].map((slug) => (
               <div key={slug} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-mono text-slate-600 shadow-sm">
-                <span className="font-bold text-red-600">{slug}</span>.meetthehub.com
+                <span className="font-semibold text-red-600">{slug}</span>.meetthehub.com
               </div>
             ))}
           </div>
           <div className="mt-8">
             <a
               href="/signup"
-              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
             >
               Create Your Hub <ChevronRight className="h-4 w-4" />
             </a>
@@ -142,9 +142,9 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600">
-              <span className="text-[10px] font-black text-white">H</span>
+              <span className="text-xs font-black text-white">H</span>
             </div>
-            <span className="text-sm font-bold text-slate-900">The Hub</span>
+            <span className="text-sm font-semibold text-slate-900">The Hub</span>
           </div>
           <p className="text-xs text-slate-400">&copy; {new Date().getFullYear()} The Hub. All rights reserved.</p>
         </div>

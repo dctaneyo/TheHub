@@ -39,7 +39,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
               <ScrollText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-foreground">Audit Log</h3>
+              <h3 className="text-lg font-semibold text-foreground">Audit Log</h3>
               <p className="text-xs text-muted-foreground">{logs.length} recent actions</p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
               .map((log) => (
                 <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-2.5 text-xs">
                   <div className={cn(
-                    "mt-0.5 shrink-0 h-5 w-5 flex items-center justify-center rounded-md text-[10px] font-bold",
+                    "mt-0.5 shrink-0 h-5 w-5 flex items-center justify-center rounded-md text-xs font-semibold",
                     log.user_type === "arl" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
                   )}>
                     {log.user_type === "arl" ? "A" : "L"}
@@ -90,7 +90,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
                       <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground">{log.action}</span>
                       {log.details && <span className="text-muted-foreground truncate">{log.details}</span>}
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{new Date(log.created_at).toLocaleString()}</span>
                       {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
                     </div>

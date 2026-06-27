@@ -288,7 +288,7 @@ function UpdateSplash({ visible, currentBuild, newBuild }: { visible: boolean; c
             className="text-center px-8"
           >
             <p className="text-2xl font-black text-foreground mb-1">App Updated!</p>
-            <p className="text-sm font-medium text-muted-foreground mb-6">Loading the latest build. Please wait…</p>
+            <p className="text-sm font-semibold text-muted-foreground mb-6">Loading the latest build. Please wait…</p>
 
             {/* Skeleton bars */}
             <div className="w-64 space-y-2.5">
@@ -314,7 +314,7 @@ function UpdateSplash({ visible, currentBuild, newBuild }: { visible: boolean; c
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="mt-6 font-mono text-[10px] text-muted-foreground/60 space-y-0.5"
+              className="mt-6 font-mono text-xs text-muted-foreground/60 space-y-0.5"
             >
               <p>Current: {fmt(currentBuild)}</p>
               <p>New: {fmt(newBuild)}</p>

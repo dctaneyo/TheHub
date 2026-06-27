@@ -87,10 +87,10 @@ export function GridMessagesWidget({
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-bold text-foreground">Messages</h2>
+          <h2 className="text-base font-semibold text-foreground">Messages</h2>
         </div>
         {totalUnread > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-destructive-foreground">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
@@ -120,7 +120,7 @@ export function GridMessagesWidget({
                   unread && "bg-primary/5"
                 )}
               >
-                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                   {c.type === "global" ? (
                     <MessageCircle className="h-5 w-5" />
                   ) : (
@@ -136,7 +136,7 @@ export function GridMessagesWidget({
                       className={cn(
                         "truncate text-base",
                         unread
-                          ? "font-bold text-foreground"
+                          ? "font-semibold text-foreground"
                           : "font-semibold text-foreground"
                       )}
                     >
@@ -152,7 +152,7 @@ export function GridMessagesWidget({
                     className={cn(
                       "truncate text-sm",
                       unread
-                        ? "font-medium text-foreground/80"
+                        ? "font-semibold text-foreground/80"
                         : "text-muted-foreground"
                     )}
                   >

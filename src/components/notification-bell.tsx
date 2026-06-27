@@ -394,7 +394,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                   </motion.div>
                   <div>
                     <h2 className="text-xl font-black text-white tracking-wide">OVERDUE TASKS</h2>
-                    <p className="text-[11px] text-red-100 mt-0.5">{overdueNotifs.length} task{overdueNotifs.length > 1 ? "s" : ""} past due</p>
+                    <p className="text-xs text-red-100 mt-0.5">{overdueNotifs.length} task{overdueNotifs.length > 1 ? "s" : ""} past due</p>
                   </div>
                 </div>
                 <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">
@@ -404,7 +404,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                         <Clock className="h-4 w-4 text-red-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground">{notif.title}</p>
+                        <p className="text-sm font-semibold text-foreground">{notif.title}</p>
                         <p className="text-xs text-red-500">Due at {formatTime12(notif.dueTime)}</p>
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                 </div>
                 <div className="px-6 pb-6">
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleDismissOverdue}
-                    className="w-full rounded-2xl border-2 border-border py-4 text-base font-bold text-muted-foreground hover:bg-muted transition-colors">
+                    className="w-full rounded-2xl border-2 border-border py-4 text-base font-semibold text-muted-foreground hover:bg-muted transition-colors">
                     Acknowledge &amp; Dismiss
                   </motion.button>
                 </div>
@@ -443,7 +443,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
             {totalActive > 0 && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                 className={cn(
-                  "absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white",
+                  "absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold text-white",
                   hasUrgent ? "bg-red-600 animate-pulse" : "bg-[var(--hub-red)]"
                 )}>
                 {totalActive > 99 ? "99+" : totalActive}

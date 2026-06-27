@@ -483,7 +483,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Settings className="w-6 h-6" />
                   Notification Settings
                 </h2>
@@ -501,7 +501,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
 
             {/* Quick Presets */}
             <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Setup</p>
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Quick Setup</p>
               <div className="flex gap-2">
                 {(["minimal", "balanced", "comprehensive"] as const).map((mode) => (
                   <button
@@ -529,7 +529,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
                     className={cn(
-                      "px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap",
+                      "px-3 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
                       activeCategory === category.id
                         ? "bg-blue-600 text-white"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -553,7 +553,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                 onClick={savePreferences}
                 disabled={loading}
                 className={cn(
-                  "w-full py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2",
+                  "w-full py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2",
                   loading
                     ? "bg-gray-400 cursor-not-allowed"
                     : saved
@@ -598,7 +598,7 @@ function ToggleField({ label, description, checked, onChange, icon, isCritical }
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon && <span className="text-xl">{icon}</span>}
-          <label className="font-medium text-gray-900 dark:text-white cursor-pointer">
+          <label className="font-semibold text-gray-900 dark:text-white cursor-pointer">
             {label}
           </label>
           {isCritical && (

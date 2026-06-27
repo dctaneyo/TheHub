@@ -108,7 +108,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
       <div className="rounded-xl border-2 border-dashed border-border bg-muted p-6 text-center">
         <Activity className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
         <p className="text-xs font-semibold text-muted-foreground">No recent activity</p>
-        <p className="text-[10px] text-muted-foreground/70 mt-1">Activity will appear here in real-time</p>
+        <p className="text-xs text-muted-foreground/70 mt-1">Activity will appear here in real-time</p>
       </div>
     );
   }
@@ -117,7 +117,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Live Activity</h3>
+        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Live Activity</h3>
         <div className="flex items-center gap-1 ml-auto">
           <button
             onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
@@ -127,7 +127,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
             <Trash2 className="h-3.5 w-3.5" />
           </button>
           <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-[10px] text-muted-foreground">Live</span>
+          <span className="text-xs text-muted-foreground">Live</span>
         </div>
       </div>
 
@@ -151,7 +151,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
                   {" "}
                   <span className="text-muted-foreground">{activity.description}</span>
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {getTimeAgo(activity.timestamp)}
                 </p>
               </div>

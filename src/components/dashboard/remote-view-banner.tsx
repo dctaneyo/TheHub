@@ -117,7 +117,7 @@ export function RemoteViewBanner({ onSessionChange, onCaptureManagerChange }: Re
         ) : (
           <Eye className="h-3.5 w-3.5 text-white" />
         )}
-        <span className="text-xs font-bold text-white tracking-wide">
+        <span className="text-xs font-semibold text-white tracking-wide">
           {isControl
             ? `Being controlled by ${activeSession.arlName}`
             : `Being viewed by ${activeSession.arlName}`}

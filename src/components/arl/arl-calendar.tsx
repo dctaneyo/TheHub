@@ -163,11 +163,11 @@ export function ArlCalendar() {
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
-            <h2 className="text-sm font-bold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
+            <h2 className="text-sm font-semibold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
             <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
-            {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
+            {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
           </div>
           <div className="flex flex-1 flex-col overflow-hidden">
             {weeks.map((week, wi) => (
@@ -185,14 +185,14 @@ export function ArlCalendar() {
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-muted/50"
                       )}>
-                      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                         isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-foreground" : "text-muted-foreground/50"
                       )}>{format(date, "d")}</span>
                       <div className="mt-0.5 w-full space-y-0.5 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
-                            <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-0.5 text-[9px] font-medium",
+                            <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-0.5 text-xs font-semibold",
                               task.priority === "urgent" ? "bg-red-100 text-red-700" : task.priority === "high" ? "bg-orange-100 text-orange-700" :
                               task.type === "cleaning" ? "bg-purple-100 text-purple-700" : task.type === "reminder" ? "bg-sky-100 text-sky-700" : "bg-blue-100 text-blue-700"
                             )}>
@@ -200,7 +200,7 @@ export function ArlCalendar() {
                             </div>
                           );
                         })}
-                        {dayTasks.length > 2 && <p className="pl-0.5 text-[9px] text-muted-foreground">+{dayTasks.length - 2}</p>}
+                        {dayTasks.length > 2 && <p className="pl-0.5 text-xs text-muted-foreground">+{dayTasks.length - 2}</p>}
                       </div>
                     </div>
                   );
@@ -213,8 +213,8 @@ export function ArlCalendar() {
         {/* Day detail */}
         <div className="w-full md:w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-3">
-            <h3 className="text-sm font-bold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
-            <p className="text-[10px] text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>
+            <h3 className="text-sm font-semibold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
+            <p className="text-xs text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {loading && <div className="flex h-20 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" /></div>}
@@ -232,7 +232,7 @@ export function ArlCalendar() {
                     )}><Icon className="h-3 w-3" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{task.title}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{calTime12(task.dueTime)}</span>
                         {task.isRecurring && <span className="flex items-center gap-0.5"><Repeat className="h-2.5 w-2.5" />Recurring</span>}
                         <span className="text-muted-foreground">{loc ? loc.name : "All locations"}</span>

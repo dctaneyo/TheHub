@@ -165,7 +165,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
     <div className={cn("", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted rounded-xl w-full"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted rounded-xl w-full"
       >
         <TestTube className="h-4 w-4" />
         <span>Test Notifications</span>
@@ -183,7 +183,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
             <div className="pt-4 space-y-4">
               {/* Location selector */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                <label className="text-xs font-semibold text-muted-foreground mb-2 block">
                   Target Location
                 </label>
                 {loadingLocations ? (
@@ -212,7 +212,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
 
               {/* Notification types */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-xs font-semibold text-muted-foreground">
                   Send Notification ({notificationTypes.length} types)
                 </label>
                 <div className="space-y-1 max-h-60 overflow-y-auto">
@@ -225,7 +225,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
                     >
                       <span className="text-lg">{type.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{type.label}</p>
+                        <p className="text-sm font-semibold text-foreground">{type.label}</p>
                         <p className="text-xs text-muted-foreground truncate">{type.description}</p>
                       </div>
                       {sentType === type.id ? (

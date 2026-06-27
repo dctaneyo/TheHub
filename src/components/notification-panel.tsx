@@ -127,7 +127,7 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {getTimeAgo(notification.createdAt)}
                       </span>
                       {notification.actionUrl && (
@@ -137,7 +137,7 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
                             onDismiss(notification.id);
                             onClose();
                           }}
-                          className="text-[10px] font-medium text-[var(--hub-red)] hover:underline"
+                          className="text-xs font-semibold text-[var(--hub-red)] hover:underline"
                         >
                           {notification.actionLabel || "View"}
                         </a>
@@ -269,15 +269,15 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
-            <h3 className="text-sm font-bold text-foreground">Notifications</h3>
-            <p className="text-[10px] text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+            <p className="text-xs text-muted-foreground">
               {filter === "all" ? "All notifications" : "Unread only"}
             </p>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={handleDismissAll}
-              className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               title="Dismiss all"
             >
               <CheckSquareOffset className="h-3.5 w-3.5" />
@@ -304,7 +304,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           <button
             onClick={() => setFilter("all")}
             className={cn(
-              "flex-1 px-4 py-2 text-xs font-medium transition-colors",
+              "flex-1 px-4 py-2 text-xs font-semibold transition-colors",
               filter === "all"
                 ? "border-b-2 border-[var(--hub-red)] text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -315,7 +315,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           <button
             onClick={() => setFilter("unread")}
             className={cn(
-              "flex-1 px-4 py-2 text-xs font-medium transition-colors",
+              "flex-1 px-4 py-2 text-xs font-semibold transition-colors",
               filter === "unread"
                 ? "border-b-2 border-[var(--hub-red)] text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -331,7 +331,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           {taskNotifications.length > 0 && (
             <div className="border-b border-border">
               <div className="flex items-center px-4 py-2 bg-muted/30">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Task Alerts</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Task Alerts</span>
               </div>
               {taskNotifications.map((tn) => (
                 <div key={tn.id} className={cn(
@@ -350,7 +350,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
                         {tn.type === "overdue" ? "Overdue Task" : "Due Soon"}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{tn.title}</p>
-                      <p className="text-[10px] text-muted-foreground">Due at {formatTime12(tn.dueTime)}</p>
+                      <p className="text-xs text-muted-foreground">Due at {formatTime12(tn.dueTime)}</p>
                     </div>
                     {onDismissTask && (
                       <button onClick={() => onDismissTask(tn.id)}
@@ -373,7 +373,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           {!loading && notifications.length === 0 && taskNotifications.length === 0 && (
             <div className="flex h-32 flex-col items-center justify-center text-center px-4">
               <Bell className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm font-medium text-muted-foreground">No notifications</p>
+              <p className="text-sm font-semibold text-muted-foreground">No notifications</p>
               <p className="text-xs text-muted-foreground/70 mt-1">You're all caught up!</p>
             </div>
           )}

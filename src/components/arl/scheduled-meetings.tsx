@@ -245,7 +245,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             <Video className="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Scheduled Meetings</h2>
+            <h2 className="text-lg font-semibold text-foreground">Scheduled Meetings</h2>
             <p className="text-xs text-muted-foreground">{meetings.length} meeting{meetings.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
@@ -282,7 +282,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             className="overflow-hidden"
           >
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-              <h3 className="font-bold text-sm text-foreground">Create New Meeting</h3>
+              <h3 className="font-semibold text-sm text-foreground">Create New Meeting</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -328,7 +328,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                   ))}
                 </select>
                 {scheduledDate && scheduledTime && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Starts {formatDateTimeInZone(zonedWallTimeToUtcISO(scheduledDate, scheduledTime, timezone), timezone)}
                   </p>
                 )}
@@ -339,7 +339,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)}
                     className="h-4 w-4 rounded border-input text-red-600 focus:ring-red-500" />
-                  <span className="text-sm font-medium text-foreground">Recurring meeting</span>
+                  <span className="text-sm font-semibold text-foreground">Recurring meeting</span>
                 </label>
 
                 {isRecurring && (
@@ -360,7 +360,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         {DAYS_OF_WEEK.map(d => (
                           <button key={d.key} onClick={() => toggleDay(d.key)}
                             className={cn(
-                              "h-8 w-8 rounded-full text-xs font-bold transition-colors",
+                              "h-8 w-8 rounded-full text-xs font-semibold transition-colors",
                               recurringDays.includes(d.key) ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}>
                             {d.label.charAt(0)}
@@ -376,7 +376,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={allowGuests} onChange={e => setAllowGuests(e.target.checked)}
                   className="h-4 w-4 rounded border-input text-red-600 focus:ring-red-500" />
-                <span className="text-sm font-medium text-foreground">Allow guest/outside participants</span>
+                <span className="text-sm font-semibold text-foreground">Allow guest/outside participants</span>
               </label>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -422,14 +422,14 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-sm text-foreground truncate">{m.title}</h4>
+                      <h4 className="font-semibold text-sm text-foreground truncate">{m.title}</h4>
                       {m.is_recurring ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
                           <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
                         </span>
                       ) : null}
                       {!m.is_active && (
-                        <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">Inactive</span>
+                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">Inactive</span>
                       )}
                     </div>
 
@@ -473,7 +473,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                   {/* Meeting code + actions */}
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-lg font-bold text-red-600 tracking-wider">{m.meeting_code}</span>
+                      <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
                       <button
                         onClick={() => copyCode(m.meeting_code)}
                         className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -486,7 +486,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       {m.is_active && (
                         <button
                           onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
                           <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                         </button>
@@ -494,7 +494,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       <button
                         onClick={() => handleToggleActive(m.id, m.is_active)}
                         className={cn(
-                          "px-2 py-1 rounded-md text-[10px] font-bold transition-colors",
+                          "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
                           m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
                         )}
                       >
@@ -512,20 +512,20 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => createInviteLink(m, null)}
-                          className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                           title="Reusable link — password is never shown in the URL"
                         >
                           {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
                         </button>
                         <button
                           onClick={() => createInviteLink(m, 24)}
-                          className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                           title="Link expires 24 hours after it's generated (reusable within that window)"
                         >
                           {copiedCode === `invite-${m.id}-exp` ? "Copied!" : "Copy 24h link"}
                         </button>
                         {copiedCode === `err-${m.id}` && (
-                          <span className="text-[10px] font-semibold text-red-600">Failed</span>
+                          <span className="text-xs font-semibold text-red-600">Failed</span>
                         )}
                       </div>
                     )}

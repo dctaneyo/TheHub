@@ -123,7 +123,7 @@ export function MentionInput({ value, onChange, onKeyDown, placeholder, classNam
             className="absolute bottom-full left-0 mb-1.5 z-50 w-64 rounded-xl border border-border bg-card shadow-xl overflow-hidden"
           >
             <div className="px-3 py-1.5 border-b border-border">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mention someone</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mention someone</p>
             </div>
             <div className="max-h-48 overflow-y-auto">
               {filtered.map((m, i) => (
@@ -136,14 +136,14 @@ export function MentionInput({ value, onChange, onKeyDown, placeholder, classNam
                   )}
                 >
                   <div className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
                     m.type === "location" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400"
                   )}>
                     {m.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">@{m.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{m.type === "location" ? `Store #${m.storeNumber}` : "ARL"}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">@{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.type === "location" ? `Store #${m.storeNumber}` : "ARL"}</p>
                   </div>
                 </button>
               ))}

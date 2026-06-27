@@ -112,7 +112,7 @@ export function MirrorToolbar() {
                 <Monitor className="h-4 w-4 text-white" />
                 <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               </div>
-              <span className="text-[11px] font-bold text-white whitespace-nowrap">
+              <span className="text-xs font-semibold text-white whitespace-nowrap">
                 {targetLocationName || "Mirror"}
               </span>
             </div>
@@ -154,20 +154,20 @@ export function MirrorToolbar() {
                   {connectionStatus === "reconnecting" ? (
                     <>
                       <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                         Reconnecting...
                       </span>
                     </>
                   ) : (
                     <>
                       <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-bold text-foreground">
+                      <span className="text-xs font-semibold text-foreground">
                         Mirroring: {targetLocationName || "Target"}
                       </span>
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {connectionStatus === "reconnecting" ? (
                     <span>Target connection lost — waiting for reconnect</span>
                   ) : targetDevice ? (
@@ -188,7 +188,7 @@ export function MirrorToolbar() {
             <button
               onClick={toggleControl}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
+                "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
                 controlEnabled
                   ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 ring-1 ring-amber-300 dark:ring-amber-800"
                   : "bg-muted text-muted-foreground active:bg-accent"
@@ -202,7 +202,7 @@ export function MirrorToolbar() {
             <button
               onClick={toggleCursorVisible}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
+                "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
                 cursorVisible
                   ? "bg-[var(--hub-teal-light)] text-[var(--hub-teal)] ring-1 ring-[var(--hub-teal)]/30"
                   : "bg-muted text-muted-foreground active:bg-accent"
@@ -225,7 +225,7 @@ export function MirrorToolbar() {
             {/* End session */}
             <button
               onClick={endMirror}
-              className="flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:active:bg-red-900 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:active:bg-red-900 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               End

@@ -50,17 +50,17 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
           <Icon className="h-5 w-5" />
         </div>
         {trend !== undefined && (
-          <div className={cn("flex items-center gap-1 text-xs font-medium", trend >= 0 ? "text-green-600" : "text-red-500")}>
+          <div className={cn("flex items-center gap-1 text-xs font-semibold", trend >= 0 ? "text-green-600" : "text-red-500")}>
             {trend >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
             {Math.abs(trend)}%
           </div>
         )}
       </div>
       <div className="mt-3">
-        <p className="text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <p className="text-2xl font-semibold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
-      {trendLabel && <p className="mt-1 text-[10px] text-muted-foreground">{trendLabel}</p>}
+      {trendLabel && <p className="mt-1 text-xs text-muted-foreground">{trendLabel}</p>}
     </div>
   );
 }
@@ -244,7 +244,7 @@ export function AnalyticsDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Analytics Dashboard</h1>
+          <h1 className="text-xl font-semibold text-foreground">Analytics Dashboard</h1>
           <p className="text-sm text-muted-foreground">Track performance across your locations</p>
         </div>
         <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export function AnalyticsDashboard() {
         <div className="flex gap-1 rounded-xl bg-muted p-1">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
+              className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all",
                 activeTab === t.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               <t.icon className="h-3.5 w-3.5" /> {t.label}
@@ -292,7 +292,7 @@ export function AnalyticsDashboard() {
         <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
-              className={cn("rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
+              className={cn("rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all",
                 dateRange === d.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               {d.label}
@@ -362,15 +362,15 @@ export function AnalyticsDashboard() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                        <th className="pb-2 font-medium">Task</th>
-                        <th className="pb-2 font-medium text-right">Completions</th>
-                        <th className="pb-2 font-medium text-right">Locations</th>
+                        <th className="pb-2 font-semibold">Task</th>
+                        <th className="pb-2 font-semibold text-right">Completions</th>
+                        <th className="pb-2 font-semibold text-right">Locations</th>
                       </tr>
                     </thead>
                     <tbody>
                       {taskData.taskPerformance.slice(0, 10).map((t, i) => (
                         <tr key={t.taskId ?? i} className="border-b border-border/50 last:border-0">
-                          <td className="py-2.5 font-medium text-foreground">{t.taskTitle || "Unknown Task"}</td>
+                          <td className="py-2.5 font-semibold text-foreground">{t.taskTitle || "Unknown Task"}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.completions}</td>
                           <td className="py-2.5 text-right text-muted-foreground">{t.uniqueLocations}</td>
                         </tr>
@@ -409,12 +409,12 @@ export function AnalyticsDashboard() {
                   <div className="space-y-2">
                     {msgData.topSenders.slice(0, 8).map((s, i) => (
                       <div key={s.senderId ?? i} className="flex items-center gap-3">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{s.senderName || "Unknown"}</p>
-                          <p className="text-[10px] capitalize text-muted-foreground">{s.senderType}</p>
+                          <p className="truncate text-sm font-semibold text-foreground">{s.senderName || "Unknown"}</p>
+                          <p className="text-xs capitalize text-muted-foreground">{s.senderType}</p>
                         </div>
                         <span className="text-sm font-semibold text-foreground">{s.messageCount}</span>
                       </div>

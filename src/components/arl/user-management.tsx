@@ -296,7 +296,7 @@ export function UserManagement() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-foreground">User Management</h3>
+          <h3 className="text-base font-semibold text-foreground">User Management</h3>
           <p className="text-xs text-muted-foreground">{arls.length} ARLs · {locations.length} locations</p>
         </div>
         <Button onClick={openCreate} size="sm" className="flex items-center gap-1.5 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]">
@@ -312,7 +312,7 @@ export function UserManagement() {
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium capitalize transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold capitalize transition-colors",
               tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -345,7 +345,7 @@ export function UserManagement() {
               )}
             >
               <div className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold",
                 isArl ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
               )}>
                 {isArl ? <Shield className="h-4 w-4" /> : <Store className="h-4 w-4" />}
@@ -354,20 +354,20 @@ export function UserManagement() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-foreground">{item.name}</p>
                   {isArl && a.role === "admin" && (
-                    <span className="flex items-center gap-0.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                    <span className="flex items-center gap-0.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                       <ShieldCheck className="h-3 w-3" /> Admin
                     </span>
                   )}
                   {isArl && a.role !== "admin" && (
-                    <span className="rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
+                    <span className="rounded-md bg-purple-500/10 px-1.5 py-0.5 text-xs font-semibold text-purple-600 dark:text-purple-400">
                       ARL
                     </span>
                   )}
                   {!item.isActive && (
-                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Inactive</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">Inactive</span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   ID: {item.userId}
                   {!isArl && ` · Store #${l.storeNumber}`}
                   {item.email && ` · ${item.email}`}
@@ -424,7 +424,7 @@ export function UserManagement() {
               className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
             >
               <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-base font-semibold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
                 <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
@@ -434,13 +434,13 @@ export function UserManagement() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Name *</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Name *</label>
                   <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name" className="rounded-xl" />
                 </div>
 
                 {!editTarget && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">User ID * (4 digits)</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">User ID * (4 digits)</label>
                     <Input
                       value={form.userId}
                       onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
@@ -452,7 +452,7 @@ export function UserManagement() {
                 )}
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">
                     PIN {editTarget ? "(leave blank to keep current)" : "* (4 digits)"}
                   </label>
                   <div className="relative">
@@ -475,13 +475,13 @@ export function UserManagement() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Email</label>
                   <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" className="rounded-xl" type="email" />
                 </div>
 
                 {tab === "arls" && isCallerAdmin && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Role</label>
                     <div className="flex gap-2">
                       {(["arl", "admin"] as const).map((r) => (
                         <button
@@ -489,7 +489,7 @@ export function UserManagement() {
                           type="button"
                           onClick={() => setForm((p) => ({ ...p, role: r }))}
                           className={cn(
-                            "flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-medium transition-colors",
+                            "flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-semibold transition-colors",
                             form.role === r
                               ? r === "admin"
                                 ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
@@ -507,21 +507,21 @@ export function UserManagement() {
 
                 {tab === "locations" && !editTarget && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Store Number *</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Store Number *</label>
                     <Input value={form.storeNumber} onChange={(e) => setForm((p) => ({ ...p, storeNumber: e.target.value }))} placeholder="e.g. 1004" className="rounded-xl" />
                   </div>
                 )}
 
                 {tab === "locations" && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Address</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Address</label>
                     <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} placeholder="Street address" className="rounded-xl" />
                   </div>
                 )}
 
                 {tab === "locations" && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Timezone</label>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Timezone</label>
                     <select
                       value={form.timezone}
                       onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}
@@ -538,7 +538,7 @@ export function UserManagement() {
                       <option value="Pacific/Guam">Guam (ChST)</option>
                       <option value="Pacific/Pago_Pago">Samoa (SST)</option>
                     </select>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Leave blank to use the organization default</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Leave blank to use the organization default</p>
                   </div>
                 )}
 
@@ -576,7 +576,7 @@ export function UserManagement() {
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Permissions</h3>
+                  <h3 className="text-base font-semibold text-foreground">Permissions</h3>
                   <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
                 </div>
                 <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
@@ -588,7 +588,7 @@ export function UserManagement() {
                 {/* Role Template Selector */}
                 {roles.length > 0 && (
                   <div className="rounded-2xl border border-border p-3">
-                    <p className="text-xs font-bold text-foreground mb-2">Apply Role Template</p>
+                    <p className="text-xs font-semibold text-foreground mb-2">Apply Role Template</p>
                     <div className="flex flex-wrap gap-1.5">
                       {roles.map((role) => (
                         <button
@@ -596,7 +596,7 @@ export function UserManagement() {
                           type="button"
                           onClick={() => applyRoleTemplate(role.id)}
                           className={cn(
-                            "rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                            "rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors",
                             editRoleId === role.id
                               ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                               : "border-border text-muted-foreground hover:bg-muted"
@@ -610,7 +610,7 @@ export function UserManagement() {
                         type="button"
                         onClick={() => setEditRoleId(null)}
                         className={cn(
-                          "rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                          "rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors",
                           editRoleId === null
                             ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
                             : "border-border text-muted-foreground hover:bg-muted"
@@ -626,10 +626,10 @@ export function UserManagement() {
                 <div className="rounded-2xl border border-border p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                         <MapPin className="h-3 w-3" /> Location Access
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {editLocationIds.length === 0 ? "All locations" : `${editLocationIds.length} location${editLocationIds.length !== 1 ? "s" : ""}`}
                       </p>
                     </div>
@@ -637,7 +637,7 @@ export function UserManagement() {
                       <button
                         type="button"
                         onClick={() => setEditLocationIds([])}
-                        className="text-[10px] text-muted-foreground hover:text-foreground"
+                        className="text-xs text-muted-foreground hover:text-foreground"
                       >
                         Clear (all access)
                       </button>
@@ -681,8 +681,8 @@ export function UserManagement() {
                         className="flex w-full items-center justify-between mb-2"
                       >
                         <div>
-                          <p className="text-xs font-bold text-foreground">{group.label}</p>
-                          <p className="text-[10px] text-muted-foreground">{group.description}</p>
+                          <p className="text-xs font-semibold text-foreground">{group.label}</p>
+                          <p className="text-xs text-muted-foreground">{group.description}</p>
                         </div>
                         <div className={cn(
                           "flex h-5 w-9 items-center rounded-full px-0.5 transition-colors",
@@ -724,7 +724,7 @@ export function UserManagement() {
               </div>
 
               <div className="border-t border-border px-6 py-4 flex items-center gap-3">
-                <div className="flex-1 text-[10px] text-muted-foreground">
+                <div className="flex-1 text-xs text-muted-foreground">
                   {editPerms.length}/{ALL_PERMISSIONS.length} permissions enabled
                 </div>
                 <Button

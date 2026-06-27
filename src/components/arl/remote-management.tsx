@@ -23,7 +23,7 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
           <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-foreground">Remote Management</h2>
+          <h2 className="text-lg font-semibold text-foreground">Remote Management</h2>
           <p className="text-xs text-muted-foreground">View, control, and manage remote sessions</p>
         </div>
       </div>
@@ -33,7 +33,7 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
         <button
           onClick={() => setActiveTab("view")}
           className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all flex-1 justify-center",
+            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
             activeTab === "view"
               ? "bg-card text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
@@ -45,7 +45,7 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
         <button
           onClick={() => setActiveTab("login")}
           className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all flex-1 justify-center",
+            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
             activeTab === "login"
               ? "bg-card text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"

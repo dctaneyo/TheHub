@@ -62,7 +62,7 @@ export function CursorOverlay() {
           />
         </svg>
         {/* Label */}
-        <div className="absolute left-5 top-4 whitespace-nowrap rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md">
+        <div className="absolute left-5 top-4 whitespace-nowrap rounded-md bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white shadow-md">
           Remote
         </div>
         {/* Ripple ring */}

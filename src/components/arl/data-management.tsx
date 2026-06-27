@@ -330,10 +330,10 @@ export function DataManagement() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Data Management</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Data Management</h2>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
         </div>
-        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
+        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
           <RefreshCw className={cn("h-4 w-4", loadingReport && "animate-spin")} /> Refresh
         </button>
       </div>
@@ -348,14 +348,14 @@ export function DataManagement() {
         {success && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-            <p className="flex-1 text-sm font-medium text-emerald-900">{success}</p>
+            <p className="flex-1 text-sm font-semibold text-emerald-900">{success}</p>
             <button onClick={() => setSuccess(null)} className="text-emerald-600 hover:text-emerald-700"><X className="h-4 w-4" /></button>
           </motion.div>
         )}
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
             <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
-            <p className="flex-1 text-sm font-medium text-red-900">{error}</p>
+            <p className="flex-1 text-sm font-semibold text-red-900">{error}</p>
             <button onClick={() => setError(null)} className="text-red-600 hover:text-red-700"><X className="h-4 w-4" /></button>
           </motion.div>
         )}
@@ -379,7 +379,7 @@ export function DataManagement() {
       {sections.map((section) => (
         <div key={section.title}>
           <div className="mb-3">
-            <h3 className="text-lg font-bold text-foreground">{section.title}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
             <p className="text-xs text-muted-foreground">{section.subtitle}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -390,7 +390,7 @@ export function DataManagement() {
                   <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-xl", colors.bg, colors.text)}>
                     <card.icon className="h-5 w-5" />
                   </div>
-                  <h4 className="text-sm font-bold text-foreground">{card.title}</h4>
+                  <h4 className="text-sm font-semibold text-foreground">{card.title}</h4>
                   <p className="mt-1 text-xs text-muted-foreground flex-1">{card.desc}</p>
                   <button
                     onClick={card.onClick}
@@ -417,7 +417,7 @@ export function DataManagement() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-foreground">{showConfirm.title}</h3>
+              <h3 className="text-xl font-semibold text-foreground">{showConfirm.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{showConfirm.confirmText} This action cannot be undone.</p>
               <div className="mt-6 flex gap-3">
                 <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50">Cancel</button>

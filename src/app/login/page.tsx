@@ -661,7 +661,7 @@ export default function LoginPage() {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="w-full max-w-sm rounded-3xl bg-card border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Welcome to The Hub</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Welcome to The Hub</h1>
 
           <div className="mt-3 sm:mt-4 w-full">
 
@@ -685,7 +685,7 @@ export default function LoginPage() {
                   }
                 }}
                 style={{ textTransform: "uppercase" }}
-                className="w-full max-w-[240px] rounded-2xl border border-border bg-background px-4 py-3 text-center text-lg font-bold tracking-widest text-foreground outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
+                className="w-full max-w-[240px] rounded-2xl border border-border bg-background px-4 py-3 text-center text-lg font-semibold tracking-widest text-foreground outline-none focus:border-[var(--hub-red)] focus:ring-2 focus:ring-[var(--hub-red)]/20 transition-colors placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-sm"
               />
               <button
                 onClick={() => setShowOrgKeyboard((v) => !v)}
@@ -839,13 +839,13 @@ export default function LoginPage() {
         )}
         {resolvedTenant ? (
           <h1
-            className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold"
+            className="mt-2 sm:mt-3 text-xl sm:text-2xl font-semibold"
             style={{ color: resolvedTenant.primaryColor || undefined }}
           >
             {resolvedTenant.name}
           </h1>
         ) : (
-          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold text-foreground">The Hub</h1>
+          <h1 className="mt-2 sm:mt-3 text-xl sm:text-2xl font-semibold text-foreground">The Hub</h1>
         )}
 
         {/* Step label + dots + error */}
@@ -870,7 +870,7 @@ export default function LoginPage() {
                   }
                   <span className="text-xs font-semibold text-foreground">{validatedUser.name}</span>
                   {validatedUser.storeNumber && (
-                    <span className="text-[10px] text-muted-foreground">#{validatedUser.storeNumber}</span>
+                    <span className="text-xs text-muted-foreground">#{validatedUser.storeNumber}</span>
                   )}
                 </div>
               )}
@@ -991,12 +991,12 @@ export default function LoginPage() {
             {isOnline ? (
               <>
                 <Wifi className="h-3 w-3 text-emerald-500" />
-                <span className="text-[10px] font-medium text-emerald-600">Connected</span>
+                <span className="text-xs font-semibold text-emerald-600">Connected</span>
               </>
             ) : (
               <>
                 <WifiOff className="h-3 w-3 text-[var(--hub-red)]" />
-                <span className="text-[10px] font-medium text-[var(--hub-red)]">Offline</span>
+                <span className="text-xs font-semibold text-[var(--hub-red)]">Offline</span>
               </>
             )}
           </div>
@@ -1011,7 +1011,7 @@ export default function LoginPage() {
               }`}
             >
               <Monitor className={`h-3 w-3 shrink-0 ${selfPinged ? "text-white" : "text-muted-foreground"}`} />
-              <span className={`text-[10px] font-medium truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
+              <span className={`text-xs font-semibold truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
                 {selfPinged ? "Signaled!" : "Session"}
               </span>
               {!selfPinged && <span className="font-mono text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
@@ -1097,8 +1097,8 @@ export default function LoginPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
                   <Lock className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h2 className="text-base font-bold text-foreground">Staff Unlock</h2>
-                <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                <h2 className="text-base font-semibold text-foreground">Staff Unlock</h2>
+                <p className="text-xs text-muted-foreground text-center leading-relaxed">
                   Enter the 4-digit bypass code to reset the login lockout
                 </p>
               </div>

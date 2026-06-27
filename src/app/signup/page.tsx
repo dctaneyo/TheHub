@@ -203,7 +203,7 @@ export default function SignupPage() {
                     <Building2 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Your Organization</h2>
+                    <h2 className="text-xl font-semibold text-white">Your Organization</h2>
                     <p className="text-sm text-slate-400">Tell us about your franchise</p>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export default function SignupPage() {
                     <Palette className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Brand Your Hub</h2>
+                    <h2 className="text-xl font-semibold text-white">Brand Your Hub</h2>
                     <p className="text-sm text-slate-400">Customize the look and feel (you can change this later)</p>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function SignupPage() {
                       >
                         {(orgName || "H").charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-white font-bold">{appTitle || `${orgName || "Your"} Hub`}</span>
+                      <span className="text-white font-semibold">{appTitle || `${orgName || "Your"} Hub`}</span>
                     </div>
                     <div className="mt-3 flex gap-2">
                       <div className="h-8 rounded-lg px-4 flex items-center text-white text-xs font-semibold" style={{ backgroundColor: primaryColor }}>
@@ -337,7 +337,7 @@ export default function SignupPage() {
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Create Your Admin Account</h2>
+                    <h2 className="text-xl font-semibold text-white">Create Your Admin Account</h2>
                     <p className="text-sm text-slate-400">This will be the first admin user for your organization</p>
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export default function SignupPage() {
                     <Zap className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Choose Your Plan</h2>
+                    <h2 className="text-xl font-semibold text-white">Choose Your Plan</h2>
                     <p className="text-sm text-slate-400">You can upgrade anytime</p>
                   </div>
                 </div>
@@ -418,9 +418,9 @@ export default function SignupPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-white">{plan.name}</h3>
+                            <h3 className="font-semibold text-white">{plan.name}</h3>
                             {plan.id === "pro" && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 uppercase">Popular</span>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 uppercase">Popular</span>
                             )}
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5">{plan.description}</p>
@@ -462,7 +462,7 @@ export default function SignupPage() {
                   <Check className="h-10 w-10 text-emerald-400" />
                 </motion.div>
 
-                <h2 className="text-2xl font-bold text-white mb-2">Welcome to The Hub!</h2>
+                <h2 className="text-2xl font-semibold text-white mb-2">Welcome to The Hub!</h2>
                 <p className="text-slate-400 mb-6">
                   Your organization <span className="text-white font-semibold">{result.tenant.name}</span> is ready.
                 </p>

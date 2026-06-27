@@ -111,7 +111,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
         {/* Viewer count badge */}
         <div className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full">
           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs font-bold uppercase">Live</span>
+          <span className="text-xs font-semibold uppercase">Live</span>
           <span className="text-xs text-white/70">·</span>
           <Users className="h-3.5 w-3.5 text-white/70" />
           <span className="text-xs font-semibold">{viewerCount}</span>
@@ -135,7 +135,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
             <div className="flex items-center gap-3">
               <Radio className="h-6 w-6" />
               <div>
-                <h2 className="text-lg font-bold">Go Live</h2>
+                <h2 className="text-lg font-semibold">Go Live</h2>
                 <p className="text-sm text-red-100">Broadcast to all online locations</p>
               </div>
             </div>

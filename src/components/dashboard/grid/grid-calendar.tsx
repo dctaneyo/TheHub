@@ -155,7 +155,7 @@ export function GridCalendarWidget() {
         <button
           type="button"
           onClick={() => openModal()}
-          className="text-sm font-bold text-foreground transition-colors active:text-primary"
+          className="text-sm font-semibold text-foreground transition-colors active:text-primary"
         >
           {format(currentMonth, "MMMM yyyy")}
         </button>
@@ -171,7 +171,7 @@ export function GridCalendarWidget() {
       {/* Day-of-week header */}
       <div className="grid shrink-0 grid-cols-7">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i} className="py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div key={i} className="py-0.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {d}
           </div>
         ))}
@@ -206,8 +206,8 @@ export function GridCalendarWidget() {
             >
               <span
                 className={cn(
-                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold leading-none",
-                  today && "bg-[var(--hub-red)] font-bold text-white",
+                  "flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold leading-none",
+                  today && "bg-[var(--hub-red)] font-semibold text-white",
                   !today && "text-foreground",
                 )}
               >
@@ -222,7 +222,7 @@ export function GridCalendarWidget() {
                   />
                 ))}
                 {hasMore && (
-                  <span className="text-[7px] font-bold leading-none text-muted-foreground">
+                  <span className="text-xs font-semibold leading-none text-muted-foreground">
                     +{dayTasks.length - 3}
                   </span>
                 )}
@@ -296,7 +296,7 @@ function CalendarModal({
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <h2 className="flex-1 text-center text-lg font-bold text-foreground">
+        <h2 className="flex-1 text-center text-lg font-semibold text-foreground">
           {format(currentMonth, "MMMM yyyy")}
         </h2>
         <button
@@ -355,7 +355,7 @@ function CalendarModal({
                   <span
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                      today && "bg-[var(--hub-red)] font-bold text-white",
+                      today && "bg-[var(--hub-red)] font-semibold text-white",
                       sel && !today && "ring-2 ring-[var(--hub-red)] ring-offset-1",
                       !today && "text-foreground",
                     )}
@@ -371,7 +371,7 @@ function CalendarModal({
                       />
                     ))}
                     {dayTasks.length > 4 && (
-                      <span className="text-[8px] font-bold text-muted-foreground">
+                      <span className="text-xs font-semibold text-muted-foreground">
                         +{dayTasks.length - 4}
                       </span>
                     )}
@@ -384,7 +384,7 @@ function CalendarModal({
 
         {/* Selected day task list */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
-          <h3 className="mb-3 shrink-0 text-base font-bold text-foreground">
+          <h3 className="mb-3 shrink-0 text-base font-semibold text-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {isToday(selectedDate) && (
               <span className="ml-2 rounded-full bg-[var(--hub-red)]/15 px-2 py-0.5 text-xs font-semibold text-[var(--hub-red)]">

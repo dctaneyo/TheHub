@@ -135,7 +135,7 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
     return (
       <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 dark:bg-red-950">
         <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-        <span className="text-xs font-medium text-red-700 dark:text-red-300 tabular-nums">{formatTime(currentTime)}</span>
+        <span className="text-xs font-semibold text-red-700 dark:text-red-300 tabular-nums">{formatTime(currentTime)}</span>
         <div className="mx-1 h-4 w-px bg-red-200 dark:bg-red-800" />
         <button onClick={stopRecording} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors" title="Stop recording">
           <Square className="h-3 w-3" />
@@ -157,7 +157,7 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
       >
         {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
       </button>
-      <span className="text-xs font-medium text-blue-700 dark:text-blue-300 tabular-nums">{formatTime(playing ? currentTime : duration)}</span>
+      <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 tabular-nums">{formatTime(playing ? currentTime : duration)}</span>
       <div className="mx-1 h-4 w-px bg-blue-200 dark:bg-blue-800" />
       <button onClick={cleanup} className="flex h-7 w-7 items-center justify-center rounded-full text-blue-400 hover:text-red-500 hover:bg-blue-100 transition-colors dark:hover:bg-blue-900" title="Delete">
         <Trash2 className="h-3 w-3" />
@@ -205,7 +205,7 @@ export function VoiceMessagePlayer({ audioUrl, duration }: { audioUrl: string; d
           <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
         </div>
       </div>
-      <span className="text-xs font-medium text-blue-600 dark:text-blue-400 tabular-nums">{formatTime(duration)}</span>
+      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 tabular-nums">{formatTime(duration)}</span>
       <Mic className="h-3.5 w-3.5 text-blue-400" />
     </div>
   );

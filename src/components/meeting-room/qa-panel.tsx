@@ -30,7 +30,7 @@ export function QAPanel({
   return (
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        <h3 className="text-white font-bold text-sm">Q&A</h3>
+        <h3 className="text-white font-semibold text-sm">Q&A</h3>
         <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
           <X className="h-4 w-4" />
         </button>
@@ -41,7 +41,7 @@ export function QAPanel({
         ) : (
           questions.map(q => (
             <div key={q.id} className={cn("p-3 rounded-lg border", q.isAnswered ? "bg-green-900/20 border-green-800" : "bg-slate-700/50 border-slate-600")}>
-              <div className="text-xs font-medium text-slate-300 mb-1">{q.askerName}</div>
+              <div className="text-xs font-semibold text-slate-300 mb-1">{q.askerName}</div>
               <div className="text-sm text-white mb-2">{q.question}</div>
               <div className="flex items-center justify-between">
                 <button
@@ -61,7 +61,7 @@ export function QAPanel({
                   {isHostOrCohost && !q.isAnswered && (
                     <button
                       onClick={() => onMarkAnswered(q.id)}
-                      className="text-xs text-green-400 hover:text-green-300 font-medium"
+                      className="text-xs text-green-400 hover:text-green-300 font-semibold"
                     >
                       Mark Answered
                     </button>

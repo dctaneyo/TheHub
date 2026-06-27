@@ -174,10 +174,10 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Live</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary-foreground">Live</span>
           </div>
           <div ref={containerRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: "100%" }}>
-            <span ref={spanRef} className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-medium text-foreground/80"
+            <span ref={spanRef} className="absolute inset-y-0 flex items-center whitespace-nowrap text-xs font-semibold text-foreground/80"
               style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem", transform: "translateX(9999px)" }}>
               {tickerText}
             </span>
@@ -731,8 +731,8 @@ function GridDashboardPage() {
               <HubMark className="h-3.5 w-3.5" />
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
-              {user.name && <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>}
+              <p className="text-sm font-semibold text-foreground leading-none">Dashboard</p>
+              {user.name && <p className="text-xs text-muted-foreground leading-none mt-0.5">{user.name}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -763,7 +763,7 @@ function GridDashboardPage() {
                   </IconTip>
                 )}
                 <button type="button" onClick={() => logout()}
-                  className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
+                  className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
                   <LogOut className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Sign Out</span>
                 </button>

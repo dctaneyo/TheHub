@@ -65,7 +65,7 @@ export function IconTip({
           <span
             role="tooltip"
             className={cn(
-              "pointer-events-none fixed z-[9999] -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[10px] font-medium text-background",
+              "pointer-events-none fixed z-[9999] -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-semibold text-background",
               side === "top" ? "-translate-y-full -mt-1.5" : "mt-1.5"
             )}
             style={{ left: pos.x, top: pos.y }}

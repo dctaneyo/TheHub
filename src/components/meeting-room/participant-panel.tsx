@@ -50,7 +50,7 @@ export function ParticipantPanel({
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-slate-700">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-bold text-sm">Participants ({participants.length})</h3>
+          <h3 className="text-white font-semibold text-sm">Participants ({participants.length})</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
             <X className="h-4 w-4" />
           </button>
@@ -90,17 +90,17 @@ export function ParticipantPanel({
             <div key={p.identity} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/50">
               <div
                 className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white",
+                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white",
                   isLocal ? "bg-red-600" : metadata.userType === "arl" ? "bg-blue-600" : "bg-slate-600"
                 )}
               >
                 {p.name?.charAt(0) || "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-sm text-white font-medium truncate block">
+                <span className="text-sm text-white font-semibold truncate block">
                   {participantNicknames.get(p.identity) || p.name} {isLocal && "(You)"}
                 </span>
-                <span className="text-[10px] text-slate-400 capitalize">
+                <span className="text-xs text-slate-400 capitalize">
                   {metadata.role || "participant"} • {metadata.userType || "guest"}
                   {participantNicknames.has(p.identity) && <span className="text-slate-500"> • {p.name}</span>}
                 </span>

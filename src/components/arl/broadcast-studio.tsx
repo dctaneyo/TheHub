@@ -112,7 +112,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           <div className="flex items-center gap-3">
             <Video className="h-6 w-6" />
             <div>
-              <h2 className="text-lg font-bold">Start a Meeting</h2>
+              <h2 className="text-lg font-semibold">Start a Meeting</h2>
               <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
@@ -138,11 +138,11 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           <div className="bg-muted rounded-xl p-4">
             <div className="flex items-center justify-between mb-1">
               <label className="text-sm font-semibold text-foreground">Meeting Code</label>
-              <span className="text-[10px] text-muted-foreground font-medium">Share with guests to join</span>
+              <span className="text-xs text-muted-foreground font-semibold">Share with guests to join</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5 text-center">
-                <span className="font-mono text-xl font-bold text-red-600 tracking-[0.3em]">{meetingCode}</span>
+                <span className="font-mono text-xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}
                 className="p-2.5 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
@@ -165,7 +165,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               placeholder="Leave empty for open access"
               type="password"
             />
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {password.trim() ? "Guests will need this password to join" : "Anyone with the meeting code can join"}
             </p>
           </div>

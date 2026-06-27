@@ -34,7 +34,7 @@ export function PageIndicator({ pages, currentPageId, onPageChange, className }:
               whileTap={{ scale: 0.92 }}
             >
               {isActive && (
-                <span className="text-[10px] leading-none font-semibold text-white whitespace-nowrap select-none">
+                <span className="text-xs leading-none font-semibold text-white whitespace-nowrap select-none">
                   {page.label}
                 </span>
               )}

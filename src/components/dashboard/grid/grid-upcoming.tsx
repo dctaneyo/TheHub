@@ -82,7 +82,7 @@ export function GridUpcomingWidget({
     <div className="flex h-full flex-col">
       <div className="mb-2 flex shrink-0 items-center gap-2 px-3 pt-3">
         <CalendarDays className="h-4 w-4 text-[var(--hub-blue)]" />
-        <h2 className="text-base font-bold text-foreground">Upcoming 7 Days</h2>
+        <h2 className="text-base font-semibold text-foreground">Upcoming 7 Days</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
@@ -104,7 +104,7 @@ export function GridUpcomingWidget({
                 <span className="text-xs font-semibold uppercase leading-none text-muted-foreground">
                   {format(date, "EEE")}
                 </span>
-                <span className="text-base font-bold leading-tight text-foreground">
+                <span className="text-base font-semibold leading-tight text-foreground">
                   {format(date, "d")}
                 </span>
               </div>
@@ -158,7 +158,7 @@ export function GridUpcomingWidget({
               </span>
 
               {/* Time */}
-              <span className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
                 {formatTime12(task.dueTime)}
               </span>
             </div>

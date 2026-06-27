@@ -153,7 +153,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
         aria-label={editingTask ? "Edit task" : "Create new task"}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-foreground">
+          <h3 className="text-lg font-semibold text-foreground">
             {editingTask ? "Edit Task" : "New Task"}
           </h3>
           <button
@@ -198,7 +198,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                   key={t.value}
                   onClick={() => setType(t.value)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all",
+                    "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                     type === t.value
                       ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
@@ -220,7 +220,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                   key={p.value}
                   onClick={() => setPriority(p.value)}
                   className={cn(
-                    "rounded-xl border px-3 py-2 text-xs font-medium transition-all",
+                    "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                     priority === p.value
                       ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
@@ -317,7 +317,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Weekly / Biweekly: day-of-week picker */}
                 {(recurringType === "weekly" || recurringType === "biweekly") && (
                   <div>
-                    <p className="mb-1.5 text-[11px] text-muted-foreground">
+                    <p className="mb-1.5 text-xs text-muted-foreground">
                       {recurringType === "biweekly" ? "Repeats every other week on:" : "Repeats on:"}
                     </p>
                     <div className="flex gap-1.5">
@@ -342,12 +342,12 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Biweekly: start week selection */}
                 {recurringType === "biweekly" && (
                   <div>
-                    <p className="mb-1.5 text-[11px] text-muted-foreground">First occurrence:</p>
+                    <p className="mb-1.5 text-xs text-muted-foreground">First occurrence:</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setBiweeklyStart("this")}
                         className={cn(
-                          "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                          "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
                           biweeklyStart === "this"
                             ? "bg-[var(--hub-red)] text-white"
                             : "bg-muted text-muted-foreground"
@@ -358,7 +358,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       <button
                         onClick={() => setBiweeklyStart("next")}
                         className={cn(
-                          "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                          "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
                           biweeklyStart === "next"
                             ? "bg-[var(--hub-red)] text-white"
                             : "bg-muted text-muted-foreground"
@@ -373,7 +373,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Monthly: day-of-month picker */}
                 {recurringType === "monthly" && (
                   <div>
-                    <p className="mb-1.5 text-[11px] text-muted-foreground">Repeats on day(s) of month:</p>
+                    <p className="mb-1.5 text-xs text-muted-foreground">Repeats on day(s) of month:</p>
                     <div className="flex flex-wrap gap-1">
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                         <button
@@ -396,7 +396,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 )}
 
                 {recurringType === "daily" && (
-                  <p className="text-[11px] text-muted-foreground">Repeats every day.</p>
+                  <p className="text-xs text-muted-foreground">Repeats every day.</p>
                 )}
               </>
             )}
@@ -411,7 +411,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                   key={mode}
                   onClick={() => setAssignMode(mode)}
                   className={cn(
-                    "flex-1 rounded-xl border px-3 py-2 text-xs font-medium capitalize transition-all",
+                    "flex-1 rounded-xl border px-3 py-2 text-xs font-semibold capitalize transition-all",
                     assignMode === mode
                       ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
@@ -442,7 +442,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       prev.includes(loc.id) ? prev.filter((id) => id !== loc.id) : [...prev, loc.id]
                     )}
                     className={cn(
-                      "rounded-xl border px-3 py-1.5 text-xs font-medium transition-all",
+                      "rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all",
                       selectedLocationIds.includes(loc.id)
                         ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                         : "border-border text-muted-foreground hover:border-muted-foreground/40"
@@ -454,7 +454,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
               </div>
             )}
             {assignMode === "multiple" && selectedLocationIds.length > 0 && !editingTask && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Will create {selectedLocationIds.length} separate task{selectedLocationIds.length > 1 ? "s" : ""}, one per location.
               </p>
             )}
@@ -462,7 +462,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
 
           {/* Options */}
           <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Options</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Options</p>
 
             <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
               <input
@@ -471,12 +471,12 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 onChange={(e) => setAllowEarlyComplete(e.target.checked)}
                 className="rounded"
               />
-              <span className="font-medium">Allow early completion</span>
-              <span className="text-[10px] text-muted-foreground">(can be completed before due date)</span>
+              <span className="font-semibold">Allow early completion</span>
+              <span className="text-xs text-muted-foreground">(can be completed before due date)</span>
             </label>
 
             <div>
-              <p className="mb-1.5 text-[11px] text-muted-foreground">Show this task in:</p>
+              <p className="mb-1.5 text-xs text-muted-foreground">Show this task in:</p>
               <div className="flex flex-wrap gap-2">
                 {([
                   { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
@@ -487,7 +487,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => opt.set(!opt.value)}
                     className={cn(
-                      "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                      "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all",
                       opt.value
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
                         : "border-border bg-card text-muted-foreground"
@@ -498,7 +498,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 ))}
               </div>
               {(!showInToday || !showInCalendar) && (
-                <p className="mt-1 text-[10px] text-amber-600">
+                <p className="mt-1 text-xs text-amber-600">
                   Hidden from: {[!showInToday && "Today's Tasks", !showInCalendar && "Calendar & 7-Day"].filter(Boolean).join(", ")}
                 </p>
               )}

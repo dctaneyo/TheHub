@@ -234,7 +234,7 @@ export default function AdminPortal() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 shadow-lg mb-4">
                 <Shield className="h-7 w-7 text-white" />
               </div>
-              <h1 className="text-xl font-bold text-white">Super Admin</h1>
+              <h1 className="text-xl font-semibold text-white">Super Admin</h1>
               <p className="text-sm text-slate-400 mt-1">Enter your admin secret to continue</p>
             </div>
 
@@ -277,7 +277,7 @@ export default function AdminPortal() {
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">The Hub — Super Admin</h1>
+              <h1 className="text-lg font-semibold">The Hub — Super Admin</h1>
               <p className="text-xs text-slate-400">Tenant Management Portal</p>
             </div>
           </div>
@@ -306,21 +306,21 @@ export default function AdminPortal() {
               <Building2 className="h-5 w-5 text-red-400" />
               <span className="text-sm text-slate-400">Total Tenants</span>
             </div>
-            <p className="text-3xl font-bold">{tenants.length}</p>
+            <p className="text-3xl font-semibold">{tenants.length}</p>
           </div>
           <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
             <div className="flex items-center gap-3 mb-2">
               <Store className="h-5 w-5 text-blue-400" />
               <span className="text-sm text-slate-400">Total Locations</span>
             </div>
-            <p className="text-3xl font-bold">{tenants.reduce((s, t) => s + (t.locationCount || 0), 0)}</p>
+            <p className="text-3xl font-semibold">{tenants.reduce((s, t) => s + (t.locationCount || 0), 0)}</p>
           </div>
           <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
             <div className="flex items-center gap-3 mb-2">
               <Users className="h-5 w-5 text-emerald-400" />
               <span className="text-sm text-slate-400">Total Users</span>
             </div>
-            <p className="text-3xl font-bold">{tenants.reduce((s, t) => s + (t.userCount || 0), 0)}</p>
+            <p className="text-3xl font-semibold">{tenants.reduce((s, t) => s + (t.userCount || 0), 0)}</p>
           </div>
         </div>
 
@@ -342,15 +342,15 @@ export default function AdminPortal() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-white truncate">{tenant.name}</h3>
+                      <h3 className="font-semibold text-white truncate">{tenant.name}</h3>
                       <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
+                        "text-xs font-semibold px-2 py-0.5 rounded-full uppercase",
                         tenant.plan === "enterprise" ? "bg-amber-500/20 text-amber-400" :
                         tenant.plan === "pro" ? "bg-blue-500/20 text-blue-400" :
                         "bg-slate-500/20 text-slate-400"
                       )}>{tenant.plan}</span>
                       {!tenant.isActive && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">INACTIVE</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">INACTIVE</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -414,7 +414,7 @@ export default function AdminPortal() {
               className="w-full max-w-lg rounded-2xl bg-slate-800 border border-white/10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold">
+                <h3 className="text-lg font-semibold">
                   {editingTenant ? "Edit Tenant" : "New Tenant"}
                 </h3>
                 <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-white">
@@ -433,7 +433,7 @@ export default function AdminPortal() {
                       className="bg-white/5 border-white/10 text-white"
                       disabled={!!editingTenant}
                     />
-                    <p className="text-[10px] text-slate-500 mt-1">{formSlug || "slug"}.meetthehub.com</p>
+                    <p className="text-xs text-slate-500 mt-1">{formSlug || "slug"}.meetthehub.com</p>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-400">Franchise Name</label>

@@ -152,7 +152,7 @@ export function EmergencyBroadcast() {
           <Radio className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="text-base font-bold text-foreground">Emergency Broadcast</h3>
+          <h3 className="text-base font-semibold text-foreground">Emergency Broadcast</h3>
           <p className="text-xs text-muted-foreground">Send urgent alerts to all restaurants with repeating alarm</p>
         </div>
       </div>
@@ -182,11 +182,11 @@ export function EmergencyBroadcast() {
                 </motion.div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold uppercase tracking-wide text-[var(--hub-red)]">Active Broadcast</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[var(--hub-red)]">Active Broadcast</span>
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--hub-red)] animate-pulse" />
                   </div>
                   <p className="text-sm font-semibold text-foreground">{activeMessage.message}</p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Sent by {activeMessage.sentByName} · {format(new Date(activeMessage.createdAt), "MMM d, h:mm a")}
                     {activeMessage.targetLocationIds
                       ? ` · ${activeMessage.targetLocationIds.length} location${activeMessage.targetLocationIds.length !== 1 ? "s" : ""} targeted`
@@ -222,7 +222,7 @@ export function EmergencyBroadcast() {
                         {viewed.length} / {total} viewed
                       </span>
                       {viewed.length === total && total > 0 && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">All seen</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">All seen</span>
                       )}
                     </div>
                     {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -240,7 +240,7 @@ export function EmergencyBroadcast() {
                           {[...viewed.map((l) => ({ ...l, seen: true })), ...notViewed.map((l) => ({ ...l, seen: false }))].map((l) => (
                             <div key={l.id} className="flex items-center gap-1.5 py-0.5">
                               <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", l.seen ? "bg-emerald-400" : "bg-muted-foreground")} />
-                              <span className={cn("text-[11px] truncate", l.seen ? "text-foreground" : "text-muted-foreground")}>
+                              <span className={cn("text-xs truncate", l.seen ? "text-foreground" : "text-muted-foreground")}>
                                 {l.name}
                               </span>
                               {l.seen && <Check className="h-2.5 w-2.5 shrink-0 text-emerald-500" />}
@@ -276,7 +276,7 @@ export function EmergencyBroadcast() {
 
         {/* Target selector */}
         <div>
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Send to</p>
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">Send to</p>
           <div className="flex gap-2 mb-3">
             <button
               onClick={() => setTargetMode("all")}
@@ -326,7 +326,7 @@ export function EmergencyBroadcast() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{loc.name}</p>
-                      <p className="text-[10px] text-muted-foreground">Store #{loc.storeNumber}</p>
+                      <p className="text-xs text-muted-foreground">Store #{loc.storeNumber}</p>
                     </div>
                     {selected && <Check className="h-4 w-4 shrink-0 text-[var(--hub-red)]" />}
                   </button>
@@ -344,7 +344,7 @@ export function EmergencyBroadcast() {
           className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
         />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {targetMode === "all"
               ? "Will alert all locations with repeating alarm."
               : selectedIds.length === 0
@@ -386,7 +386,7 @@ export function EmergencyBroadcast() {
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">Broadcast History</span>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{history.length}</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{history.length}</span>
             </div>
             {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </button>
@@ -407,9 +407,9 @@ export function EmergencyBroadcast() {
                       <div key={msg.id} className="px-5 py-3 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm text-foreground whitespace-pre-wrap flex-1">{msg.message}</p>
-                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Archived</span>
+                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>By {msg.sentByName}</span>
                           <span>·</span>
                           <span>{format(new Date(msg.createdAt), "MMM d, h:mm a")}</span>

@@ -535,10 +535,10 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                 </div>
               )}
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-semibold text-foreground">
                   {activeConvo ? activeConvo.name : showNewChat ? "New Chat" : "Messages"}
                 </h3>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {activeConvo ? activeConvo.subtitle : showNewChat ? "Select someone to message" : `${conversations.length} conversations`}
                 </p>
               </div>
@@ -633,7 +633,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     <div className="mt-2 flex flex-wrap gap-1">
                       {groupMembers.map((m) => (
                         <button key={m.id} onClick={() => toggleGroupMember(m)}
-                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground active:bg-red-100 active:text-red-600 dark:active:bg-red-950"
+                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground active:bg-red-100 active:text-red-600 dark:active:bg-red-950"
                         >
                           {m.name} <X className="h-2.5 w-2.5" />
                         </button>
@@ -694,7 +694,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               {p.type === "location" ? `Store #${p.storeNumber}` : "ARL"}
                             </p>
                           </div>
@@ -770,13 +770,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                         <div className="flex items-center justify-between">
                           <span className="truncate text-sm font-semibold text-foreground">{convo.name}</span>
                           {convo.unreadCount > 0 && (
-                            <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-[9px] font-bold text-white">
+                            <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-[var(--hub-red)] px-1 text-xs font-semibold text-white">
                               {convo.unreadCount}
                             </span>
                           )}
                         </div>
                         {convo.lastMessage && (
-                          <p className="truncate text-[11px] text-muted-foreground">
+                          <p className="truncate text-xs text-muted-foreground">
                             {convo.lastMessage.senderName}: {convo.lastMessage.content}
                           </p>
                         )}
@@ -976,7 +976,7 @@ function ActiveConvoView({
             )}
           </div>
           {searchQuery && (
-            <p className="mt-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               {searchFiltered?.length ?? 0} result(s)
             </p>
           )}
@@ -988,7 +988,7 @@ function ActiveConvoView({
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-muted px-4 py-1.5 text-[11px] font-medium text-muted-foreground active:bg-muted/80 transition-colors"
+                className="rounded-full bg-muted px-4 py-1.5 text-xs font-semibold text-muted-foreground active:bg-muted/80 transition-colors"
               >
                 View Past Messages
               </button>
@@ -1017,7 +1017,7 @@ function ActiveConvoView({
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (
-                  <span className="mb-0.5 ml-1 text-[10px] font-medium text-muted-foreground">{msg.senderName}</span>
+                  <span className="mb-0.5 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
                 )}
                 <div className={cn(
                   "rounded-2xl px-3 py-2 shadow-sm max-w-[75%]",
@@ -1044,7 +1044,7 @@ function ActiveConvoView({
                             isMe ? "bg-white/20" : "bg-white border border-slate-200"
                           )}>
                             <Emoji emoji={emoji} size={14} />
-                            {count > 1 && <span className={cn("text-[10px] font-medium", isMe ? "text-white/80" : "text-slate-600")}>{count}</span>}
+                            {count > 1 && <span className={cn("text-xs font-semibold", isMe ? "text-white/80" : "text-slate-600")}>{count}</span>}
                           </div>
                         ))}
                       </div>
@@ -1052,7 +1052,7 @@ function ActiveConvoView({
                   })()}
                   
                   <div className={cn("mt-0.5 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
-                    <span className={cn("text-[10px]", isMe ? "text-white/60" : "text-neutral-400")}>
+                    <span className={cn("text-xs", isMe ? "text-white/60" : "text-neutral-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
                     {isMe && (hasBeenRead
@@ -1106,7 +1106,7 @@ function ActiveConvoView({
                 <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
                 <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
               </div>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-xs text-slate-400">
                 {typingNames.length === 1 ? `${typingNames[0]} is typing...` : `${typingNames.join(", ")} are typing...`}
               </span>
             </motion.div>
