@@ -97,7 +97,7 @@ export function GridMessagesWidget({
       </div>
 
       {/* Conversation list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {loading ? (
           <div className="flex h-20 items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />

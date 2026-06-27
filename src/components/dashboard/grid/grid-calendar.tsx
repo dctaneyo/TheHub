@@ -15,7 +15,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, X, Info } from "@/lib/icons";
+import { Calendar, ChevronLeft, ChevronRight, X, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 /**
@@ -142,34 +142,42 @@ export function GridCalendarWidget() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-1 p-2">
-      {/* Month navigation */}
-      <div className="flex shrink-0 items-center justify-between px-1">
-        <button
-          type="button"
-          onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
+    <div className="flex h-full flex-col">
+      {/* Header — icon + month name doubles as the widget's identity and its
+          title (more useful here than a static "Calendar" label), with the
+          prev/next controls on the same row rather than a separate nav bar
+          stacked under a separate title row. */}
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
         <button
           type="button"
           onClick={() => openModal()}
-          className="text-sm font-semibold text-foreground transition-colors active:text-primary"
+          className="flex items-center gap-2 text-left transition-colors active:text-primary"
         >
-          {format(currentMonth, "MMMM yyyy")}
+          <Calendar className="h-4 w-4 text-[var(--hub-blue)]" />
+          <h2 className="text-lg font-semibold text-foreground">
+            {format(currentMonth, "MMMM yyyy")}
+          </h2>
         </button>
-        <button
-          type="button"
-          onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Day-of-week header */}
-      <div className="grid shrink-0 grid-cols-7">
+      <div className="grid shrink-0 grid-cols-7 px-3">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
           <div key={i} className="py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {d}
@@ -179,7 +187,7 @@ export function GridCalendarWidget() {
 
       {/* Calendar grid — fills remaining space, rows divide equally */}
       <div
-        className="min-h-0 flex-1"
+        className="min-h-0 flex-1 px-3 pb-3"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, minmax(0, 1fr))",

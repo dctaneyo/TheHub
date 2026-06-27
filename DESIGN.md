@@ -234,6 +234,17 @@ changed.
 still be able to tell where the logical groups are, purely from
 spacing.
 
+**A card's interior padding should read as more spacious than the gap
+separating it from its neighbors, not less.** The gap between cards
+only has to signal "these are different things"; the padding inside a
+card is containing content the user is meant to read or interact with,
+and undercutting the outer gap makes that content feel like it's
+pressing against the card's edge instead of sitting inside it. Found
+as a real instance: the dashboard grid's card gap was 12px while
+several widgets' internal list padding was 8px — backwards. Fixed by
+widening the gap and bringing interior padding up to match or exceed
+it, not by shrinking the gap to meet the padding.
+
 ---
 
 ## 6. Affordances & Signifiers
@@ -975,3 +986,42 @@ after it's been copied across twenty is not.
     Messages in the left column and extended Calendar to fill the
     rest of the right column: 4x3+8x6+4x3+4x3+4x3+8x6 = 144 cells,
     exactly `GRID_COLS*GRID_ROWS`, a complete gapless tiling.
+- 2026-06-27 — widget header consistency and breathing room, per
+  direct user feedback after looking at the dashboard: some widgets
+  had a real icon+title header (Messages, Upcoming), one had a bare
+  nav bar with no identity (Calendar/month), and one had no header at
+  all (Tasks — just the completion ring, which doesn't say "this is
+  tasks" on its own). Forms was a single full-bleed button with its
+  label inside the tap target instead of a header.
+
+  Standardized every data widget on one header: icon + `text-lg
+  font-semibold` title, `px-3 pb-2 pt-3`. Ambient widgets (clock,
+  quote) still get none, per the original Section 14/Non-Tells
+  reasoning — a header would be redundant chrome on something
+  meant to be glanced at, not browsed. Specifically:
+  - Tasks: added the missing header (icon `CheckSquare` + "Today's
+    Tasks") above the completion ring.
+  - Calendar/month: folded an icon into the existing month-name/nav
+    row rather than stacking a separate title row above it — the
+    month name itself is more useful here than a static "Calendar"
+    label, and a second row would have been the exact double-header
+    redundancy being fixed elsewhere.
+  - Forms (`LauncherTile`): added the header, removed the now-
+    redundant label paragraph from inside the tap target (the title
+    was about to appear twice — once in the new header, once in the
+    body — so the body keeps only the icon and hint).
+  - Upcoming's header used a different technique to get the same
+    spacing (`mb-2` on the wrapper vs. `pb-2` inline like the other
+    four) — switched it to match; same visual result, one fewer way
+    of doing the identical thing.
+
+  Then widened the breathing room: grid gap and outer page padding
+  both went `gap-3`/`p-3` (12px) -> `gap-4`/`p-4` (16px) in
+  `GridSurface` and the mobile stack, and widget-interior list/content
+  padding that was sitting at `px-2`/`py-2` (8px) — tighter than the
+  gap *between* cards, which had it backwards — moved to `px-3`/`py-3`
+  (12px) across Messages, Upcoming, Tasks' pending list, and
+  Calendar's day-grid. Clock's padding (`p-3`) was bumped to `p-4` to
+  match Quote, the other ambient widget, which was already there.
+  Net effect: a card's interior now reads as more spacious than the
+  gap separating it from its neighbors, not less.

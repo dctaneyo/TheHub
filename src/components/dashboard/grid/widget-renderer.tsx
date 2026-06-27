@@ -11,7 +11,13 @@ import { GridQuoteWidget } from "./grid-quote";
 import type { Widget } from "./grid-engine";
 import type { WidgetData } from "./widget-data";
 
-/** Full-bleed launcher tile for components that open as their own overlay. */
+/** Launcher tile for components that open as their own overlay — same
+ *  icon+title header every other data widget has (Messages, Upcoming,
+ *  Calendar, Tasks), with the tap target as the body underneath rather than
+ *  the whole tile being one button. The title lives in the header now, so
+ *  the body only needs the icon and the hint — repeating the label in both
+ *  places would be the redundant-header the rest of the dashboard was
+ *  cleaned up to avoid. */
 function LauncherTile({
   icon: Icon,
   label,
@@ -24,19 +30,22 @@ function LauncherTile({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center transition-colors active:bg-muted/60"
-    >
-      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-        <Icon className="h-7 w-7 text-primary" />
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
+        <Icon className="h-4 w-4 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">{label}</h2>
       </div>
-      <div>
-        <p className="text-sm font-semibold text-foreground">{label}</p>
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 p-4 text-center transition-colors active:bg-muted/60"
+      >
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+          <Icon className="h-7 w-7 text-primary" />
+        </div>
         <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 

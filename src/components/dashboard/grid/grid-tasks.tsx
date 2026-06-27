@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle2, XCircle, Info } from "@/lib/icons";
+import { CheckSquare, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
 import { useDeviceType } from "@/hooks/use-device-type";
@@ -134,9 +134,17 @@ export function GridTasksWidget({
     }, [tasks]);
 
   return (
-    <div className="flex h-full flex-col p-3">
-      {/* Header: ring + counts */}
-      <div className="flex shrink-0 flex-col items-center gap-3 pb-3">
+    <div className="flex h-full flex-col">
+      {/* Header — same icon+title pattern as every other data widget
+          (Messages, Upcoming, Calendar), so the widget identifies itself
+          instead of relying on the ring below to imply "this is tasks." */}
+      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
+        <CheckSquare className="h-4 w-4 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">Today&apos;s Tasks</h2>
+      </div>
+
+      {/* Ring + counts */}
+      <div className="flex shrink-0 flex-col items-center gap-3 px-3 pb-3">
         <CompletionRing pct={pct} onClick={() => setModalOpen(true)} />
 
         <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
@@ -191,7 +199,7 @@ export function GridTasksWidget({
       </div>
 
       {/* Pending list (completed tasks are removed entirely) */}
-      <div className="min-h-0 flex-1 overflow-y-auto border-t border-border/60 pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto border-t border-border/60 px-3 pb-3 pt-2">
         {pending.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <CheckCircle2
@@ -209,7 +217,7 @@ export function GridTasksWidget({
                 key={task.id}
                 layout
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                className="flex items-center gap-3 border-b border-border/40 py-2"
+                className="flex items-center gap-3 border-b border-border/40 py-3"
               >
                 <span
                   className={cn(

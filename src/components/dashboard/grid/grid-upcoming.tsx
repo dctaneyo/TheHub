@@ -80,12 +80,12 @@ export function GridUpcomingWidget({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-2 flex shrink-0 items-center gap-2 px-3 pt-3">
+      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
         <CalendarDays className="h-4 w-4 text-[var(--hub-blue)]" />
         <h2 className="text-lg font-semibold text-foreground">Upcoming 7 Days</h2>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {items.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <CalendarDays className="h-8 w-8 text-muted-foreground/40" />
@@ -97,7 +97,7 @@ export function GridUpcomingWidget({
           items.map(({ dateStr, date, task }) => (
             <div
               key={`${dateStr}-${task.id}`}
-              className="flex items-center gap-2 border-b border-border/40 px-2 py-2"
+              className="flex items-center gap-3 border-b border-border/40 px-3 py-3"
             >
               {/* Date badge */}
               <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">

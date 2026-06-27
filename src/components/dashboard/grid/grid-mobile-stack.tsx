@@ -111,7 +111,7 @@ export function MobileDashboard({
   ];
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
       {orderedWidgets.map((widget) => {
         if (isAmbientWidget(widget.type)) {
           return (

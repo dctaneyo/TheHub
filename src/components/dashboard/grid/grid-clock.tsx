@@ -47,7 +47,7 @@ export function ClockWidget() {
   return (
     <div
       ref={containerRef}
-      className="flex h-full w-full select-none flex-col items-center justify-center gap-1 overflow-hidden p-3"
+      className="flex h-full w-full select-none flex-col items-center justify-center gap-1 overflow-hidden p-4"
     >
       <span
         className="whitespace-nowrap font-mono font-black tabular-nums leading-none text-foreground"
