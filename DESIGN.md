@@ -418,7 +418,66 @@ deliberate per-screen decision.
 
 ---
 
-## 16. Do Not Use
+## 16. User Flow
+
+A flow is correct when two things are always true: the user knows what just
+happened, and the user knows how to get back. Most "this feels unfinished"
+reports trace to one of those breaking somewhere, not to a single screen
+looking wrong. This section is grounded in an actual audit of this app's
+flows (login, signup, dashboard edit mode, task completion, remote view,
+connection loss, forms/messages) — not general UX advice — and gets
+extended the same way: trace a real flow, cite the file/line, fix or state
+the exception.
+
+**Found and fixed before this section existed:** the dashboard's edit-mode
+entry/exit (Section 12's settings-cog rework), the default-layout fallback
+so a new location doesn't open to a blank grid (layouts.ts), and the
+quote/clock widgets losing an expand button that led nowhere useful.
+
+**Found, real, still open:**
+
+- **An action can fail with zero feedback.** `handleSave` in
+  `grid-dashboard.tsx` POSTs the edited layout; if it throws, the `catch`
+  block is empty (`// stay in edit mode`) — no error message, no retry
+  prompt, nothing. The user taps Save, nothing visibly happens, and they're
+  left to guess whether it worked. Contrast with the drag/resize collision
+  state in `widget-container.tsx`, which gets this right: a blocked move
+  visibly does nothing (the widget doesn't follow the pointer into an
+  invalid cell) rather than silently appearing to succeed. Save needs the
+  same honesty — at minimum, a visible error state that doesn't require
+  reading the network tab to discover.
+- **Reconnection has no backoff or give-up.** `connection-status.tsx`'s
+  `startReconnect` polls `/api/auth/me` every 5 seconds, indefinitely, with
+  no escalation if the server is actually down rather than just slow. A
+  kiosk left running overnight against a dead backend sits in
+  "Reconnecting…" forever with no different message at 10 seconds vs. 10
+  hours.
+
+**Found, and a stated exception rather than a defect:** the remote-view/
+mirroring flow (`remote-view-banner.tsx`) auto-starts when an ARL user
+begins viewing or controlling a location's screen — the code comment says
+so directly ("Auto-start... no consent needed") — and the location side has
+no button to end the session itself (`endSession` is defined but never
+wired to the UI; only the ARL side can end it). This is deliberate, not an
+oversight: ARL is a trusted internal role overseeing locations it manages,
+analogous to a manager looking over someone's shoulder, not an outside
+party. The banner's job is to keep the session *visible* (a bordered inset +
+"Being viewed/controlled by [name]," per Section 10's status-dot logic),
+not to gate consent. Stating this here so a future pass doesn't "fix" it
+into a confirmation dialog the actual use case doesn't want.
+
+**Onboarding** for a first-time user is intentionally out of scope here —
+Section 12 already covers it as forward guidance, not a found defect.
+
+**Check:** after any user-initiated action that hits the network, ask "if
+this fails right now, what does the user see?" If the answer is "nothing,"
+that's the same class of bug as `handleSave`'s empty catch — find it the
+same way (grep for empty `catch` blocks around `await` calls that update
+UI state on success).
+
+---
+
+## 17. Do Not Use
 
 The canonical list. These are named because they're the empirically
 most-flagged "this looks AI-made" patterns (sourced from large-scale
@@ -678,3 +737,18 @@ after it's been copied across twenty is not.
   this" check without first auditing this app's actual flows, and
   writing it without that groundwork would have produced generic UX
   advice instead of a falsifiable rule.
+- 2026-06-26 — did that audit and added Section 16 (User Flow),
+  grounded in tracing login, signup, dashboard edit mode, task
+  completion, remote view, connection loss, and forms/messages through
+  the actual code rather than speculating. Found and named a real,
+  still-open issue: `handleSave` in `grid-dashboard.tsx` has an empty
+  `catch` block, so a failed layout save gives the user zero feedback.
+  Also found that `connection-status.tsx`'s reconnect loop has no
+  backoff or give-up. Separately found that the remote-view banner
+  auto-starts a mirror/control session with no consent and gives
+  location staff no way to end it themselves (`endSession` in
+  `remote-view-banner.tsx` is defined but never wired to the UI) —
+  raised this directly before writing anything down, since it's a
+  product/trust question, not a style question; confirmed as
+  intentional (ARL is a trusted internal role, not an outside party)
+  and documented as a stated exception rather than a defect.
