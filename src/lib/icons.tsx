@@ -89,6 +89,7 @@ import {
   Power,
   Pulse,
   Question,
+  Quotes as PhQuotes,
   Repeat as PhRepeat,
   Scroll,
   Shield as PhShield,
@@ -228,6 +229,7 @@ export const Moon = bold(PhMoon, "Moon");
 export const MoreVertical = bold(DotsThreeVertical, "MoreVertical");
 export const Palette = bold(PhPalette, "Palette");
 export const Pause = bold(PhPause, "Pause");
+export const Quotes = bold(PhQuotes, "Quotes");
 export const Pencil = bold(PhPencil, "Pencil");
 export const PhoneOff = bold(PhoneDisconnect, "PhoneOff");
 export const Play = bold(PhPlay, "Play");

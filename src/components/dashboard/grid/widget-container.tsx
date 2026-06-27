@@ -13,6 +13,7 @@ import {
   MIN_H,
   fits,
   isAmbientWidget,
+  isOutlineWidget,
   type Widget,
 } from "./grid-engine";
 
@@ -43,6 +44,7 @@ export function WidgetContainer({
   // Still gets full chrome while editing/dragging, since the user needs a
   // visible boundary to grab or resize it then.
   const isAmbient = isAmbientWidget(widget.type);
+  const isOutline = isOutlineWidget(widget.type);
 
   // Latest widgets snapshot for collision checks inside pointer handlers
   // (avoids stale closures while a drag/resize is in flight).
@@ -161,8 +163,14 @@ export function WidgetContainer({
   // Ambient widgets only need their card boundary while there's a reason to
   // see one: editing (to grab/resize it) or an active drag/resize.
   // Otherwise no border, no fill, no shadow — content sits straight on the
-  // grid.
+  // grid. Outline widgets (just the quote, for now) always show the
+  // boundary — see isOutlineWidget — so this is "ambient" only in the
+  // narrower sense of never gating it off.
   const showChrome = !isAmbient || editMode || active;
+  // While editing/dragging, the outline widget temporarily fills like a
+  // normal card too — same reasoning as ambient widgets gaining full chrome
+  // then: a flat outline is harder to grab/see feedback on mid-drag.
+  const outlineFilled = editMode || active;
 
   return (
     <motion.div
@@ -175,7 +183,8 @@ export function WidgetContainer({
           // same logic as the chat bubble's pinched corner pointing toward
           // its sender, just pointed at a different fact (an interactive
           // corner, not a side).
-          "rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card",
+          "rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border",
+          isOutline && !outlineFilled ? "bg-transparent" : "bg-card",
           !active && "border-border",
           active && "border-transparent",
           active && !blocked && "shadow-lg ring-2 ring-primary/40",

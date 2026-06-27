@@ -1234,3 +1234,23 @@ after it's been copied across twenty is not.
     Replaced with a responsive card grid (1/2/3 columns by breakpoint)
     where each task shows its type and priority as badges, plus a
     completed/total count for the selected day in the filter bar.
+- 2026-06-27 — quote widget redesigned as a stated exception, not a
+  precedent. User-requested: outline border (same shape as every other
+  widget) but no fill, plus a large watermark quotation mark and
+  italic serif type behind/around the text. Agreed this is fine to
+  break the "no decoration without a job" rule for, on purpose, for
+  exactly one reason: this widget has no job — it's the dashboard's
+  only purely editorial surface, not a data widget being dressed up.
+  That reasoning doesn't transfer to Tasks/Messages/Calendar/Forms,
+  which all have real content competing for attention; a watermark
+  glyph there would be the actual AI-slop tell this project has spent
+  this whole pass removing. Kept deliberately restrained (one
+  low-opacity monochrome glyph, no gradient, no drop shadow) so the
+  exception doesn't become its own slop.
+
+  Mechanically: added `isOutlineWidget()` next to `isAmbientWidget()`
+  in `grid-engine.ts` (quote moved out of the ambient bucket — it now
+  always renders the standard card border, just without `bg-card`
+  filled in, falling back to filled while editing/dragging like the
+  ambient widgets already did, for grab visibility). Added `Quotes`
+  to `src/lib/icons.tsx`'s Phosphor wrapper for the background glyph.

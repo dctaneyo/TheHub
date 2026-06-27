@@ -60,7 +60,17 @@ export interface Widget {
  *  the two presentations agree on which widgets are "ambient" without
  *  duplicating the type check (DESIGN.md Section 15). */
 export function isAmbientWidget(type: WidgetType): boolean {
-  return type === "clock" || type === "quote";
+  return type === "clock";
+}
+
+// The quote widget keeps a visible border at all times (same shape as every
+// other widget) but never fills it with the card background — it's the one
+// deliberate exception to "data widgets get a card, ambient widgets don't"
+// (see widget-container.tsx), because an empty outline reads as "a quote
+// floating on the grid" rather than either a boxed data card or fully
+// chrome-free ambient content.
+export function isOutlineWidget(type: WidgetType): boolean {
+  return type === "quote";
 }
 
 export interface GridLayout {
