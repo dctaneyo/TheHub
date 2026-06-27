@@ -185,7 +185,7 @@ export function WidgetContainer({
           // its sender, just pointed at a different fact (an interactive
           // corner, not a side). Reset to uniform when expanded, since the
           // resize handle isn't shown in that state.
-          "group relative flex flex-col overflow-hidden rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card shadow-sm",
+          "group relative flex flex-col overflow-hidden rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card",
           !active && "border-border",
           active && "border-transparent",
           active && !blocked && "shadow-lg ring-2 ring-primary/40",
@@ -235,7 +235,7 @@ export function WidgetContainer({
           <button
             type="button"
             onClick={() => (onExpand ? onExpand() : toggleExpand(widget.id))}
-            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors active:text-foreground active:bg-muted"
+            className="absolute right-1.5 top-1.5 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-card/80 text-muted-foreground backdrop-blur-sm transition-colors active:text-foreground active:bg-muted"
             title="Expand"
           >
             <Maximize2 className="h-4 w-4" />

@@ -27,8 +27,8 @@ import { PREDEFINED_LAYOUTS, WIDGET_CATALOG } from "./layouts";
 import type { WidgetData } from "./widget-data";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
-// Layout/typography via Tailwind; glass surface via .glass-pill in globals.css
-const PILL = "glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground";
+// Layout/typography via Tailwind; glass surface via .pill in globals.css
+const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground";
 
 /**
  * SettingsPanel — a settings cog pill that, when clicked, slides left and
@@ -98,21 +98,12 @@ export function SettingsPanel({
     setOpen(false);
   };
 
-  // Pill animation variants — slower springs for a calmer feel
+  // Panel items reveal together as one group — no per-item stagger/spring/
+  // scale choreography. This is a settings menu, not a moment to perform.
   const pillVariants = {
-    hidden: { opacity: 0, scale: 0.7, x: 32 },
-    visible: (i: number) => ({
-      opacity: 1,
-      scale: 1,
-      x: 0,
-      transition: { delay: i * 0.07, type: "spring" as const, stiffness: 120, damping: 28 },
-    }),
-    exit: (i: number) => ({
-      opacity: 0,
-      scale: 0.7,
-      x: 32,
-      transition: { delay: i * 0.04, duration: 0.22 },
-    }),
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.12 } },
+    exit: { opacity: 0, transition: { duration: 0.1 } },
   };
 
   // Build the ordered list of panel items
@@ -272,12 +263,11 @@ export function SettingsPanel({
 
   return (
     <div className="flex items-center gap-2">
-      {/* Panel pills — staggered morph from the cog rightward origin */}
+      {/* Panel pills — reveal together as one group */}
       <AnimatePresence initial={false}>
-        {open && panelItems.map(({ key, node }, i) => (
+        {open && panelItems.map(({ key, node }) => (
           <motion.div
             key={key}
-            custom={panelItems.length - 1 - i}
             variants={pillVariants}
             initial="hidden"
             animate="visible"
@@ -380,7 +370,7 @@ export function GridControls({
               setShowLayouts((v) => !v);
               setShowAdd(false);
             }}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
+            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{layout.name}</span>
@@ -465,7 +455,7 @@ export function GridControls({
               setShowAdd((v) => !v);
               setShowLayouts(false);
             }}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
+            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add</span>
@@ -518,7 +508,7 @@ export function GridControls({
         <button
           type="button"
           onClick={() => compact()}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
+          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           title="Pull widgets up to close gaps"
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -540,7 +530,7 @@ export function GridControls({
               isCustom: true,
             });
           }}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
+          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
           title="Reset custom layout"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -553,7 +543,7 @@ export function GridControls({
         <button
           type="button"
           onClick={startEditing}
-          className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
+          className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground"
         >
           <Settings className="h-3.5 w-3.5" />
           Customize
@@ -567,7 +557,7 @@ export function GridControls({
             type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground disabled:opacity-50"
+            className="pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
             Cancel

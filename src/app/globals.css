@@ -172,59 +172,21 @@ html {
 }
 
 /* ── Pill surface ─────────────────────────────────────────────────────────────
- * Solid card-surface pill used in the grid dashboard header.
- * Note: --card is defined as hex (#ffffff / #1c1c1c), so the hsl(var / alpha)
- * syntax does NOT work — use the semantic Tailwind var directly via bg-card,
- * or use color-mix for any transparency. Here we keep it fully opaque.
+ * Solid card-surface pill used for header chips (clock, connection status,
+ * sign-out, etc). Named ".pill" — not "glass-pill": there is no blur or
+ * transparency effect here, that was a leftover name from an abandoned
+ * liquid-glass attempt. Flat fill-contrast against the page background does
+ * the separation work (bg-card vs bg-background) — no shadow at rest, per
+ * the same rule the login page follows. Reserve shadow for true overlays.
  * ──────────────────────────────────────────────────────────────────────────── */
 
-.glass-pill {
+.pill {
   background-color: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease;
 }
-.glass-pill:hover {
-  background-color: var(--card);
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
-}
-.glass-pill:active {
+.pill:active {
   background-color: var(--muted);
-  box-shadow: none;
-}
-
-.dark .glass-pill {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30);
-}
-.dark .glass-pill:hover {
-  background-color: var(--card);
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.40);
-}
-.dark .glass-pill:active {
-  background-color: var(--muted);
-  box-shadow: none;
-}
-
-/* Glass header bar — semi-transparent page background with heavy blur */
-.glass-header {
-  background: rgba(240, 244, 248, 0.70);
-  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(102%);
-  backdrop-filter: blur(40px) saturate(200%) brightness(102%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.60);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.80),
-    0 4px 24px rgba(0, 0, 0, 0.05);
-}
-.dark .glass-header {
-  background: rgba(10, 10, 10, 0.80);
-  -webkit-backdrop-filter: blur(40px) saturate(160%) brightness(110%);
-  backdrop-filter: blur(40px) saturate(160%) brightness(110%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 /* Onscreen keyboard slide-up (iOS-style). Only animates the Y axis via

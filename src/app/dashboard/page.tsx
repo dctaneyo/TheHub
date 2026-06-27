@@ -6,6 +6,7 @@ import { useSocket } from "@/lib/socket-context";
 import { Loader2, LogOut, Sun, Moon, Monitor } from "@/lib/icons";
 import { useTheme } from "next-themes";
 import { useGrid } from "@/components/dashboard/grid";
+import { HubMark } from "@/components/icons/hub-mark";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
 import { ConnectionStatus } from "@/components/connection-status";
@@ -59,13 +60,15 @@ function HeaderClockDisplay() {
   }, []);
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
   return (
-    <span className="font-mono text-base font-semibold tabular-nums text-foreground" aria-label="Current time">
+    <span className="font-mono text-sm font-semibold tabular-nums text-muted-foreground" aria-label="Current time">
       {time}
     </span>
   );
 }
 
-// Hides the header clock pill when the Clock widget is on the grid
+// Hides the header clock when the Clock widget is on the grid. Plain text,
+// no pill chrome — this is passive status, not an action, so it shouldn't
+// compete visually with the controls that actually do something.
 function HeaderClock() {
   const { widgets } = useGrid();
   const hasClockWidget = widgets.some((w) => w.type === "clock");
@@ -74,7 +77,7 @@ function HeaderClock() {
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 100, damping: 30 }}
-      className="flex h-9 items-center rounded-full bg-card/80 px-4 shadow-sm"
+      className="flex h-9 items-center px-2"
     >
       <HeaderClockDisplay />
     </motion.div>
@@ -727,9 +730,9 @@ function GridDashboardPage() {
         <LayoutGroup id="grid-header">
           <header className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
             <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }}
-              className="glass-pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
-                <span className="text-xs font-black text-primary-foreground">H</span>
+              className="pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
+                <HubMark className="h-3.5 w-3.5" />
               </div>
               <div className="leading-tight">
                 <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
@@ -743,7 +746,7 @@ function GridDashboardPage() {
               </motion.div>
               <ConnectionStatus />
               <button type="button" onClick={() => logout()}
-                className="glass-pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground">
+                className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
                 <LogOut className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Sign Out</span>
               </button>

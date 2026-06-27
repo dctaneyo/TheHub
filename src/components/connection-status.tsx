@@ -210,7 +210,7 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCode((v) => !v)}
-            className="glass-pill flex h-9 items-center gap-2 rounded-full px-3 cursor-pointer"
+            className="pill flex h-9 items-center gap-2 rounded-full px-3 cursor-pointer"
           >
             <div className="relative">
               <Wifi className="h-3.5 w-3.5 text-emerald-500" />
@@ -234,7 +234,7 @@ export function ConnectionStatus() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="glass-pill flex h-9 items-center gap-2 rounded-full px-3"
+            className="pill flex h-9 items-center gap-2 rounded-full px-3"
           >
             {isReconnecting ? (
               <RefreshCw className="h-3.5 w-3.5 animate-spin text-red-500" />
@@ -255,7 +255,7 @@ export function ConnectionStatus() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed z-[2000] w-64 rounded-xl border border-border bg-card p-3 shadow-lg"
+            className="fixed z-[2000] w-64 rounded-2xl border border-border bg-card p-3 shadow-lg"
             style={dropdownPos ? { top: dropdownPos.top, right: dropdownPos.right } : {}}
           >
             <div className="flex items-center justify-between mb-2">
@@ -279,7 +279,7 @@ export function ConnectionStatus() {
                   key={s.id}
                   className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${s.isCurrent ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted/50"}`}
                 >
-                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${s.isCurrent ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg ${s.isCurrent ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
                     <DeviceIcon type={s.deviceType} />
                   </div>
                   <div className="flex-1 min-w-0">
