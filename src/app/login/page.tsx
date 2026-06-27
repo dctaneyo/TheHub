@@ -69,7 +69,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [validatedUser, setValidatedUser] = useState<ValidatedUser | null>(null);
-  const [isOnline] = useState(true);
+  const { isConnected: isOnline } = useSocket();
 
   // Org entry state
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
@@ -709,7 +709,7 @@ export default function LoginPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600"
+                  className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span>{orgError}</span>
@@ -895,7 +895,7 @@ export default function LoginPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="flex w-full items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600"
+                  className="flex w-full items-center gap-2 rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span>{error}</span>
@@ -1014,7 +1014,7 @@ export default function LoginPage() {
               <span className={`text-[10px] font-medium truncate ${selfPinged ? "text-red-100" : "text-muted-foreground"}`}>
                 {selfPinged ? "Signaled!" : "Session"}
               </span>
-              {!selfPinged && <span className="text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
+              {!selfPinged && <span className="font-mono text-xs font-black tracking-widest text-foreground shrink-0">{pendingCode}</span>}
               <button
                 onClick={(e) => { e.stopPropagation(); generateSession(); }}
                 disabled={refreshing}
@@ -1142,7 +1142,7 @@ export default function LoginPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="flex items-center gap-2 rounded-2xl bg-red-50 px-3 py-1.5 text-xs text-red-600"
+                            className="flex items-center gap-2 rounded-2xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive"
                           >
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             <span>{bypassError}</span>

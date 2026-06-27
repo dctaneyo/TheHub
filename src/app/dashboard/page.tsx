@@ -166,7 +166,7 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
       {hasItems && (
         <motion.div key="ticker" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
           transition={{ type: "spring", stiffness: 340, damping: 30 }}
-          className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full bg-card/80 shadow-sm"
+          className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full border border-border bg-card"
         >
           <div className="flex h-full shrink-0 items-center gap-1.5 rounded-l-full bg-primary px-3">
             <span className="relative flex h-2 w-2">
@@ -742,7 +742,6 @@ function GridDashboardPage() {
                 <button
                   type="button"
                   onClick={cycleTheme}
-                  title={`Theme: ${theme}`}
                   className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
                 >
                   {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}

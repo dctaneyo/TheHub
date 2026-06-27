@@ -752,3 +752,19 @@ after it's been copied across twenty is not.
   product/trust question, not a style question; confirmed as
   intentional (ARL is a trusted internal role, not an outside party)
   and documented as a stated exception rather than a defect.
+- 2026-06-26 — audited dashboard/page.tsx and login/page.tsx against
+  this doc and fixed what didn't need the mobile redesign first:
+  login's session-pairing code now uses `font-mono` (Section 1);
+  login's three error banners moved from raw `red-50`/`red-600` to the
+  `--destructive` token already used everywhere else (Section 2/15),
+  which also makes them dark-mode-aware; login's "Connected/Offline"
+  indicator was hardcoded `useState(true)` and never updated — wired
+  to the real `isConnected` from `useSocket()` instead of quietly
+  lying about connectivity; the dashboard ticker's one-off
+  `bg-card/80 shadow-sm` pill became a flat `border + bg-card` surface
+  matching `.pill`'s no-shadow-at-rest rule (Section 3); removed a
+  dead `title` attribute left on the header theme button after it was
+  already wrapped in `IconTip`. Sign Out's icon-only state below `sm`
+  (no label, no `IconTip`) was deliberately left for the mobile
+  redesign rather than patched here, since that screen is being
+  rebuilt next.
