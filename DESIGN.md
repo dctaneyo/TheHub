@@ -162,6 +162,14 @@ feedback is defined (no corresponding active/press treatment) is a
 violation — that feedback is invisible on this product's actual
 hardware.
 
+**A pill/card background is itself a signifier — "this is a button" —
+so it shouldn't wrap content that isn't one.** Passive identity/status
+content (a logo+name block, a clock, a label) gets no background at
+all; reserve the pill treatment for things that are actually tappable
+(Settings, Connection Status). Wrapping passive content in the same
+shape as real buttons is a false affordance — it tells the eye
+"interactive" about something that isn't.
+
 ---
 
 ## 7. Visual Hierarchy
@@ -202,6 +210,16 @@ Section 6; this is a touchscreen product.) A single standard
 duration/easing should govern ordinary feedback (a reasonable default
 until something more specific is decided: ~150-200ms, ease-out); motion
 exists to communicate something, not to decorate.
+
+**Watch for Framer Motion's `layout` prop causing unrelated siblings to
+visibly resize/spring.** A flex item with `flex-1` next to a sibling
+that conditionally mounts/unmounts will grow or shrink whenever that
+sibling changes — adding `layout` there doesn't smooth a real
+transition, it just animates a side effect nobody asked for (e.g. a
+brand/identity block visibly stretching every time an unrelated status
+chip appears or disappears next to it). If something needs to look
+stable, don't give it a width that depends on its neighbors, rather
+than papering over the resulting jiggle with a spring.
 
 ---
 
@@ -456,3 +474,13 @@ after it's been copied across twenty is not.
   icon-only controls relying solely on the hover-triggered native
   `title` attribute for explanation, which doesn't function on a
   touchscreen kiosk.
+- 2026-06-26 — built IconTip (touch-compatible tooltip) and applied it
+  to all 13 controls flagged above; fixed the settings-cog's
+  progressive-disclosure structure (Tidy/Reset moved to an overflow,
+  theme pulled out into its own header button); deleted GridControls
+  (a second, zero-consumer near-duplicate of SettingsPanel). Added the
+  pill-is-a-signifier rule to Section 6 and the layout-prop sibling-
+  resize warning to Section 9, after removing the brand/identity
+  block's pill wrapper and the spring `layout` animations on the
+  dashboard header that were causing it to visibly stretch whenever an
+  unrelated sibling (the clock, the settings panel) changed.

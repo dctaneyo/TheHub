@@ -35,7 +35,7 @@ import {
   type WidgetData,
   type UpcomingTask,
 } from "@/components/dashboard/grid";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TasksResponse {
   tasks: TaskItem[];
@@ -75,13 +75,9 @@ function HeaderClock() {
   const hasClockWidget = widgets.some((w) => w.type === "clock");
   if (hasClockWidget) return null;
   return (
-    <motion.div
-      layout
-      transition={{ type: "spring", stiffness: 100, damping: 30 }}
-      className="flex h-9 items-center px-2"
-    >
+    <div className="flex h-9 items-center px-2">
       <HeaderClockDisplay />
-    </motion.div>
+    </div>
   );
 }
 
@@ -728,44 +724,39 @@ function GridDashboardPage() {
         sendViewChange={sendViewChange}
       />
       <div className="flex h-screen flex-col bg-background">
-        <LayoutGroup id="grid-header">
-          <header className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
-            <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }}
-              className="pill flex h-9 flex-1 items-center gap-2.5 rounded-full px-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
-                <HubMark className="h-3.5 w-3.5" />
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
-                {user.name && <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>}
-              </div>
-            </motion.div>
-            <div className="flex items-center gap-2">
-              <motion.div layout transition={{ type: "spring", stiffness: 100, damping: 30 }} className="flex items-center gap-2">
-                <HeaderClock />
-                <SettingsPanel onSave={saveLayout} />
-              </motion.div>
-              {themeMounted && (
-                <IconTip label={`Theme: ${theme}`}>
-                  <button
-                    type="button"
-                    onClick={cycleTheme}
-                    title={`Theme: ${theme}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-                  >
-                    {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-                  </button>
-                </IconTip>
-              )}
-              <ConnectionStatus />
-              <button type="button" onClick={() => logout()}
-                className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
+        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
+              <HubMark className="h-3.5 w-3.5" />
             </div>
-          </header>
-        </LayoutGroup>
+            <div className="leading-tight">
+              <p className="text-sm font-bold text-foreground leading-none">Dashboard</p>
+              {user.name && <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{user.name}</p>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <HeaderClock />
+            <SettingsPanel onSave={saveLayout} />
+            {themeMounted && (
+              <IconTip label={`Theme: ${theme}`}>
+                <button
+                  type="button"
+                  onClick={cycleTheme}
+                  title={`Theme: ${theme}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                >
+                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+                </button>
+              </IconTip>
+            )}
+            <ConnectionStatus />
+            <button type="button" onClick={() => logout()}
+              className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
+        </header>
 
         <motion.div layout className="min-h-0 flex-1">
           <GridSurface data={widgetData} />
