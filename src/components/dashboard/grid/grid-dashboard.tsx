@@ -7,14 +7,10 @@ import {
   LayoutGrid,
   Plus,
   Settings,
-  RefreshCw,
   Check,
-  ChevronDown,
-  Sparkles,
   Save,
   X,
   Loader2,
-  MoreVertical,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
@@ -30,9 +26,16 @@ import type { WidgetData } from "./widget-data";
 const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:text-foreground";
 
 /**
- * SettingsPanel — a settings cog pill that, when clicked, slides left and
- * morphs out the layout picker, customize, and theme picker pills from itself.
- * Closing re-absorbs them back into the cog with the reverse animation.
+ * SettingsPanel — two distinct surfaces depending on mode, not one cog that
+ * always reveals the same six actions inline (the bento-style "everything
+ * equally prominent" problem DESIGN.md Section 12 calls out by name):
+ *
+ * - Browsing: the cog opens a single bounded popover (layout switch +
+ *   entry into editing) — one step deeper, not pills sliding into the
+ *   header's flow.
+ * - Editing: Add/Cancel/Save stay inline and fully visible, since those are
+ *   primary actions a mid-edit user needs immediately.
+ *
  * Must be rendered inside <GridProvider>.
  */
 export function SettingsPanel({
@@ -51,13 +54,10 @@ export function SettingsPanel({
     beginEdit,
     commitEdit,
     cancelEdit,
-    compact,
   } = useGrid();
 
   const [open, setOpen] = useState(false);
-  const [showLayouts, setShowLayouts] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [showOverflow, setShowOverflow] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isCustom = !!layout.isCustom;
@@ -66,8 +66,8 @@ export function SettingsPanel({
   const startEditing = () => {
     beginEdit();
     setEditMode(true);
-    setShowLayouts(false);
     setShowAdd(false);
+    setOpen(false);
   };
 
   const handleSave = async () => {
@@ -89,7 +89,6 @@ export function SettingsPanel({
     cancelEdit();
     setEditMode(false);
     setShowAdd(false);
-    setOpen(false);
   };
 
   // Panel items reveal together as one group — no per-item stagger/spring/
@@ -100,79 +99,15 @@ export function SettingsPanel({
     exit: { opacity: 0, transition: { duration: 0.1 } },
   };
 
-  // Build the ordered list of panel items
+  // Edit-mode toolbar only — browsing-mode actions live in the popover below.
   const panelItems: { key: string; node: React.ReactNode }[] = [];
-
-  if (!editMode) {
-    panelItems.push({
-      key: "layouts",
-      node: (
-        <div className="relative">
-          <button type="button" onClick={() => { setShowLayouts((v) => !v); setShowAdd(false); }} className={PILL}>
-            <LayoutGrid className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{layout.name}</span>
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          <AnimatePresence>
-            {showLayouts && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
-              >
-                {PREDEFINED_LAYOUTS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => { replaceLayout({ ...preset, isCustom: false }); setEditMode(false); setShowLayouts(false); }}
-                    className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", !isCustom && layout.id === preset.id && "bg-primary/10")}
-                  >
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-foreground">{preset.name}</div>
-                      <div className="text-xs text-muted-foreground">{preset.description}</div>
-                    </div>
-                    {!isCustom && layout.id === preset.id && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
-                  </button>
-                ))}
-                <div className="my-1 h-px bg-border" />
-                <button
-                  type="button"
-                  onClick={() => { selectCustom(); setShowLayouts(false); }}
-                  className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", isCustom && "bg-primary/10")}
-                >
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-foreground">Custom</div>
-                    <div className="text-xs text-muted-foreground">Build and arrange your own layout</div>
-                  </div>
-                  {isCustom && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ),
-    });
-
-    if (isCustom) {
-      panelItems.push({
-        key: "customize",
-        node: (
-          <button type="button" onClick={startEditing} className={PILL}>
-            <Settings className="h-3.5 w-3.5" />
-            Customize
-          </button>
-        ),
-      });
-    }
-  }
 
   if (editMode) {
     panelItems.push({
       key: "add",
       node: (
         <div className="relative">
-          <button type="button" onClick={() => { setShowAdd((v) => !v); setShowLayouts(false); }} className={PILL}>
+          <button type="button" onClick={() => setShowAdd((v) => !v)} className={PILL}>
             <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add</span>
           </button>
@@ -205,53 +140,6 @@ export function SettingsPanel({
         </div>
       ),
     });
-    // Tidy/Reset are real but lower-frequency than Add/Cancel/Save — tucked
-    // one step deeper in an overflow instead of sitting at equal visibility
-    // inline (DESIGN.md Section 12: progressive disclosure / spectrum of
-    // explicitness — these don't deserve the same prominence as Save/Cancel,
-    // which a user mid-edit actually needs to find immediately).
-    panelItems.push({
-      key: "overflow",
-      node: (
-        <div className="relative">
-          <IconTip label="More layout actions">
-            <button type="button" onClick={() => setShowOverflow((v) => !v)} className={cn(PILL, "px-2.5")}>
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-          </IconTip>
-          <AnimatePresence>
-            {showOverflow && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="absolute right-0 top-full z-[60] mt-1 w-44 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
-              >
-                <button
-                  type="button"
-                  onClick={() => { compact(); setShowOverflow(false); }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors active:bg-muted"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                  Tidy up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    replaceLayout({ ...PREDEFINED_LAYOUTS[0], id: "custom", name: "Custom", description: "Your personalized layout", isCustom: true });
-                    setShowOverflow(false);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors active:bg-muted"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                  Reset layout
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ),
-    });
     panelItems.push({
       key: "cancel",
       node: (
@@ -272,28 +160,30 @@ export function SettingsPanel({
     });
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      {/* Panel pills — reveal together as one group */}
-      <AnimatePresence initial={false}>
-        {open && panelItems.map(({ key, node }) => (
-          <motion.div
-            key={key}
-            variants={pillVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            {node}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+  if (editMode) {
+    // Editing toolbar — Add/Cancel/Save stay inline, always visible; no cog
+    // to toggle, since there's nothing to "open" mid-edit.
+    return (
+      <div className="flex items-center gap-2">
+        <AnimatePresence initial={false}>
+          {panelItems.map(({ key, node }) => (
+            <motion.div key={key} variants={pillVariants} initial="hidden" animate="visible" exit="exit">
+              {node}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
-      {/* Cog pill — plain button, only the icon rotates */}
+  // Browsing — cog opens one bounded popover (layout switch + entry into
+  // editing) instead of pills sliding out into the header's flow.
+  return (
+    <div className="relative">
       <IconTip label={open ? "Close settings" : "Settings"}>
         <button
           type="button"
-          onClick={() => { setOpen((v) => !v); if (open) { setShowLayouts(false); setShowAdd(false); setShowOverflow(false); } }}
+          onClick={() => setOpen((v) => !v)}
           className={cn(PILL, open && "bg-card text-foreground")}
           title={open ? "Close settings" : "Settings"}
         >
@@ -306,6 +196,59 @@ export function SettingsPanel({
           </motion.span>
         </button>
       </IconTip>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
+          >
+            <div className="px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Layout
+            </div>
+            {PREDEFINED_LAYOUTS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => { replaceLayout({ ...preset, isCustom: false }); setOpen(false); }}
+                className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", !isCustom && layout.id === preset.id && "bg-primary/10")}
+              >
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-foreground">{preset.name}</div>
+                  <div className="text-xs text-muted-foreground">{preset.description}</div>
+                </div>
+                {!isCustom && layout.id === preset.id && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => { selectCustom(); setOpen(false); }}
+              className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", isCustom && "bg-primary/10")}
+            >
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground">Custom</div>
+                <div className="text-xs text-muted-foreground">Build and arrange your own layout</div>
+              </div>
+              {isCustom && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
+            </button>
+            {isCustom && (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                >
+                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                  Customize widgets
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

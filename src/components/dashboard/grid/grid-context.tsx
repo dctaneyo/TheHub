@@ -30,7 +30,6 @@ interface GridContextValue {
   beginEdit: () => void;
   commitEdit: () => void;
   cancelEdit: () => void;
-  compact: () => void;
 }
 
 const GridContext = createContext<GridContextValue | null>(null);

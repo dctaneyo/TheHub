@@ -253,8 +253,9 @@ export function WidgetContainer({
           </div>
         )}
 
-        {/* Floating expand control — view mode only; hidden for clock (nothing useful to expand) */}
-        {!editMode && !expanded && widget.type !== "clock" && (
+        {/* Floating expand control — view mode only; hidden for ambient widgets
+            (clock, quote) since fullscreening them adds no function. */}
+        {!editMode && !expanded && !isAmbient && (
           <IconTip label="Expand">
             <button
               type="button"

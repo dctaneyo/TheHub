@@ -736,6 +736,7 @@ function GridDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <HeaderClock />
+            <ConnectionStatus />
             <SettingsPanel onSave={saveLayout} />
             {themeMounted && (
               <IconTip label={`Theme: ${theme}`}>
@@ -749,7 +750,6 @@ function GridDashboardPage() {
                 </button>
               </IconTip>
             )}
-            <ConnectionStatus />
             <button type="button" onClick={() => logout()}
               className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
               <LogOut className="h-3.5 w-3.5" />

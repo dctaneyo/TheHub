@@ -533,3 +533,28 @@ after it's been copied across twenty is not.
   static `.woff2` via `next/font/local`, same pattern as the previous
   Inter setup. Revised Section 1 from "one typeface" to state the
   two-typeface, distinct-job rule explicitly.
+- 2026-06-26 — finished the settings-cog fix Section 12 already
+  diagnosed but only half-applied: layout switch + entry into editing
+  (browsing-mode actions) now live in one bounded popover anchored to
+  the cog, instead of pills sliding out into the header's flow.
+  Add/Cancel/Save still stay inline while actively editing — those are
+  primary actions a mid-edit user needs immediately, not secondary
+  settings, so collapsing them into the popover too would be the wrong
+  direction. Also reordered the header to group by category: passive
+  status (clock, connection) together, then configuration (settings,
+  theme), then exit (sign out) — was settings/theme/connection/sign-out,
+  which split the status pair across the configuration group for no
+  reason.
+- 2026-06-26 — removed Tidy Up and Reset Layout from the edit-mode
+  toolbar (unused, per direct user feedback) along with their overflow
+  menu, which had no other contents once both were gone. Deleted the
+  dead `compact()` gravity-compaction function it called from
+  `grid-engine.ts`/`grid-context.tsx` rather than leaving an unused
+  feature wired up behind a removed button.
+- 2026-06-26 — removed the quote widget's expand button (per direct
+  user feedback — fullscreening a one-line quote adds no function).
+  It already shared the ambient/borderless treatment with the clock
+  widget (`isAmbient` in `widget-container.tsx`); the expand-button
+  condition previously only excluded the clock by name, so it missed
+  this. Switched the condition to the existing `isAmbient` check
+  instead of adding a second special case.

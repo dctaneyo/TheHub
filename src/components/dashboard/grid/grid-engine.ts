@@ -368,35 +368,6 @@ export function useGridLayout(initialLayout: GridLayout) {
     setEditModeState(v);
   }, []);
 
-  /** Gravity-compact: pull every widget as far up as it can go without
-   *  overlapping, processing top-to-bottom. Columns (x) are preserved; only
-   *  vertical gaps are removed. Triggered manually from the toolbar. */
-  const compact = useCallback(() => {
-    setLayout((prev) => {
-      const sorted = [...prev.widgets].sort(
-        (a, b) => a.position.y - b.position.y || a.position.x - b.position.x
-      );
-      const placed: Widget[] = [];
-      for (const w of sorted) {
-        let y = w.position.y;
-        while (
-          y > 0 &&
-          fits(w.w, w.h, { x: w.position.x, y: y - 1 }, placed, w.id)
-        ) {
-          y--;
-        }
-        placed.push({ ...w, position: { x: w.position.x, y } });
-      }
-      // No-op if nothing actually moved (avoid marking custom needlessly).
-      const changed = placed.some((p) => {
-        const orig = prev.widgets.find((o) => o.id === p.id);
-        return orig && orig.position.y !== p.position.y;
-      });
-      if (!changed) return prev;
-      return markCustom({ ...prev, widgets: placed });
-    });
-  }, []);
-
   return useMemo(
     () => ({
       layout,
@@ -415,7 +386,6 @@ export function useGridLayout(initialLayout: GridLayout) {
       beginEdit,
       commitEdit,
       cancelEdit,
-      compact,
     }),
     [
       layout,
@@ -432,7 +402,6 @@ export function useGridLayout(initialLayout: GridLayout) {
       beginEdit,
       commitEdit,
       cancelEdit,
-      compact,
     ]
   );
 }
