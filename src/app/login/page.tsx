@@ -629,40 +629,44 @@ export default function LoginPage() {
   // Org Entry Screen — no org slug resolved yet
   if (orgChecked && !orgSlug) {
     return (
-      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center relative ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
-        {themeMounted && (
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${themeLabel}`}
-            className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
-          >
-            {theme === "dark"
-              ? <Moon className="h-4 w-4" />
-              : theme === "light"
-              ? <Sun className="h-4 w-4" />
-              : <Monitor className="h-4 w-4" />}
-          </button>
-        )}
-
+      <div className={`min-h-screen min-h-dvh w-screen overflow-y-auto bg-background flex flex-col items-center py-6 px-4 justify-center ${showOrgKeyboard ? "max-sm:justify-start max-sm:pt-12" : ""}`}>
         {/* Spacer to push content above keyboard on mobile */}
         {showOrgKeyboard && <div className="flex-1 min-h-4 sm:hidden" />}
-        {/* Hub icon — outside the card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
-        >
-          <HubMark className="h-7 w-7 sm:h-8 sm:w-8" />
-        </motion.div>
 
+        {/* Card — layoutId="login-card" morphs into the PIN pad card when
+            the org is confirmed. Same key on both ends; Framer Motion
+            animates size + position between the two renders. */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-sm rounded-3xl bg-card border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
+          layoutId="login-card"
+          transition={{ type: "spring", stiffness: 60, damping: 18 }}
+          className="relative w-full max-w-sm rounded-3xl bg-card border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
-          <h1 className="text-2xl font-semibold text-foreground">Welcome to The Hub</h1>
+          {/* Theme toggle in card corner — same position as the login card
+              so it stays put during the morph instead of jumping. */}
+          {themeMounted && (
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${themeLabel}`}
+              className="absolute right-4 top-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
+            >
+              {theme === "dark"
+                ? <Moon className="h-3.5 w-3.5" />
+                : theme === "light"
+                ? <Sun className="h-3.5 w-3.5" />
+                : <Monitor className="h-3.5 w-3.5" />}
+            </button>
+          )}
+
+          {/* Hub mark — layoutId="hub-mark" keeps it pinned in the same
+              spot while the card expands around it. */}
+          <motion.div
+            layoutId="hub-mark"
+            className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
+          >
+            <HubMark className="h-7 w-7 sm:h-8 sm:w-8" />
+          </motion.div>
+
+          <h1 className="mt-2 sm:mt-3 text-2xl font-semibold text-foreground">Welcome to The Hub</h1>
 
           <div className="mt-3 sm:mt-4 w-full">
 
@@ -817,27 +821,38 @@ export default function LoginPage() {
         )}
       </AnimatePresence>
 
-      {/* Card container */}
+      {/* Card — receives the morph from the org slug card via layoutId */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        layoutId="login-card"
+        transition={{ type: "spring", stiffness: 60, damping: 18 }}
         className="relative w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
-        {/* Icon + Title — show tenant branding when resolved */}
+        {/* Hub mark / tenant logo — stays anchored in place while the card
+            morphs; only the card shell around it grows. */}
         {resolvedTenant?.logoUrl ? (
           <motion.img
+            layoutId="hub-mark"
             src={resolvedTenant.logoUrl}
             alt={`${resolvedTenant.name} logo`}
             className="mb-1 h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-contain"
           />
         ) : (
           <motion.div
+            layoutId="hub-mark"
             className="mb-1 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--hub-red)] text-white"
           >
             <HubMark className="h-7 w-7 sm:h-9 sm:w-9" />
           </motion.div>
         )}
+
+        {/* Content fades in after the card has had a moment to morph —
+            prevents the PIN pad from popping in before the card shape settles. */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
+          className="w-full flex flex-col items-center"
+        >
         {resolvedTenant ? (
           <h1
             className="mt-2 sm:mt-3 text-2xl font-semibold"
@@ -1022,6 +1037,8 @@ export default function LoginPage() {
             </motion.button>
           )}
         </div>
+
+        </motion.div>{/* /fade wrapper */}
 
         {/* Theme toggle — anchored to the card's top-right corner, not the
             screen's, so it stays in one consistent position across
