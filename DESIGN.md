@@ -225,7 +225,91 @@ independent of any single screen's broader style:
 
 ---
 
-## 11. Do Not Use
+## 11. Data Drives the UI
+
+The shape of a screen should come from the actual shape of the data on
+it — not from whatever the default table/list/card looks like before
+anyone's thought about what's actually being shown.
+
+- A field with a small, fixed set of values (status, department, task
+  type, priority) becomes a colored chip, not a plain text column —
+  there's a finite vocabulary, so encode it visually instead of asking
+  the user to read every row.
+- Numbers right-align so digits line up by place value. Long text
+  truncates rather than squeezing everything else.
+- Time-ordered, "what happened when" data is a timeline before it's a
+  sorted table — a sorted-by-date table technically works, but it's not
+  letting the data pick its own shape. (This app already does this
+  right in places — `grid-tasks`, the calendar widgets — worth holding
+  as the standard for new widgets, not a one-off.)
+- Color in a dashboard is never sprinkled in for visual interest — see
+  Section 2's claimed-semantic-colors table. The reason red/amber/
+  emerald/teal exist isn't "the screen needed more color," it's that
+  each one is standing in for a real property of the data (urgency,
+  priority, status, an active remote session).
+- An avatar or icon next to an identity column isn't decoration — it's
+  a faster lookup path than reading a name, because the eye matches
+  shapes/colors faster than it reads text.
+
+---
+
+## 12. Progressive Disclosure & the Spectrum of Explicitness
+
+What's shown by default vs. revealed on demand should track how often
+and how important an action actually is — not "show everything,
+always," and not "hide everything behind a menu" either. There's a
+spectrum: a primary action is always visible; a secondary one shows up
+when the user is already looking for it; a rare one is tucked one step
+deeper still.
+
+**This product's no-hover rule (Section 6) changes how this gets
+implemented, not whether it applies.** The video's own version of this
+relies on hover to reveal secondary actions — that mechanism doesn't
+exist here. The same disclosure logic has to be expressed through a
+deliberate tap (a "..." overflow, a long-press, a one-level-deeper
+menu) instead of a hover reveal.
+
+**A concrete place this app gets the structure wrong, independent of
+the animation:** the settings cog reveals up to six actions (add, tidy,
+reset, cancel, save, theme) inline, all at equal visibility, the moment
+it's tapped. Those six don't deserve equal explicitness — theme is rare,
+Save/Cancel only exist mid-edit, Tidy/Reset are occasional. The
+choreography around this was already calmed down (see Changelog), but
+the structure — six equally-prominent items appearing at once — is the
+deeper issue. A real fix groups the rarely-needed ones a step further
+in, rather than just toning down how they animate in.
+
+**Onboarding is this same principle applied to a first-time user:** one
+hint pointing at the next single action, not a feature-tour modal with
+a bullet list the moment someone logs in. Nothing here currently
+implements onboarding either way — flagging this as forward guidance
+for whenever it's built, not a found defect.
+
+---
+
+## 13. UI Is What You Can't See
+
+A meaningful share of a finished product is the layer a user doesn't
+see by default: tooltips on ambiguous icons, empty/error states, a
+restrained first-run hint instead of a tour. Skipping this is what
+makes something feel unfinished even when every visible pixel is
+polished — the visible part is the easy 80%; orchestrating the
+invisible part is the actual work.
+
+**This app already has a real, specific version of this problem.**
+13 icon-only controls across the dashboard/grid files (the resize
+handle, the settings cog, the widget expand button, others) rely
+solely on the native HTML `title` attribute for their explanation.
+`title` tooltips are hover-triggered — on a touchscreen kiosk with no
+pointer (Section 6), they functionally don't exist. The markup is
+there; the affordance isn't. Any icon-only control that needs
+explaining needs a touch-compatible mechanism instead — a persistent
+micro-label, a first-use contextual hint, or a long-press reveal — not
+just a `title` attribute and hoping.
+
+---
+
+## 14. Do Not Use
 
 The canonical list. These are named because they're the empirically
 most-flagged "this looks AI-made" patterns (sourced from large-scale
@@ -356,3 +440,19 @@ after it's been copied across twenty is not.
   dashboard grid widgets: tight bottom-right corner marking the resize
   handle, modeled on the chat bubble's directional pinched corner.
   Scoped to widgets only.
+- 2026-06-26 — rebuilt the dashboard header: real HubMark logo (was the
+  generic letter-in-a-box placeholder), unified radius, removed resting
+  shadows from `.pill`/widget cards in favor of flat fill-contrast,
+  demoted passive status (clock, sign-out) below action controls, and
+  calmed the settings-cog reveal. Renamed `glass-pill` -> `.pill` and
+  deleted the unused `.glass-header` rule — both were leftover naming
+  from an abandoned liquid-glass redesign attempt; also caught real CSS
+  `:hover` rules in that class the earlier Tailwind-only hover sweeps
+  had missed.
+- 2026-06-26 — added Sections 12-14 (data drives the UI, progressive
+  disclosure & spectrum of explicitness, UI is what you can't see),
+  sourced from a second design-principles video. Identified a concrete
+  instance of Section 14's problem already in this codebase: 13
+  icon-only controls relying solely on the hover-triggered native
+  `title` attribute for explanation, which doesn't function on a
+  touchscreen kiosk.
