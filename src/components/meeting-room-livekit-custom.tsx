@@ -376,7 +376,7 @@ function MeetingSetup({
           )}
 
           {/* Role badge */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1">
+          <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
             {isHost ? (
               <>
                 <Crown className="h-3 w-3 text-yellow-400" />
@@ -392,9 +392,9 @@ function MeetingSetup({
 
           {/* Mic level indicator */}
           {micOn && permissionsGranted && (
-            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1.5">
+            <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-2">
               <Mic className="h-3.5 w-3.5 text-green-400" />
-              <div className="flex gap-0.5 items-end h-3">
+              <div className="flex gap-1 items-end h-3">
                 {[0.15, 0.3, 0.45, 0.6, 0.75].map((threshold, i) => (
                   <div
                     key={i}
@@ -1002,7 +1002,7 @@ function MeetingUI({
             <Users className="h-10 w-10 text-slate-400" />
           </div>
           <h2 className="text-2xl font-semibold text-white mb-2">{title}</h2>
-          <div className="inline-flex items-center gap-2 bg-yellow-600/20 text-yellow-400 rounded-full px-5 py-2.5 text-sm font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 bg-yellow-600/20 text-yellow-400 rounded-full px-5 py-2 text-sm font-semibold mb-4">
             <Loader2 className="h-4 w-4 animate-spin" />
             Waiting for host to start the meeting...
           </div>
@@ -1043,14 +1043,14 @@ function MeetingUI({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className={cn(
-              "px-4 py-2.5 flex items-center justify-center gap-2 shrink-0 text-white text-sm font-semibold",
+              "px-4 py-2 flex items-center justify-center gap-2 shrink-0 text-white text-sm font-semibold",
               notification.type === 'success' ? "bg-green-600/90" : 
               notification.type === 'warning' ? "bg-orange-600/90" : "bg-blue-600/90"
             )}
           >
             {notification.type === 'success' && <Crown className="h-4 w-4" />}
             {notification.message}
-            <button onClick={() => setNotification(null)} className="ml-2 p-0.5 hover:bg-white/20 rounded">
+            <button onClick={() => setNotification(null)} className="ml-2 p-1 hover:bg-white/20 rounded">
               <X className="h-3.5 w-3.5" />
             </button>
           </motion.div>
@@ -1176,7 +1176,7 @@ function MeetingUI({
                       trackRef={screenShareTrack as any}
                       className="w-full h-full"
                     >
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <Monitor className="h-3 w-3 text-blue-400" />
                         <span className="text-xs text-white font-semibold">{participantNicknames.get(screenShareTrack.participant.identity) || screenShareTrack.participant.name} — Screen</span>
                       </div>
@@ -1188,7 +1188,7 @@ function MeetingUI({
                   {videoTracks.filter(t => t.publication).map(track => (
                     <div key={track.participant.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120 }}>
                       <VideoTrack trackRef={track as any} className="w-full h-full object-cover" />
-                      <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                      <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-1">
                         <span className="text-xs text-white">{participantNicknames.get(track.participant.identity) || track.participant.name}</span>
                       </div>
                     </div>
@@ -1221,7 +1221,7 @@ function MeetingUI({
                           <span className="text-sm text-slate-400">{user?.name} (You)</span>
                         </div>
                       )}
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-semibold">{user?.name} (You)</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
                       </div>
@@ -1256,7 +1256,7 @@ function MeetingUI({
                           </div>
                         </div>
                       )}
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs text-white font-semibold">{participantNicknames.get(hostParticipant.identity) || hostParticipant.name}</span>
                         <Crown className="h-3 w-3 text-yellow-400" />
                       </div>
@@ -1314,18 +1314,18 @@ function MeetingUI({
                               <span className="text-xs text-slate-400">{participantNicknames.get(p.identity) || p.name}</span>
                             </div>
                           )}
-                          <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5">
+                          <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-1">
                             <span className="text-xs text-white">{participantNicknames.get(p.identity) || p.name}</span>
                             {metadata.role === "cohost" && <Shield className="inline h-2.5 w-2.5 text-blue-400 ml-1" />}
                             {isHandRaised(p) && <Hand className="inline h-2.5 w-2.5 text-yellow-400 ml-1" />}
                           </div>
                           {p.isMicrophoneEnabled === false && (
-                            <div className="absolute top-1 right-1 bg-red-600 rounded-full p-0.5">
+                            <div className="absolute top-1 right-1 bg-red-600 rounded-full p-1">
                               <MicOff className="h-2.5 w-2.5 text-white" />
                             </div>
                           )}
                           {isHandRaised(p) && (
-                            <div className="absolute top-1 left-1 bg-yellow-600 rounded-full p-0.5">
+                            <div className="absolute top-1 left-1 bg-yellow-600 rounded-full p-1">
                               <Hand className="h-2.5 w-2.5 text-white" />
                             </div>
                           )}

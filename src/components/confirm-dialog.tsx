@@ -101,13 +101,13 @@ export function ConfirmDialog({
               <button
                 ref={cancelRef}
                 onClick={onCancel}
-                className="rounded-xl bg-muted px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent transition-colors"
+                className="rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent transition-colors"
               >
                 {cancelLabel}
               </button>
               <button
                 onClick={onConfirm}
-                className={cn("rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm", styles.btn)}
+                className={cn("rounded-xl px-4 py-2 text-sm font-semibold transition-colors shadow-sm", styles.btn)}
               >
                 {confirmLabel}
               </button>

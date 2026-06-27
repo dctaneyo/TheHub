@@ -640,14 +640,14 @@ function GuestMeetingPageWithParams() {
                   </div>
 
                   <div className="bg-muted rounded-xl p-3 text-center">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Scheduled for</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Scheduled for</p>
                     <p className="text-sm font-semibold text-foreground">
                       {formatTimeInZone(meetingInfo.scheduledAt, viewerTz)} (your time)
                     </p>
                     {meetingInfo.timezone &&
                       tzAbbrev(meetingInfo.scheduledAt, meetingInfo.timezone) !==
                         tzAbbrev(meetingInfo.scheduledAt, viewerTz) && (
-                        <p className="mt-0.5 text-xs text-muted-foreground">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {formatTimeInZone(meetingInfo.scheduledAt, meetingInfo.timezone)} (host&apos;s time)
                         </p>
                       )}
@@ -742,7 +742,7 @@ function GuestMeetingPageWithParams() {
                 {/* Meeting Code */}
                 {!isOneClickJoin && (
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Code</label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Meeting Code</label>
                     <Input
                       value={meetingCode}
                       onChange={(e) => { setMeetingCode(e.target.value.toUpperCase()); setError(""); }}
@@ -754,15 +754,15 @@ function GuestMeetingPageWithParams() {
                     {meetingCode.trim().length === 6 && (
                       <div className="mt-2 text-xs">
                         {lookingUp ? (
-                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="flex items-center gap-1 text-muted-foreground">
                             <Loader2 className="h-3 w-3 animate-spin" /> Checking meeting…
                           </span>
                         ) : meetingLookup && !meetingLookup.exists ? (
-                          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                             <AlertCircle className="h-3 w-3" /> No meeting found with that code.
                           </span>
                         ) : meetingLookup?.exists ? (
-                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="h-3 w-3" />
                             {meetingLookup.title ? `Found: ${meetingLookup.title}` : "Meeting found"}
                             {meetingLookup.hasPassword ? " · password required" : ""}
@@ -780,8 +780,8 @@ function GuestMeetingPageWithParams() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="overflow-hidden"
                   >
-                    <label className="block text-sm font-semibold text-foreground mb-1.5">
-                      <div className="flex items-center gap-1.5">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
+                      <div className="flex items-center gap-1">
                         <Lock className="h-3.5 w-3.5" />
                         Password <span className="text-muted-foreground font-normal">(required)</span>
                       </div>
@@ -793,7 +793,7 @@ function GuestMeetingPageWithParams() {
                       type="password"
                       autoFocus
                     />
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       This meeting is password protected.
                     </p>
                   </motion.div>
@@ -846,7 +846,7 @@ function GuestMeetingPageWithParams() {
                     className="space-y-3"
                   >
                     <div>
-                      <label className="block text-sm font-semibold text-foreground mb-1.5">Your Name</label>
+                      <label className="block text-sm font-semibold text-foreground mb-2">Your Name</label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input

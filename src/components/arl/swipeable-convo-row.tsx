@@ -136,7 +136,7 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
           </div>
           <p className="text-xs text-muted-foreground">{convo.subtitle}</p>
           {convo.lastMessage && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-xs text-muted-foreground">
               <span className="text-muted-foreground">{convo.lastMessage.senderName}: </span>
               {convo.lastMessage.content}
             </p>

@@ -249,7 +249,7 @@ export function RemoteLogin() {
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+          className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -274,7 +274,7 @@ export function RemoteLogin() {
         <h3 className="mb-3 text-sm font-semibold text-foreground">
           Waiting Sessions
           {pendingSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
               {pendingSessions.length}
             </span>
           )}
@@ -323,7 +323,7 @@ export function RemoteLogin() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.8 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-white shadow-md"
+                          className="flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-white shadow-md"
                         >
                           <Hand className="h-3 w-3" />
                           That&apos;s me!
@@ -346,7 +346,7 @@ export function RemoteLogin() {
                       onClick={() => handlePing(ps.id)}
                       disabled={pingingId === ps.id}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                        "flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
                         pingingId === ps.id
                           ? "bg-amber-400 text-white scale-95"
                           : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
@@ -388,7 +388,7 @@ export function RemoteLogin() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Store className="mr-1.5 inline h-3.5 w-3.5" />
+              <Store className="mr-2 inline h-3.5 w-3.5" />
               Location
             </button>
             <button
@@ -400,13 +400,13 @@ export function RemoteLogin() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Users className="mr-1.5 inline h-3.5 w-3.5" />
+              <Users className="mr-2 inline h-3.5 w-3.5" />
               ARL
             </button>
           </div>
 
           {/* Account list */}
-          <div className="max-h-64 space-y-1.5 overflow-y-auto">
+          <div className="max-h-64 space-y-2 overflow-y-auto">
             {assignType === "location" ? (
               locations.map((loc) => (
                 <button
@@ -460,7 +460,7 @@ export function RemoteLogin() {
         <h3 className="mb-3 text-sm font-semibold text-foreground">
           Active Sessions
           {activeSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               {activeSessions.length}
             </span>
           )}
@@ -501,11 +501,11 @@ export function RemoteLogin() {
                         {formatDistanceToNow(new Date(sess.lastSeen), { addSuffix: true })}
                       </p>
                     </div>
-                    <div className="flex shrink-0 gap-1.5">
+                    <div className="flex shrink-0 gap-1">
                       <button
                         onClick={() => { setForceTarget(isForceTarget ? null : sess); setForceAction(isForceTarget ? null : "reassign"); }}
                         className={cn(
-                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                          "flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "reassign"
                             ? "bg-amber-200 text-amber-800"
                             : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
@@ -526,7 +526,7 @@ export function RemoteLogin() {
                         }}
                         disabled={forcing}
                         className={cn(
-                          "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                          "flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "logout"
                             ? "bg-red-500 text-white"
                             : "bg-muted text-muted-foreground hover:bg-red-100 hover:text-red-700"
@@ -554,7 +554,7 @@ export function RemoteLogin() {
                         <button
                           onClick={() => setForceAssignType("location")}
                           className={cn(
-                            "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                            "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                             forceAssignType === "location"
                               ? "bg-muted text-foreground shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
@@ -566,7 +566,7 @@ export function RemoteLogin() {
                         <button
                           onClick={() => setForceAssignType("arl")}
                           className={cn(
-                            "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                            "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                             forceAssignType === "arl"
                               ? "bg-muted text-foreground shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
@@ -584,7 +584,7 @@ export function RemoteLogin() {
                               key={loc.id}
                               onClick={() => handleForceReassign(loc.id)}
                               disabled={forcing}
-                              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
                             >
                               <Store className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="flex-1 text-xs font-semibold text-foreground">{loc.name}</span>
@@ -597,7 +597,7 @@ export function RemoteLogin() {
                               key={arl.id}
                               onClick={() => handleForceReassign(arl.id)}
                               disabled={forcing}
-                              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
                             >
                               <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                               <span className="flex-1 text-xs font-semibold text-foreground">{arl.name}</span>
@@ -616,7 +616,7 @@ export function RemoteLogin() {
 
                       <button
                         onClick={() => { setForceTarget(null); setForceAction(null); }}
-                        className="mt-2 w-full rounded-lg py-1.5 text-xs font-semibold text-muted-foreground hover:bg-card hover:text-foreground"
+                        className="mt-2 w-full rounded-lg py-2 text-xs font-semibold text-muted-foreground hover:bg-card hover:text-foreground"
                       >
                         Cancel
                       </button>

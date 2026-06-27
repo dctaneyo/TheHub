@@ -231,11 +231,11 @@ export function TenantSettings() {
             <p className="text-lg font-semibold text-foreground">{tenant.maxUsers}</p>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap gap-1">
           {tenant.features.map((f: string) => (
             <span
               key={f}
-              className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
+              className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
             >
               {f}
             </span>
@@ -278,7 +278,7 @@ export function TenantSettings() {
                 placeholder={`${name || "Your"} Hub`}
                 className="h-10"
               />
-              <p className="text-xs text-muted-foreground mt-0.5">Shown in browser tab & sidebar</p>
+              <p className="text-xs text-muted-foreground mt-1">Shown in browser tab & sidebar</p>
             </div>
           </div>
 
@@ -296,7 +296,7 @@ export function TenantSettings() {
                 onChange={(e) => setPrimaryColor(e.target.value)}
                 className="w-28 font-mono text-sm h-10"
               />
-              <div className="flex gap-1.5">
+              <div className="flex gap-1">
                 {PRESET_COLORS.map((c) => (
                   <button
                     key={c.value}
@@ -428,7 +428,7 @@ export function TenantSettings() {
               placeholder="hub.yourcompany.com"
               className="h-10"
             />
-            <p className="text-xs text-muted-foreground mt-0.5">Point a CNAME record to meetthehub.com</p>
+            <p className="text-xs text-muted-foreground mt-1">Point a CNAME record to meetthehub.com</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

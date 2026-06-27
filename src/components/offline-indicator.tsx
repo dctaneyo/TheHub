@@ -29,7 +29,7 @@ export function OfflineIndicator() {
             <WifiOff className="h-3.5 w-3.5" />
             <span>Offline</span>
             {pendingCount > 0 && (
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+              <span className="rounded-full bg-white/20 px-2 py-1 text-xs">
                 {pendingCount} queued
               </span>
             )}
@@ -45,7 +45,7 @@ export function OfflineIndicator() {
             <span>{pendingCount} pending</span>
             <button
               onClick={syncNow}
-              className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs active:bg-white/30 transition-colors"
+              className="ml-1 rounded-full bg-white/20 px-2 py-1 text-xs active:bg-white/30 transition-colors"
             >
               Sync Now
             </button>

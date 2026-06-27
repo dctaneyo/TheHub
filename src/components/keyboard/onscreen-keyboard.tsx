@@ -430,7 +430,7 @@ export function OnscreenKeyboard({
     >
       {/* Text input display (hideable) */}
       {!hideInput && (
-        <div className="flex items-center gap-2 px-2 pt-2 pb-1.5">
+        <div className="flex items-center gap-2 px-2 pt-2 pb-2">
           <div
             className="flex-1 min-h-[38px] rounded-lg bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-100 shadow-inner overflow-x-auto whitespace-nowrap"
             onPointerDown={handleInputTap}
@@ -439,7 +439,7 @@ export function OnscreenKeyboard({
               ? (
                 <>
                   <span className="inline-block w-[2px] h-[1.1em] bg-blue-500 dark:bg-blue-400 align-text-bottom animate-pulse" />
-                  <span className="text-neutral-400 dark:text-neutral-500 ml-0.5">{placeholder || "Type a message..."}</span>
+                  <span className="text-neutral-400 dark:text-neutral-500 ml-1">{placeholder || "Type a message..."}</span>
                 </>
               )
               : hasSelection ? (
@@ -475,7 +475,7 @@ export function OnscreenKeyboard({
           )}
         </div>
       )}
-      <div className="px-1.5">
+      <div className="px-2">
       <div className="space-y-1">
 
         {/* ── ALPHA MODE ── */}

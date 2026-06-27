@@ -255,7 +255,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               onClick={onStartOnDemand}
               className="rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
             >
-              <Play className="h-4 w-4 mr-1.5" />
+              <Play className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Start Meeting</span>
               <span className="sm:hidden">Start</span>
             </Button>
@@ -267,7 +267,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               showCreate ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary hover:bg-primary/90 text-primary-foreground"
             )}
           >
-            {showCreate ? <><X className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Cancel</span></> : <><Plus className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
+            {showCreate ? <><X className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Cancel</span></> : <><Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
           </Button>
         </div>
       </div>
@@ -348,7 +348,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       {["daily", "weekly", "biweekly", "monthly"].map(type => (
                         <button key={type} onClick={() => setRecurringType(type)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                            "px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
                             recurringType === type ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}>
                           {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -356,7 +356,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       ))}
                     </div>
                     {(recurringType === "weekly" || recurringType === "biweekly") && (
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1">
                         {DAYS_OF_WEEK.map(d => (
                           <button key={d.key} onClick={() => toggleDay(d.key)}
                             className={cn(
@@ -424,12 +424,12 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold text-sm text-foreground truncate">{m.title}</h4>
                       {m.is_recurring ? (
-                        <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                           <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
                         </span>
                       ) : null}
                       {!m.is_active && (
-                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">Inactive</span>
+                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-1 rounded-full">Inactive</span>
                       )}
                     </div>
 
@@ -472,11 +472,11 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
 
                   {/* Meeting code + actions */}
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
                       <button
                         onClick={() => copyCode(m.meeting_code)}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         title="Copy meeting code"
                       >
                         {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -486,7 +486,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       {m.is_active && (
                         <button
                           onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
                           <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                         </button>

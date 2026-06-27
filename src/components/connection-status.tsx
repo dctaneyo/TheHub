@@ -218,7 +218,7 @@ export function ConnectionStatus() {
             </div>
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Connected</span>
             {sessionCode && (
-              <span className="ml-0.5 font-mono text-xs font-semibold text-muted-foreground tracking-wider">
+              <span className="ml-1 font-mono text-xs font-semibold text-muted-foreground tracking-wider">
                 #{sessionCode}
               </span>
             )}
@@ -263,27 +263,27 @@ export function ConnectionStatus() {
                 Active Sessions ({sessions.length})
               </p>
               {multiSession && (
-                <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5">
+                <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-1">
                   <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
                   <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Multiple active</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {sessions.length === 0 && (
                 <p className="text-xs text-muted-foreground">No active sessions</p>
               )}
               {sessions.map((s) => (
                 <div
                   key={s.id}
-                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${s.isCurrent ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted/50"}`}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-2 ${s.isCurrent ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted/50"}`}
                 >
                   <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg ${s.isCurrent ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
                     <DeviceIcon type={s.deviceType} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <Hash className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
                       <span className="font-mono text-xs font-semibold tracking-widest text-foreground">{s.code}</span>
                       {s.isCurrent && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">(this)</span>}

@@ -142,7 +142,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
               transition={{ delay: index * 0.02 }}
               className="flex items-start gap-2 rounded-lg bg-card border border-border p-2 hover:bg-muted/50 transition-colors"
             >
-              <div className="shrink-0 mt-0.5">
+              <div className="shrink-0 mt-1">
                 {getIcon(activity)}
               </div>
               <div className="flex-1 min-w-0">
@@ -151,7 +151,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
                   {" "}
                   <span className="text-muted-foreground">{activity.description}</span>
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   {getTimeAgo(activity.timestamp)}
                 </p>
               </div>

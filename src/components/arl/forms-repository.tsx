@@ -227,7 +227,7 @@ export function FormsRepository() {
         </div>
         <Button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
+          className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
           size="sm"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -236,7 +236,7 @@ export function FormsRepository() {
       </div>
 
       {/* Category filter */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {["all", ...CATEGORIES].map((cat) => (
           <button
             key={cat}
@@ -277,14 +277,14 @@ export function FormsRepository() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
+                <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
                   {categoryLabel(form.category)}
                 </span>
               </div>
               {form.description && (
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{form.description}</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">{form.description}</p>
               )}
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {form.fileName} · {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
               </p>
             </div>

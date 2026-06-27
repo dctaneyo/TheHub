@@ -124,7 +124,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
         {/* Body */}
         <div className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Meeting Title</label>
+            <label className="block text-sm font-semibold text-foreground mb-2">Meeting Title</label>
             <Input
               value={title}
               onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
@@ -141,11 +141,11 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               <span className="text-xs text-muted-foreground font-semibold">Share with guests to join</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5 text-center">
+              <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2 text-center">
                 <span className="font-mono text-2xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}
-                className="p-2.5 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                className="p-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                 {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -153,8 +153,8 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
 
           {/* Password (optional) */}
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">
-              <div className="flex items-center gap-1.5">
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              <div className="flex items-center gap-1">
                 {password.trim() ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Globe className="h-3.5 w-3.5 text-green-500" />}
                 Password <span className="text-muted-foreground font-normal">(optional)</span>
               </div>

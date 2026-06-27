@@ -109,7 +109,7 @@ export function RemoteViewBanner({ onSessionChange, onCaptureManagerChange }: Re
     >
       {/* Bottom bar with message */}
       <div
-        className="absolute bottom-0 left-0 right-0 pointer-events-auto flex items-center justify-center gap-2 py-1.5"
+        className="absolute bottom-0 left-0 right-0 pointer-events-auto flex items-center justify-center gap-2 py-2"
         style={{ backgroundColor: borderColor }}
       >
         {isControl ? (

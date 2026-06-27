@@ -172,7 +172,7 @@ export function TaskManager() {
           <select
             value={filterLocationId}
             onChange={(e) => setFilterLocationId(e.target.value)}
-            className="rounded-xl border border-border bg-card px-3 py-1.5 text-xs text-foreground shadow-sm"
+            className="rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground shadow-sm"
           >
             <option value="all">All Locations</option>
             {locations.map((l) => (
@@ -181,13 +181,13 @@ export function TaskManager() {
           </select>
           <button
             onClick={() => setShowTemplates((t) => !t)}
-            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm hover:bg-muted transition-colors"
+            className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm hover:bg-muted transition-colors"
           >
             <BookOpen className="h-3.5 w-3.5" />
             Templates
             {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
-          <Button onClick={openCreate} size="sm" className="gap-1.5 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f] flex-shrink-0">
+          <Button onClick={openCreate} size="sm" className="gap-1 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f] flex-shrink-0">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">New Task</span>
             <span className="sm:hidden">New</span>
@@ -206,7 +206,7 @@ export function TaskManager() {
                 <p className="text-xs text-muted-foreground">Click to pre-fill the form</p>
               </div>
               {/* Category tabs */}
-              <div className="mb-3 flex flex-wrap gap-1.5">
+              <div className="mb-3 flex flex-wrap gap-1">
                 {TEMPLATE_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
@@ -228,14 +228,14 @@ export function TaskManager() {
                   <button
                     key={tpl.label}
                     onClick={() => applyTemplate(tpl)}
-                    className="flex items-start gap-2.5 rounded-xl border border-border bg-background p-3 text-left transition-all hover:border-[var(--hub-red)]/40 hover:bg-[var(--hub-red)]/5 group"
+                    className="flex items-start gap-2 rounded-xl border border-border bg-background p-3 text-left transition-all hover:border-[var(--hub-red)]/40 hover:bg-[var(--hub-red)]/5 group"
                   >
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)]/10 text-[var(--hub-red)]">
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)]/10 text-[var(--hub-red)]">
                       {tpl.fields.type === "cleaning" ? <SprayCan className="h-4 w-4" /> : tpl.fields.type === "reminder" ? <Clock className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-foreground group-hover:text-[var(--hub-red)] transition-colors">{tpl.label}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{tpl.fields.description}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{tpl.fields.dueTime}</span>
                         {tpl.fields.isRecurring && <span className="text-xs text-muted-foreground capitalize">{tpl.fields.recurringType}</span>}

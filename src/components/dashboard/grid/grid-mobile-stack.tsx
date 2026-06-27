@@ -59,7 +59,7 @@ function WidgetBadge({ widget, data }: { widget: Widget; data: WidgetData }) {
   }
   if (widget.type === "messages" && data.chatUnread > 0) {
     return (
-      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-destructive-foreground">
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-2 text-xs font-semibold text-destructive-foreground">
         {data.chatUnread}
       </span>
     );
@@ -117,7 +117,7 @@ export function MobileDashboard({
             key={widget.id}
             type="button"
             onClick={() => handleOpen(widget)}
-            className="flex shrink-0 items-center gap-3 rounded-3xl border border-border bg-card px-4 py-3.5 text-left transition-colors active:bg-muted"
+            className="flex shrink-0 items-center gap-3 rounded-3xl border border-border bg-card px-4 py-4 text-left transition-colors active:bg-muted"
           >
             {Icon && (
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10">

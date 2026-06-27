@@ -176,7 +176,7 @@ export function EmergencyBroadcast() {
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
-                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)]"
+                  className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)]"
                 >
                   <AlertTriangle className="h-4 w-4 text-white" />
                 </motion.div>
@@ -222,7 +222,7 @@ export function EmergencyBroadcast() {
                         {viewed.length} / {total} viewed
                       </span>
                       {viewed.length === total && total > 0 && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">All seen</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">All seen</span>
                       )}
                     </div>
                     {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -238,7 +238,7 @@ export function EmergencyBroadcast() {
                       >
                         <div className="mt-2 grid grid-cols-2 gap-1">
                           {[...viewed.map((l) => ({ ...l, seen: true })), ...notViewed.map((l) => ({ ...l, seen: false }))].map((l) => (
-                            <div key={l.id} className="flex items-center gap-1.5 py-0.5">
+                            <div key={l.id} className="flex items-center gap-1 py-1">
                               <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", l.seen ? "bg-emerald-400" : "bg-muted-foreground")} />
                               <span className={cn("text-xs truncate", l.seen ? "text-foreground" : "text-muted-foreground")}>
                                 {l.name}
@@ -314,7 +314,7 @@ export function EmergencyBroadcast() {
                     key={loc.id}
                     onClick={() => toggleLocation(loc.id)}
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                      "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
                       selected ? "bg-red-50" : "hover:bg-muted"
                     )}
                   >
@@ -341,7 +341,7 @@ export function EmergencyBroadcast() {
           onChange={(e) => setDraftMessage(e.target.value)}
           placeholder="Type your emergency message here..."
           rows={3}
-          className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
         />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <p className="text-xs text-muted-foreground">
@@ -355,7 +355,7 @@ export function EmergencyBroadcast() {
             onClick={handleSend}
             disabled={!draftMessage.trim() || sending || (targetMode === "select" && selectedIds.length === 0)}
             className={cn(
-              "gap-1.5 rounded-xl",
+              "gap-1 rounded-xl",
               draftMessage.trim() && (targetMode === "all" || selectedIds.length > 0)
                 ? "bg-[var(--hub-red)] hover:bg-[#c4001f]"
                 : "bg-muted text-muted-foreground"
@@ -369,8 +369,8 @@ export function EmergencyBroadcast() {
       </div>
 
       {/* Warning */}
-      <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
-        <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+      <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-1" />
         <p className="text-xs text-amber-700 dark:text-amber-300">
           Emergency broadcasts immediately interrupt restaurant dashboards with a full-screen overlay and repeating audible alarm until the message is viewed. Use only for genuine emergencies.
         </p>
@@ -386,7 +386,7 @@ export function EmergencyBroadcast() {
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">Broadcast History</span>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{history.length}</span>
+              <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">{history.length}</span>
             </div>
             {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </button>
@@ -407,7 +407,7 @@ export function EmergencyBroadcast() {
                       <div key={msg.id} className="px-5 py-3 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm text-foreground whitespace-pre-wrap flex-1">{msg.message}</p>
-                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
+                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>By {msg.sentByName}</span>

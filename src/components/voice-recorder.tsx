@@ -133,7 +133,7 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
   // Recording in progress
   if (recording) {
     return (
-      <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 dark:bg-red-950">
+      <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-2 dark:bg-red-950">
         <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
         <span className="text-xs font-semibold text-red-700 dark:text-red-300 tabular-nums">{formatTime(currentTime)}</span>
         <div className="mx-1 h-4 w-px bg-red-200 dark:bg-red-800" />
@@ -149,13 +149,13 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
 
   // Recorded — preview + send
   return (
-    <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 dark:bg-blue-950">
+    <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 dark:bg-blue-950">
       <button
         onClick={playing ? pausePlayback : playRecording}
         className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
         title={playing ? "Pause" : "Play"}
       >
-        {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
+        {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-1" />}
       </button>
       <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 tabular-nums">{formatTime(playing ? currentTime : duration)}</span>
       <div className="mx-1 h-4 w-px bg-blue-200 dark:bg-blue-800" />
@@ -198,7 +198,7 @@ export function VoiceMessagePlayer({ audioUrl, duration }: { audioUrl: string; d
   return (
     <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 dark:bg-blue-950">
       <button onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-        {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+        {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-1" />}
       </button>
       <div className="flex-1">
         <div className="h-1.5 rounded-full bg-blue-200 dark:bg-blue-800 overflow-hidden">

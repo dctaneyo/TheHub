@@ -59,21 +59,21 @@ export function ParticipantPanel({
           <div className="flex gap-2">
             <button
               onClick={onMuteAll}
-              className="flex-1 px-2 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold transition-colors"
+              className="flex-1 px-2 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold transition-colors"
               title="Mute all participants"
             >
               Mute All
             </button>
             <button
               onClick={onUnmuteAll}
-              className="flex-1 px-2 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 text-xs font-semibold transition-colors"
+              className="flex-1 px-2 py-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 text-xs font-semibold transition-colors"
               title="Unmute all participants"
             >
               Unmute All
             </button>
             <button
               onClick={onLowerAllHands}
-              className="flex-1 px-2 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold transition-colors"
+              className="flex-1 px-2 py-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold transition-colors"
               title="Lower all raised hands"
             >
               Lower All Hands
@@ -126,7 +126,7 @@ export function ParticipantPanel({
                       <button
                         onClick={() => onLowerHand(p.identity)}
                         title="Lower hand"
-                        className="p-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 active:scale-95 transition-transform"
+                        className="p-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 active:scale-95 transition-transform"
                       >
                         <Hand className="h-4 w-4" />
                       </button>
@@ -135,7 +135,7 @@ export function ParticipantPanel({
                       <button
                         onClick={() => onUnmuteParticipant(p.identity)}
                         title="Allow to speak"
-                        className="p-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
+                        className="p-2 rounded-lg bg-green-600/20 hover:bg-green-600/40 text-green-400 active:scale-95 transition-transform"
                       >
                         <Mic className="h-4 w-4" />
                       </button>
@@ -143,7 +143,7 @@ export function ParticipantPanel({
                       <button
                         onClick={() => onMuteParticipant(p.identity)}
                         title="Mute"
-                        className="p-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
+                        className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 active:scale-95 transition-transform"
                       >
                         <MicOff className="h-4 w-4" />
                       </button>

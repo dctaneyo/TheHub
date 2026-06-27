@@ -508,7 +508,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                     key={mode}
                     onClick={() => handleQuickSet(mode)}
                     className={cn(
-                      "px-3 py-1.5 text-sm rounded-lg transition-colors capitalize",
+                      "px-3 py-2 text-sm rounded-lg transition-colors capitalize",
                       activePreset === mode
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
                         : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"

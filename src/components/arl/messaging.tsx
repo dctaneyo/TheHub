@@ -91,7 +91,7 @@ export function Messaging() {
 
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">Add Members ({newGroup.memberIds.length} selected)</label>
-          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {participants.length === 0 && (
               <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
                 Load participants
@@ -104,7 +104,7 @@ export function Messaging() {
                   key={p.id}
                   onClick={() => toggleMember(p)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
                     selected ? "border-[var(--hub-red)]/30 bg-red-50" : "border-border bg-card hover:bg-muted"
                   )}
                 >
@@ -159,7 +159,7 @@ export function Messaging() {
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
         </div>
-        <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {participants.length === 0 && (
             <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
               Load participants
@@ -170,7 +170,7 @@ export function Messaging() {
               key={p.id}
               onClick={() => startDirectChat(p)}
               disabled={startingDirect}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
             >
               <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                 p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
@@ -204,7 +204,7 @@ export function Messaging() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Direct</span>
@@ -212,7 +212,7 @@ export function Messaging() {
             </button>
             <button
               onClick={() => { setShowNewGroup(true); fetchParticipants(); }}
-              className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               Group
@@ -297,7 +297,7 @@ export function Messaging() {
       {/* Search bar */}
       {showSearch && (
         <div className="border-b border-border px-4 py-2">
-          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5">
+          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <input
               ref={searchInputRef}
@@ -325,7 +325,7 @@ export function Messaging() {
           <div className="flex justify-center pb-3">
             <button
               onClick={() => setShowAllMessages(true)}
-              className="rounded-full bg-muted px-4 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
             >
               View Past Messages
             </button>
@@ -352,9 +352,9 @@ export function Messaging() {
                 >
                   <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
                     {isGroup && !isMe && (
-                      <span className="mb-0.5 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
+                      <span className="mb-1 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
                     )}
-                    <div className={cn("max-w-[75%] rounded-2xl px-4 py-2.5",
+                    <div className={cn("max-w-[75%] rounded-2xl px-4 py-2",
                       isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
                     )}>
                       {msg.messageType === "voice" ? (() => {
@@ -371,10 +371,10 @@ export function Messaging() {
                           return acc;
                         }, {} as Record<string, number>);
                         return (
-                          <div className="mt-1.5 flex flex-wrap gap-1">
+                          <div className="mt-2 flex flex-wrap gap-1">
                             {Object.entries(grouped).map(([emoji, count]) => (
                               <div key={emoji} className={cn(
-                                "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
+                                "flex items-center gap-1 rounded-full px-2 py-1",
                                 isMe ? "bg-white/20" : "bg-card border border-border"
                               )}>
                                 <Emoji emoji={emoji} size={14} />
@@ -418,7 +418,7 @@ export function Messaging() {
                                     {receiptDetail.readMembers.map((rm) => {
                                       const info = memberInfoMap.get(rm.memberId);
                                       return (
-                                        <div key={rm.memberId} className="flex items-center gap-1.5 py-0.5">
+                                        <div key={rm.memberId} className="flex items-center gap-1 py-1">
                                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                                           <span className="text-xs text-foreground">{info?.name ?? rm.memberId}</span>
                                         </div>
@@ -432,7 +432,7 @@ export function Messaging() {
                                     {receiptDetail.unreadMembers.map((um) => {
                                       const info = memberInfoMap.get(um.memberId);
                                       return (
-                                        <div key={um.memberId} className="flex items-center gap-1.5 py-0.5">
+                                        <div key={um.memberId} className="flex items-center gap-1 py-1">
                                           <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
                                           <span className="text-xs text-muted-foreground">{info?.name ?? um.memberId}</span>
                                         </div>
@@ -465,7 +465,7 @@ export function Messaging() {
                           initial={{ opacity: 0, scale: 0.8, y: 5 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                          className="mt-1 flex gap-1.5 rounded-full bg-card shadow-lg border border-border px-2.5 py-1.5"
+                          className="mt-1 flex gap-1 rounded-full bg-card shadow-lg border border-border px-2 py-2"
                         >
                           {reactions.map((emoji) => (
                             <button
@@ -492,7 +492,7 @@ export function Messaging() {
           return (
             <div className="px-2 pb-1">
               <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-                <div className="flex gap-0.5">
+                <div className="flex gap-1">
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />

@@ -149,7 +149,7 @@ export function ArlCalendar() {
         <select
           value={filterLocationId}
           onChange={(e) => setFilterLocationId(e.target.value)}
-          className="rounded-xl border border-border bg-card px-3 py-1.5 text-sm text-foreground shadow-sm"
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm"
         >
           <option value="all">All Locations</option>
           {locations.map((l) => (
@@ -180,7 +180,7 @@ export function ArlCalendar() {
                     <div key={date.toISOString()} role="button" tabIndex={0}
                       onClick={() => setSelectedDate(date)}
                       onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
-                      className={cn("flex flex-col items-start justify-start border-r border-border p-1.5 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
+                      className={cn("flex flex-col items-start justify-start border-r border-border p-2 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
                         !inMonth && "bg-muted/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-muted/50"
@@ -188,11 +188,11 @@ export function ArlCalendar() {
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                         isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-foreground" : "text-muted-foreground/50"
                       )}>{format(date, "d")}</span>
-                      <div className="mt-0.5 w-full space-y-0.5 overflow-hidden">
+                      <div className="mt-1 w-full space-y-1 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
-                            <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-0.5 text-xs font-semibold",
+                            <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-1 text-xs font-semibold",
                               task.priority === "urgent" ? "bg-red-100 text-red-700" : task.priority === "high" ? "bg-orange-100 text-orange-700" :
                               task.type === "cleaning" ? "bg-purple-100 text-purple-700" : task.type === "reminder" ? "bg-sky-100 text-sky-700" : "bg-blue-100 text-blue-700"
                             )}>
@@ -200,7 +200,7 @@ export function ArlCalendar() {
                             </div>
                           );
                         })}
-                        {dayTasks.length > 2 && <p className="pl-0.5 text-xs text-muted-foreground">+{dayTasks.length - 2}</p>}
+                        {dayTasks.length > 2 && <p className="pl-1 text-xs text-muted-foreground">+{dayTasks.length - 2}</p>}
                       </div>
                     </div>
                   );
@@ -227,14 +227,14 @@ export function ArlCalendar() {
                   task.priority === "urgent" ? "border-red-500/20 bg-red-500/10" : task.priority === "high" ? "border-orange-500/20 bg-orange-500/10" : "border-border bg-muted/50"
                 )}>
                   <div className="flex items-start gap-2">
-                    <div className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
+                    <div className={cn("mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
                       task.type === "cleaning" ? "bg-purple-100 text-purple-600" : task.type === "reminder" ? "bg-sky-100 text-sky-600" : "bg-blue-100 text-blue-600"
                     )}><Icon className="h-3 w-3" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{task.title}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{calTime12(task.dueTime)}</span>
-                        {task.isRecurring && <span className="flex items-center gap-0.5"><Repeat className="h-2.5 w-2.5" />Recurring</span>}
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{calTime12(task.dueTime)}</span>
+                        {task.isRecurring && <span className="flex items-center gap-1"><Repeat className="h-2.5 w-2.5" />Recurring</span>}
                         <span className="text-muted-foreground">{loc ? loc.name : "All locations"}</span>
                       </div>
                     </div>

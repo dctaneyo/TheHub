@@ -27,7 +27,7 @@ export function EmojiQuickReplies({ onSelect, className = "" }: EmojiQuickReplie
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onSelect(`${reply.emoji} ${reply.text}`)}
-          className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:from-orange-50 hover:to-red-50 hover:border-orange-200 hover:text-orange-700 transition-all shadow-sm hover:shadow"
+          className="flex items-center gap-1 rounded-full bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:from-orange-50 hover:to-red-50 hover:border-orange-200 hover:text-orange-700 transition-all shadow-sm hover:shadow"
         >
           <span className="text-sm">{reply.emoji}</span>
           <span>{reply.text}</span>

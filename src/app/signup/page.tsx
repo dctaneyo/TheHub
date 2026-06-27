@@ -420,10 +420,10 @@ export default function SignupPage() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-white">{plan.name}</h3>
                             {plan.id === "pro" && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 uppercase">Popular</span>
+                              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 uppercase">Popular</span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5">{plan.description}</p>
+                          <p className="text-xs text-slate-400 mt-1">{plan.description}</p>
                           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                             {plan.features.map((f) => (
                               <span key={f} className="text-xs text-slate-300 flex items-center gap-1">
@@ -431,7 +431,7 @@ export default function SignupPage() {
                               </span>
                             ))}
                           </div>
-                          <p className="text-xs text-slate-500 mt-1.5">
+                          <p className="text-xs text-slate-500 mt-2">
                             Up to {plan.locations} locations · {plan.users} users
                           </p>
                         </div>

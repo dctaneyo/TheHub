@@ -47,7 +47,7 @@ export default function MeetingsPage() {
                   </div>
                   <button
                     onClick={() => setJoiningMeeting({ meetingId: meeting.meetingId, title: meeting.title })}
-                    className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+                    className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
                   >
                     <Video className="h-4 w-4" />
                     Join

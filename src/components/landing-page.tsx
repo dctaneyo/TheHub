@@ -20,7 +20,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 shadow-sm">
               <span className="text-sm font-black text-white">H</span>
             </div>
@@ -32,13 +32,13 @@ export default function LandingPage() {
             </a>
             <a
               href="https://kazi.meetthehub.com/login"
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Sign In
             </a>
             <a
               href="/signup"
-              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
+              className="flex items-center gap-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
             >
               Get Started <ArrowRight className="h-3.5 w-3.5" />
             </a>
@@ -48,7 +48,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-700 mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 mb-6">
           <Zap className="h-3.5 w-3.5" />
           Multi-brand franchise management
         </div>
@@ -63,7 +63,7 @@ export default function LandingPage() {
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href="/signup"
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
           >
             Get Started Free <ChevronRight className="h-4 w-4" />
           </a>
@@ -104,7 +104,7 @@ export default function LandingPage() {
                   <f.icon className="h-5 w-5" />
                 </div>
                 <h3 className="font-semibold text-slate-900 text-sm">{f.title}</h3>
-                <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                <p className="mt-2 text-xs text-slate-500 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -121,7 +121,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {["kazi", "brand-a", "brand-b"].map((slug) => (
-              <div key={slug} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-mono text-slate-600 shadow-sm">
+              <div key={slug} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-mono text-slate-600 shadow-sm">
                 <span className="font-semibold text-red-600">{slug}</span>.meetthehub.com
               </div>
             ))}

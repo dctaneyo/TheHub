@@ -191,14 +191,14 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
 
           {/* Type */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Type</label>
+            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Type</label>
             <div className="flex flex-wrap gap-2">
               {TYPES.map((t) => (
                 <button
                   key={t.value}
                   onClick={() => setType(t.value)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
+                    "flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                     type === t.value
                       ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
@@ -213,7 +213,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
 
           {/* Priority */}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Priority</label>
+            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Priority</label>
             <div className="flex flex-wrap gap-2">
               {PRIORITIES.map((p) => (
                 <button
@@ -249,12 +249,12 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Time</label>
                 {/* Time / All Day toggle */}
-                <div className="mb-2 flex rounded-xl border border-border bg-muted/40 p-0.5 text-xs font-semibold">
+                <div className="mb-2 flex rounded-xl border border-border bg-muted/40 p-1 text-xs font-semibold">
                   <button
                     type="button"
                     onClick={() => setIsAllDay(false)}
                     className={cn(
-                      "flex-1 rounded-lg py-1.5 transition-colors",
+                      "flex-1 rounded-lg py-2 transition-colors",
                       !isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
                     )}
                   >
@@ -264,7 +264,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => setIsAllDay(true)}
                     className={cn(
-                      "flex-1 rounded-lg py-1.5 transition-colors",
+                      "flex-1 rounded-lg py-2 transition-colors",
                       isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
                     )}
                   >
@@ -297,13 +297,13 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             {isRecurring && (
               <>
                 {/* Recurring type selector */}
-                <div className="flex gap-1.5">
+                <div className="flex gap-1">
                   {RECURRING_TYPES.map((rt) => (
                     <button
                       key={rt.value}
                       onClick={() => setRecurringType(rt.value)}
                       className={cn(
-                        "flex-1 rounded-xl border px-2 py-1.5 text-xs font-semibold transition-all",
+                        "flex-1 rounded-xl border px-2 py-2 text-xs font-semibold transition-all",
                         recurringType === rt.value
                           ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                           : "border-border text-muted-foreground hover:border-muted-foreground/40"
@@ -317,10 +317,10 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Weekly / Biweekly: day-of-week picker */}
                 {(recurringType === "weekly" || recurringType === "biweekly") && (
                   <div>
-                    <p className="mb-1.5 text-xs text-muted-foreground">
+                    <p className="mb-2 text-xs text-muted-foreground">
                       {recurringType === "biweekly" ? "Repeats every other week on:" : "Repeats on:"}
                     </p>
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1">
                       {DAYS.map((d) => (
                         <button
                           key={d.key}
@@ -342,7 +342,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Biweekly: start week selection */}
                 {recurringType === "biweekly" && (
                   <div>
-                    <p className="mb-1.5 text-xs text-muted-foreground">First occurrence:</p>
+                    <p className="mb-2 text-xs text-muted-foreground">First occurrence:</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setBiweeklyStart("this")}
@@ -373,7 +373,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 {/* Monthly: day-of-month picker */}
                 {recurringType === "monthly" && (
                   <div>
-                    <p className="mb-1.5 text-xs text-muted-foreground">Repeats on day(s) of month:</p>
+                    <p className="mb-2 text-xs text-muted-foreground">Repeats on day(s) of month:</p>
                     <div className="flex flex-wrap gap-1">
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                         <button
@@ -442,7 +442,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       prev.includes(loc.id) ? prev.filter((id) => id !== loc.id) : [...prev, loc.id]
                     )}
                     className={cn(
-                      "rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all",
+                      "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       selectedLocationIds.includes(loc.id)
                         ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                         : "border-border text-muted-foreground hover:border-muted-foreground/40"
@@ -476,7 +476,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             </label>
 
             <div>
-              <p className="mb-1.5 text-xs text-muted-foreground">Show this task in:</p>
+              <p className="mb-2 text-xs text-muted-foreground">Show this task in:</p>
               <div className="flex flex-wrap gap-2">
                 {([
                   { key: "showInToday", label: "Today's Tasks", value: showInToday, set: setShowInToday },
@@ -487,7 +487,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => opt.set(!opt.value)}
                     className={cn(
-                      "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all",
+                      "rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
                       opt.value
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
                         : "border-border bg-card text-muted-foreground"

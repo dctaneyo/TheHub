@@ -76,7 +76,7 @@ function CompletionRing({
       </svg>
       <span className="absolute flex flex-col items-center leading-none">
         <span className="text-3xl font-black text-foreground">{pct}%</span>
-        <span className="mt-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
+        <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
           COMPLETE
         </span>
       </span>
@@ -172,7 +172,7 @@ export function GridTasksWidget({
               }
               setMissedOpen((o) => !o);
             }}
-            className="flex w-full items-center justify-between rounded-lg px-0 py-0.5 transition-colors active:text-[var(--hub-red)]"
+            className="flex w-full items-center justify-between rounded-lg px-0 py-1 transition-colors active:text-[var(--hub-red)]"
           >
             <span className="flex items-center gap-2 font-semibold text-foreground">
               <span
@@ -207,7 +207,7 @@ export function GridTasksWidget({
                 key={task.id}
                 layout
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                className="flex items-center gap-3 border-b border-border/40 py-2.5"
+                className="flex items-center gap-3 border-b border-border/40 py-2"
               >
                 <span
                   className={cn(
@@ -363,12 +363,12 @@ export function GridTasksWidget({
                 width: Math.max(popoverPos.width, 260),
               }}
             >
-              <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+              <div className="flex items-center justify-between border-b border-border px-3 py-2">
                 <span className="text-sm font-semibold text-foreground">Missed Yesterday</span>
                 <button
                   type="button"
                   onClick={() => setMissedOpen(false)}
-                  className="rounded-full p-0.5 text-muted-foreground transition-colors active:text-foreground"
+                  className="rounded-full p-1 text-muted-foreground transition-colors active:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>

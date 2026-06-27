@@ -608,13 +608,13 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
               <div className="flex gap-1 border-b border-border px-3 py-2">
                 <button
                   onClick={() => setNewChatMode("direct")}
-                  className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                  className={cn("flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                     newChatMode === "direct" ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
                   )}
                 >Direct</button>
                 <button
                   onClick={() => setNewChatMode("group")}
-                  className={cn("flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
+                  className={cn("flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                     newChatMode === "group" ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
                   )}
                 >Group</button>
@@ -633,7 +633,7 @@ export function RestaurantChat({ isOpen, onClose, unreadCount, onUnreadChange, c
                     <div className="mt-2 flex flex-wrap gap-1">
                       {groupMembers.map((m) => (
                         <button key={m.id} onClick={() => toggleGroupMember(m)}
-                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground active:bg-red-100 active:text-red-600 dark:active:bg-red-950"
+                          className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-semibold text-foreground active:bg-red-100 active:text-red-600 dark:active:bg-red-950"
                         >
                           {m.name} <X className="h-2.5 w-2.5" />
                         </button>
@@ -958,7 +958,7 @@ function ActiveConvoView({
       {/* Search bar */}
       {showSearch && (
         <div className="border-b border-border px-4 py-2">
-          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5">
+          <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <input
               ref={searchInputRef}
@@ -988,7 +988,7 @@ function ActiveConvoView({
             <div className="flex justify-center pb-1">
               <button
                 onClick={() => setShowAllMessages(true)}
-                className="rounded-full bg-muted px-4 py-1.5 text-xs font-semibold text-muted-foreground active:bg-muted/80 transition-colors"
+                className="rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground active:bg-muted/80 transition-colors"
               >
                 View Past Messages
               </button>
@@ -1017,7 +1017,7 @@ function ActiveConvoView({
                 className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
               >
                 {isGroup && !isMe && (
-                  <span className="mb-0.5 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
+                  <span className="mb-1 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
                 )}
                 <div className={cn(
                   "rounded-2xl px-3 py-2 shadow-sm max-w-[75%]",
@@ -1037,10 +1037,10 @@ function ActiveConvoView({
                       return acc;
                     }, {} as Record<string, number>);
                     return (
-                      <div className="mt-1.5 flex flex-wrap gap-1">
+                      <div className="mt-2 flex flex-wrap gap-1">
                         {Object.entries(grouped).map(([emoji, count]) => (
                           <div key={emoji} className={cn(
-                            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
+                            "flex items-center gap-1 rounded-full px-2 py-1",
                             isMe ? "bg-white/20" : "bg-white border border-slate-200"
                           )}>
                             <Emoji emoji={emoji} size={14} />
@@ -1051,7 +1051,7 @@ function ActiveConvoView({
                     );
                   })()}
                   
-                  <div className={cn("mt-0.5 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
+                  <div className={cn("mt-1 flex flex-wrap items-center gap-1", isMe ? "justify-end" : "justify-start")}>
                     <span className={cn("text-xs", isMe ? "text-white/60" : "text-neutral-400")}>
                       {format(new Date(msg.createdAt), "h:mm a")}
                     </span>
@@ -1078,7 +1078,7 @@ function ActiveConvoView({
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: 5 }}
                       className={cn(
-                        "mt-1 flex gap-1.5 rounded-full bg-white border border-neutral-200 shadow-lg px-2.5 py-1.5",
+                        "mt-1 flex gap-1 rounded-full bg-white border border-neutral-200 shadow-lg px-2 py-2",
                       )}
                     >
                       {reactions.map((emoji) => (
@@ -1101,7 +1101,7 @@ function ActiveConvoView({
         {typingNames.length > 0 && (
           <div className="px-2 pb-1">
             <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-              <div className="flex gap-0.5">
+              <div className="flex gap-1">
                 <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
                 <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
                 <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />

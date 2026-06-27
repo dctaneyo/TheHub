@@ -128,7 +128,7 @@ export function LocationsManager() {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="h-4 w-40 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} /></div>
             <div className="h-3 w-24 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} /></div>
           </div>
@@ -140,7 +140,7 @@ export function LocationsManager() {
                 <div className="h-10 w-10 rounded-xl bg-muted overflow-hidden shrink-0">
                   <motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
                 </div>
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-28 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} /></div>
                   <div className="h-3 w-16 rounded-full bg-muted overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-muted via-card to-muted" animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 + 0.1 }} /></div>
                 </div>
@@ -169,11 +169,11 @@ export function LocationsManager() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1">
+          <div className="flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{onlineCount} Online</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
+          <div className="flex items-center gap-1 rounded-full bg-muted px-3 py-1">
             <div className="h-2 w-2 rounded-full bg-muted-foreground" />
             <span className="text-xs font-semibold text-muted-foreground">{locations.length - onlineCount} Offline</span>
           </div>
@@ -216,7 +216,7 @@ export function LocationsManager() {
                   <p className="text-xs text-muted-foreground">Store #{loc.storeNumber}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {/* PIN reset button */}
                 <button
                   onClick={() => { setResetPinId(resetPinId === loc.id ? null : loc.id); setNewPin(""); setPinError(""); }}
@@ -303,7 +303,7 @@ export function LocationsManager() {
               {/* Inline PIN reset form */}
               {resetPinId === loc.id && (
                 <div className="mt-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 space-y-2">
-                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
                     <KeyRound className="h-3 w-3" />
                     Reset 4-digit PIN
                   </p>
@@ -315,7 +315,7 @@ export function LocationsManager() {
                       value={newPin}
                       onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
                       placeholder="New PIN (4 digits)"
-                      className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-amber-400/50"
                     />
                     <button
                       onClick={() => handlePinReset(loc.id)}

@@ -146,25 +146,29 @@ color for a new meaning; reuse before adding.
 
 ## 3. Spacing & Shape
 
-**8pt grid.** Spacing (padding, margin, gap) is primarily a multiple of
-8px — `gap-2`/`p-4`/`m-6`/`gap-8` (8/16/24/32px), and so on. A **4px
-half-step is a stated exception**, not a loophole: real 8pt systems are
-usually documented exactly this way (Material's is "4dp base unit, 8dp
-grid for layout") because 8px alone is too coarse for icon gaps and
-dense-control padding. So `gap-1`/`p-3`/`gap-5` (4/12/20px) are fine.
-What's an actual violation is anything *finer* than the 4px half-step —
-`gap-1.5`/`p-2.5`/`gap-3.5` (6/10/14px) — those read as an eyeballed
-pixel nudge, not a value taken from the scale. (Audited at 994 instances
-on the primary 8px grid, 831 on the accepted 4px half-step, and 395 true
-violations finer than that — the violations are a real, sizeable
-minority, not a rounding error, and worth a deliberate retrofit pass
-rather than a blanket sed: which direction a `gap-1.5` should round to
-depends on what's next to it, not just the number.)
+**8pt grid.** Spacing that creates *rhythm/grouping* — padding, margin,
+gap — is primarily a multiple of 8px: `gap-2`/`p-4`/`m-6`/`gap-8`
+(8/16/24/32px), and so on. A **4px half-step is a stated exception**,
+not a loophole: real 8pt systems are usually documented exactly this way
+(Material's is "4dp base unit, 8dp grid for layout") because 8px alone
+is too coarse for icon gaps and dense-control padding. So `gap-1`/`p-3`/
+`gap-5` (4/12/20px) are fine. What's an actual violation is anything
+*finer* than the 4px half-step — `gap-1.5`/`p-2.5`/`gap-3.5` (6/10/14px)
+— those read as an eyeballed pixel nudge, not a value taken from the
+scale.
 
-**Check:** any spacing value finer than 4px (i.e. ending in `.5` below
-the 4px step — `0.5`, `1.5`, `2.5`, `3.5`) is a violation. `0`/`1`/`2`/
-`3`/`4`/`5`/`6`/`8`/`10`/`12`+ are all fine (every whole Tailwind unit
-from here up is already a multiple of 4px).
+**This rule is scoped to rhythm, not geometry.** Position offsets
+(`top`/`right`/`bottom`/`left`/`inset`) and element dimensions (`w`/`h`)
+are exempt even when they use a `.5` value — `-right-0.5 -top-0.5` to
+sit a notification dot precisely on a corner, or `h-0.5` for a hairline
+divider, are solving a pixel-precision problem the 8pt grid doesn't
+apply to. The grid is about the space *between* things; corner overlaps
+and line thicknesses aren't that.
+
+**Check:** any padding/margin/gap value finer than 4px (`0.5`, `1.5`,
+`2.5`, `3.5`) is a violation. `0`/`1`/`2`/`3`/`4`/`5`/`6`/`8`/`10`/`12`+
+are all fine (every whole Tailwind unit from here up is already a
+multiple of 4px).
 
 Radius: this product's house style is a **heavy, near-uniform radius**
 — large, soft corners across cards, containers, and controls, rather
@@ -902,3 +906,33 @@ after it's been copied across twenty is not.
     should round — that a blind find-and-replace would get wrong as
     often as right. Scoped as a deliberate follow-up pass, file by
     file, rather than rushed alongside the safe part.
+- 2026-06-27 — did the follow-up pass. `text-base`/`text-xl` (86
+  instances, 29 files) reassigned by role: widget/section/modal titles
+  to Title, page-level and full-screen-state headings to Display
+  (dropping several `sm:text-2xl`-style responsive steps that were
+  shrinking a heading specifically on mobile — the opposite of the
+  font floor), list rows and secondary copy to Body, primary buttons
+  to Title. Left alone with reasons: `text-base` on `<Input>`/
+  `<Textarea>` (the documented 16px iOS-zoom floor, already correct),
+  the on-screen keyboard's key/emoji-grid sizing (glyph rendering, not
+  prose — same register as its existing 15px exception), isolated
+  icon/emoji glyphs, and the `font-black` alert headings (already a
+  documented exception, just at a size outside the prose scale on
+  purpose).
+
+  Then the 395 fine-grained spacing violations: sampled the two
+  largest buckets first (`py-0.5`/`mt-0.5`, 82 of 112 instances at
+  that tier) and found the same few recipes repeated almost verbatim
+  everywhere — a badge's `px-1.5 py-0.5`, a caption's `mt-0.5` under a
+  label — confirming these were consistent, low-risk patterns rather
+  than bespoke pixel art needing individual review. Applied one stated
+  rounding rule instead of auditing 395 instances by eye: round to the
+  nearest accepted value, ties resolved toward the primary 8pt grid,
+  with one named exception — `gap-1.5` (icon-to-label spacing) rounds
+  down to `gap-1` instead of up, since an icon and its own label are
+  the tightest possible grouping (Section 5), and the tie-break should
+  follow that, not the generic default. Scoped the rule itself to
+  rhythm (padding/margin/gap) and explicitly excluded position offsets
+  and element dimensions, after noticing `-right-0.5`/`h-0.5`-style
+  corner-overlap and hairline uses that have nothing to do with
+  spacing rhythm.

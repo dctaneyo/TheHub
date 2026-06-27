@@ -91,7 +91,7 @@ export function ArlSidebar({
     >
       {/* Sidebar header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
             <span className="text-sm font-black text-white">{brandInitial}</span>
           </div>
@@ -140,7 +140,7 @@ export function ArlSidebar({
                 if (isMobileOrTablet) onClose();
               }}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all",
                 isActive
                   ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
                   : "text-muted-foreground hover:bg-muted"
@@ -173,7 +173,7 @@ export function ArlSidebar({
       <div className="border-t border-border p-3 space-y-1">
         <button
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
         >
           <LogOut className="h-4.5 w-4.5" />
           Sign Out

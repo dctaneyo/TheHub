@@ -212,7 +212,7 @@ export function EmergencyOverlay() {
               </motion.div>
               <div>
                 <h2 className="text-xl font-black text-white tracking-wide">EMERGENCY MESSAGE</h2>
-                <p className="text-xs text-red-100 mt-0.5">From {activeMessage.sentByName}</p>
+                <p className="text-xs text-red-100 mt-1">From {activeMessage.sentByName}</p>
               </div>
             </div>
 

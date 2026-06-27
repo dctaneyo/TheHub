@@ -94,7 +94,7 @@ export function ConversationListSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Skeleton variant="text" className="h-5 w-24" />
           <Skeleton variant="text" className="h-3 w-16" />
         </div>
@@ -106,7 +106,7 @@ export function ConversationListSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 rounded-xl p-2">
           <Skeleton variant="avatar" className="h-10 w-10 rounded-xl" />
-          <div className="flex-1 space-y-1.5">
+          <div className="flex-1 space-y-2">
             <Skeleton variant="text" className="h-3.5 w-2/5" />
             <Skeleton variant="text" className="h-3 w-3/4" />
           </div>
@@ -121,7 +121,7 @@ export function TaskListSkeleton() {
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center justify-between">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Skeleton variant="text" className="h-5 w-40" />
           <Skeleton variant="text" className="h-3 w-20" />
         </div>

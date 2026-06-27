@@ -123,7 +123,7 @@ function NotifVirtualList({ notifications, onDismiss, onClose, getTimeAgo }: {
                     )}>
                       {notification.title}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
@@ -277,7 +277,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
           <div className="flex items-center gap-1">
             <button
               onClick={handleDismissAll}
-              className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               title="Dismiss all"
             >
               <CheckSquareOffset className="h-3.5 w-3.5" />
@@ -349,7 +349,7 @@ export function NotificationPanel({ open, onClose, onCountsUpdate, taskNotificat
                       <p className="text-sm font-semibold text-foreground">
                         {tn.type === "overdue" ? "Overdue Task" : "Due Soon"}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{tn.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{tn.title}</p>
                       <p className="text-xs text-muted-foreground">Due at {formatTime12(tn.dueTime)}</p>
                     </div>
                     {onDismissTask && (

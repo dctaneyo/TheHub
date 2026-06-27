@@ -90,14 +90,14 @@ export function GridMessagesWidget({
           <h2 className="text-lg font-semibold text-foreground">Messages</h2>
         </div>
         {totalUnread > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-destructive-foreground">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-2 text-xs font-semibold text-destructive-foreground">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
       </div>
 
       {/* Conversation list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {loading ? (
           <div className="flex h-20 items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
@@ -116,7 +116,7 @@ export function GridMessagesWidget({
                 type="button"
                 onClick={() => onOpen(c.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-2.5 py-3 text-left transition-colors active:bg-muted/80",
+                  "flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors active:bg-muted/80",
                   unread && "bg-primary/5"
                 )}
               >

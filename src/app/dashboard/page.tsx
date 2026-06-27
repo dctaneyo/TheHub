@@ -169,7 +169,7 @@ function GridTickerBar({ currentLocationId }: { currentLocationId?: string }) {
           transition={{ type: "spring", stiffness: 340, damping: 30 }}
           className="mx-3 mb-3 flex h-9 shrink-0 items-center overflow-hidden rounded-full border border-border bg-card"
         >
-          <div className="flex h-full shrink-0 items-center gap-1.5 rounded-l-full bg-primary px-3">
+          <div className="flex h-full shrink-0 items-center gap-1 rounded-l-full bg-primary px-3">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground" />
@@ -726,13 +726,13 @@ function GridDashboardPage() {
       />
       <div className="flex h-screen flex-col bg-background">
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
               <HubMark className="h-3.5 w-3.5" />
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold text-foreground leading-none">Dashboard</p>
-              {user.name && <p className="text-xs text-muted-foreground leading-none mt-0.5">{user.name}</p>}
+              {user.name && <p className="text-xs text-muted-foreground leading-none mt-1">{user.name}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -763,7 +763,7 @@ function GridDashboardPage() {
                   </IconTip>
                 )}
                 <button type="button" onClick={() => logout()}
-                  className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
+                  className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
                   <LogOut className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Sign Out</span>
                 </button>

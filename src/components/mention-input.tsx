@@ -120,9 +120,9 @@ export function MentionInput({ value, onChange, onKeyDown, placeholder, classNam
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
-            className="absolute bottom-full left-0 mb-1.5 z-50 w-64 rounded-xl border border-border bg-card shadow-xl overflow-hidden"
+            className="absolute bottom-full left-0 mb-2 z-50 w-64 rounded-xl border border-border bg-card shadow-xl overflow-hidden"
           >
-            <div className="px-3 py-1.5 border-b border-border">
+            <div className="px-3 py-2 border-b border-border">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mention someone</p>
             </div>
             <div className="max-h-48 overflow-y-auto">
@@ -131,7 +131,7 @@ export function MentionInput({ value, onChange, onKeyDown, placeholder, classNam
                   key={m.id}
                   onMouseDown={(e) => { e.preventDefault(); insertMention(m); }}
                   className={cn(
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors",
+                    "flex w-full items-center gap-2 px-3 py-2 text-left transition-colors",
                     i === selectedIdx ? "bg-[var(--hub-red)]/10" : "hover:bg-muted"
                   )}
                 >

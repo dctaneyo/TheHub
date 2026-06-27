@@ -863,7 +863,7 @@ export default function LoginPage() {
                 {step === "userId" ? "Enter your User ID" : "Enter your PIN"}
               </p>
               {step === "pin" && validatedUser && (
-                <div className="mt-1.5 flex items-center justify-center gap-1.5">
+                <div className="mt-2 flex items-center justify-center gap-1">
                   {validatedUser.userType === "location"
                     ? <Store className="h-3.5 w-3.5 text-muted-foreground" />
                     : <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1142,7 +1142,7 @@ export default function LoginPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="flex items-center gap-2 rounded-2xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive"
+                            className="flex items-center gap-2 rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive"
                           >
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             <span>{bypassError}</span>

@@ -210,7 +210,7 @@ export function MeetingAnalyticsDashboard() {
                     <td className="px-4 py-2 text-foreground font-semibold">{p.participantName}</td>
                     <td className="px-4 py-2">
                       <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full",
+                        "text-xs px-2 py-1 rounded-full",
                         p.participantType === "arl" ? "bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400" :
                         p.participantType === "guest" ? "bg-purple-100 text-purple-700 dark:bg-purple-600/20 dark:text-purple-400" :
                         "bg-green-100 text-green-700 dark:bg-green-600/20 dark:text-green-400"
@@ -257,7 +257,7 @@ export function MeetingAnalyticsDashboard() {
                   <p className="text-sm font-semibold text-foreground truncate">{p.participantName}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={cn(
-                      "text-xs px-2 py-0.5 rounded-full",
+                      "text-xs px-2 py-1 rounded-full",
                       p.participantType === "arl" ? "bg-blue-600/20 text-blue-400" :
                       p.participantType === "guest" ? "bg-purple-600/20 text-purple-400" :
                       "bg-green-600/20 text-green-400"
@@ -321,7 +321,7 @@ export function MeetingAnalyticsDashboard() {
         {meetings.length > 0 && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
           >
             <Trash2 className="h-4 w-4" />
             Delete All
@@ -417,10 +417,10 @@ export function MeetingAnalyticsDashboard() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground truncate">{m.title}</span>
                     {!m.endedAt && (
-                      <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
+                      <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-2 py-1 rounded-full">LIVE</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5">
+                  <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-muted-foreground">{formatDate(m.startedAt)}</span>
                     <span className="text-xs text-muted-foreground">•</span>
                     <span className="text-xs text-muted-foreground">{m.hostName}</span>

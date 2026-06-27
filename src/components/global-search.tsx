@@ -143,7 +143,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
       >
         <Search className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Search...</span>
-        <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-semibold sm:inline">⌘K</kbd>
+        <kbd className="hidden rounded border border-border bg-muted px-2 py-1 text-xs font-semibold sm:inline">⌘K</kbd>
       </button>
 
       {/* Search modal */}
@@ -189,7 +189,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                       key={f.id}
                       onClick={() => setFilter(f.id)}
                       className={cn(
-                        "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
+                        "rounded-lg px-2 py-1 text-xs font-semibold transition-colors",
                         filter === f.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
                       )}
                     >
@@ -217,7 +217,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                           onClick={() => handleSelect(result)}
                           onMouseEnter={() => setSelectedIndex(i)}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
                             selectedIndex === i ? "bg-accent" : "hover:bg-accent/50"
                           )}
                         >
@@ -228,7 +228,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                             <p className="truncate text-sm font-semibold text-foreground">{result.title}</p>
                             <p className="truncate text-xs text-muted-foreground">{result.subtitle}</p>
                           </div>
-                          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                          <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
                             {typeLabels[result.type]}
                           </span>
                         </button>

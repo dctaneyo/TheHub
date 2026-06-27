@@ -117,7 +117,7 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
           </summary>
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {report.database.tables.map((t) => (
-              <div key={t.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-1.5">
+              <div key={t.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                 <span className="text-xs text-muted-foreground truncate mr-2">{t.name}</span>
                 <span className="text-xs font-semibold text-foreground">{t.records.toLocaleString()}</span>
               </div>

@@ -109,7 +109,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
           onLeave={(didEnd) => endBroadcast(didEnd)}
         />
         {/* Viewer count badge */}
-        <div className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full">
+        <div className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white px-3 py-2 rounded-full">
           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-xs font-semibold uppercase">Live</span>
           <span className="text-xs text-white/70">·</span>
@@ -147,7 +147,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
           {/* Body */}
           <div className="p-6 space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">Broadcast Title</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Broadcast Title</label>
               <Input
                 value={title}
                 onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}

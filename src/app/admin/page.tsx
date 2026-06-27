@@ -344,16 +344,16 @@ export default function AdminPortal() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-white truncate">{tenant.name}</h3>
                       <span className={cn(
-                        "text-xs font-semibold px-2 py-0.5 rounded-full uppercase",
+                        "text-xs font-semibold px-2 py-1 rounded-full uppercase",
                         tenant.plan === "enterprise" ? "bg-amber-500/20 text-amber-400" :
                         tenant.plan === "pro" ? "bg-blue-500/20 text-blue-400" :
                         "bg-slate-500/20 text-slate-400"
                       )}>{tenant.plan}</span>
                       {!tenant.isActive && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">INACTIVE</span>
+                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-400">INACTIVE</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-400 mt-1">
                       {tenant.slug}.meetthehub.com
                       {tenant.customDomain && ` · ${tenant.customDomain}`}
                     </p>
@@ -512,7 +512,7 @@ export default function AdminPortal() {
                         key={feature}
                         onClick={() => toggleFeature(feature)}
                         className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors",
+                          "px-3 py-2 rounded-lg text-xs font-semibold capitalize transition-colors",
                           formFeatures.includes(feature)
                             ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30"
                             : "bg-white/5 text-slate-500 border border-white/10"

@@ -45,9 +45,9 @@ export function ChatPanel({
         ) : (
           messages.map(msg => (
             <div key={msg.id}>
-              <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="flex items-center gap-1 mb-1">
                 <span className="text-xs font-semibold text-slate-300">{msg.senderName}</span>
-                {msg.senderType === "arl" && <span className="text-xs font-semibold bg-red-600/30 text-red-400 px-1 py-0.5 rounded">ARL</span>}
+                {msg.senderType === "arl" && <span className="text-xs font-semibold bg-red-600/30 text-red-400 px-1 py-1 rounded">ARL</span>}
               </div>
               <div className="text-sm text-slate-200 bg-slate-700/50 rounded-lg p-2">{msg.content}</div>
             </div>

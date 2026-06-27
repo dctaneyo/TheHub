@@ -175,7 +175,7 @@ export function ZoomableVideo({ trackRef, className, children }: ZoomableVideoPr
         {scale > 1 && (
           <button
             onClick={resetZoom}
-            className="bg-black/60 backdrop-blur-sm rounded-lg p-1.5 hover:bg-black/80 transition-colors"
+            className="bg-black/60 backdrop-blur-sm rounded-lg p-2 hover:bg-black/80 transition-colors"
             title="Reset zoom"
           >
             <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

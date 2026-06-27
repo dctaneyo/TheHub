@@ -114,7 +114,7 @@ export function ControlsBar({
           <>
             <button
               onClick={onShowTransferDialog}
-              className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
               title="Transfer host role to another participant"
             >
               <ArrowRightLeft className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function ControlsBar({
             </button>
             <button
               onClick={onLeaveMeeting}
-              className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
               title="Leave meeting (meeting continues)"
             >
               <LogOut className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function ControlsBar({
             </button>
             <button
               onClick={onEndMeeting}
-              className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
               title="End meeting for all"
             >
               <PhoneOff className="h-5 w-5" />
@@ -140,7 +140,7 @@ export function ControlsBar({
         ) : (
           <button
             onClick={onLeaveMeeting}
-            className="flex items-center gap-1.5 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+            className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
             title="Leave meeting"
           >
             <PhoneOff className="h-5 w-5" />

@@ -150,7 +150,7 @@ export function MirrorToolbar() {
                 )}
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   {connectionStatus === "reconnecting" ? (
                     <>
                       <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
@@ -225,7 +225,7 @@ export function MirrorToolbar() {
             {/* End session */}
             <button
               onClick={endMirror}
-              className="flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:active:bg-red-900 transition-colors"
+              className="flex items-center gap-1 rounded-xl bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:active:bg-red-900 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               End

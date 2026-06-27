@@ -81,7 +81,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                     )}
                   </div>
                   {task.description && (
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                   )}
                   <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                     {!task.isRecurring && task.dueDate && (

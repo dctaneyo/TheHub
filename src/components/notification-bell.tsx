@@ -394,7 +394,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                   </motion.div>
                   <div>
                     <h2 className="text-xl font-black text-white tracking-wide">OVERDUE TASKS</h2>
-                    <p className="text-xs text-red-100 mt-0.5">{overdueNotifs.length} task{overdueNotifs.length > 1 ? "s" : ""} past due</p>
+                    <p className="text-xs text-red-100 mt-1">{overdueNotifs.length} task{overdueNotifs.length > 1 ? "s" : ""} past due</p>
                   </div>
                 </div>
                 <div className="px-6 py-5 space-y-3 max-h-64 overflow-y-auto">

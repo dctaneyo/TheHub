@@ -144,7 +144,7 @@ export function GridCalendarWidget() {
   return (
     <div className="flex h-full flex-col gap-1 p-2">
       {/* Month navigation */}
-      <div className="flex shrink-0 items-center justify-between px-0.5">
+      <div className="flex shrink-0 items-center justify-between px-1">
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
@@ -171,7 +171,7 @@ export function GridCalendarWidget() {
       {/* Day-of-week header */}
       <div className="grid shrink-0 grid-cols-7">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i} className="py-0.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div key={i} className="py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {d}
           </div>
         ))}
@@ -199,7 +199,7 @@ export function GridCalendarWidget() {
               type="button"
               onClick={() => openModal(date)}
               className={cn(
-                "flex flex-col items-center gap-px rounded-lg py-0.5 transition-colors active:bg-muted/60",
+                "flex flex-col items-center gap-px rounded-lg py-1 transition-colors active:bg-muted/60",
                 !inMonth && "pointer-events-none opacity-25",
                 selected && inMonth && !today && "bg-muted/40",
               )}
@@ -214,7 +214,7 @@ export function GridCalendarWidget() {
                 {format(date, "d")}
               </span>
               {/* Task dots — up to 3 + overflow indicator */}
-              <div className="flex min-h-[6px] flex-wrap justify-center gap-[2px] px-0.5">
+              <div className="flex min-h-[6px] flex-wrap justify-center gap-[2px] px-1">
                 {dayTasks.slice(0, 3).map((t, ti) => (
                   <span
                     key={ti}
@@ -363,7 +363,7 @@ function CalendarModal({
                     {format(date, "d")}
                   </span>
                   {/* Dots */}
-                  <div className="mt-0.5 flex min-h-[8px] flex-wrap justify-center gap-[3px]">
+                  <div className="mt-1 flex min-h-[8px] flex-wrap justify-center gap-[3px]">
                     {dayTasks.slice(0, 4).map((t, ti) => (
                       <span
                         key={ti}
@@ -387,7 +387,7 @@ function CalendarModal({
           <h3 className="mb-3 shrink-0 text-lg font-semibold text-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {isToday(selectedDate) && (
-              <span className="ml-2 rounded-full bg-[var(--hub-red)]/15 px-2 py-0.5 text-xs font-semibold text-[var(--hub-red)]">
+              <span className="ml-2 rounded-full bg-[var(--hub-red)]/15 px-2 py-1 text-xs font-semibold text-[var(--hub-red)]">
                 Today
               </span>
             )}
@@ -406,11 +406,11 @@ function CalendarModal({
                   className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3"
                 >
                   {task.type === "information" ? (
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+                    <Info className="mt-1 h-4 w-4 shrink-0 text-blue-400" />
                   ) : (
                     <span
                       className={cn(
-                        "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                        "mt-2 h-2 w-2 shrink-0 rounded-full",
                         PRIORITY_DOT[task.priority] ?? PRIORITY_DOT.normal
                       )}
                     />

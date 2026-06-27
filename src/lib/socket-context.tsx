@@ -291,7 +291,7 @@ function UpdateSplash({ visible, currentBuild, newBuild }: { visible: boolean; c
             <p className="text-sm font-semibold text-muted-foreground mb-6">Loading the latest build. Please wait…</p>
 
             {/* Skeleton bars */}
-            <div className="w-64 space-y-2.5">
+            <div className="w-64 space-y-2">
               {["w-full", "w-4/5", "w-3/5"].map((w, i) => (
                 <motion.div
                   key={i}
@@ -314,7 +314,7 @@ function UpdateSplash({ visible, currentBuild, newBuild }: { visible: boolean; c
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="mt-6 font-mono text-xs text-muted-foreground/60 space-y-0.5"
+              className="mt-6 font-mono text-xs text-muted-foreground/60 space-y-1"
             >
               <p>Current: {fmt(currentBuild)}</p>
               <p>New: {fmt(newBuild)}</p>

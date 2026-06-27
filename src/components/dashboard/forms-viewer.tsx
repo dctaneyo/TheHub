@@ -101,7 +101,7 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
       >
         {/* Header */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)]">
               <FileText className="h-4 w-4 text-white" />
             </div>
@@ -119,7 +119,7 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
         </div>
 
         {/* Category filter */}
-        <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-border px-5 py-3">
+        <div className="flex shrink-0 flex-wrap gap-1 border-b border-border px-5 py-3">
           {["all", ...CATEGORIES].map((cat) => (
             <button
               key={cat}
@@ -138,13 +138,13 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
 
         {/* Email feedback banner */}
         {sentId && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-2.5">
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-2">
             <Mail className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
             <p className="text-xs font-semibold text-green-700 dark:text-green-300">Email sent successfully! Check your inbox.</p>
           </div>
         )}
         {emailError && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5">
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2">
             <FileText className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
             <p className="text-xs font-semibold text-red-700 dark:text-red-300">{emailError}</p>
           </div>
@@ -180,18 +180,18 @@ export function FormsViewer({ onClose }: FormsViewerProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                    <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
+                    <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
                       {categoryLabel(form.category)}
                     </span>
                   </div>
                   {form.description && (
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{form.description}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{form.description}</p>
                   )}
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex shrink-0 items-center gap-1">
                   <button
                     onClick={() => handleEmailSelf(form)}
                     disabled={sendingId === form.id}

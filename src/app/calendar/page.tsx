@@ -205,7 +205,7 @@ export default function CalendarPage() {
                       onClick={() => setSelectedDate(date)}
                       onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
                       className={cn(
-                        "flex flex-col items-start justify-start border-r border-slate-100 p-1.5 text-left transition-colors last:border-0 overflow-hidden cursor-pointer",
+                        "flex flex-col items-start justify-start border-r border-slate-100 p-2 text-left transition-colors last:border-0 overflow-hidden cursor-pointer",
                         !inMonth && "bg-slate-50/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
                         inMonth && !isSelected && "hover:bg-slate-50"
@@ -217,14 +217,14 @@ export default function CalendarPage() {
                       )}>
                         {format(date, "d")}
                       </span>
-                      <div className="mt-0.5 flex flex-col gap-0.5 overflow-hidden">
+                      <div className="mt-1 flex flex-col gap-1 overflow-hidden">
                         {dayTasks.map((task) => {
                           const Icon = typeIcons[task.type] || ClipboardList;
                           return (
                             <div
                               key={task.id}
                               className={cn(
-                                "flex items-center gap-1 rounded px-1 py-0.5 text-xs font-semibold truncate",
+                                "flex items-center gap-1 rounded px-1 py-1 text-xs font-semibold truncate",
                                 task.priority === "urgent" ? "bg-red-100 text-red-700" :
                                 task.priority === "high" ? "bg-orange-100 text-orange-700" :
                                 task.type === "cleaning" ? "bg-purple-100 text-purple-700" :
@@ -289,7 +289,7 @@ export default function CalendarPage() {
                   >
                     <div className="flex items-start gap-2">
                       <div className={cn(
-                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                        "mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                         task.type === "cleaning" ? "bg-purple-100 text-purple-600" :
                         task.type === "reminder" ? "bg-sky-100 text-sky-600" :
                         "bg-blue-100 text-blue-600"

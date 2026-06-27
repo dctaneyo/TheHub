@@ -265,7 +265,7 @@ export function AnalyticsDashboard() {
                     key={opt.label}
                     onClick={opt.action}
                     disabled={!opt.enabled}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-40 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-foreground hover:bg-muted disabled:opacity-40 transition-colors"
                   >
                     <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {opt.label}
@@ -282,7 +282,7 @@ export function AnalyticsDashboard() {
         <div className="flex gap-1 rounded-xl bg-muted p-1">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all",
+              className={cn("flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all",
                 activeTab === t.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               <t.icon className="h-3.5 w-3.5" /> {t.label}
@@ -292,7 +292,7 @@ export function AnalyticsDashboard() {
         <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
-              className={cn("rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all",
+              className={cn("rounded-lg px-2 py-2 text-xs font-semibold transition-all",
                 dateRange === d.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}>
               {d.label}
@@ -370,9 +370,9 @@ export function AnalyticsDashboard() {
                     <tbody>
                       {taskData.taskPerformance.slice(0, 10).map((t, i) => (
                         <tr key={t.taskId ?? i} className="border-b border-border/50 last:border-0">
-                          <td className="py-2.5 font-semibold text-foreground">{t.taskTitle || "Unknown Task"}</td>
-                          <td className="py-2.5 text-right text-muted-foreground">{t.completions}</td>
-                          <td className="py-2.5 text-right text-muted-foreground">{t.uniqueLocations}</td>
+                          <td className="py-2 font-semibold text-foreground">{t.taskTitle || "Unknown Task"}</td>
+                          <td className="py-2 text-right text-muted-foreground">{t.completions}</td>
+                          <td className="py-2 text-right text-muted-foreground">{t.uniqueLocations}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -178,8 +178,8 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                     className="absolute right-0 top-full mt-2 z-[200] w-56 rounded-xl border border-border bg-card shadow-lg overflow-hidden"
                   >
                     {/* Connection Status */}
-                    <div className="px-3 py-2.5 border-b border-border">
-                      <div className="flex items-center gap-2.5">
+                    <div className="px-3 py-2 border-b border-border">
+                      <div className="flex items-center gap-2">
                         <div className={cn(
                           "flex h-7 w-7 items-center justify-center rounded-lg",
                           isOnline && socketConnected ? "bg-emerald-100 dark:bg-emerald-950/50" : "bg-red-100 dark:bg-red-950/50"
@@ -215,7 +215,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                     {/* Theme Toggle */}
                     <button
                       onClick={cycleTheme}
-                      className="w-full px-3 py-2.5 border-b border-border flex items-center gap-2.5 hover:bg-accent transition-colors"
+                      className="w-full px-3 py-2 border-b border-border flex items-center gap-2 hover:bg-accent transition-colors"
                     >
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
                         {theme === "dark" ? (
@@ -235,7 +235,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
 
                     {/* Push Notifications */}
                     {pushSubscription ? (
-                      <div className="px-3 py-2.5 flex items-center gap-2.5">
+                      <div className="px-3 py-2 flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
                           <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         </div>
@@ -246,7 +246,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                         <div className="h-2 w-2 rounded-full bg-emerald-500" />
                       </div>
                     ) : notificationPermission === "denied" ? (
-                      <div className="px-3 py-2.5 flex items-center gap-2.5">
+                      <div className="px-3 py-2 flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-950/50">
                           <BellOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                         </div>
@@ -258,7 +258,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                     ) : (
                       <button
                         onClick={() => { requestNotificationPermission(); setShowQuickSettings(false); }}
-                        className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-accent transition-colors"
+                        className="w-full px-3 py-2 flex items-center gap-2 hover:bg-accent transition-colors"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
                           <Bell className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
@@ -421,13 +421,13 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                     setWatchingBroadcast(true);
                     setShowBroadcastNotification(false);
                   }}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 px-4 rounded-xl transition-colors"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2 px-4 rounded-xl transition-colors"
                 >
                   Join Broadcast
                 </button>
                 <button
                   onClick={() => setShowBroadcastNotification(false)}
-                  className="px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
+                  className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
                 >
                   Dismiss
                 </button>
