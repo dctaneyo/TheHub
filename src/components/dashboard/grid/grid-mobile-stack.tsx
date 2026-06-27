@@ -101,9 +101,18 @@ export function MobileDashboard({
     else setExpandedId(widget.id);
   };
 
+  // Quote always renders last in the stack — it's the lowest-priority,
+  // most-glanceable item (a daily motivational line), so it belongs at the
+  // very bottom rather than wherever its grid position happened to put it
+  // on desktop. Everything else keeps its existing relative order.
+  const orderedWidgets = [
+    ...widgets.filter((w) => w.type !== "quote"),
+    ...widgets.filter((w) => w.type === "quote"),
+  ];
+
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
-      {widgets.map((widget) => {
+      {orderedWidgets.map((widget) => {
         if (isAmbientWidget(widget.type)) {
           return (
             <div key={widget.id} className="shrink-0">

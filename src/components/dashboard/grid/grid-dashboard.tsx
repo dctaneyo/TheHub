@@ -11,10 +11,6 @@ import {
   Save,
   X,
   Loader2,
-  Moon,
-  Sun,
-  Monitor,
-  LogOut,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
@@ -32,9 +28,12 @@ import { useDeviceType } from "@/hooks/use-device-type";
 const PILL = "pill flex h-9 items-center gap-1 rounded-full px-3 text-xs font-semibold text-muted-foreground active:text-foreground";
 
 /**
- * SettingsPanel — two distinct surfaces depending on mode, not one cog that
- * always reveals the same six actions inline (the bento-style "everything
- * equally prominent" problem DESIGN.md Section 12 calls out by name):
+ * SettingsPanel — desktop/tablet only (see dashboard/page.tsx, which doesn't
+ * render this at all on mobile: there's no widget customization on a single
+ * stacked column, so there's nothing for this panel to offer there). Two
+ * distinct surfaces depending on mode, not one cog that always reveals the
+ * same six actions inline (the bento-style "everything equally prominent"
+ * problem DESIGN.md Section 12 calls out by name):
  *
  * - Browsing: the cog opens a single bounded popover with exactly two
  *   actions — customize widgets, reset to default — one step deeper, not
@@ -48,19 +47,8 @@ const PILL = "pill flex h-9 items-center gap-1 rounded-full px-3 text-xs font-se
  */
 export function SettingsPanel({
   onSave,
-  theme,
-  onCycleTheme,
-  onSignOut,
 }: {
   onSave?: (layout: GridLayout) => Promise<void> | void;
-  /** When provided (mobile only — see dashboard/page.tsx), Theme and Sign
-   *  Out render as labeled rows inside this popover instead of as separate
-   *  header buttons, so Sign Out always has a visible label (Section 13/14)
-   *  instead of becoming an unexplained icon once the header is too narrow
-   *  for its text. */
-  theme?: string;
-  onCycleTheme?: () => void;
-  onSignOut?: () => void;
 }) {
   const {
     layout,
@@ -74,11 +62,23 @@ export function SettingsPanel({
     cancelEdit,
   } = useGrid();
 
-  const deviceType = useDeviceType();
-  const isMobile = deviceType === "mobile";
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Auto-close on an outside click/tap — same pattern as ConnectionStatus's
+  // popdown, rather than requiring a second tap on the cog to dismiss.
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   const usedTypes = new Set(widgets.map((w) => w.type));
 
@@ -204,13 +204,12 @@ export function SettingsPanel({
   // Browsing — cog opens one bounded popover (customize, reset to default)
   // instead of pills sliding out into the header's flow.
   return (
-    <div className="relative">
-      <IconTip label={open ? "Close settings" : "Settings"}>
+    <div className="relative" ref={panelRef}>
+      <IconTip label="Settings">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className={cn(PILL, open && "bg-card text-foreground")}
-          title={open ? "Close settings" : "Settings"}
         >
           <motion.span
             animate={{ rotate: open ? 90 : 0 }}
@@ -230,20 +229,14 @@ export function SettingsPanel({
             exit={{ opacity: 0, y: -6 }}
             className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur-md"
           >
-            {isMobile ? (
-              <p className="px-2 py-2 text-xs text-muted-foreground">
-                Customizing widgets needs a larger screen.
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={startEditing}
-                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
-              >
-                <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                Customize widgets
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={startEditing}
+              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
+            >
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              Customize widgets
+            </button>
             <button
               type="button"
               onClick={handleReset}
@@ -252,29 +245,6 @@ export function SettingsPanel({
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
               Reset dashboard to default
             </button>
-            {isMobile && onCycleTheme && (
-              <>
-                <div className="my-1 h-px bg-border" />
-                <button
-                  type="button"
-                  onClick={onCycleTheme}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
-                >
-                  {theme === "dark" ? <Moon className="h-3.5 w-3.5 text-muted-foreground" /> : theme === "light" ? <Sun className="h-3.5 w-3.5 text-muted-foreground" /> : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
-                  Theme: {theme ?? "system"}
-                </button>
-                {onSignOut && (
-                  <button
-                    type="button"
-                    onClick={onSignOut}
-                    className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
-                  >
-                    <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
-                    Sign Out
-                  </button>
-                )}
-              </>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
+import { useDeviceType } from "@/hooks/use-device-type";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
 /**
@@ -105,6 +106,7 @@ export function GridTasksWidget({
   const [missedOpen, setMissedOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
   const missedBtnRef = useRef<HTMLButtonElement>(null);
+  const isMobile = useDeviceType() === "mobile";
 
   // Sync external trigger — when the parent flips externalModalOpen to true,
   // open the modal; the parent resets it when we call onExternalModalClose.
@@ -288,24 +290,43 @@ export function GridTasksWidget({
                 {allSorted.map((task) => {
                   const done = task.isCompleted;
                   const overdue = !done && task.isOverdue;
+                  const titleClassName = cn(
+                    "text-sm font-semibold",
+                    done && "text-[var(--hub-green)] line-through opacity-70",
+                    overdue && "text-[var(--hub-red)]",
+                    !done && !overdue && "text-foreground"
+                  );
                   return (
                     <div
                       key={task.id}
                       className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
                     >
-                      <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
-                        {formatTime(task.dueTime, task.isAllDay)}
-                      </span>
-                      <span
-                        className={cn(
-                          "min-w-0 flex-1 truncate text-sm font-semibold",
-                          done && "text-[var(--hub-green)] line-through opacity-70",
-                          overdue && "text-[var(--hub-red)]",
-                          !done && !overdue && "text-foreground"
-                        )}
-                      >
-                        {task.title}
-                      </span>
+                      {/* Mobile: time stacked above the title instead of a
+                          fixed-width column to its left — a single inline
+                          row left almost no width for the title on a phone
+                          (time + gap + action icon ate ~165px before any
+                          text), so titles longer than a few words truncated
+                          unreadably. Desktop/tablet keep the compact inline
+                          row; there's enough width there for both. */}
+                      {isMobile ? (
+                        <div className="min-w-0 flex-1">
+                          <span className="block text-xs font-semibold tabular-nums text-muted-foreground">
+                            {formatTime(task.dueTime, task.isAllDay)}
+                          </span>
+                          <span className={cn(titleClassName, "block break-words")}>
+                            {task.title}
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                            {formatTime(task.dueTime, task.isAllDay)}
+                          </span>
+                          <span className={cn(titleClassName, "min-w-0 flex-1 truncate")}>
+                            {task.title}
+                          </span>
+                        </>
+                      )}
                       {task.type === "information" ? (
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center">
                           <Info className="h-6 w-6 text-blue-400" />

@@ -24,6 +24,7 @@ export function ThemeToggle() {
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
   };
+  const themeLabel = theme ? theme[0].toUpperCase() + theme.slice(1) : "System";
 
   return (
     <Button
@@ -31,8 +32,8 @@ export function ThemeToggle() {
       size="icon"
       className="w-9 h-9"
       onClick={cycleTheme}
-      title={`Theme: ${theme}`}
-      aria-label={`Toggle theme, current: ${theme}`}
+      title={`Theme: ${themeLabel}`}
+      aria-label={`Toggle theme, current: ${themeLabel}`}
     >
       {theme === "dark" ? (
         <Moon className="h-4 w-4" />

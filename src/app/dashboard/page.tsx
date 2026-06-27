@@ -698,6 +698,7 @@ function GridDashboardPage() {
   }, [theme, setTheme]);
   const [themeMounted, setThemeMounted] = useState(false);
   useEffect(() => setThemeMounted(true), []);
+  const themeLabel = theme ? theme[0].toUpperCase() + theme.slice(1) : "System";
 
   if (!user || !initialLayout) {
     return (
@@ -738,36 +739,43 @@ function GridDashboardPage() {
           <div className="flex items-center gap-2">
             <HeaderClock />
             <ConnectionStatus />
-            {/* Mobile: Theme + Sign Out fold into SettingsPanel's popover as
-                labeled rows instead of separate header buttons — at phone
-                width there isn't room for both, and Sign Out as a bare icon
-                with no label/IconTip was the exact Section 13/14 violation
-                the audit flagged. Desktop/tablet keep them as-is. */}
-            <SettingsPanel
-              onSave={saveLayout}
-              {...(deviceType === "mobile" && themeMounted
-                ? { theme, onCycleTheme: cycleTheme, onSignOut: () => logout() }
-                : {})}
-            />
-            {deviceType !== "mobile" && (
-              <>
-                {themeMounted && (
-                  <IconTip label={`Theme: ${theme}`}>
-                    <button
-                      type="button"
-                      onClick={cycleTheme}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-                    >
-                      {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-                    </button>
-                  </IconTip>
-                )}
-                <button type="button" onClick={() => logout()}
-                  className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Sign Out</span>
+            {/* Widget customization has no meaning on the mobile stack (no
+                grid to position/resize within), so the cog itself doesn't
+                render there at all rather than opening to a popover with
+                nothing useful in it. */}
+            {deviceType !== "mobile" && <SettingsPanel onSave={saveLayout} />}
+            {themeMounted && (
+              <IconTip label={`Theme: ${themeLabel}`}>
+                <button
+                  type="button"
+                  onClick={cycleTheme}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                >
+                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
                 </button>
-              </>
+              </IconTip>
+            )}
+            {/* Always its own header button, never folded into a popover —
+                signing out is too consequential an action to bury a tap
+                deeper than it needs to be. Icon-only + IconTip on mobile
+                (matches the Theme button next to it); icon+label once
+                there's room for it on tablet/desktop. */}
+            {deviceType === "mobile" ? (
+              <IconTip label="Sign Out">
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </IconTip>
+            ) : (
+              <button type="button" onClick={() => logout()}
+                className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Sign Out</span>
+              </button>
             )}
           </div>
         </header>

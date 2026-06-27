@@ -61,6 +61,7 @@ export default function LoginPage() {
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
   }, [theme, setTheme]);
+  const themeLabel = theme ? theme[0].toUpperCase() + theme.slice(1) : "System";
 
   const [step, setStep] = useState<LoginStep>("userId");
   const [userId, setUserId] = useState("");
@@ -632,7 +633,7 @@ export default function LoginPage() {
         {themeMounted && (
           <button
             onClick={cycleTheme}
-            title={`Theme: ${theme}`}
+            title={`Theme: ${themeLabel}`}
             className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
           >
             {theme === "dark"
@@ -1035,7 +1036,7 @@ export default function LoginPage() {
         {themeMounted && (
           <button
             onClick={cycleTheme}
-            title={`Theme: ${theme}`}
+            title={`Theme: ${themeLabel}`}
             className="absolute right-4 top-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted select-none"
           >
             {theme === "dark"

@@ -936,3 +936,42 @@ after it's been copied across twenty is not.
   and element dimensions, after noticing `-right-0.5`/`h-0.5`-style
   corner-overlap and hairline uses that have nothing to do with
   spacing rhythm.
+- 2026-06-27 — mobile dashboard follow-ups from direct user feedback
+  after using it:
+  - Removed the "Customizing widgets needs a larger screen" note and
+    the "Reset dashboard to default" entry from mobile entirely —
+    `SettingsPanel` (Customize/Reset) now only renders on
+    tablet/desktop. Reasoning surfaced and confirmed with the user:
+    reset has no visible target if you can't see what's customized,
+    so keeping it next to a removed Customize entry didn't make sense.
+  - Redesigned the mobile header: Sign Out is its own header button
+    (icon + `IconTip`, same pattern as the Theme button beside it),
+    never folded into a popover — it's too consequential an action to
+    bury a tap deeper than necessary. This also retires the
+    theme/onSignOut props `SettingsPanel` had grown for the mobile
+    case, since the cog no longer renders there at all.
+  - Settings cog's `IconTip` no longer says "Close settings" when
+    open — just "Settings"; the rotating icon already communicates
+    state. Added click-outside-to-close (mousedown listener + a ref on
+    the panel), matching the pattern `ConnectionStatus` already used,
+    instead of requiring a second tap on the cog to dismiss.
+  - Capitalized the Theme tooltip's value everywhere it appears
+    (dashboard header, login page x2, the shared `ThemeToggle`
+    component) — "Theme: dark" read like an internal enum value
+    leaking into UI copy, not a sentence.
+  - Today's Tasks fullscreen list: mobile now stacks the due time
+    above the task title instead of a fixed-width time column beside
+    it. The inline layout left ~123px for the title on a phone
+    (time column + gap + action icon ate the rest first), truncating
+    anything longer than a few words. Desktop/tablet keep the compact
+    inline row since there's room there.
+  - Mobile stack now always renders the quote widget last, regardless
+    of its grid position on desktop — it's the lowest-priority,
+    most-glanceable item and belongs at the bottom of the list, not
+    wherever desktop happened to place it.
+  - `DEFAULT_LAYOUT` (`layouts.ts`) now tiles the entire 12x12 grid
+    with no empty rows — the previous default left the bottom 3 rows
+    (25% of the grid) empty. Added Forms and Quote stacked under
+    Messages in the left column and extended Calendar to fill the
+    rest of the right column: 4x3+8x6+4x3+4x3+4x3+8x6 = 144 cells,
+    exactly `GRID_COLS*GRID_ROWS`, a complete gapless tiling.
