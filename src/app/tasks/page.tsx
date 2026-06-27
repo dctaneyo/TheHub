@@ -134,34 +134,7 @@ export default function TasksPage() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <AppHeader title="Tasks" icon={CheckSquare} backHref="/dashboard" currentPath="/tasks">
-        <div className="flex items-center gap-1 rounded-full border border-border bg-card px-1">
-          <button
-            type="button"
-            onClick={() => setSelectedDate((d) => addDays(d, -1))}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedDate(new Date())}
-            className={cn(
-              "px-2 text-xs font-semibold transition-colors",
-              selectedIsToday ? "text-primary" : "text-foreground"
-            )}
-          >
-            {selectedIsToday ? "Today" : format(selectedDate, "MMM d")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedDate((d) => addDays(d, 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </AppHeader>
+      <AppHeader title="Tasks" icon={CheckSquare} backHref="/dashboard" currentPath="/tasks" />
 
       {/* Filters + day summary */}
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border px-6 py-3">
@@ -183,7 +156,33 @@ export default function TasksPage() {
           </select>
         </div>
         <div className="ml-auto flex items-center gap-3 text-sm">
-          <span className="font-semibold text-foreground">{format(selectedDate, "EEEE, MMMM d")}</span>
+          {/* Date nav — chevrons flank the date label; tapping the label jumps back to today */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => addDays(d, -1))}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDate(new Date())}
+              className={cn(
+                "px-1 font-semibold transition-colors active:opacity-70",
+                selectedIsToday ? "text-primary" : "text-foreground"
+              )}
+            >
+              {selectedIsToday ? "Today" : format(selectedDate, "EEEE, MMMM d")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => addDays(d, 1))}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
           {actionableCount > 0 && (
             <span className="font-semibold tabular-nums text-muted-foreground">
               {completedCount}/{actionableCount} complete
