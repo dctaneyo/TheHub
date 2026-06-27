@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { CalendarDays, CheckCircle2 } from "@/lib/icons";
+import { CalendarDays, CheckCircle2, ChevronRight } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { UpcomingTask } from "./widget-data";
 
@@ -45,6 +46,7 @@ export function GridUpcomingWidget({
   onEarlyComplete?: (taskId: string, dateStr: string) => void;
   onEarlyUncomplete?: (taskId: string, dateStr: string) => void;
 }) {
+  const router = useRouter();
   const [completing, setCompleting] = useState<string | null>(null);
 
   const items: FlatItem[] = useMemo(() => {
@@ -80,10 +82,15 @@ export function GridUpcomingWidget({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
+      <button
+        type="button"
+        onClick={() => router.push("/calendar")}
+        className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+      >
         <CalendarDays className="h-4 w-4 text-[var(--hub-blue)]" />
-        <h2 className="text-lg font-semibold text-foreground">Upcoming 7 Days</h2>
-      </div>
+        <h2 className="flex-1 text-lg font-semibold text-foreground">Upcoming 7 Days</h2>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+      </button>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {items.length === 0 ? (

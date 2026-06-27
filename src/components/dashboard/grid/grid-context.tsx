@@ -16,13 +16,10 @@ import {
 interface GridContextValue {
   layout: GridLayout;
   widgets: Widget[];
-  expandedWidget: string | null;
-  isExpanded: (id: string) => boolean;
   editMode: boolean;
   setEditMode: (v: boolean) => void;
   moveWidget: (id: string, position: { x: number; y: number }) => void;
   resizeWidget: (id: string, w: number, h: number) => void;
-  toggleExpand: (id: string) => void;
   addWidget: (widget: Omit<Widget, "position">) => void;
   removeWidget: (id: string) => void;
   replaceLayout: (layout: GridLayout) => void;

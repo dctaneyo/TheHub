@@ -1170,3 +1170,27 @@ after it's been copied across twenty is not.
     and cancel-on-any-tap rather than a silent redirect. See Section
     16 for why this is a stated mitigation for a real risk routing
     introduced, not a nice-to-have.
+- 2026-06-27 — made each widget's own header (icon + title, added a
+  few sessions back for identity) the tap target for "go to the full
+  version," replacing the floating corner Expand button — a bigger,
+  more consistent touch target, and it removed real redundancy (Tasks
+  had the header, the completion ring, *and* the corner icon all doing
+  the same job). Considered an onboarding tooltip to teach the gesture
+  (direct user question) and recommended against it: a chevron-right
+  at the end of each header is a self-evident, permanent signifier
+  that costs one icon, versus building and maintaining "don't show
+  again" state for something the chevron solves outright — consistent
+  with this project's standing preference for a real visible signifier
+  over teaching an invisible interaction (the same reasoning that
+  replaced `title` tooltips with `IconTip`, and that scopes `.pill` to
+  disclosure controls specifically).
+
+  Removing the corner Expand button made the entire underlying
+  expand/collapse mechanism in `WidgetContainer` — `expandedWidget`,
+  `toggleExpand`, `isExpanded`, the fullscreen-card backdrop and
+  Collapse button — completely unreachable: it was the *only* caller
+  that ever set a widget's expanded state to true. Removed all of it
+  from `widget-container.tsx`, `grid-engine.ts`, and `grid-context.tsx`
+  rather than leave a dead state machine behind a removed button, the
+  same standard applied earlier today to Tasks' and Calendar's removed
+  modals.

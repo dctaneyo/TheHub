@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckSquare, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
+import { CheckSquare, ChevronRight, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
 import type { TaskItem } from "@/components/dashboard/timeline";
@@ -115,11 +115,19 @@ export function GridTasksWidget({
     <div className="flex h-full flex-col">
       {/* Header — same icon+title pattern as every other data widget
           (Messages, Upcoming, Calendar), so the widget identifies itself
-          instead of relying on the ring below to imply "this is tasks." */}
-      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
+          instead of relying on the ring below to imply "this is tasks."
+          Tapping it navigates to /tasks — the chevron is the signifier that
+          it's tappable, replacing the old floating corner Expand button
+          (one bigger, consistent touch target instead of a separate icon). */}
+      <button
+        type="button"
+        onClick={() => router.push("/tasks")}
+        className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+      >
         <CheckSquare className="h-4 w-4 text-primary" />
-        <h2 className="text-lg font-semibold text-foreground">Today&apos;s Tasks</h2>
-      </div>
+        <h2 className="flex-1 text-lg font-semibold text-foreground">Today&apos;s Tasks</h2>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+      </button>
 
       {/* Ring + counts */}
       <div className="flex shrink-0 flex-col items-center gap-3 px-3 pb-3">

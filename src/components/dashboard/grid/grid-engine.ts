@@ -187,7 +187,6 @@ export function useGridLayout(initialLayout: GridLayout) {
   const [layout, setLayout] = useState<GridLayout>(() =>
     normalizeLayout(initialLayout)
   );
-  const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
   const [editMode, setEditModeState] = useState(false);
 
   // editMode mirrored in a ref so effects can read it without re-subscribing.
@@ -210,7 +209,6 @@ export function useGridLayout(initialLayout: GridLayout) {
       initialIdRef.current = initialLayout.id;
       const next = normalizeLayout(initialLayout);
       setLayout(next);
-      setExpandedWidget(null);
     }
   }, [initialLayout]);
 
@@ -267,10 +265,6 @@ export function useGridLayout(initialLayout: GridLayout) {
     []
   );
 
-  const toggleExpand = useCallback((widgetId: string) => {
-    setExpandedWidget((prev) => (prev === widgetId ? null : widgetId));
-  }, []);
-
   const addWidget = useCallback(
     (widget: Omit<Widget, "position">) => {
       setLayout((prev) => {
@@ -312,12 +306,10 @@ export function useGridLayout(initialLayout: GridLayout) {
         widgets: prev.widgets.filter((w) => w.id !== widgetId),
       })
     );
-    setExpandedWidget((prev) => (prev === widgetId ? null : prev));
   }, []);
 
   const replaceLayout = useCallback((next: GridLayout) => {
     setLayout(normalizeLayout(next));
-    setExpandedWidget(null);
   }, []);
 
   // ---- Edit session (Save / Cancel) ----------------------------------------
@@ -333,7 +325,6 @@ export function useGridLayout(initialLayout: GridLayout) {
 
   const cancelEdit = useCallback(() => {
     if (editSnapshotRef.current) setLayout(editSnapshotRef.current);
-    setExpandedWidget(null);
   }, []);
 
   const setEditMode = useCallback((v: boolean) => {
@@ -344,13 +335,10 @@ export function useGridLayout(initialLayout: GridLayout) {
     () => ({
       layout,
       widgets: layout.widgets,
-      expandedWidget,
       editMode,
       setEditMode,
-      isExpanded: (id: string) => expandedWidget === id,
       moveWidget,
       resizeWidget,
-      toggleExpand,
       addWidget,
       removeWidget,
       replaceLayout,
@@ -360,12 +348,10 @@ export function useGridLayout(initialLayout: GridLayout) {
     }),
     [
       layout,
-      expandedWidget,
       editMode,
       setEditMode,
       moveWidget,
       resizeWidget,
-      toggleExpand,
       addWidget,
       removeWidget,
       replaceLayout,

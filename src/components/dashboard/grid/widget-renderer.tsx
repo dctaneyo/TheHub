@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { FileText } from "@/lib/icons";
+import { FileText, ChevronRight } from "@/lib/icons";
 import { ClockWidget } from "./grid-clock";
 import { GridCalendarWidget } from "./grid-calendar";
 import { GridTasksWidget } from "./grid-tasks";
@@ -31,10 +31,15 @@ function LauncherTile({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3">
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+      >
         <Icon className="h-4 w-4 text-primary" />
-        <h2 className="text-lg font-semibold text-foreground">{label}</h2>
-      </div>
+        <h2 className="flex-1 text-lg font-semibold text-foreground">{label}</h2>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+      </button>
       <button
         type="button"
         onClick={onClick}

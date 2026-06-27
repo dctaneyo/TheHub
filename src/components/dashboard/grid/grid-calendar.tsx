@@ -82,6 +82,7 @@ export function GridCalendarWidget() {
           <h2 className="text-lg font-semibold text-foreground">
             {format(currentMonth, "MMMM yyyy")}
           </h2>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
         </button>
         <div className="flex shrink-0 items-center gap-1">
           <button

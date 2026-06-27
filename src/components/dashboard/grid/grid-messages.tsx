@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle } from "@/lib/icons";
+import { MessageCircle, ChevronRight } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -83,18 +83,27 @@ export function GridMessagesWidget({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
+      {/* Header — tapping it navigates to /messages, same as every other
+          widget header now does; the chevron is the visible signifier,
+          replacing the old floating corner Expand button. */}
+      <button
+        type="button"
+        onClick={() => onOpen()}
+        className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+      >
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-primary" />
           <h2 className="text-lg font-semibold text-foreground">Messages</h2>
         </div>
-        {totalUnread > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-2 text-xs font-semibold text-destructive-foreground">
-            {totalUnread > 99 ? "99+" : totalUnread}
-          </span>
-        )}
-      </div>
+        <div className="flex items-center gap-1.5">
+          {totalUnread > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-2 text-xs font-semibold text-destructive-foreground">
+              {totalUnread > 99 ? "99+" : totalUnread}
+            </span>
+          )}
+          <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+        </div>
+      </button>
 
       {/* Conversation list */}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
