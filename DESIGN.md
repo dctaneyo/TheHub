@@ -275,10 +275,27 @@ hardware.
 **A pill/card background is itself a signifier — "this is a button" —
 so it shouldn't wrap content that isn't one.** Passive identity/status
 content (a logo+name block, a clock, a label) gets no background at
-all; reserve the pill treatment for things that are actually tappable
-(Settings, Connection Status). Wrapping passive content in the same
-shape as real buttons is a false affordance — it tells the eye
-"interactive" about something that isn't.
+all. Wrapping passive content in the same shape as real buttons is a
+false affordance — it tells the eye "interactive" about something that
+isn't.
+
+**Among things that *are* tappable, the pill is further reserved for
+disclosure controls specifically — something that opens a panel rather
+than completing an action on its own (Settings: opens Customize/Reset;
+Connection Status: opens session info).** A direct, momentary action
+(Theme, Sign Out) stays a bare icon with only an active/press state,
+no resting container. The distinction isn't decorative: a closed door
+to more UI benefits from looking like a discrete object (there's
+something behind it); a verb that completes immediately doesn't need
+one. Giving every tappable header control the same pill regardless of
+this difference is the same "every tile gets identical chrome"
+sameness already named in Do Not Use for widget cards — being tappable
+isn't enough on its own to earn the pill.
+
+**Check:** before adding `.pill` to a new header control, ask whether
+tapping it opens something or just does something. If it just does
+something, it doesn't get the pill no matter how important the action
+is.
 
 ---
 
@@ -1025,3 +1042,32 @@ after it's been copied across twenty is not.
   match Quote, the other ambient widget, which was already there.
   Net effect: a card's interior now reads as more spacious than the
   gap separating it from its neighbors, not less.
+- 2026-06-27 — resolved why the dashboard header's four controls had
+  two different chrome styles (Connection Status/Settings get the
+  `.pill` background, Theme/Sign Out don't), prompted by the user
+  directly asking whether that was an oversight worth making uniform.
+  It wasn't arbitrary, but it also wasn't stated anywhere, which is
+  why it looked like drift: Connection Status and Settings are
+  disclosure controls (tapping opens a panel); Theme and Sign Out are
+  direct, momentary actions (tapping completes the whole interaction).
+  A closed door to more UI earns a visible container; a verb doesn't.
+  Rejected the user's first alternative (a "transparent pill" on
+  Theme/Sign Out) on inspection — a pill with no fill and no border is
+  pixel-identical to no pill at all, so it wouldn't have changed
+  anything, just added inert markup describing the status quo.
+
+  Stated the rule explicitly in Section 6 (it was previously folded
+  into the broader "passive content shouldn't get a pill" point, which
+  is true but not the same claim — that one's about passive vs.
+  tappable, this one is about tappable-and-opens-a-panel vs. tappable-
+  and-just-acts). Fixed the `.pill` CSS comment in `globals.css`,
+  which had drifted out of sync with the rule it was supposed to
+  describe: it listed "clock" and "sign-out" as example pill use cases,
+  but neither has ever actually used `.pill` — clock is passive status
+  (correctly excluded already, per the existing rule), sign-out is a
+  direct action (now correctly excluded per the new one). Also split
+  the header into two visually grouped clusters (disclosure controls,
+  then a wider gap, then direct actions) so the grouping is legible
+  from spacing alone, not only from which ones happen to have a
+  container — the same squint-test Section 5 already asks for, applied
+  to a toolbar instead of a list.

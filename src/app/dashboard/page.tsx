@@ -736,47 +736,57 @@ function GridDashboardPage() {
               {user.name && <p className="text-xs text-muted-foreground leading-none mt-1">{user.name}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <HeaderClock />
-            <ConnectionStatus />
-            {/* Widget customization has no meaning on the mobile stack (no
-                grid to position/resize within), so the cog itself doesn't
-                render there at all rather than opening to a popover with
-                nothing useful in it. */}
-            {deviceType !== "mobile" && <SettingsPanel onSave={saveLayout} />}
-            {themeMounted && (
-              <IconTip label={`Theme: ${themeLabel}`}>
-                <button
-                  type="button"
-                  onClick={cycleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-                >
-                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-                </button>
-              </IconTip>
-            )}
-            {/* Always its own header button, never folded into a popover —
-                signing out is too consequential an action to bury a tap
-                deeper than it needs to be. Icon-only + IconTip on mobile
-                (matches the Theme button next to it); icon+label once
-                there's room for it on tablet/desktop. */}
-            {deviceType === "mobile" ? (
-              <IconTip label="Sign Out">
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-                >
+          {/* Two groups with a wider gap between them than within each —
+              status/disclosure (clock, connection, settings) vs. direct
+              actions (theme, sign out). The pill chrome split (Section 6)
+              already separates them visually; this makes the grouping
+              legible at a glance too, not just by which ones have a
+              container. */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <HeaderClock />
+              <ConnectionStatus />
+              {/* Widget customization has no meaning on the mobile stack (no
+                  grid to position/resize within), so the cog itself doesn't
+                  render there at all rather than opening to a popover with
+                  nothing useful in it. */}
+              {deviceType !== "mobile" && <SettingsPanel onSave={saveLayout} />}
+            </div>
+            <div className="flex items-center gap-2">
+              {themeMounted && (
+                <IconTip label={`Theme: ${themeLabel}`}>
+                  <button
+                    type="button"
+                    onClick={cycleTheme}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                  >
+                    {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+                  </button>
+                </IconTip>
+              )}
+              {/* Always its own header button, never folded into a popover —
+                  signing out is too consequential an action to bury a tap
+                  deeper than it needs to be. Icon-only + IconTip on mobile
+                  (matches the Theme button next to it); icon+label once
+                  there's room for it on tablet/desktop. */}
+              {deviceType === "mobile" ? (
+                <IconTip label="Sign Out">
+                  <button
+                    type="button"
+                    onClick={() => logout()}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </button>
+                </IconTip>
+              ) : (
+                <button type="button" onClick={() => logout()}
+                  className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
                   <LogOut className="h-3.5 w-3.5" />
+                  <span>Sign Out</span>
                 </button>
-              </IconTip>
-            ) : (
-              <button type="button" onClick={() => logout()}
-                className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Sign Out</span>
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </header>
 
