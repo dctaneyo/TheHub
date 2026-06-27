@@ -185,7 +185,7 @@ export function WidgetContainer({
           // its sender, just pointed at a different fact (an interactive
           // corner, not a side). Reset to uniform when expanded, since the
           // resize handle isn't shown in that state.
-          "group relative flex flex-col overflow-hidden rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-md border bg-card shadow-sm",
+          "group relative flex flex-col overflow-hidden rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-md border bg-card shadow-sm",
           !active && "border-border",
           active && "border-transparent",
           active && !blocked && "shadow-lg ring-2 ring-primary/40",

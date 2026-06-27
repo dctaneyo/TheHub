@@ -97,7 +97,8 @@ something needs to read as floating above the page.
 
 **Stated exception — dashboard grid widgets:** widget cards keep three
 corners at the standard radius but tighten the bottom-right corner
-(`rounded-br-md` against `rounded-*-2xl` elsewhere on the same card).
+(`rounded-br-md` against `rounded-*-3xl` elsewhere on the same card —
+the same radius used for containers like the login card and modals).
 This mirrors the chat message bubbles' pinched corner, but repurposed:
 chat tightens whichever corner faces the sender (a directional cue);
 widgets always tighten bottom-right because that's where the resize
