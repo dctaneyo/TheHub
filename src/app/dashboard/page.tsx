@@ -3,14 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSocket } from "@/lib/socket-context";
-import { Loader2, LogOut, Sun, Moon, Monitor } from "@/lib/icons";
+import { Loader2 } from "@/lib/icons";
 import { useTheme } from "next-themes";
 import { useGrid } from "@/components/dashboard/grid";
-import { HubMark } from "@/components/icons/hub-mark";
 import { RestaurantChat } from "@/components/dashboard/restaurant-chat";
 import { FormsViewer } from "@/components/dashboard/forms-viewer";
-import { ConnectionStatus } from "@/components/connection-status";
-import { IconTip } from "@/components/ui/icon-tip";
+import { AppHeader } from "@/components/app-header";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { EmergencyOverlay } from "@/components/dashboard/emergency-overlay";
 import { StreamViewer } from "@/components/dashboard/stream-viewer";
@@ -52,32 +50,26 @@ function localParams(mirrorLocationId?: string | null) {
   return { localDate, localTime, query };
 }
 
-// ── Header clock — isolated so the 1s tick only re-renders this component ──
-function HeaderClockDisplay() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-  return (
-    <span className="font-mono text-sm font-semibold tabular-nums text-muted-foreground" aria-label="Current time">
-      {time}
-    </span>
-  );
-}
-
-// Hides the header clock when the Clock widget is on the grid. Plain text,
-// no pill chrome — this is passive status, not an action, so it shouldn't
-// compete visually with the controls that actually do something.
-function HeaderClock() {
+// Wraps <AppHeader> with the two things only available inside GridProvider:
+// whether the Clock widget is already on the grid (hides the header clock to
+// avoid showing time twice) and the widget-customize cog. A plain prop on
+// AppHeader can't reach useGrid() itself since AppHeader renders outside
+// GridProvider on every other route.
+function DashboardHeader({ onSave }: { onSave: (layout: GridLayout) => Promise<void> | void }) {
   const { widgets } = useGrid();
   const hasClockWidget = widgets.some((w) => w.type === "clock");
-  if (hasClockWidget) return null;
+  const deviceType = useDeviceType();
   return (
-    <div className="flex h-9 items-center px-2">
-      <HeaderClockDisplay />
-    </div>
+    <AppHeader
+      title="Dashboard"
+      hasClockWidget={hasClockWidget}
+      settingsSlot={
+        // Widget customization has no meaning on the mobile stack (no grid
+        // to position/resize within), so the cog itself doesn't render
+        // there at all rather than opening to a popover with nothing useful.
+        deviceType !== "mobile" ? <SettingsPanel onSave={onSave} /> : undefined
+      }
+    />
   );
 }
 
@@ -297,7 +289,7 @@ function GridMirrorShell() {
 
 // ── Main grid dashboard page ─────────────────────────────────────────────────
 function GridDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { socket } = useSocket();
   const router = useRouter();
 
@@ -692,18 +684,6 @@ function GridDashboardPage() {
     onOpenForms: openForms,
   }), [data, upcomingTasks, chatUnread, handleComplete, handleUncomplete, handleEarlyComplete, handleEarlyUncomplete, openChat, openForms]);
 
-  // ── Theme ─────────────────────────────────────────────────────────────────
-  const deviceType = useDeviceType();
-  const { theme } = useTheme();
-  const cycleTheme = useCallback(() => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("system");
-    else setTheme("light");
-  }, [theme, setTheme]);
-  const [themeMounted, setThemeMounted] = useState(false);
-  useEffect(() => setThemeMounted(true), []);
-  const themeLabel = theme ? theme[0].toUpperCase() + theme.slice(1) : "System";
-
   if (!user || !initialLayout) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -730,69 +710,7 @@ function GridDashboardPage() {
         sendViewChange={sendViewChange}
       />
       <div className="flex h-screen flex-col bg-background">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
-              <HubMark className="h-3.5 w-3.5" />
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold text-foreground leading-none">Dashboard</p>
-              {user.name && <p className="text-xs text-muted-foreground leading-none mt-1">{user.name}</p>}
-            </div>
-          </div>
-          {/* Two groups with a wider gap between them than within each —
-              status/disclosure (clock, connection, settings) vs. direct
-              actions (theme, sign out). The pill chrome split (Section 6)
-              already separates them visually; this makes the grouping
-              legible at a glance too, not just by which ones have a
-              container. */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <HeaderClock />
-              <ConnectionStatus />
-              {/* Widget customization has no meaning on the mobile stack (no
-                  grid to position/resize within), so the cog itself doesn't
-                  render there at all rather than opening to a popover with
-                  nothing useful in it. */}
-              {deviceType !== "mobile" && <SettingsPanel onSave={saveLayout} />}
-            </div>
-            <div className="flex items-center gap-2">
-              {themeMounted && (
-                <IconTip label={`Theme: ${themeLabel}`}>
-                  <button
-                    type="button"
-                    onClick={cycleTheme}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-                  >
-                    {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-                  </button>
-                </IconTip>
-              )}
-              {/* Always its own header button, never folded into a popover —
-                  signing out is too consequential an action to bury a tap
-                  deeper than it needs to be. Icon-only + IconTip on mobile
-                  (matches the Theme button next to it); icon+label once
-                  there's room for it on tablet/desktop. */}
-              {deviceType === "mobile" ? (
-                <IconTip label="Sign Out">
-                  <button
-                    type="button"
-                    onClick={() => logout()}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                  </button>
-                </IconTip>
-              ) : (
-                <button type="button" onClick={() => logout()}
-                  className="flex h-9 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground active:bg-muted active:text-foreground">
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span>Sign Out</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
+        <DashboardHeader onSave={saveLayout} />
 
         <motion.div layout className="min-h-0 flex-1">
           <GridSurface data={widgetData} />

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Calendar } from "@/lib/icons";
-import { SubPageHeader } from "@/components/sub-page-header";
+import { AppHeader } from "@/components/app-header";
 import { CalendarModal } from "@/components/dashboard/grid/grid-calendar";
 import { taskApplies, type CalTask } from "@/lib/task-calendar";
 
@@ -45,7 +45,7 @@ function CalendarPageContent() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <SubPageHeader title="Calendar" icon={Calendar} currentPath="/calendar" />
+      <AppHeader title="Calendar" icon={Calendar} backHref="/dashboard" currentPath="/calendar" />
       <div className="min-h-0 flex-1">
         <CalendarModal
           selectedDate={selectedDate}

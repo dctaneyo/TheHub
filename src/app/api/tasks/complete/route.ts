@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
     const todayStr = new Date().toISOString().split("T")[0];
     const targetDate = requestedDate || localDate || todayStr;
 
+    // Past dates are locked — a recurring task's history can't be rewritten
+    // after the fact (a missed day stays missed).
+    if (targetDate < todayStr) {
+      return ApiErrors.forbidden("This task can no longer be completed — that day has passed");
+    }
+
     // If completing for a future date, check allowEarlyComplete
     if (targetDate > todayStr && !task.allowEarlyComplete) {
       return ApiErrors.forbidden("This task cannot be completed early");

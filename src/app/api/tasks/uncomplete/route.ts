@@ -24,6 +24,12 @@ export async function POST(req: NextRequest) {
 
     const effectiveLocationId = getEffectiveLocationIdFromBody(session, body);
     const targetDate = requestedDate || localDate || new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    // Past dates are locked — same rule as completing them (see complete/route.ts).
+    if (targetDate < todayStr) {
+      return ApiErrors.forbidden("This task can no longer be changed — that day has passed");
+    }
 
     const completion = db
       .select()

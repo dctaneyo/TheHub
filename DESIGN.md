@@ -1194,3 +1194,43 @@ after it's been copied across twenty is not.
   rather than leave a dead state machine behind a removed button, the
   same standard applied earlier today to Tasks' and Calendar's removed
   modals.
+- 2026-06-27 — follow-up fixes after using the new `/tasks`, `/messages`,
+  `/calendar` routes:
+  - **All icons now one weight.** `src/lib/icons.tsx`'s wrapper helper
+    (renamed `duotone` → `bold`) now forces `weight="bold"` on every
+    icon instead of `"duotone"`; the three icons that bypassed the
+    wrapper entirely (`Plus`, `X`, `XIcon`, defaulting to Phosphor's
+    "regular") were wrapped too. One weight app-wide, not a per-icon
+    judgment call — mixing duotone and regular was unintentional drift,
+    not a deliberate register split (unlike the font-weight exception
+    in Section 1, which *is* deliberate).
+  - **The three new routes were missing the actual app header** —
+    they had their own slimmer `SubPageHeader` (logo-less, no clock/
+    theme/sign-out) instead of the same chrome `/dashboard` uses, which
+    made leaving the dashboard feel like leaving the app. Replaced both
+    with one shared `src/components/app-header.tsx`: the dashboard's
+    logo+username block is swapped for a back-arrow+page-icon+title
+    when a `backHref` prop is passed, but the clock, `ConnectionStatus`,
+    theme toggle, and Sign Out are now identical on every full-page
+    route. The widget-customize cog stays dashboard-only (it needs a
+    `GridProvider`, which only wraps the dashboard) via a
+    `settingsSlot` prop rather than being hardcoded into the shared
+    header. `SubPageHeader` is deleted — one header implementation, not
+    two that can drift.
+  - **Fixed a real bug: tasks could be marked complete/incomplete on
+    days they shouldn't be able to.** `/api/tasks/complete` already
+    blocked completing a *future* day unless the task allows early
+    completion, but had no floor — a past day (already missed) could
+    still be marked complete after the fact, which doesn't make sense
+    for a recurring daily/weekly task: a missed day is supposed to stay
+    missed, not be rewritten retroactively. Added the same floor to
+    `/api/tasks/uncomplete`. The `/tasks` page UI now reflects this
+    instead of offering a control that would just 403: the complete
+    toggle only renders for today or an early-completable future day;
+    past days show a static read-only status (missed/done) instead.
+  - **Redesigned `/tasks`' list** — it filtered by priority and type
+    but never showed either on a task, and used a single
+    `max-w-2xl`-capped column that left most of a desktop screen blank.
+    Replaced with a responsive card grid (1/2/3 columns by breakpoint)
+    where each task shows its type and priority as badges, plus a
+    completed/total count for the selected day in the filter bar.

@@ -7,7 +7,7 @@ import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
 import { MessageCircle, Globe, Users, Store, Send } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { SubPageHeader } from "@/components/sub-page-header";
+import { AppHeader } from "@/components/app-header";
 import type { Message, Conversation } from "@/components/dashboard/restaurant-chat";
 
 /**
@@ -110,7 +110,7 @@ function MessagesPageContent() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <SubPageHeader title="Messages" icon={MessageCircle} currentPath="/messages" />
+      <AppHeader title="Messages" icon={MessageCircle} backHref="/dashboard" currentPath="/messages" />
       <div className="flex min-h-0 flex-1">
         {/* Thread list — always visible, never replaced by the active thread */}
         <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r border-border">

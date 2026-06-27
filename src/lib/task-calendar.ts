@@ -31,6 +31,7 @@ export interface CalTask {
   locationId: string | null;
   createdAt?: string;
   showInCalendar?: boolean;
+  allowEarlyComplete?: boolean;
 }
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
