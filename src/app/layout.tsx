@@ -11,11 +11,20 @@ import { LayoutProvider } from "@/lib/layout-context";
 import { TenantProvider } from "@/lib/tenant-context";
 import { BuildBadge } from "@/components/build-badge";
 
-const inter = localFont({
+const manrope = localFont({
   src: [
-    { path: "./fonts/Inter.woff2", style: "normal" },
+    { path: "./fonts/Manrope.woff2", style: "normal" },
   ],
-  variable: "--font-inter",
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceMono = localFont({
+  src: [
+    { path: "./fonts/SpaceMono-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/SpaceMono-Bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-space-mono",
   display: "swap",
 });
 
@@ -69,7 +78,7 @@ export default async function RootLayout({
         <meta name="csp-nonce" content={nonce} />
       </head>
       <body
-        className={`${inter.variable} antialiased`}
+        className={`${manrope.variable} ${spaceMono.variable} antialiased`}
       >
         {/* Block iOS Safari page-level pinch-to-zoom (Safari ignores viewport user-scalable=no).
             Elements with touch-action:none (like ZoomableVideo) handle their own zoom. */}

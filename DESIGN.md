@@ -42,15 +42,31 @@ one-line rationale, or present genuinely distinct options.
 
 ## 1. Typography
 
-One typeface, chosen deliberately, used everywhere. A small, fixed set
-of sizes and weights, each with a defined job — not a size or weight
-picked per-component on the fly. Tighter scales for dense/functional
-UI, more expressive range only where content (e.g. marketing headlines)
-actually calls for it. Body text wraps at roughly 75 characters per
-line.
+Two typefaces, each chosen deliberately and doing a distinct job — not
+one default stretched over every use case, and not picked per-component
+on the fly:
+
+- **Manrope** (`--font-sans`) — UI text: labels, body copy, headings.
+- **Space Mono** (`--font-mono`) — anything that's actually tabular or
+  code-like: the clock, PINs, session/connection codes. A real
+  monospace face, not a sans-serif font with `tabular-nums` standing in
+  for one.
+
+Both are self-hosted the same way (`next/font/local`, static `.woff2`
+in `src/app/fonts/`) for kiosk/offline reliability — no Google Fonts
+CDN at runtime.
+
+A small, fixed set of sizes and weights, each with a defined job — not
+a size or weight picked per-component on the fly. Tighter scales for
+dense/functional UI, more expressive range only where content (e.g.
+marketing headlines) actually calls for it. Body text wraps at roughly
+75 characters per line.
 
 **Check:** any inline font-size or font-weight that isn't traceable to
-a named scale entry is a violation, not a judgment call.
+a named scale entry is a violation, not a judgment call. Any digit-only
+display (time, codes, IDs) using `--font-sans` with `tabular-nums`
+instead of `--font-mono` is also a violation — that's the "one safe
+font" tell, just disguised with a CSS property.
 
 ---
 
@@ -510,3 +526,10 @@ after it's been copied across twenty is not.
   finding by blanket-exempting "bento-grid layouts" — the grid pattern
   itself isn't the tell, uniform undifferentiated box styling within
   it is, which is a narrower and more accurate claim.
+- 2026-06-26 — fixed "One Safe Font": replaced Inter-for-everything
+  (including a faked monospace via `tabular-nums`) with two deliberate
+  typefaces — Manrope for UI text, Space Mono for the clock/PIN/
+  session-code displays that are actually tabular. Both self-hosted as
+  static `.woff2` via `next/font/local`, same pattern as the previous
+  Inter setup. Revised Section 1 from "one typeface" to state the
+  two-typeface, distinct-job rule explicitly.

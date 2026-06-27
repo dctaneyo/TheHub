@@ -29,3 +29,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## src/app/fonts/
+
+Self-hosted webfonts, all SIL Open Font License 1.1 (OFL permits embedding/
+redistribution as font files without runtime attribution; included here for
+provenance):
+
+- `Inter.woff2` — Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+- `Manrope.woff2` — Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)
+- `SpaceMono-Regular.woff2`, `SpaceMono-Bold.woff2` — Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono)
