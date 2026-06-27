@@ -54,6 +54,15 @@ export interface Widget {
   position: { x: number; y: number };
 }
 
+/** Ambient/glanceable widgets (a giant clock, a quote) don't need a card
+ *  boundary the way data-dense widgets do — used by both the desktop grid
+ *  (widget-container.tsx) and the mobile stack (grid-mobile-stack.tsx) so
+ *  the two presentations agree on which widgets are "ambient" without
+ *  duplicating the type check (DESIGN.md Section 15). */
+export function isAmbientWidget(type: WidgetType): boolean {
+  return type === "clock" || type === "quote";
+}
+
 export interface GridLayout {
   id: string;
   name: string;

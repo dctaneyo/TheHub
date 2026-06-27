@@ -22,6 +22,10 @@ import { navItems } from "@/components/arl/arl-sidebar";
 import { VIEW_PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { useSwipeNavigation, useOnlineStatus } from "@/hooks/use-mobile-utils";
 import { useTheme } from "next-themes";
+import { useDeviceType, type DeviceType } from "@/hooks/use-device-type";
+
+export type { DeviceType };
+export { useDeviceType };
 
 // ── Helper: convert VAPID public key from base64url to Uint8Array ──
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
@@ -33,41 +37,6 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray.buffer as ArrayBuffer;
-}
-
-// ── Device type detection hook ──
-export type DeviceType = "desktop" | "tablet" | "mobile";
-
-export function useDeviceType(): DeviceType {
-  const getDevice = (w: number): DeviceType => {
-    if (w < 640) return "mobile";
-    if (w < 1024) return "tablet";
-    return "desktop";
-  };
-
-  const [device, setDevice] = useState<DeviceType>("desktop");
-  const lastWidthRef = useRef<number>(0);
-
-  useEffect(() => {
-    lastWidthRef.current = window.innerWidth;
-    setDevice(getDevice(window.innerWidth));
-
-    let timer: ReturnType<typeof setTimeout>;
-    const check = () => {
-      const w = window.innerWidth;
-      if (w === lastWidthRef.current) return;
-      lastWidthRef.current = w;
-      clearTimeout(timer);
-      timer = setTimeout(() => setDevice(getDevice(w)), 100);
-    };
-    window.addEventListener("resize", check);
-    return () => {
-      window.removeEventListener("resize", check);
-      clearTimeout(timer);
-    };
-  }, []);
-
-  return device;
 }
 
 // ── Interfaces ──

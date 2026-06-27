@@ -11,15 +11,21 @@ import {
   Save,
   X,
   Loader2,
+  Moon,
+  Sun,
+  Monitor,
+  LogOut,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
 import { useGrid } from "./grid-context";
 import { WidgetContainer } from "./widget-container";
 import { WidgetRenderer } from "./widget-renderer";
+import { MobileDashboard } from "./grid-mobile-stack";
 import { GRID_COLS, GRID_ROWS, type GridLayout } from "./grid-engine";
 import { DEFAULT_LAYOUT, WIDGET_CATALOG } from "./layouts";
 import type { WidgetData } from "./widget-data";
+import { useDeviceType } from "@/hooks/use-device-type";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
 // Layout/typography via Tailwind; glass surface via .pill in globals.css
@@ -42,8 +48,19 @@ const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-
  */
 export function SettingsPanel({
   onSave,
+  theme,
+  onCycleTheme,
+  onSignOut,
 }: {
   onSave?: (layout: GridLayout) => Promise<void> | void;
+  /** When provided (mobile only — see dashboard/page.tsx), Theme and Sign
+   *  Out render as labeled rows inside this popover instead of as separate
+   *  header buttons, so Sign Out always has a visible label (Section 13/14)
+   *  instead of becoming an unexplained icon once the header is too narrow
+   *  for its text. */
+  theme?: string;
+  onCycleTheme?: () => void;
+  onSignOut?: () => void;
 }) {
   const {
     layout,
@@ -57,6 +74,8 @@ export function SettingsPanel({
     cancelEdit,
   } = useGrid();
 
+  const deviceType = useDeviceType();
+  const isMobile = deviceType === "mobile";
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -211,14 +230,20 @@ export function SettingsPanel({
             exit={{ opacity: 0, y: -6 }}
             className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
           >
-            <button
-              type="button"
-              onClick={startEditing}
-              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
-            >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-              Customize widgets
-            </button>
+            {isMobile ? (
+              <p className="px-2.5 py-2 text-xs text-muted-foreground">
+                Customizing widgets needs a larger screen.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+              >
+                <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                Customize widgets
+              </button>
+            )}
             <button
               type="button"
               onClick={handleReset}
@@ -227,6 +252,29 @@ export function SettingsPanel({
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
               Reset dashboard to default
             </button>
+            {isMobile && onCycleTheme && (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  onClick={onCycleTheme}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                >
+                  {theme === "dark" ? <Moon className="h-3.5 w-3.5 text-muted-foreground" /> : theme === "light" ? <Sun className="h-3.5 w-3.5 text-muted-foreground" /> : <Monitor className="h-3.5 w-3.5 text-muted-foreground" />}
+                  Theme: {theme ?? "system"}
+                </button>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+                  >
+                    <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
+                    Sign Out
+                  </button>
+                )}
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -282,6 +330,15 @@ export function GridSurface({ data }: { data: WidgetData }) {
   const { widgets, editMode } = useGrid();
   const gridRef = useRef<HTMLDivElement>(null);
   const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const deviceType = useDeviceType();
+
+  // Below the mobile breakpoint, the 12x12 free-form grid is replaced
+  // entirely rather than shrunk — a two-directional layout doesn't become
+  // readable by scaling it down, see DESIGN.md's User Flow / mobile notes.
+  // Tablet and desktop keep the customizable grid unchanged.
+  if (deviceType === "mobile") {
+    return <MobileDashboard widgets={widgets} data={data} />;
+  }
 
   const gridTemplate: React.CSSProperties = {
     gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,

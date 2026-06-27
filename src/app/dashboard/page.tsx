@@ -23,6 +23,7 @@ import { playTaskSound } from "@/lib/sound-effects";
 import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import type { TaskItem } from "@/components/dashboard/timeline";
 import { useSearchParams } from "next/navigation";
+import { useDeviceType } from "@/hooks/use-device-type";
 import {
   GridProvider,
   SettingsPanel,
@@ -688,6 +689,7 @@ function GridDashboardPage() {
   }), [data, upcomingTasks, chatUnread, handleComplete, handleUncomplete, handleEarlyComplete, handleEarlyUncomplete, openChat, openForms]);
 
   // ── Theme ─────────────────────────────────────────────────────────────────
+  const deviceType = useDeviceType();
   const { theme } = useTheme();
   const cycleTheme = useCallback(() => {
     if (theme === "light") setTheme("dark");
@@ -736,23 +738,37 @@ function GridDashboardPage() {
           <div className="flex items-center gap-2">
             <HeaderClock />
             <ConnectionStatus />
-            <SettingsPanel onSave={saveLayout} />
-            {themeMounted && (
-              <IconTip label={`Theme: ${theme}`}>
-                <button
-                  type="button"
-                  onClick={cycleTheme}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-                >
-                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+            {/* Mobile: Theme + Sign Out fold into SettingsPanel's popover as
+                labeled rows instead of separate header buttons — at phone
+                width there isn't room for both, and Sign Out as a bare icon
+                with no label/IconTip was the exact Section 13/14 violation
+                the audit flagged. Desktop/tablet keep them as-is. */}
+            <SettingsPanel
+              onSave={saveLayout}
+              {...(deviceType === "mobile" && themeMounted
+                ? { theme, onCycleTheme: cycleTheme, onSignOut: () => logout() }
+                : {})}
+            />
+            {deviceType !== "mobile" && (
+              <>
+                {themeMounted && (
+                  <IconTip label={`Theme: ${theme}`}>
+                    <button
+                      type="button"
+                      onClick={cycleTheme}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                    >
+                      {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : theme === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+                    </button>
+                  </IconTip>
+                )}
+                <button type="button" onClick={() => logout()}
+                  className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Sign Out</span>
                 </button>
-              </IconTip>
+              </>
             )}
-            <button type="button" onClick={() => logout()}
-              className="flex h-9 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground active:bg-muted active:text-foreground">
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
           </div>
         </header>
 

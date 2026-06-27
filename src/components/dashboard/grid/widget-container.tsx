@@ -12,6 +12,7 @@ import {
   MIN_W,
   MIN_H,
   fits,
+  isAmbientWidget,
   type Widget,
 } from "./grid-engine";
 
@@ -53,7 +54,7 @@ export function WidgetContainer({
   // sameness that reads as generic (DESIGN.md Section 11, Non-Tells).
   // Still gets full chrome while editing/dragging/expanded, since the user
   // needs a visible boundary to grab, resize, or view it as an overlay then.
-  const isAmbient = widget.type === "clock" || widget.type === "quote";
+  const isAmbient = isAmbientWidget(widget.type);
 
   // Latest widgets snapshot for collision checks inside pointer handlers
   // (avoids stale closures while a drag/resize is in flight).

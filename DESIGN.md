@@ -135,6 +135,16 @@ discipline). When something intentionally breaks the grid, it's the
 only thing on the screen doing that — two grid-breaking elements in one
 view reads as sloppy, not intentional.
 
+**A layout that uses two directions at once (rows and columns
+simultaneously, like the dashboard's free-form grid) is a desktop/kiosk-
+width pattern, not a universal one.** Below the mobile breakpoint, commit
+to one direction — a single vertical stack — rather than rendering a
+shrunk copy of the two-directional layout. Shrinking a layout that
+depends on width to read correctly doesn't preserve it, it clips it.
+This is why the dashboard renders a completely different component below
+640px (`grid-mobile-stack.tsx`) instead of scaling `GRID_COLS`/`GRID_ROWS`
+down — see the Changelog.
+
 ---
 
 ## 5. White Space & Proximity
@@ -768,3 +778,29 @@ after it's been copied across twenty is not.
   (no label, no `IconTip`) was deliberately left for the mobile
   redesign rather than patched here, since that screen is being
   rebuilt next.
+- 2026-06-26 — built a dedicated mobile dashboard layout (sourced from
+  a mobile-UI-principles video), replacing the 12x12 grid below 640px
+  with a single vertical stack (`grid-mobile-stack.tsx`) instead of a
+  shrunk copy of the same two-directional layout — added the
+  reasoning to Section 4. Ambient widgets (clock, quote) render
+  full-width inline; everything else is a tappable summary row that
+  opens that widget's existing fullscreen presentation (tasks' own
+  modal via the same `externalModalOpen` contract the desktop expand
+  button uses, messages/forms via their existing overlay launchers, a
+  small new generic fullscreen sheet for calendar/month). View + act
+  only for v1 — the free-form drag/resize edit mode doesn't mean
+  anything once every widget is forced full-width in one column, so
+  `SettingsPanel` shows a note pointing to a larger screen instead of
+  a "Customize widgets" entry on mobile; "Reset dashboard to default"
+  stays available since it's meaningful at any width. Folded the
+  audit's Sign Out finding into this: Theme and Sign Out move into
+  `SettingsPanel`'s popover as labeled rows on mobile instead of
+  separate header buttons, so Sign Out always has a visible label.
+  Extracted `useDeviceType` (previously living inside
+  `arl-dashboard-context.tsx`, ARL-only) to `src/hooks/use-device-type.ts`
+  so the dashboard could reuse the same device-detection logic the ARL
+  side already established, rather than writing a second one (Section
+  15). Also extracted `isAmbientWidget()` into `grid-engine.ts` so the
+  desktop grid and the new mobile stack agree on which widgets are
+  ambient from one shared check instead of two copies of the same
+  type comparison.
