@@ -180,13 +180,18 @@ export function WidgetContainer({
         layout={!active}
         style={gridStyle}
         className={cn(
-          "group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm",
+          // Tight bottom-right corner marks where the resize handle lives —
+          // same logic as the chat bubble's pinched corner pointing toward
+          // its sender, just pointed at a different fact (an interactive
+          // corner, not a side). Reset to uniform when expanded, since the
+          // resize handle isn't shown in that state.
+          "group relative flex flex-col overflow-hidden rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-md border bg-card shadow-sm",
           !active && "border-border",
           active && "border-transparent",
           active && !blocked && "shadow-lg ring-2 ring-primary/40",
           active && blocked && "shadow-lg ring-2 ring-destructive",
           expanded &&
-            "fixed inset-4 z-[151] rounded-3xl shadow-2xl md:inset-8",
+            "fixed inset-4 z-[151] rounded-tl-3xl rounded-tr-3xl rounded-bl-3xl rounded-br-3xl shadow-2xl md:inset-8",
           editMode && !active && !expanded && "ring-1 ring-primary/20"
         )}
       >

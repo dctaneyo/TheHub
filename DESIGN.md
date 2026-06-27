@@ -95,6 +95,18 @@ shadow to establish separation (see Section 8 for how this extends to
 dark mode); reserve shadow for true overlays (modals, dropdowns) where
 something needs to read as floating above the page.
 
+**Stated exception — dashboard grid widgets:** widget cards keep three
+corners at the standard radius but tighten the bottom-right corner
+(`rounded-br-md` against `rounded-*-2xl` elsewhere on the same card).
+This mirrors the chat message bubbles' pinched corner, but repurposed:
+chat tightens whichever corner faces the sender (a directional cue);
+widgets always tighten bottom-right because that's where the resize
+handle lives in edit mode. Same shape logic — "this corner is
+different because something lives there" — pointed at a different
+fact. Reset to uniform corners when a widget is expanded, since the
+resize handle isn't shown in that state. Don't extend this asymmetry to
+modals, buttons, or other surfaces that don't have a reason for it.
+
 ---
 
 ## 4. Layout
@@ -339,3 +351,7 @@ after it's been copied across twenty is not.
   mirroring/viewing feature with no actual decision behind it) with a
   deliberate `--hub-teal` token; added the claimed-semantic-colors
   table to Section 2.
+- 2026-06-26 — added a stated exception to the uniform-radius rule for
+  dashboard grid widgets: tight bottom-right corner marking the resize
+  handle, modeled on the chat bubble's directional pinched corner.
+  Scoped to widgets only.
