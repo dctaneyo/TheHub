@@ -227,43 +227,38 @@ confirm dialog**, while `user-management` and `forms-repository` correctly
 gate delete behind `useConfirmDialog` — inconsistent and risky for a
 destructive action.
 
-### 10. Shadow/elevation — resting card shadows + an inconsistent scale (Section 3)
+### 10. ~~Shadow/elevation — resting card shadows + an inconsistent scale~~ — **Fixed 2026-06-27**
 
 Section 3 makes elevation "minimal-to-flat — prefer fill-color contrast
 between surfaces over shadow," and reserves shadow for true overlays. The
-dashboard's redesign already acted on this (Changelog: "removed resting
-shadows from `.pill`/widget cards in favor of flat fill-contrast") — its
-grid widgets carry no resting shadow, and shadow appears only on overlays
-and the actively-dragged widget (`widget-container.tsx:181`). **ARL went
-the opposite way and the two surfaces of the same product now disagree.**
+dashboard's redesign had already done this; ARL hadn't. **Fixed in one
+pass** — 69 shadow instances reduced to 17, all warranted overlays:
 
-- **Resting `shadow-sm` on nearly every card.** The near-universal ARL card
-  is `bg-card border border-border … shadow-sm` at rest — overview
-  (`overview-dashboard.tsx:195,222,248,279,284`), `messaging.tsx`
-  (74,145,198,249), `data-management*` (342/389, health 32/49, audit-log
-  35), `analytics-dashboard.tsx:47,70`, `arl-calendar.tsx:163,214`,
-  `task-manager.tsx:202`, `task-virtual-list.tsx:56`, `locations-manager.tsx:191`,
-  `forms-repository.tsx:272`, `emergency-broadcast.tsx:263,272,381`. They're
-  consistent with each *other*, but this is exactly the "untouched
-  shadcn default — `border bg-card … shadow-sm`" pattern Do Not Use names,
-  and it contradicts the flat direction the dashboard adopted.
-- **The elevation scale isn't standardized.** Modals split between `shadow-xl`
-  (`task-form-modal.tsx:150`, `data-management.tsx:416`) and `shadow-2xl`
-  (`broadcast-studio.tsx:108`, `broadcast-launcher.tsx:131`,
-  `user-management.tsx:424`, `forms-repository.tsx:331`,
-  `meeting-analytics.tsx:335`) for the same role.
-- **Shadow used as a selection signifier** (conflicts with Section 10's
-  solid-inverted-fill). In segmented controls the active tab gets `bg-card …
-  shadow-sm` floating over flat inactive segments — `user-management.tsx:316`,
-  `task-form-modal.tsx:258,268`, `remote-management.tsx:38,50`,
-  `analytics-dashboard.tsx:286,296`, `remote-login.tsx:387,399`. This is the
-  most visible "some elements have shadows, some don't" instance.
-- **Decorative colored shadows** — `arl-sidebar.tsx:145` (`shadow-red-200` on
-  the active nav item) and `layout.tsx:362` (`shadow-emerald-100` toast).
+- **Resting `shadow-sm` removed** from all cards/containers across the
+  entire ARL surface (overview, messaging, data-management, analytics,
+  calendar, task-manager, task-virtual-list, locations-manager,
+  forms-repository, emergency-broadcast, arl-calendar, remote-login,
+  remote-management, user-management, tenant-settings, meetings/page). Cards
+  now rely on their existing `border border-border` + fill contrast, matching
+  the dashboard's flat direction.
+- **`shadow-sm` as selection signifier removed** from segmented-control
+  active segments (`user-management`, `task-form-modal`, `remote-management`,
+  `analytics-dashboard`, `remote-login`). Active state is still legible via
+  `bg-card` on a `bg-muted` track.
+- **Overlay scale standardized**: all modals/drawers/toasts → `shadow-xl`;
+  all dropdowns/small floating popovers → `shadow-lg`. `shadow-2xl` retired.
+- **Colored/decorative shadows stripped**: `shadow-red-200` on the sidebar
+  active item, `shadow-emerald-100` on the task-completion toast,
+  `shadow-amber-100` and `shadow-md` on the remote-login device cards,
+  `shadow-lg shadow-red-200/30` on the broadcast CTA.
+- **`hover:shadow-md` + `transition-shadow` removed** from card rows
+  (`task-virtual-list`, `locations-manager`). Flat at rest; no elevation
+  change on hover.
 
-Fix as one elevation pass: drop resting card shadows in favor of the
-border/fill contrast the cards already have, pick one modal depth, and
-replace the active-tab shadow lift with a solid fill.
+Remaining shadows (17): layout quick-settings dropdown (`shadow-lg`),
+layout/sidebar drawer (`shadow-xl`), all modals (`shadow-xl`), messaging
+receipt + reaction popovers (`shadow-lg`), analytics filter popover
+(`shadow-lg`), layout toasts (`shadow-xl`).
 
 ### 11. Minor: Data-drives-UI polish (Section 11)
 
@@ -316,10 +311,8 @@ first, design decisions last:
    patterns ARL already implements correctly elsewhere.
 5. **Extract shared components** (Finding 8) — `StatusDot`, destructive
    `IconButton`, `EmptyState`, `ModalHeader` — to stop the drift recurring.
-6. **Elevation pass** (Finding 10) — drop resting card shadows for flat
-   fill/border contrast, standardize one modal depth, and replace the
-   active-tab shadow lift with a solid fill. Pairs naturally with the radius
-   system pass below.
+6. ~~**Elevation pass** (Finding 10)~~ — **done 2026-06-27.** 69→17
+   shadows; all remaining are true overlays at two standardized depths.
 7. **Design decisions, deferred to a real pass** — the radius system
    (Finding / scanner `rounded-everything`), the broadcast gradients
    (Finding 6), hierarchy on the overview KPI cards, and the silent-failure

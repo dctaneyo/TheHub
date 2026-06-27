@@ -29,7 +29,7 @@ interface Props {
 export function DataManagementHealth({ report, integrity, duplicates }: Props) {
   if (!report) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"><Activity className="h-5 w-5" /></div>
           <div>
@@ -46,7 +46,7 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-6">
       <div className="flex items-center gap-3 mb-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"><Activity className="h-5 w-5" /></div>
         <div>

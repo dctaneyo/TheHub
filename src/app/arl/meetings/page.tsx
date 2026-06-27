@@ -17,7 +17,7 @@ export default function MeetingsPage() {
         {/* Go Live broadcast button */}
         <button
           onClick={() => setShowBroadcastLauncher(true)}
-          className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-2xl p-5 flex items-center gap-4 transition-all shadow-lg shadow-red-200/30 dark:shadow-red-900/20"
+          className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-2xl p-5 flex items-center gap-4 transition-all"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
             <Radio className="h-6 w-6" />
@@ -39,7 +39,7 @@ export default function MeetingsPage() {
               {activeMeetings.map((meeting) => (
                 <div
                   key={meeting.meetingId}
-                  className="bg-card border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-colors shadow-sm"
+                  className="bg-card border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-colors"
                 >
                   <div>
                     <h3 className="text-foreground font-semibold">{meeting.title}</h3>
@@ -47,7 +47,7 @@ export default function MeetingsPage() {
                   </div>
                   <button
                     onClick={() => setJoiningMeeting({ meetingId: meeting.meetingId, title: meeting.title })}
-                    className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+                    className="bg-[var(--hub-red)] hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-xl transition-colors flex items-center gap-2"
                   >
                     <Video className="h-4 w-4" />
                     Join

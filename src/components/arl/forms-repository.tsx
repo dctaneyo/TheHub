@@ -269,7 +269,7 @@ export function FormsRepository() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04 }}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-[var(--hub-red)]">
               <FileText className="h-5 w-5" />
@@ -328,7 +328,7 @@ export function FormsRepository() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>

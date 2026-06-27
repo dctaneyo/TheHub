@@ -260,7 +260,7 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden px-5 py-4"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card overflow-hidden px-5 py-4"
           >
             <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
             <p className="text-xs text-muted-foreground italic">No active emergency message</p>
@@ -269,7 +269,7 @@ export function EmergencyBroadcast() {
       </AnimatePresence>
 
       {/* Compose new message */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <label className="block text-xs font-semibold text-muted-foreground">
           {activeMessage ? "Send New Broadcast (replaces current)" : "Compose Emergency Message"}
         </label>
@@ -378,7 +378,7 @@ export function EmergencyBroadcast() {
 
       {/* Broadcast History */}
       {history.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           <button
             onClick={() => setShowHistory((v) => !v)}
             className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/50"

@@ -359,7 +359,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-card px-4 py-3 shadow-xl shadow-emerald-100"
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-card px-4 py-3 shadow-xl"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -401,7 +401,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
           >
-            <div className="bg-card rounded-2xl shadow-2xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">
+            <div className="bg-card rounded-2xl shadow-xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center">
                   <Video className="h-5 w-5 text-red-600" />

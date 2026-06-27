@@ -310,10 +310,10 @@ export function RemoteLogin() {
                   <div className={cn(
                     "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
                     isSelfPinging
-                      ? "border-amber-400 bg-amber-50 ring-2 ring-amber-300/40 shadow-lg shadow-amber-100"
+                      ? "border-amber-400 bg-amber-50 ring-2 ring-amber-300/40"
                       : isSelected
-                      ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20 shadow-md"
-                      : "border-border bg-card hover:border-border/80 hover:shadow-sm"
+                      ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20"
+                      : "border-border bg-card hover:border-border/80"
                   )}>
                     {/* "That's me!" badge */}
                     <AnimatePresence>
@@ -323,7 +323,7 @@ export function RemoteLogin() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.8 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-white shadow-md"
+                          className="flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-white"
                         >
                           <Hand className="h-3 w-3" />
                           That&apos;s me!
@@ -366,7 +366,7 @@ export function RemoteLogin() {
 
       {/* Assignment panel (shown when a session is selected) */}
       {selectedSession && (
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
             <Zap className="h-5 w-5 text-[var(--hub-red)]" />
             <div>
@@ -384,7 +384,7 @@ export function RemoteLogin() {
               className={cn(
                 "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                 assignType === "location"
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-card text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -396,7 +396,7 @@ export function RemoteLogin() {
               className={cn(
                 "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                 assignType === "arl"
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-card text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -556,7 +556,7 @@ export function RemoteLogin() {
                           className={cn(
                             "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                             forceAssignType === "location"
-                              ? "bg-muted text-foreground shadow-sm"
+                              ? "bg-muted text-foreground"
                               : "text-muted-foreground hover:text-foreground"
                           )}
                         >
@@ -568,7 +568,7 @@ export function RemoteLogin() {
                           className={cn(
                             "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
                             forceAssignType === "arl"
-                              ? "bg-muted text-foreground shadow-sm"
+                              ? "bg-muted text-foreground"
                               : "text-muted-foreground hover:text-foreground"
                           )}
                         >

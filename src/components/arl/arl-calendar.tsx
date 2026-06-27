@@ -149,7 +149,7 @@ export function ArlCalendar() {
         <select
           value={filterLocationId}
           onChange={(e) => setFilterLocationId(e.target.value)}
-          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm"
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
         >
           <option value="all">All Locations</option>
           {locations.map((l) => (
@@ -160,7 +160,7 @@ export function ArlCalendar() {
 
       <div className="flex flex-1 gap-4 overflow-hidden flex-col md:flex-row">
         {/* Calendar grid */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm min-w-0">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
             <h2 className="text-sm font-semibold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
@@ -211,7 +211,7 @@ export function ArlCalendar() {
         </div>
 
         {/* Day detail */}
-        <div className="w-full md:w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="w-full md:w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
           <div className="border-b border-border px-4 py-3">
             <h3 className="text-sm font-semibold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
             <p className="text-xs text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>

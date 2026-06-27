@@ -172,7 +172,7 @@ export function TaskManager() {
           <select
             value={filterLocationId}
             onChange={(e) => setFilterLocationId(e.target.value)}
-            className="rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground shadow-sm"
+            className="rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground"
           >
             <option value="all">All Locations</option>
             {locations.map((l) => (
@@ -181,7 +181,7 @@ export function TaskManager() {
           </select>
           <button
             onClick={() => setShowTemplates((t) => !t)}
-            className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm hover:bg-muted transition-colors"
+            className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
           >
             <BookOpen className="h-3.5 w-3.5" />
             Templates
@@ -199,7 +199,7 @@ export function TaskManager() {
       <AnimatePresence>
         {showTemplates && (
           <div className="overflow-hidden">
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4">
               <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
                 <h4 className="text-sm font-semibold text-foreground">Task Templates</h4>

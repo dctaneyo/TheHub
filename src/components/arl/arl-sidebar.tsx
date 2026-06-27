@@ -92,7 +92,7 @@ export function ArlSidebar({
       {/* Sidebar header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)] shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--hub-red)]">
             <span className="text-sm font-black text-white">{brandInitial}</span>
           </div>
           <div>
@@ -142,7 +142,7 @@ export function ArlSidebar({
               className={cn(
                 "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all",
                 isActive
-                  ? "bg-[var(--hub-red)] text-white shadow-sm shadow-red-200"
+                  ? "bg-[var(--hub-red)] text-white"
                   : "text-muted-foreground hover:bg-muted"
               )}
             >

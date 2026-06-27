@@ -128,7 +128,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white p-5 flex items-center justify-between">

@@ -188,7 +188,7 @@ export function LocationsManager() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
             className={cn(
-              "rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md",
+              "rounded-2xl border bg-card p-5 ",
               loc.isOnline ? "border-emerald-200 dark:border-emerald-800" : "border-border"
             )}
           >

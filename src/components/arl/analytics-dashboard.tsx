@@ -44,7 +44,7 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between">
         <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", colorMap[color])}>
           <Icon className="h-5 w-5" />
@@ -67,7 +67,7 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
 
 function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-5 shadow-sm", className)}>
+    <div className={cn("rounded-2xl border border-border bg-card p-5", className)}>
       <h3 className="mb-4 text-sm font-semibold text-foreground">{title}</h3>
       {children}
     </div>
@@ -283,7 +283,7 @@ export function AnalyticsDashboard() {
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               className={cn("flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all",
-                activeTab === t.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                activeTab === t.id ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
               )}>
               <t.icon className="h-3.5 w-3.5" /> {t.label}
             </button>
@@ -293,7 +293,7 @@ export function AnalyticsDashboard() {
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
               className={cn("rounded-lg px-2 py-2 text-xs font-semibold transition-all",
-                dateRange === d.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                dateRange === d.id ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
               )}>
               {d.label}
             </button>

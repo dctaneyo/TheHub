@@ -71,7 +71,7 @@ export function Messaging() {
   // New group modal
   if (showNewGroup) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
@@ -142,7 +142,7 @@ export function Messaging() {
       (p.storeNumber && p.storeNumber.includes(directSearch))
     );
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
             <ArrowLeft className="h-4 w-4" />
@@ -195,7 +195,7 @@ export function Messaging() {
   // Conversation list
   if (!activeConvo) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Messages</h3>
@@ -246,7 +246,7 @@ export function Messaging() {
   // Chat view
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm" onClick={() => setReceiptPopover(null)}>
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card" onClick={() => setReceiptPopover(null)}>
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
@@ -409,7 +409,7 @@ export function Messaging() {
                             )}
                             {isGroup && showPopover && receiptDetail && (
                               <div
-                                className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-border bg-card p-3 shadow-xl text-left"
+                                className="absolute bottom-full right-0 mb-2 z-50 w-52 rounded-xl border border-border bg-card p-3 shadow-lg text-left"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {receiptDetail.readMembers.length > 0 && (

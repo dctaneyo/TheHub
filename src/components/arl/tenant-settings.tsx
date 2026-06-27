@@ -318,7 +318,7 @@ export function TenantSettings() {
             <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-semibold">Live Preview</p>
             <div className="flex items-center gap-3 mb-3">
               <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center text-white font-black shadow-sm"
+                className="h-9 w-9 rounded-xl flex items-center justify-center text-white font-black"
                 style={{ backgroundColor: primaryColor }}
               >
                 {(name || "H").charAt(0).toUpperCase()}

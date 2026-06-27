@@ -192,7 +192,7 @@ export function OverviewDashboard() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className={cn("rounded-2xl border bg-card p-5 shadow-sm", card.borderColor)}
+            className={cn("rounded-2xl border bg-card p-5", card.borderColor)}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -219,7 +219,7 @@ export function OverviewDashboard() {
       {/* Location Performance + 7-Day Trend */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Location Performance */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">Location Performance Today</h3>
           <div className="space-y-2">
             {data.locationPerformance.slice(0, 8).map((loc) => (
@@ -245,7 +245,7 @@ export function OverviewDashboard() {
         </div>
 
         {/* 7-Day Completion Trend */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">7-Day Completion Trend</h3>
           <div className="flex items-end gap-2 h-32">
             {data.trend.map((day, i) => {
@@ -276,12 +276,12 @@ export function OverviewDashboard() {
       </div>
 
       {/* Ticker Push */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <TickerPush />
       </div>
 
       {/* Live Activity */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <LiveActivityFeed maxItems={15} />
       </div>
     </div>

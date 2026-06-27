@@ -313,7 +313,7 @@ export function UserManagement() {
             onClick={() => setTab(t)}
             className={cn(
               "flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold capitalize transition-colors",
-              tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t === "arls" ? <Shield className="h-3.5 w-3.5" /> : <Store className="h-3.5 w-3.5" />}
@@ -340,7 +340,7 @@ export function UserManagement() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm",
+                "flex items-center gap-3 rounded-2xl border border-border bg-card p-4",
                 !item.isActive && "opacity-50"
               )}
             >
@@ -421,7 +421,7 @@ export function UserManagement() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
             >
               <div className="mb-5 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-foreground">
@@ -572,7 +572,7 @@ export function UserManagement() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-card shadow-2xl"
+              className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-card shadow-xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div>

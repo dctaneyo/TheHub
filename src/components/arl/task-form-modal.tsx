@@ -255,7 +255,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     onClick={() => setIsAllDay(false)}
                     className={cn(
                       "flex-1 rounded-lg py-2 transition-colors",
-                      !isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                      !isAllDay ? "bg-card text-foreground" : "text-muted-foreground"
                     )}
                   >
                     Time
@@ -265,7 +265,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     onClick={() => setIsAllDay(true)}
                     className={cn(
                       "flex-1 rounded-lg py-2 transition-colors",
-                      isAllDay ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                      isAllDay ? "bg-card text-foreground" : "text-muted-foreground"
                     )}
                   >
                     All Day

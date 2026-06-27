@@ -53,7 +53,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
               ref={virtualizer.measureElement}
               style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
             >
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 ">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-foreground">{task.title}</span>

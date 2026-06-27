@@ -332,7 +332,7 @@ export function MeetingAnalyticsDashboard() {
       {/* Delete confirmation dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card rounded-xl shadow-2xl p-6 max-w-md mx-4 border border-border">
+          <div className="bg-card rounded-xl shadow-xl p-6 max-w-md mx-4 border border-border">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-12 w-12 rounded-full bg-red-600/20 flex items-center justify-center">
                 <Trash2 className="h-6 w-6 text-red-400" />

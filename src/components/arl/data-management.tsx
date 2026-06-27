@@ -339,7 +339,7 @@ export function DataManagement() {
       </div>
 
       {/* Notification Tester */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5">
         <NotificationTester />
       </div>
 
@@ -386,7 +386,7 @@ export function DataManagement() {
             {section.cards.map((card) => {
               const colors = colorMap[card.color] || colorMap.blue;
               return (
-                <div key={card.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
+                <div key={card.id} className="rounded-2xl border border-border bg-card p-5 flex flex-col">
                   <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-xl", colors.bg, colors.text)}>
                     <card.icon className="h-5 w-5" />
                   </div>

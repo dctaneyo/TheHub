@@ -35,7 +35,7 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
           className={cn(
             "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
             activeTab === "view"
-              ? "bg-card text-foreground shadow-sm"
+              ? "bg-card text-foreground"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
@@ -47,7 +47,7 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
           className={cn(
             "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
             activeTab === "login"
-              ? "bg-card text-foreground shadow-sm"
+              ? "bg-card text-foreground"
               : "text-muted-foreground hover:text-foreground"
           )}
         >

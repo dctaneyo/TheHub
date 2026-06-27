@@ -105,7 +105,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-card rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">

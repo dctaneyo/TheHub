@@ -276,7 +276,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
               <button
                 key={t.id}
                 onClick={() => startSession(t)}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:border-indigo-300 hover:shadow-md active:scale-[0.98] dark:hover:border-indigo-700"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all active:scale-[0.98]"
               >
                 <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950">
                   <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
