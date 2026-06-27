@@ -62,9 +62,6 @@ export interface GridLayout {
   isCustom?: boolean;
 }
 
-// Identity of the single user-editable "Custom" layout slot.
-export const CUSTOM_LAYOUT_ID = "custom";
-
 // ---- Normalization / migration ----------------------------------------------
 
 const clamp = (v: number, min: number, max: number) =>
@@ -188,12 +185,6 @@ export function useGridLayout(initialLayout: GridLayout) {
   const editModeRef = useRef(editMode);
   editModeRef.current = editMode;
 
-  // Remember the user's custom arrangement so switching between a preset and
-  // Custom is non-destructive. Seeded from the initial layout if it was custom.
-  const customRef = useRef<GridLayout | null>(
-    initialLayout.isCustom ? normalizeLayout(initialLayout) : null
-  );
-
   // Always-current layout (for reading inside callbacks without stale closures)
   // and a snapshot taken when an edit session begins (to support Cancel).
   const layoutRef = useRef(layout);
@@ -209,17 +200,10 @@ export function useGridLayout(initialLayout: GridLayout) {
     if (initialLayout.id !== initialIdRef.current) {
       initialIdRef.current = initialLayout.id;
       const next = normalizeLayout(initialLayout);
-      if (next.isCustom) customRef.current = next;
       setLayout(next);
       setExpandedWidget(null);
     }
   }, [initialLayout]);
-
-  // Whenever the active layout is custom, remember it as the latest custom
-  // arrangement to restore when the user toggles back from a preset.
-  useEffect(() => {
-    if (layout.isCustom) customRef.current = layout;
-  }, [layout]);
 
   const markCustom = (l: GridLayout): GridLayout => ({
     ...l,
@@ -327,27 +311,6 @@ export function useGridLayout(initialLayout: GridLayout) {
     setExpandedWidget(null);
   }, []);
 
-  /** Switch to the single editable "Custom" layout. Restores the user's
-   *  remembered custom arrangement if there is one, otherwise seeds it from
-   *  the layout currently on screen. */
-  const selectCustom = useCallback(() => {
-    setLayout((prev) => {
-      if (prev.isCustom) return prev;
-      const base = customRef.current;
-      const seeded: GridLayout = base
-        ? { ...base }
-        : { ...prev, widgets: prev.widgets.map((w) => ({ ...w })) };
-      return {
-        ...seeded,
-        id: CUSTOM_LAYOUT_ID,
-        name: "Custom",
-        description: "Your personalized layout",
-        isCustom: true,
-      };
-    });
-    setExpandedWidget(null);
-  }, []);
-
   // ---- Edit session (Save / Cancel) ----------------------------------------
   // Snapshot the layout when editing starts so Cancel can restore it, and
   // re-snapshot on a successful Save so a later Cancel reverts to what was saved.
@@ -382,7 +345,6 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
-      selectCustom,
       beginEdit,
       commitEdit,
       cancelEdit,
@@ -398,7 +360,6 @@ export function useGridLayout(initialLayout: GridLayout) {
       addWidget,
       removeWidget,
       replaceLayout,
-      selectCustom,
       beginEdit,
       commitEdit,
       cancelEdit,

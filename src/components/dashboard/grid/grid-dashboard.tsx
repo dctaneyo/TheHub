@@ -7,7 +7,7 @@ import {
   LayoutGrid,
   Plus,
   Settings,
-  Check,
+  RefreshCw,
   Save,
   X,
   Loader2,
@@ -18,7 +18,7 @@ import { useGrid } from "./grid-context";
 import { WidgetContainer } from "./widget-container";
 import { WidgetRenderer } from "./widget-renderer";
 import { GRID_COLS, GRID_ROWS, type GridLayout } from "./grid-engine";
-import { PREDEFINED_LAYOUTS, WIDGET_CATALOG } from "./layouts";
+import { DEFAULT_LAYOUT, WIDGET_CATALOG } from "./layouts";
 import type { WidgetData } from "./widget-data";
 
 // ── Shared pill class ─────────────────────────────────────────────────────────
@@ -30,9 +30,11 @@ const PILL = "pill flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-
  * always reveals the same six actions inline (the bento-style "everything
  * equally prominent" problem DESIGN.md Section 12 calls out by name):
  *
- * - Browsing: the cog opens a single bounded popover (layout switch +
- *   entry into editing) — one step deeper, not pills sliding into the
- *   header's flow.
+ * - Browsing: the cog opens a single bounded popover with exactly two
+ *   actions — customize widgets, reset to default — one step deeper, not
+ *   pills sliding into the header's flow. There's no layout picker because
+ *   there's no longer a set of presets to pick from: every location starts
+ *   on the same default layout and customizes from there.
  * - Editing: Add/Cancel/Save stay inline and fully visible, since those are
  *   primary actions a mid-edit user needs immediately.
  *
@@ -50,7 +52,6 @@ export function SettingsPanel({
     setEditMode,
     addWidget,
     replaceLayout,
-    selectCustom,
     beginEdit,
     commitEdit,
     cancelEdit,
@@ -60,7 +61,6 @@ export function SettingsPanel({
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const isCustom = !!layout.isCustom;
   const usedTypes = new Set(widgets.map((w) => w.type));
 
   const startEditing = () => {
@@ -89,6 +89,12 @@ export function SettingsPanel({
     cancelEdit();
     setEditMode(false);
     setShowAdd(false);
+  };
+
+  const handleReset = () => {
+    replaceLayout(DEFAULT_LAYOUT);
+    setOpen(false);
+    void onSave?.(DEFAULT_LAYOUT);
   };
 
   // Panel items reveal together as one group — no per-item stagger/spring/
@@ -176,8 +182,8 @@ export function SettingsPanel({
     );
   }
 
-  // Browsing — cog opens one bounded popover (layout switch + entry into
-  // editing) instead of pills sliding out into the header's flow.
+  // Browsing — cog opens one bounded popover (customize, reset to default)
+  // instead of pills sliding out into the header's flow.
   return (
     <div className="relative">
       <IconTip label={open ? "Close settings" : "Settings"}>
@@ -203,49 +209,24 @@ export function SettingsPanel({
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="absolute right-0 top-full z-[60] mt-1 w-60 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
+            className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur-md"
           >
-            <div className="px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Layout
-            </div>
-            {PREDEFINED_LAYOUTS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => { replaceLayout({ ...preset, isCustom: false }); setOpen(false); }}
-                className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", !isCustom && layout.id === preset.id && "bg-primary/10")}
-              >
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-foreground">{preset.name}</div>
-                  <div className="text-xs text-muted-foreground">{preset.description}</div>
-                </div>
-                {!isCustom && layout.id === preset.id && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
-              </button>
-            ))}
             <button
               type="button"
-              onClick={() => { selectCustom(); setOpen(false); }}
-              className={cn("flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors active:bg-muted", isCustom && "bg-primary/10")}
+              onClick={startEditing}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
             >
-              <div className="flex-1">
-                <div className="text-sm font-medium text-foreground">Custom</div>
-                <div className="text-xs text-muted-foreground">Build and arrange your own layout</div>
-              </div>
-              {isCustom && <Check className="mt-0.5 h-3.5 w-3.5 text-primary" />}
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              Customize widgets
             </button>
-            {isCustom && (
-              <>
-                <div className="my-1 h-px bg-border" />
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
-                >
-                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                  Customize widgets
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors active:bg-muted"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              Reset dashboard to default
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -431,7 +412,7 @@ export function GridMirrorSync({
 
   // TARGET side: apply layout pushed from the ARL embed via DOM event.
   // The location's onReverseView dispatches "mirror:grid-layout-from-arl" when
-  // the ARL changes the layout in the embed (SettingsPanel, selectCustom, etc.).
+  // the ARL changes the layout in the embed (via SettingsPanel).
   useEffect(() => {
     if (isMirroring || !remoteViewActive) return;
     const handler = (e: Event) => {

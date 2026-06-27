@@ -29,8 +29,7 @@ import {
   GridSurface,
   GridSync,
   GridMirrorSync,
-  getPredefinedLayout,
-  DEFAULT_LAYOUT_ID,
+  DEFAULT_LAYOUT,
   type GridLayout,
   type WidgetData,
   type UpcomingTask,
@@ -421,7 +420,7 @@ function GridDashboardPage() {
           if (json?.layout && Array.isArray(json.layout.widgets)) resolved = json.layout as GridLayout;
         }
       } catch { /* fall back to default */ }
-      if (!cancelled) setInitialLayout(resolved ?? getPredefinedLayout(DEFAULT_LAYOUT_ID)!);
+      if (!cancelled) setInitialLayout(resolved ?? DEFAULT_LAYOUT);
     })();
     return () => { cancelled = true; };
   }, [user, isEmbed, mirrorLocationId, mirrorSessionId]);

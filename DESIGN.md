@@ -558,3 +558,14 @@ after it's been copied across twenty is not.
   condition previously only excluded the clock by name, so it missed
   this. Switched the condition to the existing `isAmbient` check
   instead of adding a second special case.
+- 2026-06-26 — removed the three predefined grid layouts (Balanced,
+  Focus, Overview) and the layout-picker list in the settings popover
+  (per direct user feedback — too many decisions for what's mostly a
+  one-time setup step). Every location now starts on a single
+  `DEFAULT_LAYOUT` and customizes from there; the popover is just
+  "Customize widgets" + "Reset dashboard to default." Deleted
+  `selectCustom`/`CUSTOM_LAYOUT_ID`/the `customRef` preset-vs-custom
+  bookkeeping in `grid-engine.ts`, since there's no longer a second
+  layout to switch away from — `isCustom` still exists and still gates
+  what gets persisted (an untouched default layout saves as `null`,
+  matching prior behavior).
