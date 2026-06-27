@@ -863,20 +863,24 @@ export default function LoginPage() {
               <p className="text-sm font-semibold text-muted-foreground">
                 {step === "userId" ? "Enter your User ID" : "Enter your PIN"}
               </p>
-              {step === "pin" && validatedUser && (
-                <div className="mt-2 flex items-center justify-center gap-1">
-                  {validatedUser.userType === "location"
-                    ? <Store className="h-3.5 w-3.5 text-muted-foreground" />
-                    : <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  }
-                  <span className="text-xs font-semibold text-foreground">{validatedUser.name}</span>
-                  {validatedUser.storeNumber && (
-                    <span className="text-xs text-muted-foreground">#{validatedUser.storeNumber}</span>
-                  )}
-                </div>
-              )}
             </motion.div>
           </AnimatePresence>
+
+          {/* Always-present name row — keeps height constant so the container
+              never jumps when transitioning from userId → PIN. Fades in once
+              validated; opacity-0 + pointer-events-none hides it otherwise. */}
+          <div className={`mt-2 flex items-center justify-center gap-1 transition-opacity duration-200 ${
+            step === "pin" && validatedUser ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}>
+            {validatedUser?.userType === "location"
+              ? <Store className="h-3.5 w-3.5 text-muted-foreground" />
+              : <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            }
+            <span className="text-xs font-semibold text-foreground">{validatedUser?.name}</span>
+            {validatedUser?.storeNumber && (
+              <span className="text-xs text-muted-foreground">#{validatedUser.storeNumber}</span>
+            )}
+          </div>
 
           {/* Dots — shake on wrong PIN */}
           <motion.div
@@ -910,28 +914,17 @@ export default function LoginPage() {
         <div className="grid w-full grid-cols-3 gap-2 sm:gap-3 mt-1">
           {padButtons.map((btn) => {
             if (btn === "action") {
-              if (step === "pin") {
-                return (
-                  <motion.button
-                    key="back"
-                    whileTap={{ scale: 0.92 }}
-                    onClick={handleClearOrBack}
-                    disabled={loading || validating}
-                    className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </motion.button>
-                );
-              }
+              // Stable key so React updates content in-place (no unmount/remount
+              // flash when switching between the back arrow and "Clear" text).
               return (
                 <motion.button
-                  key="clear"
+                  key="action"
                   whileTap={{ scale: 0.92 }}
                   onClick={handleClearOrBack}
                   disabled={loading || validating}
                   className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-sm font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
                 >
-                  Clear
+                  {step === "pin" ? <ChevronLeft className="h-5 w-5" /> : "Clear"}
                 </motion.button>
               );
             }
