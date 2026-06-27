@@ -109,10 +109,15 @@ export function AppHeader({
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-red)] text-white">
                 <HubMark className="h-3.5 w-3.5" />
               </div>
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-foreground leading-none">{title}</p>
-                {user?.name && <p className="text-xs text-muted-foreground leading-none mt-1">{user.name}</p>}
-              </div>
+              {/* Location name as the primary identity — same prominence "Dashboard"
+                  had before (Body/Semibold). Store number inline at Caption weight,
+                  smaller + lower contrast per Section 7 two-signal subordination. */}
+              {user?.name && (
+                <h1 className="text-sm font-semibold text-foreground leading-none">{user.name}</h1>
+              )}
+              {user?.storeNumber && (
+                <span className="text-xs text-muted-foreground leading-none">#{user.storeNumber}</span>
+              )}
             </div>
           )}
         </div>
