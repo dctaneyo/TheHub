@@ -168,12 +168,14 @@ choices.
 ## Recommended order of attack
 
 1. ~~Delete the 11 dead files~~ — **done 2026-06-26**, commit `9f02255`.
-2. **Hover sweep** — mechanical, same playbook as login, zero design
-   decisions required.
-3. **Indigo cleanup** — `page.tsx` spinner, `arl-cursor-overlay.tsx`,
-   `mirror-toolbar.tsx`, `remote-view-banner.tsx`. Needs an actual
-   color decision (what does "remote presence" mean semantically?),
-   not just a search-and-replace.
+2. ~~Hover sweep~~ — **done 2026-06-26**, commit `a24ee5d` (39
+   instances across 6 files, plus two real fixes beyond a mechanical
+   swap — see commit message).
+3. ~~Indigo cleanup~~ — **done 2026-06-26**, commit `ae99670`. Turned
+   out to be one coherent feature (remote mirroring/viewing) using
+   indigo by default throughout, not scattered arbitrary picks.
+   Replaced with a deliberate `--hub-teal` token; documented in
+   DESIGN.md Section 2's claimed-semantic-colors table.
 4. **Radius pass** — apply the same container/control/circle system
    from login once the redesign reaches the dashboard.
 5. **Document the categorical color system** once the above is
