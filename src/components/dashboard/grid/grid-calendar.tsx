@@ -39,7 +39,9 @@ import {
 
 export function GridCalendarWidget() {
   const router = useRouter();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Widget always shows the current month — no navigation needed here.
+  // Users open the full /calendar route via the header to browse other months.
+  const currentMonth = useMemo(() => new Date(), []);
   const [tasks, setTasks] = useState<CalTask[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
@@ -68,39 +70,23 @@ export function GridCalendarWidget() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header — icon + month name doubles as the widget's identity and its
-          title (more useful here than a static "Calendar" label), with the
-          prev/next controls on the same row rather than a separate nav bar
-          stacked under a separate title row. */}
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
-        <button
-          type="button"
-          onClick={() => openCalendar()}
-          className="flex items-center gap-2 text-left transition-colors active:text-primary"
-        >
+      {/* Header — full-width tap target navigates to /calendar, matching
+          every other widget's header pattern (icon + title left, chevron right,
+          active:bg-muted/60 press feedback). Month name doubles as identity
+          (more useful than a static "Calendar" label). */}
+      <button
+        type="button"
+        onClick={() => openCalendar()}
+        className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+      >
+        <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-[var(--hub-blue)]" />
           <h2 className="text-lg font-semibold text-foreground">
             {format(currentMonth, "MMMM yyyy")}
           </h2>
-          <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-        </button>
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
         </div>
-      </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+      </button>
 
       {/* Day-of-week header */}
       <div className="grid shrink-0 grid-cols-7 px-3">
