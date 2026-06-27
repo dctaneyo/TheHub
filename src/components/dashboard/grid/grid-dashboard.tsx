@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -299,7 +300,7 @@ export function GridSync({
 export function GridSurface({ data }: { data: WidgetData }) {
   const { widgets, editMode } = useGrid();
   const gridRef = useRef<HTMLDivElement>(null);
-  const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const router = useRouter();
   const deviceType = useDeviceType();
 
   // Below the mobile breakpoint, the 12x12 free-form grid is replaced
@@ -346,18 +347,15 @@ export function GridSurface({ data }: { data: WidgetData }) {
               gridRef={gridRef}
               onExpand={
                 widget.type === "tasks"
-                  ? () => setTasksModalOpen(true)
+                  ? () => router.push("/tasks")
                   : widget.type === "messages"
                   ? () => data.onOpenChat()
+                  : widget.type === "calendar" || widget.type === "month"
+                  ? () => router.push("/calendar")
                   : undefined
               }
             >
-              <WidgetRenderer
-                widget={widget}
-                data={data}
-                tasksModalOpen={widget.type === "tasks" ? tasksModalOpen : undefined}
-                onTasksModalClose={widget.type === "tasks" ? () => setTasksModalOpen(false) : undefined}
-              />
+              <WidgetRenderer widget={widget} data={data} />
             </WidgetContainer>
           ))}
         </AnimatePresence>

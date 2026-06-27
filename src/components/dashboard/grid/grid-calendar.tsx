@@ -1,125 +1,47 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
-  addDays,
   addMonths,
-  endOfMonth,
-  endOfWeek,
   format,
   isSameDay,
   isSameMonth,
   isToday,
   startOfMonth,
-  startOfWeek,
   subMonths,
 } from "date-fns";
 import { Calendar, ChevronLeft, ChevronRight, X, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import {
+  taskApplies,
+  buildWeeks,
+  fmtTaskTime as fmtTime,
+  PRIORITY_DOT,
+  type CalTask,
+} from "@/lib/task-calendar";
 
 /**
  * Month calendar widget for the GRID dashboard.
  *
  * Compact view: navigable mini month grid with today highlighted and
  * coloured dots for days that have tasks. Clicking any day or the month
- * header opens a fullscreen modal with the full grid + a per-day task list.
+ * name navigates to the full /calendar route (which renders the exact same
+ * CalendarModal layout below, as a page) instead of opening an in-place
+ * overlay.
+ *
+ * Task-applies-to-date logic (taskApplies/buildWeeks/etc) lives in
+ * src/lib/task-calendar.ts, shared with the /calendar route — see that
+ * file's comment for why.
  */
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface CalTask {
-  id: string;
-  title: string;
-  type: string;
-  priority: string;
-  dueTime: string;
-  isAllDay?: boolean;
-  dueDate: string | null;
-  isRecurring: boolean;
-  recurringType: string | null;
-  recurringDays: string | null;
-  biweeklyStart?: string | null;
-  locationId: string | null;
-  createdAt?: string;
-  showInCalendar?: boolean;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-
-function taskApplies(task: CalTask, date: Date): boolean {
-  const dateStr = format(date, "yyyy-MM-dd");
-  const dayKey = DAY_KEYS[date.getDay()];
-  if (task.createdAt) {
-    const created = task.createdAt.split("T")[0];
-    if (dateStr < created) return false;
-  }
-  if (!task.isRecurring) return task.dueDate === dateStr;
-  const rType = task.recurringType || "weekly";
-  if (rType === "daily") return true;
-  if (rType === "weekly") {
-    try { return (JSON.parse(task.recurringDays!) as string[]).includes(dayKey); } catch { return false; }
-  }
-  if (rType === "biweekly") {
-    try {
-      const days = JSON.parse(task.recurringDays!) as string[];
-      if (!days.includes(dayKey)) return false;
-      const anchor = task.createdAt ? new Date(task.createdAt) : new Date(0);
-      const anchorDay = anchor.getDay();
-      const anchorMon = new Date(anchor);
-      anchorMon.setDate(anchor.getDate() + (anchorDay === 0 ? -6 : 1 - anchorDay));
-      anchorMon.setHours(0, 0, 0, 0);
-      const targetDay = date.getDay();
-      const targetMon = new Date(date);
-      targetMon.setDate(date.getDate() + (targetDay === 0 ? -6 : 1 - targetDay));
-      targetMon.setHours(0, 0, 0, 0);
-      const weeksDiff = Math.round((targetMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
-      const isEven = weeksDiff % 2 === 0;
-      return task.biweeklyStart === "next" ? !isEven : isEven;
-    } catch { return false; }
-  }
-  if (rType === "monthly") {
-    try { return (JSON.parse(task.recurringDays!) as number[]).includes(date.getDate()); } catch { return false; }
-  }
-  return false;
-}
-
-function fmtTime(t: string, allDay?: boolean) {
-  if (allDay) return "All Day";
-  const [h, m] = t.split(":").map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
-}
-
-const PRIORITY_DOT: Record<string, string> = {
-  urgent: "bg-red-500",
-  high: "bg-orange-400",
-  normal: "bg-blue-400",
-  low: "bg-slate-400",
-};
-
-// ── Month grid builder ────────────────────────────────────────────────────────
-
-function buildWeeks(month: Date): Date[][] {
-  const weeks: Date[][] = [];
-  let day = startOfWeek(startOfMonth(month));
-  const end = endOfWeek(endOfMonth(month));
-  while (day <= end) {
-    const week: Date[] = [];
-    for (let i = 0; i < 7; i++) { week.push(day); day = addDays(day, 1); }
-    weeks.push(week);
-  }
-  return weeks;
-}
 
 // ── Compact widget ────────────────────────────────────────────────────────────
 
 export function GridCalendarWidget() {
+  const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [tasks, setTasks] = useState<CalTask[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -136,9 +58,12 @@ export function GridCalendarWidget() {
 
   const weeks = useMemo(() => buildWeeks(currentMonth), [currentMonth]);
 
-  const openModal = (date?: Date) => {
+  // Tapping the month name or a day navigates to the full /calendar route
+  // (which renders this same CalendarModal as a page) instead of opening an
+  // in-place overlay — same model as Tasks' completion ring.
+  const openCalendar = (date?: Date) => {
     if (date) setSelectedDate(date);
-    setModalOpen(true);
+    router.push(date ? `/calendar?date=${format(date, "yyyy-MM-dd")}` : "/calendar");
   };
 
   return (
@@ -150,7 +75,7 @@ export function GridCalendarWidget() {
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-3">
         <button
           type="button"
-          onClick={() => openModal()}
+          onClick={() => openCalendar()}
           className="flex items-center gap-2 text-left transition-colors active:text-primary"
         >
           <Calendar className="h-4 w-4 text-[var(--hub-blue)]" />
@@ -205,7 +130,7 @@ export function GridCalendarWidget() {
             <button
               key={idx}
               type="button"
-              onClick={() => openModal(date)}
+              onClick={() => openCalendar(date)}
               className={cn(
                 "flex flex-col items-center gap-px rounded-lg py-1 transition-colors active:bg-muted/60",
                 !inMonth && "pointer-events-none opacity-25",
@@ -240,40 +165,22 @@ export function GridCalendarWidget() {
         })}
       </div>
 
-      {/* Fullscreen modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm"
-              onClick={() => setModalOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="fixed inset-4 z-[201] flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl md:inset-12"
-            >
-              <CalendarModal
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-                getTasksForDate={getTasksForDate}
-                onClose={() => setModalOpen(false)}
-              />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
 // ── Full-screen calendar modal ────────────────────────────────────────────────
 
-function CalendarModal({
+/**
+ * Exported so the /calendar route can reuse the exact same month-grid +
+ * selected-day-list layout instead of a second, separately-maintained
+ * implementation — see DESIGN.md's User Flow notes on why the previous
+ * standalone /calendar page got rebuilt around this. `onClose` is optional:
+ * the widget's floating modal passes it (renders the X button); the page
+ * route omits it, since the page's own back-to-dashboard header already
+ * covers that and a second close affordance would be redundant.
+ */
+export function CalendarModal({
   selectedDate,
   onSelectDate,
   getTasksForDate,
@@ -282,7 +189,7 @@ function CalendarModal({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   getTasksForDate: (d: Date) => CalTask[];
-  onClose: () => void;
+  onClose?: () => void;
 }) {
   const [currentMonth, setCurrentMonth] = useState(
     startOfMonth(selectedDate)
@@ -314,13 +221,15 @@ function CalendarModal({
         >
           <ChevronRight className="h-5 w-5" />
         </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </header>
 
       {/* Body: calendar + task list */}
@@ -403,7 +312,7 @@ function CalendarModal({
 
           {selectedTasks.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
-              <span className="text-4xl">📅</span>
+              <Calendar className="h-8 w-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">No tasks this day</p>
             </div>
           ) : (

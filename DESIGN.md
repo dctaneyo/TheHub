@@ -586,6 +586,60 @@ that's the same class of bug as `handleSave`'s empty catch — find it the
 same way (grep for empty `catch` blocks around `await` calls that update
 UI state on success).
 
+**Widgets are quick access; routes are the full version — not a choice
+between them.** A "widget," by the term's own ordinary meaning, implies a
+fuller version exists somewhere — Calendar already had this (a real
+`/calendar` route) well before Tasks or Messages did, which only had
+same-page modals/overlays standing in for a "full version" that didn't
+actually exist as its own place. Tasks (`/tasks`) and Messages
+(`/messages`) now have real routes too, and the dashboard's widgets are
+quick-access launchers into them — tapping a widget's expand affordance or
+its main tap target navigates there instead of opening an in-place overlay.
+This isn't a sidebar-nav rewrite of the dashboard (considered and rejected
+— see below): the dashboard stays the nav-free ambient surface; `/tasks`,
+`/messages`, and `/calendar` get a slim shared header (`SubPageHeader`)
+with a back-to-dashboard link and quick links between siblings, so moving
+between the three full pages doesn't require round-tripping through the
+dashboard, without turning the dashboard itself into something you browse.
+
+**A sidebar nav for the kiosk side was proposed and rejected.** The
+original ask was a full collapsible sidebar (the same pattern ARL uses)
+replacing widgets as the primary way to reach the full version of
+anything. Rejected because ARL's sidebar fits ARL's job (genuinely
+multi-page admin work); the dashboard's job is "glance at a status board,
+tap to act, walk away" — a sidebar imports a multi-page mental model into
+a screen whose whole point is not being that. The widgets-as-launchers
+model above gets the same practical outcome (a real full version exists
+for things that need one) without that tradeoff.
+
+**Routing in introduces a real risk a modal didn't have, and the
+inactivity timer (`use-inactivity-redirect.ts`) is the stated mitigation,
+not a nice-to-have.** A modal always returns you to exactly where you were
+on dismiss; a routed page requires deliberate back-navigation, so an
+unattended kiosk can get stranded on `/tasks` if someone walks away
+mid-task. Standard kiosk pattern (POS systems, check-in kiosks, self-
+checkout all do this): idle timeout returns to the dashboard — but never
+silently. A countdown warning shows first and any tap cancels it, because
+an un-cancelable or silent redirect reads as broken, not helpful. Scoped
+to kiosk/desktop only (gated in `SubPageHeader`, the one mounting point
+for every sub-page) — never mobile (no idle-kiosk risk on a personal
+phone), and it doesn't apply to ARL at all since this header doesn't
+render there.
+
+**Messages (`/messages`) is a stated v1, not full parity with the
+dashboard's chat overlay.** `RestaurantChat` is a large (1100+ line),
+already-working component tightly coupled to its own slide-out/fullscreen
+toggle UI — voice messages, reactions, mentions, group-chat creation,
+in-thread search, mute. Replicating all of it on the new route in the same
+pass this took to build the route itself would have been a much bigger,
+riskier change than the route needs to be useful. `/messages` ships with
+text messaging, real-time updates via the same socket events, and read
+state — a real macOS-Messages-style two-pane layout (thread list always
+visible, active thread beside it, never replacing it) that the overlay
+can't do since it can only show one or the other. The deferred features
+are a known, named gap, not a silent omission — extend `/messages` to
+close them rather than building a second messaging surface.
+
 ---
 
 ## 17. Do Not Use
@@ -1071,3 +1125,48 @@ after it's been copied across twenty is not.
   from spacing alone, not only from which ones happen to have a
   container — the same squint-test Section 5 already asks for, applied
   to a toolbar instead of a list.
+- 2026-06-27 — built real routes for Tasks and Messages, and rebuilt
+  Calendar, so "widget" means what the term actually implies (Section
+  16): quick access to a full version that exists somewhere, not a
+  modal standing in for one. A sidebar nav was considered and
+  explicitly rejected first — see Section 16 — in favor of widgets as
+  launchers plus a slim shared sub-page header.
+  - Extracted `taskApplies`/`buildWeeks`/`CalTask`/`PRIORITY_DOT` out
+    of `grid-calendar.tsx` into `src/lib/task-calendar.ts` so the
+    widget and the new route can't drift the way the *old* `/calendar`
+    page already had — it had its own separate, never-reconciled copy
+    of this logic (missing the `createdAt` cutoff check, a different
+    and buggy biweekly calculation, no `showInCalendar` filter), which
+    is exactly why it showed different tasks than the widget for the
+    same day. Exported `CalendarModal` (was file-local) so `/calendar`
+    renders the identical month-grid + selected-day-list layout the
+    widget's modal already used, instead of a third implementation.
+    Found and fixed a raw 📅 emoji used as an icon in that modal's
+    empty state while in there — a scanner blind spot (emoji inside
+    JSX text, not a Tailwind class), same category of miss as the
+    purple-sparkle find earlier.
+  - `/tasks`: the widget's modal already covers "today" well by
+    design; the gap was multi-day browsing, history, and filtering by
+    type/priority, which the modal deliberately doesn't do. Built on
+    the existing `/api/tasks` + `/api/tasks/completions` +
+    `/api/tasks/complete`/`uncomplete` endpoints — no new API needed,
+    since `localDate` on those was already arbitrary-date-capable.
+  - `/messages`: macOS-Messages-style two-pane (thread list always
+    visible, active thread beside it). Stated v1 scope — see Section
+    16 for what's deferred and why (RestaurantChat's 1100+ lines of
+    voice/reactions/mentions/group-creation/search/mute are tightly
+    coupled to its own overlay UI; replicating all of it in this pass
+    would have been a bigger, riskier change than the route needed to
+    be useful).
+  - Removed `GridTasksWidget`'s internal fullscreen modal and
+    `GridCalendarWidget`'s internal modal entirely (not left dead
+    behind a removed trigger) — both now navigate. `onUncomplete` came
+    out of `GridTasksWidget`'s props with it, since undo only existed
+    inside the removed modal; `/tasks` has its own complete/uncomplete
+    that isn't scoped to today only.
+  - Built `use-inactivity-redirect.ts` + `InactivityWarning`, mounted
+    once inside the new shared `SubPageHeader` (so every sub-page gets
+    it automatically) — kiosk/desktop only, with a visible countdown
+    and cancel-on-any-tap rather than a silent redirect. See Section
+    16 for why this is a stated mitigation for a real risk routing
+    introduced, not a nice-to-have.

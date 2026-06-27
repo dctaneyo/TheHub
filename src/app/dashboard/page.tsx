@@ -22,7 +22,7 @@ import { MirrorProvider, useMirror } from "@/lib/mirror-context";
 import { playTaskSound } from "@/lib/sound-effects";
 import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import type { TaskItem } from "@/components/dashboard/timeline";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useDeviceType } from "@/hooks/use-device-type";
 import {
   GridProvider,
@@ -299,6 +299,7 @@ function GridMirrorShell() {
 function GridDashboardPage() {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
+  const router = useRouter();
 
   // ── Mirror detection ──
   const searchParams = useSearchParams();
@@ -668,10 +669,13 @@ function GridDashboardPage() {
   }, [isEmbed, isMirroring, sendViewChange]);
 
   // ── Chat / forms openers ──────────────────────────────────────────────────
+  // Messages now navigates to the real /messages route instead of opening
+  // the in-page overlay (see DESIGN.md's User Flow notes) — the overlay
+  // component stays mounted below for the mirror-sync path, which still
+  // depends on it; only the widget-triggered "open" was changed.
   const openChat = useCallback((conversationId?: string) => {
-    setChatThreadId(conversationId ?? null);
-    setChatOpen(true);
-  }, []);
+    router.push(conversationId ? `/messages?thread=${conversationId}` : "/messages");
+  }, [router]);
   const openForms = useCallback(() => setFormsOpen(true), []);
 
   // ── Widget data bundle ────────────────────────────────────────────────────

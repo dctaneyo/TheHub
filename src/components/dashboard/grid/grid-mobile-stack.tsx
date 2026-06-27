@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   CheckSquare,
   CalendarDays,
@@ -9,7 +8,6 @@ import {
   MessageCircle,
   FileText,
   ChevronRight,
-  X,
   LayoutGrid,
 } from "@/lib/icons";
 import { isAmbientWidget, type Widget, type WidgetType } from "./grid-engine";
@@ -26,10 +24,11 @@ import type { WidgetData } from "./widget-data";
  *
  * Ambient widgets (clock, quote) render full-width inline, same as their
  * borderless desktop treatment. Everything else is a tappable summary row
- * that opens the widget's existing fullscreen presentation — reusing
- * whatever each widget type already has (tasks' own internal modal,
- * messages'/forms' existing overlay launchers) rather than inventing a
- * second "mobile" version of each widget's content.
+ * that opens that widget's full version — a real route for tasks/calendar
+ * (/tasks, /calendar), the existing overlay launchers for messages/forms.
+ * Same mechanism as the desktop Expand button, just reached by tapping the
+ * whole row instead of a corner icon, since there's no room to spare for a
+ * separate affordance here.
  *
  * View + act only: this app's edit mode (drag position, resize footprint)
  * doesn't mean anything once everything is forced full-width in one column,
@@ -74,13 +73,7 @@ export function MobileDashboard({
   widgets: Widget[];
   data: WidgetData;
 }) {
-  // Generic fullscreen for widget types with no fullscreen of their own
-  // (calendar/month) — mirrors the desktop WidgetContainer's default
-  // `expanded` treatment, just without any drag/resize affordances.
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Tasks has its own internal modal (grid-tasks.tsx) controlled via this
-  // same external-trigger contract the desktop expand button already uses.
-  const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const router = useRouter();
 
   if (widgets.length === 0) {
     return (
@@ -91,14 +84,11 @@ export function MobileDashboard({
     );
   }
 
-  const tasksWidget = widgets.find((w) => w.type === "tasks");
-  const expandedWidget = widgets.find((w) => w.id === expandedId) ?? null;
-
   const handleOpen = (widget: Widget) => {
-    if (widget.type === "tasks") setTasksModalOpen(true);
+    if (widget.type === "tasks") router.push("/tasks");
+    else if (widget.type === "calendar" || widget.type === "month") router.push("/calendar");
     else if (widget.type === "messages") data.onOpenChat();
     else if (widget.type === "forms") data.onOpenForms();
-    else setExpandedId(widget.id);
   };
 
   // Quote always renders last in the stack — it's the lowest-priority,
@@ -141,62 +131,6 @@ export function MobileDashboard({
           </button>
         );
       })}
-
-      {/* Hidden host for the tasks widget's own internal modal — zero
-          footprint (not display:none, which would unmount its fixed-
-          position modal along with it), triggered by the row above. */}
-      {tasksWidget && (
-        <div className="absolute h-0 w-0 overflow-hidden">
-          <WidgetRenderer
-            widget={tasksWidget}
-            data={data}
-            tasksModalOpen={tasksModalOpen}
-            onTasksModalClose={() => setTasksModalOpen(false)}
-          />
-        </div>
-      )}
-
-      {/* Generic fullscreen overlay for calendar/month-type widgets */}
-      <AnimatePresence>
-        {expandedWidget && (
-          <motion.div
-            key="mobile-expand-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-background/80 backdrop-blur-sm"
-            onClick={() => setExpandedId(null)}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {expandedWidget && (
-          <motion.div
-            key="mobile-expand-sheet"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-4 z-[151] flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
-          >
-            <div className="flex h-11 shrink-0 items-center justify-between border-b border-border px-3">
-              <span className="text-sm font-semibold text-foreground">
-                {expandedWidget.title}
-              </span>
-              <button
-                type="button"
-                onClick={() => setExpandedId(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="relative min-h-0 flex-1 overflow-auto">
-              <WidgetRenderer widget={expandedWidget} data={data} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

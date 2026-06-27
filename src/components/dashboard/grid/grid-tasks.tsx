@@ -1,23 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckSquare, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
-import { useDeviceType } from "@/hooks/use-device-type";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
 /**
- * Minimal Today's Tasks widget — the only tasks widget in the app. The
- * pre-grid <Timeline> component this comment used to reference was dead
- * code (zero consumers) and has been removed; TaskItem is the only thing
- * still shared from that file.
+ * Minimal Today's Tasks widget — the only tasks widget in the app.
  *
  * - Completion ring + remaining/completed counts at the top
  * - One-line bold task rows with a checkbox to complete
  * - Overdue tasks shown in red; completed tasks drop out of the list
- * - Clicking the ring opens a fullscreen modal with the full day in order
+ * - Clicking the ring navigates to /tasks (the full multi-day/history/
+ *   filtering view — see that route) instead of opening a same-page modal.
  */
 
 function formatTime(time: string, isAllDay?: boolean): string {
@@ -90,36 +88,17 @@ export function GridTasksWidget({
   tasks,
   missedYesterday,
   onComplete,
-  onUncomplete,
-  externalModalOpen,
-  onExternalModalClose,
 }: {
   tasks: TaskItem[];
   missedYesterday: TaskItem[];
   onComplete: (taskId: string) => void;
-  onUncomplete: (taskId: string) => void;
-  /** When true, the fullscreen modal is forced open (e.g. via the expand button). */
-  externalModalOpen?: boolean;
-  onExternalModalClose?: () => void;
 }) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
   const [missedOpen, setMissedOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
   const missedBtnRef = useRef<HTMLButtonElement>(null);
-  const isMobile = useDeviceType() === "mobile";
 
-  // Sync external trigger — when the parent flips externalModalOpen to true,
-  // open the modal; the parent resets it when we call onExternalModalClose.
-  useEffect(() => {
-    if (externalModalOpen) setModalOpen(true);
-  }, [externalModalOpen]);
-
-  const closeModal = () => {
-    setModalOpen(false);
-    onExternalModalClose?.();
-  };
-
-  const { total, completedCount, remainingCount, pct, pending, allSorted } =
+  const { total, completedCount, remainingCount, pct, pending } =
     useMemo(() => {
       // Information tasks are not actionable — exclude from all counts/progress
       const actionable = tasks.filter((t) => t.type !== "information");
@@ -129,8 +108,7 @@ export function GridTasksWidget({
       const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
       // Pending list still shows information tasks (with info icon, no checkmark)
       const pending = tasks.filter((t) => !t.isCompleted).slice().sort(byDueTime);
-      const allSorted = tasks.slice().sort(byDueTime);
-      return { total, completedCount, remainingCount, pct, pending, allSorted };
+      return { total, completedCount, remainingCount, pct, pending };
     }, [tasks]);
 
   return (
@@ -145,7 +123,7 @@ export function GridTasksWidget({
 
       {/* Ring + counts */}
       <div className="flex shrink-0 flex-col items-center gap-3 px-3 pb-3">
-        <CompletionRing pct={pct} onClick={() => setModalOpen(true)} />
+        <CompletionRing pct={pct} onClick={() => router.push("/tasks")} />
 
         <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
           <div className="flex items-center justify-between">
@@ -250,126 +228,6 @@ export function GridTasksWidget({
           </AnimatePresence>
         )}
       </div>
-
-      {/* Fullscreen modal — full day in chronological order */}
-      <AnimatePresence>
-        {modalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm"
-              onClick={closeModal}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="fixed inset-4 z-[201] flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl md:inset-12"
-            >
-              <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Today&apos;s Tasks
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {pct}% complete · {completedCount}/{total} done
-                  </p>
-                </div>
-                <IconTip label="Close">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
-                    title="Close"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </IconTip>
-              </header>
-
-              <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
-                {allSorted.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    No tasks scheduled today
-                  </p>
-                )}
-                {allSorted.map((task) => {
-                  const done = task.isCompleted;
-                  const overdue = !done && task.isOverdue;
-                  const titleClassName = cn(
-                    "text-sm font-semibold",
-                    done && "text-[var(--hub-green)] line-through opacity-70",
-                    overdue && "text-[var(--hub-red)]",
-                    !done && !overdue && "text-foreground"
-                  );
-                  return (
-                    <div
-                      key={task.id}
-                      className="flex items-center gap-3 rounded-xl border border-border/40 px-3 py-3"
-                    >
-                      {/* Mobile: time stacked above the title instead of a
-                          fixed-width column to its left — a single inline
-                          row left almost no width for the title on a phone
-                          (time + gap + action icon ate ~165px before any
-                          text), so titles longer than a few words truncated
-                          unreadably. Desktop/tablet keep the compact inline
-                          row; there's enough width there for both. */}
-                      {isMobile ? (
-                        <div className="min-w-0 flex-1">
-                          <span className="block text-xs font-semibold tabular-nums text-muted-foreground">
-                            {formatTime(task.dueTime, task.isAllDay)}
-                          </span>
-                          <span className={cn(titleClassName, "block break-words")}>
-                            {task.title}
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
-                            {formatTime(task.dueTime, task.isAllDay)}
-                          </span>
-                          <span className={cn(titleClassName, "min-w-0 flex-1 truncate")}>
-                            {task.title}
-                          </span>
-                        </>
-                      )}
-                      {task.type === "information" ? (
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center">
-                          <Info className="h-6 w-6 text-blue-400" />
-                        </span>
-                      ) : done ? (
-                        <IconTip label="Undo — mark as not complete">
-                          <button
-                            type="button"
-                            onClick={() => onUncomplete(task.id)}
-                            title="Undo — mark as not complete"
-                            className="group/undo flex h-11 w-11 shrink-0 items-center justify-center"
-                          >
-                            <CheckCircle2 className="h-7 w-7 text-[var(--hub-green)] transition-colors group-active/undo:text-[var(--hub-red)]" />
-                          </button>
-                        </IconTip>
-                      ) : (
-                        <IconTip label="Mark complete">
-                          <button
-                            type="button"
-                            onClick={() => onComplete(task.id)}
-                            title="Mark complete"
-                            className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
-                          >
-                            <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-active/cb:text-[var(--hub-green)]" />
-                          </button>
-                        </IconTip>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Missed Yesterday popover — fixed so it escapes the overflow-hidden card */}
       <AnimatePresence>

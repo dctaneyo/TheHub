@@ -42,7 +42,7 @@ import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
 import { MentionInput, MessageContent } from "@/components/mention-input";
 import type { Mentionable } from "@/components/mention-input";
 
-interface Message {
+export interface Message {
   id: string;
   conversationId: string;
   senderType: string;
@@ -55,7 +55,7 @@ interface Message {
   reactions?: Array<{ emoji: string; userId: string; userName: string; createdAt: string }>;
 }
 
-interface Conversation {
+export interface Conversation {
   id: string;
   type: "direct" | "global" | "group";
   name: string;
