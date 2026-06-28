@@ -168,7 +168,7 @@ export default function DesignPreviewPage() {
   );
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <div className="absolute inset-0 overflow-y-auto overscroll-contain">
       {/* Page header */}
       <div className="border-b border-border bg-card px-6 pb-4 pt-5">
         <h1 className="mb-1 text-lg font-bold text-foreground">
