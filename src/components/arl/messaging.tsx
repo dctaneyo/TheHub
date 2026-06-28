@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -12,6 +13,7 @@ import {
   Plus,
   Hash,
   Smile,
+  MoreVertical,
 } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,9 @@ export function Messaging() {
     fetchMessages, getReceiptDetail,
     startTyping, stopTyping,
   } = useMessaging();
+
+  // Local: tracks overflow menu open state for the chat header (Group Info + Search)
+  const [showConvoOverflow, setShowConvoOverflow] = useState(false);
 
   const msgVirtualizer = useVirtualizer({
     count: visibleMessages.length,
@@ -105,7 +110,7 @@ export function Messaging() {
                   onClick={() => toggleMember(p)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
-                    selected ? "border-[var(--hub-red)]/30 bg-red-50" : "border-border bg-card hover:bg-muted"
+                    selected ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card hover:bg-muted"
                   )}
                 >
                   <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
@@ -201,10 +206,12 @@ export function Messaging() {
             <h3 className="text-lg font-semibold text-foreground">Messages</h3>
             <p className="text-xs text-muted-foreground">{totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}</p>
           </div>
+          {/* Direct is primary (far more frequent than creating a group);
+              Group stays secondary/muted — different visual weight signals the difference */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
-              className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--hub-red)]/90"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Direct</span>
@@ -247,7 +254,14 @@ export function Messaging() {
   const isGroup = activeConvo.type === "group" || activeConvo.type === "global";
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card" onClick={() => setReceiptPopover(null)}>
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      {/* Chat header: Back (used every visit) + Mute (persistent state) stay visible.
+          Group Info + Search are secondary — reached when needed, not every time.
+          Folded into a single overflow next to Mute so the header has 3 actions
+          instead of 4-5, and none compete with Back for primary status (§12). */}
+      <div
+        className="flex items-center gap-3 border-b border-border px-4 py-3"
+        onClick={() => setShowConvoOverflow(false)}
+      >
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -258,27 +272,7 @@ export function Messaging() {
           <h4 className="text-sm font-semibold text-foreground">{activeConvo.name}</h4>
           <p className="text-xs text-muted-foreground">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
         </div>
-        {isGroup && (
-          <button
-            onClick={() => setShowGroupInfo(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-            title="Group Info"
-            aria-label="Group info"
-          >
-            <Info className="h-4 w-4" />
-          </button>
-        )}
-        <button
-          onClick={() => { setShowSearch((v) => !v); setSearchQuery(""); setTimeout(() => searchInputRef.current?.focus(), 50); }}
-          className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-            showSearch ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"
-          )}
-          title="Search messages"
-          aria-label="Search messages"
-        >
-          <Search className="h-4 w-4" />
-        </button>
+        {/* Mute — persistent state, earns permanent visibility */}
         <button
           onClick={() => toggleMute(activeConvo.id)}
           className={cn(
@@ -292,6 +286,47 @@ export function Messaging() {
         >
           {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
         </button>
+        {/* Overflow — Group Info + Search (secondary, occasional) */}
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowConvoOverflow((v) => !v); }}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+              showConvoOverflow ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+            )}
+            title="More options"
+            aria-label="More options"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+          {showConvoOverflow && (
+            <div className="absolute right-0 top-full z-10 mt-1 min-w-[152px] rounded-xl border border-border bg-card shadow-lg py-1">
+              {isGroup && (
+                <button
+                  onClick={() => { setShowGroupInfo(true); setShowConvoOverflow(false); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl"
+                >
+                  <Info className="h-3.5 w-3.5 shrink-0" /> Group Info
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowSearch((v) => !v);
+                  setSearchQuery("");
+                  setShowConvoOverflow(false);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-muted",
+                  isGroup ? "rounded-b-xl" : "rounded-xl",
+                  showSearch ? "text-blue-600 dark:text-blue-400" : "text-foreground"
+                )}
+              >
+                <Search className="h-3.5 w-3.5 shrink-0" /> {showSearch ? "Close Search" : "Search"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Search bar */}

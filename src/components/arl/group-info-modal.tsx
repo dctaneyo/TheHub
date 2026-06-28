@@ -470,7 +470,7 @@ export function GroupInfoModal({
                         <div className="flex gap-2 mt-1">
                           {groupInfo.createdBy === member.memberId &&
                             groupInfo.createdByType === member.memberType && (
-                              <Badge variant="default" className="bg-amber-500">
+                              <Badge variant="default" className="bg-amber-500 dark:bg-amber-600">
                                 <Crown className="h-3 w-3 mr-1" />
                                 Creator
                               </Badge>
@@ -512,8 +512,10 @@ export function GroupInfoModal({
             </div>
 
             {/* Leave Group Button - hidden for global chat */}
+            {/* pt-6 matches the space-y-6 used throughout this component, giving the
+                destructive action the visual separation it deserves (§5 — was pt-4) */}
             {!isGlobalChat && (
-              <div className="pt-4 border-t">
+              <div className="pt-6 border-t">
                 <Button
                   variant="destructive"
                   onClick={handleLeaveGroup}
