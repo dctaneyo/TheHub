@@ -1,0 +1,92 @@
+"use client"
+
+import * as React from "react"
+import { Select as SelectPrimitive } from "@ark-ui/react/select"
+import { Check, ChevronDown } from "@/lib/icons"
+
+import { cn } from "@/lib/utils"
+
+// Replaces native <select> app-wide (DESIGN.md §15 decision) so every
+// dropdown gets real styling control instead of the browser default.
+// `createListCollection` is re-exported so call sites don't need a
+// separate import for it.
+export { createListCollection } from "@ark-ui/react/collection"
+
+function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  return <SelectPrimitive.Root data-slot="select" {...props} />
+}
+
+function SelectTrigger({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+  return (
+    <SelectPrimitive.Control>
+      <SelectPrimitive.Trigger
+        data-slot="select-trigger"
+        className={cn(
+          "flex w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors",
+          "hover:border-ring/50",
+          "focus-visible:ring-2 focus-visible:ring-ring/50",
+          "disabled:pointer-events-none disabled:opacity-50",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <SelectPrimitive.Indicator className="text-muted-foreground data-[state=open]:rotate-180 transition-transform">
+          <ChevronDown className="h-4 w-4" />
+        </SelectPrimitive.Indicator>
+      </SelectPrimitive.Trigger>
+    </SelectPrimitive.Control>
+  )
+}
+
+function SelectValueText(props: React.ComponentProps<typeof SelectPrimitive.ValueText>) {
+  return <SelectPrimitive.ValueText data-slot="select-value" {...props} />
+}
+
+function SelectContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  return (
+    <SelectPrimitive.Positioner>
+      <SelectPrimitive.Content
+        data-slot="select-content"
+        className={cn(
+          "z-50 min-w-[var(--reference-width)] overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+          className
+        )}
+        {...props}
+      />
+    </SelectPrimitive.Positioner>
+  )
+}
+
+function SelectItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  return (
+    <SelectPrimitive.Item
+      data-slot="select-item"
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-foreground outline-none cursor-pointer",
+        "data-[highlighted]:bg-muted",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemIndicator>
+        <Check className="h-3.5 w-3.5" />
+      </SelectPrimitive.ItemIndicator>
+    </SelectPrimitive.Item>
+  )
+}
+
+export { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem }
