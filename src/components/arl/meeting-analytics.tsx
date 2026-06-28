@@ -174,8 +174,8 @@ export function MeetingAnalyticsDashboard() {
 
         {/* Meeting stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard icon={Clock} label="Duration" value={formatDuration(m.duration)} color="blue" />
-          <StatCard icon={Users} label="Peak Participants" value={String(m.peakParticipants)} color="green" />
+          <StatCard icon={Clock} label="Duration" value={formatDuration(m.duration)} color="blue" emphasized />
+          <StatCard icon={Users} label="Peak Participants" value={String(m.peakParticipants)} color="green" emphasized />
           <StatCard icon={MessageCircle} label="Messages" value={String(m.totalMessages)} color="purple" />
           <StatCard icon={ThumbsUp} label="Reactions" value={String(m.totalReactions)} color="yellow" />
           <StatCard icon={HelpCircle} label="Questions" value={String(m.totalQuestions)} color="orange" />
@@ -383,8 +383,8 @@ export function MeetingAnalyticsDashboard() {
       {/* Summary cards */}
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard icon={Video} label="Total Meetings" value={String(summary.totalMeetings)} color="blue" />
-          <StatCard icon={Clock} label="Avg Duration" value={formatDuration(summary.avgDuration)} color="green" />
+          <StatCard icon={Video} label="Total Meetings" value={String(summary.totalMeetings)} color="blue" emphasized />
+          <StatCard icon={Clock} label="Avg Duration" value={formatDuration(summary.avgDuration)} color="green" emphasized />
           <StatCard icon={Users} label="Avg Participants" value={String(summary.avgParticipants)} color="purple" />
           <StatCard icon={MessageCircle} label="Total Messages" value={String(summary.totalMessages)} color="yellow" />
           <StatCard icon={ThumbsUp} label="Total Reactions" value={String(summary.totalReactions)} color="orange" />
@@ -497,9 +497,11 @@ export function MeetingAnalyticsDashboard() {
   );
 }
 
-// Reusable stat card
-function StatCard({ icon: Icon, label, value, color }: {
-  icon: any; label: string; value: string; color: string;
+// Reusable stat card. `emphasized` promotes the 1-2 headline stats in a
+// row of otherwise-equal-weight cards (Section 7 — a flat 8-stat grid is a
+// genre default, not a structure that says which numbers matter most).
+function StatCard({ icon: Icon, label, value, color, emphasized = false }: {
+  icon: any; label: string; value: string; color: string; emphasized?: boolean;
 }) {
   const colorClasses: Record<string, string> = {
     blue: "bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400",
@@ -515,11 +517,15 @@ function StatCard({ icon: Icon, label, value, color }: {
   return (
     <div className="bg-card rounded-xl p-3 border border-border">
       <div className="flex items-center gap-2 mb-1">
-        <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", colorClasses[color] || colorClasses.blue)}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={cn(
+          "rounded-lg flex items-center justify-center",
+          emphasized ? "h-9 w-9" : "h-7 w-7",
+          colorClasses[color] || colorClasses.blue
+        )}>
+          <Icon className={emphasized ? "h-4.5 w-4.5" : "h-3.5 w-3.5"} />
         </div>
       </div>
-      <p className="text-lg font-semibold text-foreground">{value}</p>
+      <p className={cn("text-foreground", emphasized ? "text-2xl font-bold" : "text-lg font-semibold")}>{value}</p>
       <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
     </div>
   );
