@@ -25,6 +25,8 @@ interface TaskVirtualListProps {
   onToggleHidden: (task: Task) => void;
 }
 
+const GRID_COLS = "2fr 1fr 1fr 1.5fr auto";
+
 export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }: TaskVirtualListProps) {
   const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -41,53 +43,88 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
   }
 
   return (
-    <div ref={parentRef} className="overflow-y-auto rounded-xl flex-1 min-h-0">
-      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
-        {virtualizer.getVirtualItems().map((vRow) => {
-          const task = sorted[vRow.index];
-          const priorityStyle = PRIORITIES.find((p) => p.value === task.priority);
-          return (
-            <div
-              key={task.id}
-              data-index={vRow.index}
-              ref={virtualizer.measureElement}
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
-            >
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 ">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-foreground">{task.title}</span>
-                    <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
-                      {task.priority}
-                    </Badge>
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Desktop column header */}
+      <div
+        className="hidden md:grid text-xs text-muted-foreground border-b border-border bg-card sticky top-0"
+        style={{ gridTemplateColumns: GRID_COLS }}
+      >
+        <div className="px-4 py-2.5 font-semibold">Task</div>
+        <div className="px-4 py-2.5 font-semibold">Type</div>
+        <div className="px-4 py-2.5 font-semibold">Priority</div>
+        <div className="px-4 py-2.5 font-semibold">Schedule</div>
+        <div className="px-4 py-2.5 font-semibold text-right">Actions</div>
+      </div>
+
+      <div ref={parentRef} className="overflow-y-auto rounded-xl flex-1 min-h-0">
+        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+          {virtualizer.getVirtualItems().map((vRow) => {
+            const task = sorted[vRow.index];
+            const priorityStyle = PRIORITIES.find((p) => p.value === task.priority);
+            return (
+              <div
+                key={task.id}
+                data-index={vRow.index}
+                ref={virtualizer.measureElement}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
+              >
+                {/* Desktop grid row */}
+                <div
+                  className="hidden md:grid items-center border-b border-border bg-card"
+                  style={{ gridTemplateColumns: GRID_COLS }}
+                >
+                  {/* Task column */}
+                  <div className="px-4 py-2.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
+                      <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
+                        {task.priority}
+                      </Badge>
+                      {task.isRecurring && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Repeat className="h-2.5 w-2.5" />
+                          Recurring
+                        </Badge>
+                      )}
+                      {task.allowEarlyComplete && (
+                        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                          Early OK
+                        </Badge>
+                      )}
+                      {(!task.showInToday || !task.showInCalendar) && (
+                        <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                          {[!task.showInToday && "Today", !task.showInCalendar && "Cal/7-Day"].filter(Boolean).join("/")} hidden
+                        </Badge>
+                      )}
+                    </div>
+                    {task.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                    )}
+                  </div>
+                  {/* Type column */}
+                  <div className="px-4 py-2.5">
                     <Badge variant="outline" className="text-xs capitalize">
                       {task.type}
                     </Badge>
-                    {task.isRecurring && (
-                      <Badge variant="outline" className="gap-1 text-xs">
-                        <Repeat className="h-2.5 w-2.5" />
-                        Recurring
-                      </Badge>
-                    )}
-                    {task.allowEarlyComplete && (
-                      <Badge variant="outline" className="text-xs border-emerald-200 bg-emerald-50 text-emerald-700">
-                        Early OK
-                      </Badge>
-                    )}
-                    {(!task.showInToday || !task.showInCalendar) && (
-                      <Badge variant="outline" className="text-xs border-amber-200 bg-amber-50 text-amber-700">
-                        {[!task.showInToday && "Today", !task.showInCalendar && "Cal/7-Day"].filter(Boolean).join("/")} hidden
-                      </Badge>
-                    )}
                   </div>
-                  {task.description && (
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
-                  )}
-                  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                  {/* Priority column */}
+                  <div className="px-4 py-2.5">
+                    <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
+                      {task.priority}
+                    </Badge>
+                  </div>
+                  {/* Schedule column */}
+                  <div className="px-4 py-2.5 flex flex-col gap-0.5 text-xs text-muted-foreground">
                     {!task.isRecurring && task.dueDate && (
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
                         {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    {task.isRecurring && (
+                      <span className="flex items-center gap-1">
+                        <Repeat className="h-3 w-3" />
+                        Recurring
                       </span>
                     )}
                     {task.type !== "reminder" && (
@@ -100,45 +137,129 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                       <Sparkles className="h-3 w-3" />
                       {task.points} pts
                     </span>
-                    {task.locationId ? (
-                      <span>
-                        {locations.find((l) => l.id === task.locationId)?.name || "Specific location"}
-                      </span>
-                    ) : (
-                      <span>All locations</span>
-                    )}
+                    <span>
+                      {task.locationId
+                        ? locations.find((l) => l.id === task.locationId)?.name || "Specific location"
+                        : "All locations"}
+                    </span>
+                  </div>
+                  {/* Actions column */}
+                  <div className="px-4 py-2.5 flex items-center gap-1">
+                    <button
+                      onClick={() => onToggleHidden(task)}
+                      title={task.isHidden ? "Show task" : "Hide task"}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                        task.isHidden
+                          ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => onEdit(task)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(task.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-1 self-start mt-1 sm:mt-0 sm:self-center">
-                  <button
-                    onClick={() => onToggleHidden(task)}
-                    title={task.isHidden ? "Show task" : "Hide task"}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                      task.isHidden
-                        ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+
+                {/* Mobile card */}
+                <div className="md:hidden flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground">{task.title}</span>
+                      <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
+                        {task.priority}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {task.type}
+                      </Badge>
+                      {task.isRecurring && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Repeat className="h-2.5 w-2.5" />
+                          Recurring
+                        </Badge>
+                      )}
+                      {task.allowEarlyComplete && (
+                        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                          Early OK
+                        </Badge>
+                      )}
+                      {(!task.showInToday || !task.showInCalendar) && (
+                        <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                          {[!task.showInToday && "Today", !task.showInCalendar && "Cal/7-Day"].filter(Boolean).join("/")} hidden
+                        </Badge>
+                      )}
+                    </div>
+                    {task.description && (
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                     )}
-                  >
-                    {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                  <button
-                    onClick={() => onEdit(task)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(task.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                      {!task.isRecurring && task.dueDate && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                      {task.type !== "reminder" && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime12(task.dueTime)}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        {task.points} pts
+                      </span>
+                      {task.locationId ? (
+                        <span>
+                          {locations.find((l) => l.id === task.locationId)?.name || "Specific location"}
+                        </span>
+                      ) : (
+                        <span>All locations</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-1 self-start mt-1 sm:mt-0 sm:self-center">
+                    <button
+                      onClick={() => onToggleHidden(task)}
+                      title={task.isHidden ? "Show task" : "Hide task"}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                        task.isHidden
+                          ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => onEdit(task)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(task.id)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -224,11 +224,7 @@ actually want."
 - `scheduled-meetings.tsx:417-420` — host/date/time/code metadata wraps
   instead of aligning; same-shaped, comparable records.
 - ~~`data-management-audit-log.tsx:79-80`~~ — **done.** Real `<table>` on `md:` and up (Actor / Action / Details / When / IP columns, sticky `<thead>`, scrolls within `max-h-96`); stacked-card fallback on mobile. Extracted `filteredLogs` variable to drive both views from one filter computation. Updated actor-type badge from flat `bg-purple-100 dark:bg-purple-950` to opacity-based `bg-purple-500/10`.
-- `meeting-analytics.tsx`'s "Recent Meetings" list (`:411-444`) — same
-  tell, and notably **inconsistent with itself**: this exact file's
-  participant detail view (`:193-245`) already correctly uses a real
-  `<table>` with a mobile-card fallback. The pattern already exists in
-  this codebase; it just wasn't applied to the list above it.
+- ~~`meeting-analytics.tsx`'s "Recent Meetings" list (`:411-444`)~~ — **done.** Real `<table>` on `md:` and up (Meeting / Participants / Duration / Messages / chevron columns), each `<tr>` clickable via `onClick={() => fetchDetail(m.id)}`; existing mobile `<button>`-per-row format preserved as `md:hidden`. Consistent with the participant detail table already in the same file.
 
 **Confirmed correctly cards (control cases, not candidates):**
 `remote-viewer.tsx`'s location grid (action launchers, not comparable

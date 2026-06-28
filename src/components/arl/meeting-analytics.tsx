@@ -406,44 +406,91 @@ export function MeetingAnalyticsDashboard() {
             <p className="text-xs mt-1">Analytics will appear after your first meeting.</p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {meetings.map(m => (
-              <button
-                key={m.id}
-                onClick={() => fetchDetail(m.id)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground truncate">{m.title}</span>
-                    {!m.endedAt && (
-                      <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-2 py-1 rounded-full">LIVE</span>
-                    )}
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground text-xs border-b border-border">
+                    <th className="text-left px-4 py-2 font-semibold">Meeting</th>
+                    <th className="text-center px-4 py-2 font-semibold">Participants</th>
+                    <th className="text-center px-4 py-2 font-semibold">Duration</th>
+                    <th className="text-center px-4 py-2 font-semibold">Messages</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {meetings.map(m => (
+                    <tr
+                      key={m.id}
+                      onClick={() => fetchDetail(m.id)}
+                      className="cursor-pointer border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">{m.title}</span>
+                          {!m.endedAt && (
+                            <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-2 py-1 rounded-full">LIVE</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-muted-foreground">{formatDate(m.startedAt)}</span>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <span className="text-xs text-muted-foreground">{m.hostName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-foreground">{m.peakParticipants}</td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-foreground">{formatDuration(m.duration)}</td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-foreground">{m.totalMessages}</td>
+                      <td className="px-4 py-3 text-right">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground inline-block" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile button list */}
+            <div className="md:hidden divide-y divide-border">
+              {meetings.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => fetchDetail(m.id)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground truncate">{m.title}</span>
+                      {!m.endedAt && (
+                        <span className="text-xs bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 px-2 py-1 rounded-full">LIVE</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-muted-foreground">{formatDate(m.startedAt)}</span>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground">{m.hostName}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-muted-foreground">{formatDate(m.startedAt)}</span>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs text-muted-foreground">{m.hostName}</span>
+                  <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-2 sm:ml-4">
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-foreground">{m.peakParticipants}</p>
+                      <p className="text-xs text-muted-foreground">joined</p>
+                    </div>
+                    <div className="text-center hidden sm:block">
+                      <p className="text-sm font-semibold text-foreground">{formatDuration(m.duration)}</p>
+                      <p className="text-xs text-muted-foreground">duration</p>
+                    </div>
+                    <div className="text-center hidden sm:block">
+                      <p className="text-sm font-semibold text-foreground">{m.totalMessages}</p>
+                      <p className="text-xs text-muted-foreground">messages</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                </div>
-                <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-2 sm:ml-4">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">{m.peakParticipants}</p>
-                    <p className="text-xs text-muted-foreground">joined</p>
-                  </div>
-                  <div className="text-center hidden sm:block">
-                    <p className="text-sm font-semibold text-foreground">{formatDuration(m.duration)}</p>
-                    <p className="text-xs text-muted-foreground">duration</p>
-                  </div>
-                  <div className="text-center hidden sm:block">
-                    <p className="text-sm font-semibold text-foreground">{m.totalMessages}</p>
-                    <p className="text-xs text-muted-foreground">messages</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
