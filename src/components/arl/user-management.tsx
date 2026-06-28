@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -307,22 +308,16 @@ export function UserManagement() {
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-muted p-1">
-        {(["arls", "locations"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold capitalize transition-colors",
-              tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t === "arls" ? <Shield className="h-3.5 w-3.5" /> : <Store className="h-3.5 w-3.5" />}
-            {t === "arls" ? "ARLs" : "Locations"}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(d) => setTab(d.value as Tab)}>
+        <TabsList>
+          <TabsTrigger value="arls" className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5" /> ARLs
+          </TabsTrigger>
+          <TabsTrigger value="locations" className="flex items-center gap-1.5">
+            <Store className="h-3.5 w-3.5" /> Locations
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div>
         {items.length === 0 ? (
