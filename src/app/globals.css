@@ -220,18 +220,18 @@ html {
 
 :root,
 .dp-dark {
-  /* Warm-tinted dark palette — not stock zinc (§17) */
-  --dp-bg: #0e0c0d;
-  --dp-surface-1: #161314;
-  --dp-surface-2: #1c191a;
-  --dp-surface-3: #221e1f;
-  --dp-border: #2a2527;
-  --dp-border-hover: #3a3336;
-  --dp-muted: #1a1718;
+  /* Matches actual app dark theme — same as --background, --card, --foreground */
+  --dp-bg: #0a0a0a;
+  --dp-surface-1: #1c1c1c;
+  --dp-surface-2: #262626;
+  --dp-surface-3: #2a2a2a;
+  --dp-border: #2e2e2e;
+  --dp-border-hover: #3a3a3a;
+  --dp-muted: #171717;
 
-  --dp-text: #ede9eb;
-  --dp-text-secondary: #a39da0;
-  --dp-text-tertiary: #6b6568;
+  --dp-text: #f2f2f2;
+  --dp-text-secondary: #a3a3a3;
+  --dp-text-tertiary: #6b7280;
 
   --dp-brand: #e4002b;
   --dp-brand-dim: rgba(228, 0, 43, 0.08);
@@ -250,33 +250,33 @@ html {
   --dp-radius-sm: 8px;
   --dp-radius-xs: 6px;
 
-  --dp-btn-primary-bg: #ede9eb;
-  --dp-btn-primary-text: #0e0c0d;
-  --dp-btn-primary-hover: #f4f0f2;
-  --dp-btn-primary-active: #ddd9db;
+  --dp-btn-primary-bg: #f2f2f2;
+  --dp-btn-primary-text: #0a0a0a;
+  --dp-btn-primary-hover: #e8e8e8;
+  --dp-btn-primary-active: #d4d4d4;
 
   --dp-shadow-overlay: 0 12px 40px rgba(0,0,0,0.6);
   --dp-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.5);
   --dp-shadow-thumb: 0 1px 4px rgba(0,0,0,0.4);
 
-  --dp-chrome-bg: #0c0a0b;
-  --dp-chrome-border: #1e1b1c;
+  --dp-chrome-bg: #0a0a0a;
+  --dp-chrome-border: #2e2e2e;
   --dp-overlay-scrim: rgba(0, 0, 0, 0.65);
 }
 
 .dp-light {
-  /* Light mode — deliberate pass per §8, not a naive invert */
-  --dp-bg: #faf8f8;
+  /* Matches actual app light theme — same as --background, --card, --foreground */
+  --dp-bg: #f0f4f8;
   --dp-surface-1: #ffffff;
-  --dp-surface-2: #ffffff;
-  --dp-surface-3: #ffffff;
-  --dp-border: #e8e4e5;
-  --dp-border-hover: #d4cecd;
-  --dp-muted: #f3f0f1;
+  --dp-surface-2: #f8fafc;
+  --dp-surface-3: #f1f5f9;
+  --dp-border: #e2e8f0;
+  --dp-border-hover: #cbd5e1;
+  --dp-muted: #f1f5f9;
 
-  --dp-text: #1a1718;
-  --dp-text-secondary: #6b6568;
-  --dp-text-tertiary: #9a9497;
+  --dp-text: #1e293b;
+  --dp-text-secondary: #64748b;
+  --dp-text-tertiary: #94a3b8;
 
   --dp-brand: #d40027;
   --dp-brand-dim: rgba(212, 0, 39, 0.06);
@@ -291,17 +291,17 @@ html {
   --dp-destructive: #dc2626;
   --dp-destructive-dim: rgba(220, 38, 38, 0.06);
 
-  --dp-btn-primary-bg: #1a1718;
+  --dp-btn-primary-bg: #1e293b;
   --dp-btn-primary-text: #ffffff;
-  --dp-btn-primary-hover: #2a2527;
-  --dp-btn-primary-active: #3a3336;
+  --dp-btn-primary-hover: #0f172a;
+  --dp-btn-primary-active: #334155;
 
   --dp-shadow-overlay: 0 12px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
   --dp-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
   --dp-shadow-thumb: 0 1px 3px rgba(0,0,0,0.15);
 
-  --dp-chrome-bg: #ffffff;
-  --dp-chrome-border: #e8e4e5;
+  --dp-chrome-bg: #f0f4f8;
+  --dp-chrome-border: #e2e8f0;
   --dp-overlay-scrim: rgba(26, 23, 24, 0.25);
 }
 
@@ -666,3 +666,117 @@ html {
   padding: 16px 18px;
 }
 .dp-kpi-urgent { border-color: var(--dp-brand-border); }
+
+/* Left-border KPI variants (Design Directions option B) */
+.dp-kpi-left-red   { border-left: 3px solid var(--dp-destructive); }
+.dp-kpi-left-amber { border-left: 3px solid var(--dp-amber); }
+.dp-kpi-left-green { border-left: 3px solid var(--dp-emerald); }
+.dp-kpi-left-muted { border-left: 3px solid var(--dp-border-hover); }
+
+/* ─── Button variants (Design Directions) ──────────────────────────────────── */
+.dp-btn-brand {
+  background: #e4002b;
+  color: #ffffff;
+  border-color: #e4002b;
+}
+.dp-btn-brand:hover  { background: #cc0026; border-color: #cc0026; }
+.dp-btn-brand:active { background: #b00020; border-color: #b00020; }
+
+.dp-btn-tinted {
+  background: var(--dp-brand-dim);
+  color: var(--dp-brand);
+  border-color: var(--dp-brand-border);
+}
+.dp-btn-tinted:hover  { background: rgba(228, 0, 43, 0.12); }
+.dp-btn-tinted:active { background: rgba(228, 0, 43, 0.18); }
+
+/* ─── Tinted pill badges (Design Directions option B) ──────────────────────── */
+.dp-pill-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+}
+.dp-pill-green  { background: var(--dp-emerald-dim); color: var(--dp-emerald); }
+.dp-pill-amber  { background: var(--dp-amber-dim);   color: var(--dp-amber); }
+.dp-pill-red    { background: var(--dp-destructive-dim); color: var(--dp-destructive); }
+.dp-pill-teal   { background: var(--dp-teal-dim);    color: var(--dp-teal); }
+.dp-pill-muted  { background: var(--dp-muted);       color: var(--dp-text-tertiary); }
+
+/* ─── Outlined pill badges (Design Directions option C) ────────────────────── */
+.dp-outline-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  border: 1px solid currentColor;
+}
+.dp-outline-green { color: var(--dp-emerald); }
+.dp-outline-amber { color: var(--dp-amber); }
+.dp-outline-red   { color: var(--dp-destructive); }
+.dp-outline-teal  { color: var(--dp-teal); }
+
+/* ─── Input variants (Design Directions) ───────────────────────────────────── */
+.dp-input-underline {
+  width: 100%;
+  padding: 10px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--dp-border);
+  border-radius: 0;
+  color: var(--dp-text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.dp-input-underline:focus { border-bottom-color: var(--dp-text); }
+
+.dp-input-filled {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--dp-surface-2);
+  border: 1px solid transparent;
+  border-radius: var(--dp-radius-sm);
+  color: var(--dp-text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: background 0.12s, border-color 0.12s;
+}
+.dp-input-filled:focus { background: var(--dp-surface-3); border-color: var(--dp-border); }
+
+/* ─── Segmented/pill tabs (Design Directions option B) ─────────────────────── */
+.dp-tabs-pill-list {
+  display: inline-flex; gap: 2px;
+  background: var(--dp-muted);
+  padding: 3px; border-radius: var(--dp-radius-sm);
+}
+.dp-tab-pill {
+  padding: 6px 14px;
+  font-size: 13px; font-weight: 600;
+  color: var(--dp-text-secondary);
+  border-radius: calc(var(--dp-radius-sm) - 2px);
+  transition: background 0.12s, color 0.12s;
+  cursor: pointer; background: none; border: none;
+}
+.dp-tab-pill:hover { color: var(--dp-text); }
+.dp-tab-pill-active {
+  background: var(--dp-surface-1);
+  color: var(--dp-text);
+  box-shadow: var(--dp-shadow-thumb);
+}
+
+/* ─── Top-border tabs (Design Directions option C) ─────────────────────────── */
+.dp-tab-top {
+  padding: 10px 16px 8px;
+  font-size: 14px; font-weight: 600;
+  color: var(--dp-text-tertiary);
+  border-top: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  cursor: pointer; background: none; border-bottom: none;
+  border-left: none; border-right: none;
+}
+.dp-tab-top:hover { color: var(--dp-text-secondary); }
+.dp-tab-top-active {
+  color: var(--dp-text);
+  border-top-color: var(--dp-brand);
+}

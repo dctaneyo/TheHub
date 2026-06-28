@@ -163,7 +163,7 @@ export default function DesignPreviewPage() {
     <div
       className={cn(
         "fixed inset-0 overflow-y-auto overscroll-contain bg-background text-foreground",
-        isDark ? "dp-dark" : "dp-light"
+        isDark ? "dp-dark dark" : "dp-light"
       )}
       style={{ height: "100dvh" }}
     >
@@ -578,6 +578,264 @@ export default function DesignPreviewPage() {
             </div>
             <p className="text-xs text-[var(--dp-text-tertiary)]">Hover or keyboard-focus to reveal.</p>
           </NewCell>
+        </div>
+      </div>
+
+      {/* ═════════════════════════════════════════════════════════════════════
+          DESIGN DIRECTIONS — options for key decisions
+          ═════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-[var(--dp-bg)] px-4 pb-14 pt-4">
+        <SectionDivider label="Design Directions — Pick One Per Decision" />
+
+        {/* ─── Primary action color ─── */}
+        <div className="mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
+            Decision: Primary action color
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <NewCell name="A — Neutral / High-contrast">
+              <div className="flex flex-wrap gap-2">
+                <button className="dp-btn dp-btn-primary">Add User</button>
+                <button className="dp-btn dp-btn-primary dp-btn-sm">Save</button>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">
+                Dark-on-light / light-on-dark. Content-first — matches Linear, Vercel, Raycast. Lowest visual noise.
+              </p>
+            </NewCell>
+            <NewCell name="B — Brand Red (#e4002b)">
+              <div className="flex flex-wrap gap-2">
+                <button className="dp-btn dp-btn-brand">Add User</button>
+                <button className="dp-btn dp-btn-brand dp-btn-sm">Save</button>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">
+                Solid brand fill. High-visibility, consistent with the sidebar accent and urgency system already in the app.
+              </p>
+            </NewCell>
+            <NewCell name="C — Tinted Brand">
+              <div className="flex flex-wrap gap-2">
+                <button className="dp-btn dp-btn-tinted">Add User</button>
+                <button className="dp-btn dp-btn-tinted dp-btn-sm">Save</button>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">
+                Subtle red fill + brand text. Softer presence — good when the button sits near other high-contrast elements.
+              </p>
+            </NewCell>
+          </div>
+        </div>
+
+        {/* ─── Status badge style ─── */}
+        <div className="mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
+            Decision: Status badge style
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <NewCell name="A — Dot + Label (current direction)">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-green" /> Online</span>
+                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-amber" /> Reconnecting</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-red" /> Offline</span>
+                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-teal" /> Remote active</span>
+                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-muted" /> Inactive</span>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Minimal — no pill background. Fits inline with text and dense rows without adding bulk.</p>
+            </NewCell>
+            <NewCell name="B — Tinted Pill">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="dp-pill-badge dp-pill-green">Online</span>
+                  <span className="dp-pill-badge dp-pill-amber">Reconnecting</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="dp-pill-badge dp-pill-red">Offline</span>
+                  <span className="dp-pill-badge dp-pill-teal">Remote active</span>
+                  <span className="dp-pill-badge dp-pill-muted">Inactive</span>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Filled tinted pill. More scannable in dense tables — color occupies more visual area.</p>
+            </NewCell>
+            <NewCell name="C — Outlined Pill">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="dp-outline-badge dp-outline-green">Online</span>
+                  <span className="dp-outline-badge dp-outline-amber">Reconnecting</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="dp-outline-badge dp-outline-red">Offline</span>
+                  <span className="dp-outline-badge dp-outline-teal">Remote active</span>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Border + color text, no fill. More formal — works well on white card surfaces without competing with tinted elements.</p>
+            </NewCell>
+          </div>
+        </div>
+
+        {/* ─── KPI card hierarchy ─── */}
+        <div className="mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
+            Decision: KPI card hierarchy signal
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <NewCell name="A — Uniform + border tint (current)">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="dp-kpi-card">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">12</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
+                </div>
+                <div className="dp-kpi-card dp-kpi-urgent">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-brand)]">2</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
+                </div>
+                <div className="dp-kpi-card">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">8</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Urgency via border tint + metric color only. Clean but the signal is subtle.</p>
+            </NewCell>
+            <NewCell name="B — Left accent border">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="dp-kpi-card dp-kpi-left-muted">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">12</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
+                </div>
+                <div className="dp-kpi-card dp-kpi-left-red">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">2</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
+                </div>
+                <div className="dp-kpi-card dp-kpi-left-muted">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">8</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Severity-scaled left border (REFACTOR-PLAN §7). Metric stays neutral — position and color are independent signals.</p>
+            </NewCell>
+            <NewCell name="C — Semantic value color">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="dp-kpi-card">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-emerald)]">12</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
+                </div>
+                <div className="dp-kpi-card">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-destructive)]">2</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
+                </div>
+                <div className="dp-kpi-card">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
+                  <div className="font-mono text-lg font-bold text-[var(--dp-emerald)]">8</div>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Semantic color on the value itself. Most direct — can get noisy if many cards are simultaneously urgent.</p>
+            </NewCell>
+          </div>
+        </div>
+
+        {/* ─── Input style ─── */}
+        <div className="mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
+            Decision: Input field style
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <NewCell name="A — Bordered (current)">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
+                  <input className="dp-input" defaultValue="David Santos" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
+                  <input className="dp-input" defaultValue="Pacific Time (PST)" />
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Border all around. Clear field boundary — good default for multi-field forms.</p>
+            </NewCell>
+            <NewCell name="B — Underline only">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
+                  <input className="dp-input-underline" defaultValue="David Santos" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
+                  <input className="dp-input-underline" defaultValue="Pacific Time (PST)" />
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Less chrome. Works well on settings pages with a lot of inline editing.</p>
+            </NewCell>
+            <NewCell name="C — Filled surface">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
+                  <input className="dp-input-filled" defaultValue="David Santos" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
+                  <input className="dp-input-filled" defaultValue="Pacific Time (PST)" />
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Elevated fill, borderless until focus. Blends with the card surface — feels embedded rather than inserted.</p>
+            </NewCell>
+          </div>
+        </div>
+
+        {/* ─── Tab navigation style ─── */}
+        <div className="mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
+            Decision: Tab navigation style
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <NewCell name="A — Underline (current direction)">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-0 border-b border-[var(--dp-border)]">
+                  <button className="dp-tab dp-tab-active">Overview</button>
+                  <button className="dp-tab">Tasks</button>
+                  <button className="dp-tab">Analytics</button>
+                </div>
+                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
+                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Bottom-border indicator. Clean on any surface. Used by the existing shadcn tabs.</p>
+            </NewCell>
+            <NewCell name="B — Segmented control">
+              <div className="flex flex-col gap-3">
+                <div className="dp-tabs-pill-list">
+                  <button className="dp-tab-pill dp-tab-pill-active">Overview</button>
+                  <button className="dp-tab-pill">Tasks</button>
+                  <button className="dp-tab-pill">Analytics</button>
+                </div>
+                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
+                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">iOS-style pill on a muted track. Immediately reads as mutually exclusive — good for switching views, not sub-pages.</p>
+            </NewCell>
+            <NewCell name="C — Top accent border">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-0 border-b border-[var(--dp-border)]">
+                  <button className="dp-tab-top dp-tab-top-active">Overview</button>
+                  <button className="dp-tab-top">Tasks</button>
+                  <button className="dp-tab-top">Analytics</button>
+                </div>
+                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
+                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
+                </div>
+              </div>
+              <p className="text-xs text-[var(--dp-text-tertiary)]">Brand-red top border on active. Stronger visual accent — draws the eye upward, which feels deliberate on dense pages.</p>
+            </NewCell>
+          </div>
         </div>
       </div>
 
