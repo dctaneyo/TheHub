@@ -325,110 +325,201 @@ export function UserManagement() {
       </div>
 
       {/* List — clicking anywhere outside an overflow button closes any open overflow */}
-      <div className="space-y-2" onClick={() => setOverflowOpenId(null)}>
-        {items.length === 0 && (
+      <div onClick={() => setOverflowOpenId(null)}>
+        {items.length === 0 ? (
           <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">No {tab} yet</p>
           </div>
-        )}
-        {items.map((item, i) => {
-          const isArl = tab === "arls";
-          const a = item as ArlUser;
-          const l = item as Location;
-          return (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl border border-border bg-card p-4",
-                !item.isActive && "opacity-50"
-              )}
-            >
-              <div className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold",
-                isArl ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-              )}>
-                {isArl ? <Shield className="h-4 w-4" /> : <Store className="h-4 w-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                  {isArl && a.role === "admin" && (
-                    <span className="flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                      <ShieldCheck className="h-3 w-3" /> Admin
-                    </span>
-                  )}
-                  {isArl && a.role !== "admin" && (
-                    <span className="rounded-md bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
-                      ARL
-                    </span>
-                  )}
-                  {!item.isActive && (
-                    <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Inactive</span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  ID: {item.userId}
-                  {!isArl && ` · Store #${l.storeNumber}`}
-                  {item.email && ` · ${item.email}`}
-                </p>
-              </div>
-              {/* Row actions: Edit + Activate always visible (frequent); Permissions + Delete
-                  grouped in overflow (rare/destructive — not every visit needs them) */}
-              <div className="flex shrink-0 items-center gap-1">
-                {/* Edit — frequent, primary visible action */}
-                <button
-                  onClick={() => openEdit(item)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                  title="Edit"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                </button>
-                {/* Toggle Active — moderate frequency, stays visible */}
-                <button
-                  onClick={() => handleToggleActive(item)}
-                  className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                    item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
-                  )}
-                  title={item.isActive ? "Disable" : "Enable"}
-                >
-                  {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                </button>
-                {/* Overflow: Permissions (rare) + Delete (destructive) — one icon instead of two,
-                    so the visible row actions don't compete with the primary Edit/Activate pair */}
-                <div className="relative">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                    title="More actions"
-                  >
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </button>
-                  {overflowOpenId === item.id && (
-                    <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
-                      {isArl && isCallerAdmin && a.role !== "admin" && (
-                        <button
-                          onClick={() => { openPermissions(a); setOverflowOpenId(null); }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl"
-                        >
-                          <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
-                        </button>
+        ) : (
+          <>
+            {/* Table — desktop (md:+). Seven fields per row (name, role, ID, store#,
+                email, status, actions) were string-mashed onto two text lines inside
+                a card; a user comparing IDs or store numbers across rows couldn't
+                do so without reading each blob (Section 11). */}
+            <div className="hidden md:block rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs text-muted-foreground">
+                      <th className="px-4 py-2.5 text-left font-semibold">Name</th>
+                      <th className="px-4 py-2.5 text-left font-semibold">User ID</th>
+                      {tab === "locations" && (
+                        <th className="px-4 py-2.5 text-left font-semibold">Store #</th>
                       )}
-                      <button
-                        onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
-                      </button>
-                    </div>
-                  )}
-                </div>
+                      <th className="px-4 py-2.5 text-left font-semibold">Email</th>
+                      <th className="px-4 py-2.5 text-left font-semibold">Status</th>
+                      <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => {
+                      const isArl = tab === "arls";
+                      const a = item as ArlUser;
+                      const l = item as Location;
+                      return (
+                        <tr key={item.id} className={cn("border-b border-border last:border-b-0", !item.isActive && "opacity-50")}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                                isArl ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                              )}>
+                                {isArl ? <Shield className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                                {isArl && a.role === "admin" && (
+                                  <span className="flex w-fit items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                    <ShieldCheck className="h-3 w-3" /> Admin
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.userId}</td>
+                          {tab === "locations" && (
+                            <td className="px-4 py-3 text-xs text-muted-foreground">#{l.storeNumber}</td>
+                          )}
+                          <td className="max-w-40 px-4 py-3">
+                            <span className="block truncate text-xs text-muted-foreground">{item.email || "—"}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.isActive ? (
+                              <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
+                            ) : (
+                              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Inactive</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleToggleActive(item)}
+                                className={cn("flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                                  item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
+                                )}
+                                title={item.isActive ? "Disable" : "Enable"}
+                              >
+                                {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  title="More actions"
+                                >
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                                {overflowOpenId === item.id && (
+                                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
+                                    {isArl && isCallerAdmin && a.role !== "admin" && (
+                                      <button onClick={() => { openPermissions(a); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl">
+                                        <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
+                                      </button>
+                                    )}
+                                    <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
+                                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </motion.div>
-          );
-        })}
+            </div>
+
+            {/* Cards — mobile fallback, same data stacked */}
+            <div className="md:hidden space-y-2">
+              {items.map((item, i) => {
+                const isArl = tab === "arls";
+                const a = item as ArlUser;
+                const l = item as Location;
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border border-border bg-card p-4",
+                      !item.isActive && "opacity-50"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                      isArl ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    )}>
+                      {isArl ? <Shield className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                        {isArl && a.role === "admin" && (
+                          <span className="flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                            <ShieldCheck className="h-3 w-3" /> Admin
+                          </span>
+                        )}
+                        {isArl && a.role !== "admin" && (
+                          <span className="rounded-md bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">ARL</span>
+                        )}
+                        {!item.isActive && (
+                          <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Inactive</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {item.userId}
+                        {!isArl && ` · Store #${l.storeNumber}`}
+                        {item.email && ` · ${item.email}`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(item)}
+                        className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                          item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
+                        )}
+                        title={item.isActive ? "Disable" : "Enable"}
+                      >
+                        {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                          title="More actions"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                        {overflowOpenId === item.id && (
+                          <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
+                            {isArl && isCallerAdmin && a.role !== "admin" && (
+                              <button onClick={() => { openPermissions(a); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl">
+                                <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
+                              </button>
+                            )}
+                            <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Create/Edit modal */}

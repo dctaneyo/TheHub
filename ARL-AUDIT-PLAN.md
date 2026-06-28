@@ -217,9 +217,7 @@ actually want."
   "no Add Location entry point" flow gap noted alongside this finding
   was *not* fixed — out of scope for a shape change, logged here so it
   isn't lost.
-- `user-management.tsx:326-409` — 7 fields per row, each its own card
-  (`:342-345`), ID/store/email string-mashed into one free-text line
-  instead of columns.
+- ~~`user-management.tsx:326-409`~~ — **done.** Real `<table>` on `md:` and up. Columns adapt per tab: ARLs tab (Name+role badge / User ID / Email / Status / Actions); Locations tab adds a Store # column between User ID and Email. Overflow menu (MoreVertical for Permissions+Delete) from the prior refactor pass is preserved in the Actions cell. Mobile: stacked animated cards (md:hidden), unchanged.
 - `task-virtual-list.tsx:56` — same per-row card chrome; title, priority,
   type, due date/time, points, location all in one unaligned blob.
 - ~~`forms-repository.tsx:272`~~ — **done.** Real `<table>` on `md:` and up (Form/File/Size/Uploaded/Actions columns); stacked-card fallback on mobile preserves the existing animated rows.
