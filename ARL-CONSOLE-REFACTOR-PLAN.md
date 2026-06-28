@@ -135,6 +135,27 @@ priority than #1-4: this is a 3-item popover, not a 6-action inline
 reveal, and the existing audit already called this optional. Worth doing
 if the file is being touched for #4 anyway; not worth a dedicated pass.
 
+### 6. Tabs/segmented-switcher pattern — two implementations, not one (Section 15)
+
+User-reported, confirmed by direct read: `tenant-settings.tsx` and
+`meetings/page.tsx` both use the shared shadcn `Tabs`/`TabsList`
+component (same default variant — these two are actually consistent with
+*each other*). `user-management.tsx`'s ARLs/Locations switcher
+(`:311-325`) is a completely separate, hand-rolled implementation —
+`flex gap-1 rounded-xl bg-muted p-1` with `flex-1` buttons — that never
+imports `Tabs` at all. The visible symptom is exactly what it looks like:
+one pattern is `w-fit` (inline width), the other spans its container,
+because they're not the same component.
+
+**This is squarely what the Ark UI Tabs decision (DESIGN.md §15,
+Underline) needs to fix, but only if done deliberately**: swapping the
+two existing shadcn `Tabs` usages over to Ark UI Tabs while leaving
+`user-management.tsx`'s bespoke switcher untouched would still leave two
+implementations, just with one of them rebuilt. The fix is to migrate all
+three usages onto one Ark UI Tabs component, styled Underline, including
+rebuilding `user-management.tsx`'s switcher on it rather than re-skinning
+its custom markup in place.
+
 ---
 
 ## Already logged, still genuinely open (not new, just not yet done)
@@ -262,25 +283,31 @@ reasoning as the rest of this plan.
    the three real ad hoc dropdowns (two row-overflow menus, one chat
    header overflow) onto Ark Menu. Independent of the above, can happen
    any time.
-5. **Native `<select>` → Ark Select, in-console (6 sites)** — do
+5. **Tabs convergence (#6)** — migrate `tenant-settings.tsx` and
+   `meetings/page.tsx` off shadcn `Tabs` and `user-management.tsx`'s
+   hand-rolled switcher onto the same Ark UI Tabs (Underline) component,
+   in one pass across all three files so the fix doesn't just relocate
+   the inconsistency. Bundle with `user-management.tsx`'s Ark Menu
+   migration (#4) since it's the same file.
+6. **Native `<select>` → Ark Select, in-console (6 sites)** — do
    per-file alongside other work on that file where possible
    (`task-form-modal.tsx` and `scheduled-meetings.tsx` already have other
    fixes queued in this plan; `tenant-settings.tsx`, `task-manager.tsx`,
    `arl-calendar.tsx`, `user-management.tsx` can be done standalone).
-6. **`scheduled-meetings.tsx`** table conversion — same pattern as the
+7. **`scheduled-meetings.tsx`** table conversion — same pattern as the
    three screens that already got this fix, lowest-risk of the remaining
-   items. Bundle with its native `<select>`/checkbox migration (#5) since
+   items. Bundle with its native `<select>`/checkbox migration (#6) since
    it's the same file.
-7. **Go Live broadcast bugs** — functional, blocks a real feature;
+8. **Go Live broadcast bugs** — functional, blocks a real feature;
    sequence based on how urgent the broadcast feature is to ship, not on
    design-system priority.
-8. **Overview single-viewport redesign** — biggest single decision in
+9. **Overview single-viewport redesign** — biggest single decision in
    this plan. Do last, deliberately: it's a layout architecture change
    (fixed-height grid, each section owning an allocated region) rather
    than a content fix, and benefits from the Ark UI primitive decisions
    above already being in use elsewhere so the new grid isn't built on
    a component foundation that's about to change again.
-9. **App-wide dark-mode swatch sweep** — mechanical, no dependencies,
+10. **App-wide dark-mode swatch sweep** — mechanical, no dependencies,
    fold into any of the above passes opportunistically or do as its own
    pass whenever convenient.
 

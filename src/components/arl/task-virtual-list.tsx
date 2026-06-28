@@ -34,7 +34,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
     count: sorted.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 88,
-    gap: 8,
+    gap: 0,
     overscan: 5,
   });
 
@@ -43,10 +43,16 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    // Desktop: one continuous rounded-card surface (header + rows), matching
+    // the table convention used by locations-manager.tsx/forms-repository.tsx
+    // — the virtualizer's row gap is 0 so rows sit flush against each other
+    // instead of revealing the page background between them. Mobile keeps
+    // its own per-card chrome (no shared wrapper), so the gap moves to a
+    // bottom-padding on each row instead of the wrapper.
+    <div className="flex flex-col flex-1 min-h-0 md:rounded-2xl md:border md:border-border md:bg-card md:overflow-hidden">
       {/* Desktop column header */}
       <div
-        className="hidden md:grid text-xs text-muted-foreground border-b border-border bg-card sticky top-0"
+        className="hidden md:grid text-xs text-muted-foreground border-b border-border bg-card sticky top-0 z-10"
         style={{ gridTemplateColumns: GRID_COLS }}
       >
         <div className="px-4 py-2.5 font-semibold">Task</div>
@@ -54,7 +60,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
         <div className="px-4 py-2.5 font-semibold text-right">Actions</div>
       </div>
 
-      <div ref={parentRef} className="overflow-y-auto rounded-xl flex-1 min-h-0">
+      <div ref={parentRef} className="overflow-y-auto flex-1 min-h-0">
         <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
           {virtualizer.getVirtualItems().map((vRow) => {
             const task = sorted[vRow.index];
@@ -64,6 +70,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                 key={task.id}
                 data-index={vRow.index}
                 ref={virtualizer.measureElement}
+                className="pb-2 md:pb-0"
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vRow.start}px)` }}
               >
                 {/* Desktop grid row */}
