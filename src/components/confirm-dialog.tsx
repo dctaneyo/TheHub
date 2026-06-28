@@ -26,8 +26,8 @@ const variantStyles = {
     btn: "bg-amber-600 hover:bg-amber-700 text-white",
   },
   info: {
-    icon: "bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400",
-    btn: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    icon: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
+    btn: "bg-slate-600 hover:bg-slate-700 text-white",
   },
 };
 

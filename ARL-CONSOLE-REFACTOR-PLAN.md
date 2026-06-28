@@ -156,6 +156,27 @@ three usages onto one Ark UI Tabs component, styled Underline, including
 rebuilding `user-management.tsx`'s switcher on it rather than re-skinning
 its custom markup in place.
 
+### 7. Two files never got the destructive-action overflow treatment (Section 12)
+
+Folded in from `ARL-AUDIT-DISCLOSURE.md` (Finding 5), since it was the
+one item in that doc not yet resolved — that doc is being retired now
+that this is the only thing left in it. `user-management.tsx` already
+got this fix (Permissions/Delete moved to a `MoreVertical` overflow,
+confirmed earlier in this plan), but two siblings with the same pattern
+never did:
+
+- `task-virtual-list.tsx:147-172` — Eye/Pencil/Trash2 render as three
+  always-visible, equal-weight icon buttons. Edit is frequent; Delete is
+  rare and destructive; they shouldn't be the same visual tier.
+- `group-info-modal.tsx:515-527` — Leave Group/Delete Group sit at full
+  width and full visibility immediately below the read-only member list —
+  the single most destructive action in the modal has no more visual
+  separation than scrolling to see who's in the group.
+
+**Fix**: same pattern as `user-management.tsx` — collapse Delete (and
+Leave Group, where applicable) into a `MoreVertical`/Ark Menu overflow,
+leave the frequent action (Edit, in both cases) visible.
+
 ---
 
 ## Already logged, still genuinely open (not new, just not yet done)
@@ -281,8 +302,11 @@ reasoning as the rest of this plan.
    file already being touched.
 4. **`user-management.tsx` + `messaging.tsx` Ark Menu migration** — move
    the three real ad hoc dropdowns (two row-overflow menus, one chat
-   header overflow) onto Ark Menu. Independent of the above, can happen
-   any time.
+   header overflow) onto Ark Menu. Bundle in the destructive-action
+   overflow fix for `task-virtual-list.tsx` and `group-info-modal.tsx`
+   (#7) at the same time — same component (Ark Menu), same reason
+   (rare/destructive action shouldn't sit at equal weight to a frequent
+   one). Independent of the above, can happen any time.
 5. **Tabs convergence (#6)** — migrate `tenant-settings.tsx` and
    `meetings/page.tsx` off shadcn `Tabs` and `user-management.tsx`'s
    hand-rolled switcher onto the same Ark UI Tabs (Underline) component,
