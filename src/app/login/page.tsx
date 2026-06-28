@@ -51,6 +51,15 @@ interface ResolvedTenant {
   appTitle: string | null;
 }
 
+// Shared by both layoutId="login-card" elements so the morph's actual
+// duration and the content-fade delay can never drift apart. A spring
+// parametrized by duration+bounce (rather than stiffness/damping) keeps the
+// gentle settle this card already had while making that duration knowable —
+// stiffness/damping springs don't have a fixed stop time, which is what let
+// content fade in before the box was actually done resizing.
+const CARD_MORPH_TRANSITION = { type: "spring", duration: 0.5, bounce: 0 } as const;
+const CARD_MORPH_MS = 550;
+
 export default function LoginPage() {
   const { login } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -82,6 +91,17 @@ export default function LoginPage() {
   const [orgChecked, setOrgChecked] = useState(false);
   // True when the org is fixed by the subdomain — hides the "change org" control.
   const [lockedToSubdomain, setLockedToSubdomain] = useState(false);
+
+  // Card content (headline, inputs, pad) fades in only after the
+  // layoutId="login-card" morph between the org-slug card and the PIN-pad
+  // card has finished — otherwise text rides along with the still-resizing
+  // container and visibly stretches. Defaults true: the very first card
+  // rendered each session (whichever one it is) has nothing to morph from,
+  // so its content should appear immediately, not wait on a transition that
+  // never happens. Only the two explicit user-triggered swaps (org submitted
+  // successfully, "Change organization" clicked) set it false and schedule
+  // it back to true once CARD_MORPH_MS has elapsed.
+  const [contentVisible, setContentVisible] = useState(true);
 
   // Block build-update auto-reload while the user is actively entering a user
   // ID or PIN — losing a partially-typed code would be confusing. The org entry
@@ -345,11 +365,13 @@ export default function LoginPage() {
       if (res.ok) {
         const data = await res.json();
         const tenant = data.tenant as ResolvedTenant;
+        setContentVisible(false);
         setOrgSlug(tenant.slug);
         setResolvedTenant(tenant);
         localStorage.setItem("hub-org-id", tenant.slug);
         document.cookie = `x-org-id=${tenant.slug}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
         applyBranding(tenant);
+        setTimeout(() => setContentVisible(true), CARD_MORPH_MS);
       } else if (res.status === 404) {
         setOrgError("Organization not found");
       } else if (res.status === 429) {
@@ -638,7 +660,7 @@ export default function LoginPage() {
             animates size + position between the two renders. */}
         <motion.div
           layoutId="login-card"
-          transition={{ type: "spring", stiffness: 60, damping: 18 }}
+          transition={CARD_MORPH_TRANSITION}
           className="relative w-full max-w-sm rounded-3xl bg-card border border-border px-5 py-4 sm:px-6 sm:py-5 flex flex-col items-center"
         >
           {/* Theme toggle in card corner — same position as the login card
@@ -666,6 +688,20 @@ export default function LoginPage() {
             <HubMark className="h-7 w-7 sm:h-8 sm:w-8" />
           </motion.div>
 
+          {/* Headline + input fade in only once the morph from/to the PIN-pad
+              card has settled (see CARD_MORPH_TRANSITION/contentVisible) —
+              otherwise this text rides along with the still-resizing card
+              and visibly stretches instead of just appearing. `initial` has
+              to mirror `animate`'s current value explicitly — without it,
+              Framer Motion animates the first paint in from the CSS default
+              (opacity 1) regardless of what `animate` already says, which
+              produced a visible flash-then-fade-out before this was added. */}
+          <motion.div
+            initial={{ opacity: contentVisible ? 1 : 0 }}
+            animate={{ opacity: contentVisible ? 1 : 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="w-full flex flex-col items-center"
+          >
           <h1 className="mt-2 sm:mt-3 text-2xl font-semibold text-foreground">Welcome to The Hub</h1>
 
           <div className="mt-3 sm:mt-4 w-full">
@@ -734,6 +770,7 @@ export default function LoginPage() {
               </motion.div>
             )}
           </div>
+          </motion.div>{/* /fade wrapper */}
         </motion.div>
 
         {/* Virtual keyboard */}
@@ -824,7 +861,7 @@ export default function LoginPage() {
       {/* Card — receives the morph from the org slug card via layoutId */}
       <motion.div
         layoutId="login-card"
-        transition={{ type: "spring", stiffness: 60, damping: 18 }}
+        transition={CARD_MORPH_TRANSITION}
         className="relative w-full max-w-sm my-auto rounded-3xl bg-card border border-border px-5 py-6 sm:px-8 sm:py-10 flex flex-col items-center"
       >
         {/* Hub mark / tenant logo — stays anchored in place while the card
@@ -845,12 +882,16 @@ export default function LoginPage() {
           </motion.div>
         )}
 
-        {/* Content fades in after the card has had a moment to morph —
-            prevents the PIN pad from popping in before the card shape settles. */}
+        {/* Content fades in only once the morph has settled (contentVisible,
+            tied to CARD_MORPH_MS) — prevents the PIN pad from riding along
+            with the still-resizing card instead of just appearing in it.
+            `initial` mirrors `animate` explicitly — see the matching comment
+            on the org-card's fade wrapper for why this is required, not
+            optional, given contentVisible is already false at this mount. */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
+          initial={{ opacity: contentVisible ? 1 : 0 }}
+          animate={{ opacity: contentVisible ? 1 : 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
           className="w-full flex flex-col items-center"
         >
         {resolvedTenant ? (
@@ -1038,6 +1079,34 @@ export default function LoginPage() {
           )}
         </div>
 
+        {/* Change Organization link — hidden when the org is fixed by the
+            subdomain. Lives inside the fade wrapper too: it's text content
+            of this card just like the headline/pad, so it shouldn't pop in
+            ahead of the morph completing either. */}
+        {resolvedTenant && !lockedToSubdomain && (
+          <button
+            onClick={() => {
+              setContentVisible(false);
+              document.cookie = "x-org-id=; path=/; max-age=0";
+              localStorage.removeItem("hub-org-id");
+              setOrgSlug(null);
+              setResolvedTenant(null);
+              setStep("userId");
+              setValidatedUser(null);
+              userIdRef.current = "";
+              setUserId("");
+              pinRef.current = "";
+              setPin("");
+              setError("");
+              setTimeout(() => setContentVisible(true), CARD_MORPH_MS);
+            }}
+            className="mt-4 text-xs text-muted-foreground active:text-foreground transition-colors"
+          >
+            Not {resolvedTenant.name}?{" "}
+            <span className="underline">Change organization</span>
+          </button>
+        )}
+
         </motion.div>{/* /fade wrapper */}
 
         {/* Theme toggle — anchored to the card's top-right corner, not the
@@ -1054,29 +1123,6 @@ export default function LoginPage() {
               : theme === "light"
               ? <Sun className="h-3.5 w-3.5" />
               : <Monitor className="h-3.5 w-3.5" />}
-          </button>
-        )}
-
-        {/* Change Organization link — hidden when the org is fixed by the subdomain */}
-        {resolvedTenant && !lockedToSubdomain && (
-          <button
-            onClick={() => {
-              document.cookie = "x-org-id=; path=/; max-age=0";
-              localStorage.removeItem("hub-org-id");
-              setOrgSlug(null);
-              setResolvedTenant(null);
-              setStep("userId");
-              setValidatedUser(null);
-              userIdRef.current = "";
-              setUserId("");
-              pinRef.current = "";
-              setPin("");
-              setError("");
-            }}
-            className="mt-4 text-xs text-muted-foreground active:text-foreground transition-colors"
-          >
-            Not {resolvedTenant.name}?{" "}
-            <span className="underline">Change organization</span>
           </button>
         )}
       </motion.div>

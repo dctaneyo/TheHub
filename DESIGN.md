@@ -10,6 +10,22 @@ go stale the moment they are. Token values (palette, type, spacing
 unit) get decided and recorded elsewhere as the actual design takes
 shape; this file is the standard those decisions get checked against.
 
+**Structure: one universal gate (Section 0), then two parts.** Part A
+(UX) asks what the user is trying to do, what they need to know and
+when, and whether something on screen is earning its place — before any
+visual execution gets chosen. Part B (UI) governs how an already-answered
+UX question gets expressed: type, color, spacing, layout, motion, icons,
+and the specific patterns that read as generated rather than designed.
+Neither part can rescue what the other gets wrong — a UI built before
+its UX is decided defaults to "whatever a screen like this usually has"
+(Section 0), and a correct UX with sloppy execution still reads as
+unfinished (every section in Part B). **Section numbers are stable IDs**
+— other docs in this repo (the ARL audits) cite them directly — so they
+don't track physical reading order after this restructure. Section 18
+sits in Part A despite the high number because it was added after 1-17
+already existed; where it appears in the document, not what it's
+numbered, is what changed.
+
 A line can be marked `unslop-ignore` (trailing code comment) to mark a
 deliberate, considered exception to the Do Not Use list below. That tag
 means "we decided this on purpose," not "I don't want to deal with this
@@ -37,6 +53,278 @@ be answered explicitly. None of them can be "modern and clean."
 If a request comes in with no brief, the answer is never "produce the
 safest, most average-looking result." State a deliberate choice with a
 one-line rationale, or present genuinely distinct options.
+
+**Decision 4 (layout intent) is the bridge into Part A below** — it's
+the first UX question this doc asks, before any of Part A's deeper ones
+(Sections 11/12/13/16/18) get applied to the same screen.
+
+---
+
+## Part A — UX: Decide First
+
+These sections ask what the user is trying to do, what they need to
+know and when, and whether anything on screen is earning its place —
+before any visual execution gets chosen. A UI choice made before these
+questions are answered defaults to whatever's statistically average for
+the genre (Section 0), which produces both AI-slop visuals and AI-slop
+*information architecture* (Section 18) — bloat is what happens when a
+screen gets dressed before anyone decided what it's actually for.
+
+---
+
+## 11. Data Drives the UI
+
+The shape of a screen should come from the actual shape of the data on
+it — not from whatever the default table/list/card looks like before
+anyone's thought about what's actually being shown.
+
+- A field with a small, fixed set of values (status, department, task
+  type, priority) becomes a colored chip, not a plain text column —
+  there's a finite vocabulary, so encode it visually instead of asking
+  the user to read every row.
+- Numbers right-align so digits line up by place value. Long text
+  truncates rather than squeezing everything else.
+- Time-ordered, "what happened when" data is a timeline before it's a
+  sorted table — a sorted-by-date table technically works, but it's not
+  letting the data pick its own shape. (This app already does this
+  right in places — `grid-tasks`, the calendar widgets — worth holding
+  as the standard for new widgets, not a one-off.)
+- Color in a dashboard is never sprinkled in for visual interest — see
+  Section 2's claimed-semantic-colors table. The reason red/amber/
+  emerald/teal exist isn't "the screen needed more color," it's that
+  each one is standing in for a real property of the data (urgency,
+  priority, status, an active remote session).
+- An avatar or icon next to an identity column isn't decoration — it's
+  a faster lookup path than reading a name, because the eye matches
+  shapes/colors faster than it reads text.
+
+---
+
+## 12. Progressive Disclosure & the Spectrum of Explicitness
+
+What's shown by default vs. revealed on demand should track how often
+and how important an action actually is — not "show everything,
+always," and not "hide everything behind a menu" either. There's a
+spectrum: a primary action is always visible; a secondary one shows up
+when the user is already looking for it; a rare one is tucked one step
+deeper still.
+
+**This product's no-hover rule (Section 6) changes how this gets
+implemented, not whether it applies.** The video's own version of this
+relies on hover to reveal secondary actions — that mechanism doesn't
+exist here. The same disclosure logic has to be expressed through a
+deliberate tap (a "..." overflow, a long-press, a one-level-deeper
+menu) instead of a hover reveal.
+
+**A concrete place this app gets the structure wrong, independent of
+the animation:** the settings cog reveals up to six actions (add, tidy,
+reset, cancel, save, theme) inline, all at equal visibility, the moment
+it's tapped. Those six don't deserve equal explicitness — theme is rare,
+Save/Cancel only exist mid-edit, Tidy/Reset are occasional. The
+choreography around this was already calmed down (see Changelog), but
+the structure — six equally-prominent items appearing at once — is the
+deeper issue. A real fix groups the rarely-needed ones a step further
+in, rather than just toning down how they animate in.
+
+**Onboarding is this same principle applied to a first-time user:** one
+hint pointing at the next single action, not a feature-tour modal with
+a bullet list the moment someone logs in. Nothing here currently
+implements onboarding either way — flagging this as forward guidance
+for whenever it's built, not a found defect.
+
+---
+
+## 13. UI Is What You Can't See
+
+A meaningful share of a finished product is the layer a user doesn't
+see by default: tooltips on ambiguous icons, empty/error states, a
+restrained first-run hint instead of a tour. Skipping this is what
+makes something feel unfinished even when every visible pixel is
+polished — the visible part is the easy 80%; orchestrating the
+invisible part is the actual work.
+
+**This app already has a real, specific version of this problem.**
+13 icon-only controls across the dashboard/grid files (the resize
+handle, the settings cog, the widget expand button, others) rely
+solely on the native HTML `title` attribute for their explanation.
+`title` tooltips are hover-triggered — on a touchscreen kiosk with no
+pointer (Section 6), they functionally don't exist. The markup is
+there; the affordance isn't. Any icon-only control that needs
+explaining needs a touch-compatible mechanism instead — a persistent
+micro-label, a first-use contextual hint, or a long-press reveal — not
+just a `title` attribute and hoping.
+
+---
+
+## 16. User Flow
+
+A flow is correct when two things are always true: the user knows what just
+happened, and the user knows how to get back. Most "this feels unfinished"
+reports trace to one of those breaking somewhere, not to a single screen
+looking wrong. This section is grounded in an actual audit of this app's
+flows (login, signup, dashboard edit mode, task completion, remote view,
+connection loss, forms/messages) — not general UX advice — and gets
+extended the same way: trace a real flow, cite the file/line, fix or state
+the exception.
+
+**Found and fixed before this section existed:** the dashboard's edit-mode
+entry/exit (Section 12's settings-cog rework), the default-layout fallback
+so a new location doesn't open to a blank grid (layouts.ts), and the
+quote/clock widgets losing an expand button that led nowhere useful.
+
+**Found, real, still open:**
+
+- **An action can fail with zero feedback.** `handleSave` in
+  `grid-dashboard.tsx` POSTs the edited layout; if it throws, the `catch`
+  block is empty (`// stay in edit mode`) — no error message, no retry
+  prompt, nothing. The user taps Save, nothing visibly happens, and they're
+  left to guess whether it worked. Contrast with the drag/resize collision
+  state in `widget-container.tsx`, which gets this right: a blocked move
+  visibly does nothing (the widget doesn't follow the pointer into an
+  invalid cell) rather than silently appearing to succeed. Save needs the
+  same honesty — at minimum, a visible error state that doesn't require
+  reading the network tab to discover.
+- **Reconnection has no backoff or give-up.** `connection-status.tsx`'s
+  `startReconnect` polls `/api/auth/me` every 5 seconds, indefinitely, with
+  no escalation if the server is actually down rather than just slow. A
+  kiosk left running overnight against a dead backend sits in
+  "Reconnecting…" forever with no different message at 10 seconds vs. 10
+  hours.
+
+**Found, and a stated exception rather than a defect:** the remote-view/
+mirroring flow (`remote-view-banner.tsx`) auto-starts when an ARL user
+begins viewing or controlling a location's screen — the code comment says
+so directly ("Auto-start... no consent needed") — and the location side has
+no button to end the session itself (`endSession` is defined but never
+wired to the UI; only the ARL side can end it). This is deliberate, not an
+oversight: ARL is a trusted internal role overseeing locations it manages,
+analogous to a manager looking over someone's shoulder, not an outside
+party. The banner's job is to keep the session *visible* (a bordered inset +
+"Being viewed/controlled by [name]," per Section 10's status-dot logic),
+not to gate consent. Stating this here so a future pass doesn't "fix" it
+into a confirmation dialog the actual use case doesn't want.
+
+**Onboarding** for a first-time user is intentionally out of scope here —
+Section 12 already covers it as forward guidance, not a found defect.
+
+**Check:** after any user-initiated action that hits the network, ask "if
+this fails right now, what does the user see?" If the answer is "nothing,"
+that's the same class of bug as `handleSave`'s empty catch — find it the
+same way (grep for empty `catch` blocks around `await` calls that update
+UI state on success).
+
+**Widgets are quick access; routes are the full version — not a choice
+between them.** A "widget," by the term's own ordinary meaning, implies a
+fuller version exists somewhere — Calendar already had this (a real
+`/calendar` route) well before Tasks or Messages did, which only had
+same-page modals/overlays standing in for a "full version" that didn't
+actually exist as its own place. Tasks (`/tasks`) and Messages
+(`/messages`) now have real routes too, and the dashboard's widgets are
+quick-access launchers into them — tapping a widget's expand affordance or
+its main tap target navigates there instead of opening an in-place overlay.
+This isn't a sidebar-nav rewrite of the dashboard (considered and rejected
+— see below): the dashboard stays the nav-free ambient surface; `/tasks`,
+`/messages`, and `/calendar` get a slim shared header (`SubPageHeader`)
+with a back-to-dashboard link and quick links between siblings, so moving
+between the three full pages doesn't require round-tripping through the
+dashboard, without turning the dashboard itself into something you browse.
+
+**A sidebar nav for the kiosk side was proposed and rejected.** The
+original ask was a full collapsible sidebar (the same pattern ARL uses)
+replacing widgets as the primary way to reach the full version of
+anything. Rejected because ARL's sidebar fits ARL's job (genuinely
+multi-page admin work); the dashboard's job is "glance at a status board,
+tap to act, walk away" — a sidebar imports a multi-page mental model into
+a screen whose whole point is not being that. The widgets-as-launchers
+model above gets the same practical outcome (a real full version exists
+for things that need one) without that tradeoff.
+
+**Routing in introduces a real risk a modal didn't have, and the
+inactivity timer (`use-inactivity-redirect.ts`) is the stated mitigation,
+not a nice-to-have.** A modal always returns you to exactly where you were
+on dismiss; a routed page requires deliberate back-navigation, so an
+unattended kiosk can get stranded on `/tasks` if someone walks away
+mid-task. Standard kiosk pattern (POS systems, check-in kiosks, self-
+checkout all do this): idle timeout returns to the dashboard — but never
+silently. A countdown warning shows first and any tap cancels it, because
+an un-cancelable or silent redirect reads as broken, not helpful. Scoped
+to kiosk/desktop only (gated in `SubPageHeader`, the one mounting point
+for every sub-page) — never mobile (no idle-kiosk risk on a personal
+phone), and it doesn't apply to ARL at all since this header doesn't
+render there.
+
+**Messages (`/messages`) is a stated v1, not full parity with the
+dashboard's chat overlay.** `RestaurantChat` is a large (1100+ line),
+already-working component tightly coupled to its own slide-out/fullscreen
+toggle UI — voice messages, reactions, mentions, group-chat creation,
+in-thread search, mute. Replicating all of it on the new route in the same
+pass this took to build the route itself would have been a much bigger,
+riskier change than the route needs to be useful. `/messages` ships with
+text messaging, real-time updates via the same socket events, and read
+state — a real macOS-Messages-style two-pane layout (thread list always
+visible, active thread beside it, never replacing it) that the overlay
+can't do since it can only show one or the other. The deferred features
+are a known, named gap, not a silent omission — extend `/messages` to
+close them rather than building a second messaging surface.
+
+---
+
+## 18. Redundancy & Earned Presence
+
+Every element on screen has to earn its place independently — not by
+being well-built in isolation, but by giving the user something they
+can't already get from this same screen-visit. The failure mode this
+guards against doesn't show up in any single-element check elsewhere in
+this doc (Section 11 asks whether one element's *shape* matches its
+data; this asks whether the element should exist *at all*, given
+everything else already on screen) — it's screen-level, not
+element-level, and it's exactly the gap an AI-generated UI tends to
+produce: every individual piece looks considered, but the screen as a
+whole restates itself.
+
+**Two concrete instances found in this app, both well-built individually
+and both unnecessary together:** a pulsing-dot "● Live" label next to a
+feed header that's already named "Live Activity" and already updates in
+real time (`live-activity-feed.tsx`) — the label restates what the
+real-time updates already demonstrate on their own. And a global
+task-completion toast (`arl/layout.tsx`) that fires on every ARL page,
+including the one page that already shows the identical event in a
+persistent, scrollable feed — redundant specifically there, not
+everywhere, since the toast is the only mechanism telling you about
+activity on every *other* page. The fix in both cases was scoped to
+where the redundancy actually lives, not a blanket "remove one of them."
+
+- **The "already said it" test**: if this element disappeared, would
+  the user lose information or capability they can't get elsewhere on
+  this same screen-visit? If no, it's restating, not adding.
+- **The "genre default" test**: does this element's presence trace to
+  this screen's actual data or task (Section 11), or to what a screen
+  like this usually has (a stat-card grid, a "Live" badge, a hero CTA)?
+  Recognizable-because-common is exactly why its presence needs its own
+  justification, not an assumption that more dashboard-shaped furniture
+  reads as more finished.
+- **Two surfaces managing the same underlying concept** (a composer for
+  X and a viewer for X, built as separate cards) is a signal to check
+  whether the surface they both feed already treats them as one thing —
+  if it does, the two cards are an artificial split, not two real needs.
+
+**Check:** for any two elements that reference the same fact (a count, a
+status, an event), ask which one a user would actually miss if the other
+were deleted. If the honest answer is "neither, really," keep the one
+with more information (history, detail, a way to act) and cut the one
+that's purely restating it.
+
+---
+
+## Part B — UI: Executes the UX
+
+Once Part A's questions are answered — what the user needs, when, and
+why a given element earns its place — these sections govern how that
+gets expressed visually: type, color, spacing, layout, affordance,
+hierarchy, dark mode, motion, icons, and the specific patterns that read
+as generated rather than designed. None of these can rescue a screen
+that skipped Part A — a beautifully typeset, perfectly spaced
+restatement of information the user already has is still bloat.
 
 ---
 
@@ -378,90 +666,6 @@ independent of any single screen's broader style:
 
 ---
 
-## 11. Data Drives the UI
-
-The shape of a screen should come from the actual shape of the data on
-it — not from whatever the default table/list/card looks like before
-anyone's thought about what's actually being shown.
-
-- A field with a small, fixed set of values (status, department, task
-  type, priority) becomes a colored chip, not a plain text column —
-  there's a finite vocabulary, so encode it visually instead of asking
-  the user to read every row.
-- Numbers right-align so digits line up by place value. Long text
-  truncates rather than squeezing everything else.
-- Time-ordered, "what happened when" data is a timeline before it's a
-  sorted table — a sorted-by-date table technically works, but it's not
-  letting the data pick its own shape. (This app already does this
-  right in places — `grid-tasks`, the calendar widgets — worth holding
-  as the standard for new widgets, not a one-off.)
-- Color in a dashboard is never sprinkled in for visual interest — see
-  Section 2's claimed-semantic-colors table. The reason red/amber/
-  emerald/teal exist isn't "the screen needed more color," it's that
-  each one is standing in for a real property of the data (urgency,
-  priority, status, an active remote session).
-- An avatar or icon next to an identity column isn't decoration — it's
-  a faster lookup path than reading a name, because the eye matches
-  shapes/colors faster than it reads text.
-
----
-
-## 12. Progressive Disclosure & the Spectrum of Explicitness
-
-What's shown by default vs. revealed on demand should track how often
-and how important an action actually is — not "show everything,
-always," and not "hide everything behind a menu" either. There's a
-spectrum: a primary action is always visible; a secondary one shows up
-when the user is already looking for it; a rare one is tucked one step
-deeper still.
-
-**This product's no-hover rule (Section 6) changes how this gets
-implemented, not whether it applies.** The video's own version of this
-relies on hover to reveal secondary actions — that mechanism doesn't
-exist here. The same disclosure logic has to be expressed through a
-deliberate tap (a "..." overflow, a long-press, a one-level-deeper
-menu) instead of a hover reveal.
-
-**A concrete place this app gets the structure wrong, independent of
-the animation:** the settings cog reveals up to six actions (add, tidy,
-reset, cancel, save, theme) inline, all at equal visibility, the moment
-it's tapped. Those six don't deserve equal explicitness — theme is rare,
-Save/Cancel only exist mid-edit, Tidy/Reset are occasional. The
-choreography around this was already calmed down (see Changelog), but
-the structure — six equally-prominent items appearing at once — is the
-deeper issue. A real fix groups the rarely-needed ones a step further
-in, rather than just toning down how they animate in.
-
-**Onboarding is this same principle applied to a first-time user:** one
-hint pointing at the next single action, not a feature-tour modal with
-a bullet list the moment someone logs in. Nothing here currently
-implements onboarding either way — flagging this as forward guidance
-for whenever it's built, not a found defect.
-
----
-
-## 13. UI Is What You Can't See
-
-A meaningful share of a finished product is the layer a user doesn't
-see by default: tooltips on ambiguous icons, empty/error states, a
-restrained first-run hint instead of a tour. Skipping this is what
-makes something feel unfinished even when every visible pixel is
-polished — the visible part is the easy 80%; orchestrating the
-invisible part is the actual work.
-
-**This app already has a real, specific version of this problem.**
-13 icon-only controls across the dashboard/grid files (the resize
-handle, the settings cog, the widget expand button, others) rely
-solely on the native HTML `title` attribute for their explanation.
-`title` tooltips are hover-triggered — on a touchscreen kiosk with no
-pointer (Section 6), they functionally don't exist. The markup is
-there; the affordance isn't. Any icon-only control that needs
-explaining needs a touch-compatible mechanism instead — a persistent
-micro-label, a first-use contextual hint, or a long-press reveal — not
-just a `title` attribute and hoping.
-
----
-
 ## 14. Icons
 
 One icon library, one default treatment, used everywhere — `src/lib/icons.tsx`
@@ -526,119 +730,6 @@ free instead of re-guessing it.
 destructive action button, an empty state) and diff its actual class list
 between two unrelated files. Any unexplained difference is drift, not a
 deliberate per-screen decision.
-
----
-
-## 16. User Flow
-
-A flow is correct when two things are always true: the user knows what just
-happened, and the user knows how to get back. Most "this feels unfinished"
-reports trace to one of those breaking somewhere, not to a single screen
-looking wrong. This section is grounded in an actual audit of this app's
-flows (login, signup, dashboard edit mode, task completion, remote view,
-connection loss, forms/messages) — not general UX advice — and gets
-extended the same way: trace a real flow, cite the file/line, fix or state
-the exception.
-
-**Found and fixed before this section existed:** the dashboard's edit-mode
-entry/exit (Section 12's settings-cog rework), the default-layout fallback
-so a new location doesn't open to a blank grid (layouts.ts), and the
-quote/clock widgets losing an expand button that led nowhere useful.
-
-**Found, real, still open:**
-
-- **An action can fail with zero feedback.** `handleSave` in
-  `grid-dashboard.tsx` POSTs the edited layout; if it throws, the `catch`
-  block is empty (`// stay in edit mode`) — no error message, no retry
-  prompt, nothing. The user taps Save, nothing visibly happens, and they're
-  left to guess whether it worked. Contrast with the drag/resize collision
-  state in `widget-container.tsx`, which gets this right: a blocked move
-  visibly does nothing (the widget doesn't follow the pointer into an
-  invalid cell) rather than silently appearing to succeed. Save needs the
-  same honesty — at minimum, a visible error state that doesn't require
-  reading the network tab to discover.
-- **Reconnection has no backoff or give-up.** `connection-status.tsx`'s
-  `startReconnect` polls `/api/auth/me` every 5 seconds, indefinitely, with
-  no escalation if the server is actually down rather than just slow. A
-  kiosk left running overnight against a dead backend sits in
-  "Reconnecting…" forever with no different message at 10 seconds vs. 10
-  hours.
-
-**Found, and a stated exception rather than a defect:** the remote-view/
-mirroring flow (`remote-view-banner.tsx`) auto-starts when an ARL user
-begins viewing or controlling a location's screen — the code comment says
-so directly ("Auto-start... no consent needed") — and the location side has
-no button to end the session itself (`endSession` is defined but never
-wired to the UI; only the ARL side can end it). This is deliberate, not an
-oversight: ARL is a trusted internal role overseeing locations it manages,
-analogous to a manager looking over someone's shoulder, not an outside
-party. The banner's job is to keep the session *visible* (a bordered inset +
-"Being viewed/controlled by [name]," per Section 10's status-dot logic),
-not to gate consent. Stating this here so a future pass doesn't "fix" it
-into a confirmation dialog the actual use case doesn't want.
-
-**Onboarding** for a first-time user is intentionally out of scope here —
-Section 12 already covers it as forward guidance, not a found defect.
-
-**Check:** after any user-initiated action that hits the network, ask "if
-this fails right now, what does the user see?" If the answer is "nothing,"
-that's the same class of bug as `handleSave`'s empty catch — find it the
-same way (grep for empty `catch` blocks around `await` calls that update
-UI state on success).
-
-**Widgets are quick access; routes are the full version — not a choice
-between them.** A "widget," by the term's own ordinary meaning, implies a
-fuller version exists somewhere — Calendar already had this (a real
-`/calendar` route) well before Tasks or Messages did, which only had
-same-page modals/overlays standing in for a "full version" that didn't
-actually exist as its own place. Tasks (`/tasks`) and Messages
-(`/messages`) now have real routes too, and the dashboard's widgets are
-quick-access launchers into them — tapping a widget's expand affordance or
-its main tap target navigates there instead of opening an in-place overlay.
-This isn't a sidebar-nav rewrite of the dashboard (considered and rejected
-— see below): the dashboard stays the nav-free ambient surface; `/tasks`,
-`/messages`, and `/calendar` get a slim shared header (`SubPageHeader`)
-with a back-to-dashboard link and quick links between siblings, so moving
-between the three full pages doesn't require round-tripping through the
-dashboard, without turning the dashboard itself into something you browse.
-
-**A sidebar nav for the kiosk side was proposed and rejected.** The
-original ask was a full collapsible sidebar (the same pattern ARL uses)
-replacing widgets as the primary way to reach the full version of
-anything. Rejected because ARL's sidebar fits ARL's job (genuinely
-multi-page admin work); the dashboard's job is "glance at a status board,
-tap to act, walk away" — a sidebar imports a multi-page mental model into
-a screen whose whole point is not being that. The widgets-as-launchers
-model above gets the same practical outcome (a real full version exists
-for things that need one) without that tradeoff.
-
-**Routing in introduces a real risk a modal didn't have, and the
-inactivity timer (`use-inactivity-redirect.ts`) is the stated mitigation,
-not a nice-to-have.** A modal always returns you to exactly where you were
-on dismiss; a routed page requires deliberate back-navigation, so an
-unattended kiosk can get stranded on `/tasks` if someone walks away
-mid-task. Standard kiosk pattern (POS systems, check-in kiosks, self-
-checkout all do this): idle timeout returns to the dashboard — but never
-silently. A countdown warning shows first and any tap cancels it, because
-an un-cancelable or silent redirect reads as broken, not helpful. Scoped
-to kiosk/desktop only (gated in `SubPageHeader`, the one mounting point
-for every sub-page) — never mobile (no idle-kiosk risk on a personal
-phone), and it doesn't apply to ARL at all since this header doesn't
-render there.
-
-**Messages (`/messages`) is a stated v1, not full parity with the
-dashboard's chat overlay.** `RestaurantChat` is a large (1100+ line),
-already-working component tightly coupled to its own slide-out/fullscreen
-toggle UI — voice messages, reactions, mentions, group-chat creation,
-in-thread search, mute. Replicating all of it on the new route in the same
-pass this took to build the route itself would have been a much bigger,
-riskier change than the route needs to be useful. `/messages` ships with
-text messaging, real-time updates via the same socket events, and read
-state — a real macOS-Messages-style two-pane layout (thread list always
-visible, active thread beside it, never replacing it) that the overlay
-can't do since it can only show one or the other. The deferred features
-are a known, named gap, not a silent omission — extend `/messages` to
-close them rather than building a second messaging surface.
 
 ---
 
@@ -1254,3 +1345,29 @@ after it's been copied across twenty is not.
   filled in, falling back to filled while editing/dragging like the
   ambient widgets already did, for grab visibility). Added `Quotes`
   to `src/lib/icons.tsx`'s Phosphor wrapper for the background glyph.
+- 2026-06-28 — added Section 18 (Redundancy & Earned Presence), prompted
+  by a direct question about whether "AI-generated UI bloat" deserved
+  its own principle. Defined against concrete instances found the same
+  day during the ARL Overview audit: the "🟢 Live" label restating what
+  `live-activity-feed.tsx`'s real-time updates already demonstrate, and
+  the global task-completion toast (`arl/layout.tsx`) duplicating the
+  same event the Overview page's activity feed already shows — both
+  well-built individually, both unnecessary together. Stated two checks
+  ("already said it," "genre default") rather than a single vague
+  "avoid bloat" rule, matching this doc's existing falsifiable-check
+  convention.
+
+  Restructured the whole document into Section 0 (a universal gate)
+  followed by two explicit parts — Part A (UX: Sections 11, 12, 13, 16,
+  18) and Part B (UI: Sections 1-10, 14, 15, 17) — prompted by a direct
+  question about whether DESIGN.md treats UX and UI as independent
+  layers (it didn't; everything was one flat interleaved list) and
+  whether UX should drive UI (yes — confirmed against Section 0's own
+  4th decision, "layout intent," which already gated a UI choice behind
+  a UX question without saying so explicitly). Section numbers were
+  deliberately kept stable through the reorganization — both ARL audit
+  docs cite them directly (`§11`, `Section 7`, etc.), and renumbering to
+  match the new physical order would have silently broken every one of
+  those citations for no benefit. Verified line-for-line before and
+  after that no existing content was dropped or altered, only
+  relocated, connective part-headers added, and Section 18 introduced.
