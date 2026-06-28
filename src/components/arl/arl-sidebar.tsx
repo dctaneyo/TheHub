@@ -32,19 +32,27 @@ const SIDEBAR_PERM_MAP: Partial<Record<string, PermissionKey[]>> = {
   analytics: [PERMISSIONS.ANALYTICS_ACCESS],
 };
 
+// `group` drives the section label rendered above the first visible item of
+// each group (see the nav render below) — a flat 12-item list gave every
+// item, from "Overview" (touched constantly) to "Organization" (set up once
+// and rarely revisited), the same visual weight. Two labeled clusters cost
+// nothing structurally (still one list, same items, same routes) but mark
+// that tier difference at a glance. Derived from the filtered list at render
+// time rather than a hardcoded index, so it stays correct regardless of
+// which items a given role's permissions hide.
 export const navItems = [
-  { id: "overview" as const, label: "Overview", icon: BarChart3 },
-  { id: "messages" as const, label: "Messages", icon: MessageCircle },
-  { id: "tasks" as const, label: "Tasks & Reminders", icon: ClipboardList },
-  { id: "calendar" as const, label: "Calendar", icon: CalendarDays },
-  { id: "locations" as const, label: "Locations", icon: Store },
-  { id: "meetings" as const, label: "Meetings", icon: Video },
-  { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio },
-  { id: "users" as const, label: "Users", icon: Users },
-  { id: "remote" as const, label: "Remote", icon: Monitor },
-  { id: "data-management" as const, label: "Data Management", icon: Database },
-  { id: "analytics" as const, label: "Analytics", icon: TrendingUp },
-  { id: "tenant-settings" as const, label: "Organization", icon: Settings },
+  { id: "overview" as const, label: "Overview", icon: BarChart3, group: "Operations" },
+  { id: "messages" as const, label: "Messages", icon: MessageCircle, group: "Operations" },
+  { id: "tasks" as const, label: "Tasks & Reminders", icon: ClipboardList, group: "Operations" },
+  { id: "calendar" as const, label: "Calendar", icon: CalendarDays, group: "Operations" },
+  { id: "locations" as const, label: "Locations", icon: Store, group: "Operations" },
+  { id: "meetings" as const, label: "Meetings", icon: Video, group: "Operations" },
+  { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio, group: "Operations" },
+  { id: "users" as const, label: "Users", icon: Users, group: "Administration" },
+  { id: "remote" as const, label: "Remote", icon: Monitor, group: "Administration" },
+  { id: "data-management" as const, label: "Data Management", icon: Database, group: "Administration" },
+  { id: "analytics" as const, label: "Analytics", icon: TrendingUp, group: "Administration" },
+  { id: "tenant-settings" as const, label: "Organization", icon: Settings, group: "Administration" },
 ];
 
 interface ArlSidebarProps {
@@ -118,55 +126,67 @@ export function ArlSidebar({
 
       {/* Nav items */}
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.filter((item) => {
-          // Admins see everything
-          if (user?.role === "admin") return true;
-          const requiredPerms = SIDEBAR_PERM_MAP[item.id];
-          if (!requiredPerms) return true; // no restriction
-          const userPerms = user?.permissions;
-          if (!userPerms) return true; // null/undefined = all
-          return requiredPerms.some((p) => userPerms.includes(p));
-        }).map((item) => {
-          const isActive = activeView === item.id;
-          const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
-          const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;
-          return (
-            <Link
-              key={item.id}
-              href={VIEW_ROUTE_MAP[item.id] || "/arl"}
-              prefetch={true}
-              onClick={() => {
-                onViewChange(item.id);
-                if (isMobileOrTablet) onClose();
-              }}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all",
-                isActive
-                  ? "bg-[var(--hub-red)] text-white"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <item.icon className="h-4.5 w-4.5 shrink-0" />
-              <span className="flex-1 text-left">{item.label}</span>
-              {badge > 0 && (
-                <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
-                  isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
-                )}>
-                  {badge > 99 ? "99+" : badge}
-                </span>
-              )}
-              {onlineBadge > 0 && (
-                <span className={cn(
-                  "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
-                  isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700"
-                )}>
-                  {onlineBadge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter((item) => {
+            // Admins see everything
+            if (user?.role === "admin") return true;
+            const requiredPerms = SIDEBAR_PERM_MAP[item.id];
+            if (!requiredPerms) return true; // no restriction
+            const userPerms = user?.permissions;
+            if (!userPerms) return true; // null/undefined = all
+            return requiredPerms.some((p) => userPerms.includes(p));
+          })
+          .map((item, i, visible) => {
+            const isActive = activeView === item.id;
+            const badge = item.id === "messages" && unreadCount > 0 ? unreadCount : 0;
+            const onlineBadge = item.id === "locations" && onlineCount > 0 ? onlineCount : 0;
+            const isNewGroup = i === 0 || visible[i - 1].group !== item.group;
+            return (
+              <div key={item.id}>
+                {isNewGroup && (
+                  <p className={cn(
+                    "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70",
+                    i === 0 ? "pb-1" : "pb-1 pt-3"
+                  )}>
+                    {item.group}
+                  </p>
+                )}
+                <Link
+                  href={VIEW_ROUTE_MAP[item.id] || "/arl"}
+                  prefetch={true}
+                  onClick={() => {
+                    onViewChange(item.id);
+                    if (isMobileOrTablet) onClose();
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all",
+                    isActive
+                      ? "bg-[var(--hub-red)] text-white"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <item.icon className="h-4.5 w-4.5 shrink-0" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {badge > 0 && (
+                    <span className={cn(
+                      "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
+                      isActive ? "bg-white text-[var(--hub-red)]" : "bg-[var(--hub-red)] text-white"
+                    )}>
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                  {onlineBadge > 0 && (
+                    <span className={cn(
+                      "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
+                      isActive ? "bg-white text-emerald-600" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                    )}>
+                      {onlineBadge}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            );
+          })}
       </nav>
 
       {/* Bottom */}
