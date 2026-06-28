@@ -338,9 +338,12 @@ reasoning as the rest of this plan.
    wasn't generic, so every `collection` prop failed to typecheck against
    its own `createListCollection()` result — fixed once, benefits every
    site. Native checkboxes (5, lower-priority per this plan) still open.
-7. **`scheduled-meetings.tsx`** table conversion — same pattern as the
-   three screens that already got this fix, lowest-risk of the remaining
-   items. Its native `<select>`/checkbox migration is already done.
+7. ~~**`scheduled-meetings.tsx`** table conversion~~ — **done.** Real
+   `<table>` on desktop (Meeting/Host/Schedule/Code/Actions), stacked-card
+   fallback on mobile. Delete + the two conditional invite-link copy
+   actions folded into an Ark Menu overflow on both layouts. Also
+   tightened the delete-confirmation copy (DESIGN.md §19) and dropped a
+   dead variable surfaced while rewriting the block.
 8. **Go Live broadcast bugs** — functional, blocks a real feature;
    sequence based on how urgent the broadcast feature is to ship, not on
    design-system priority.
