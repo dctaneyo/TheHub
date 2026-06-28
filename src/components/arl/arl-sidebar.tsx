@@ -40,18 +40,26 @@ const SIDEBAR_PERM_MAP: Partial<Record<string, PermissionKey[]>> = {
 // that tier difference at a glance. Derived from the filtered list at render
 // time rather than a hardcoded index, so it stays correct regardless of
 // which items a given role's permissions hide.
+//
+// Order within each group is frequency/importance, not alphabetical or
+// historical. One deliberate exception: Emergency Broadcast sits 2nd in
+// Operations despite being the least *frequently* used item there — when
+// it's actually needed, speed-to-find matters more than click frequency, the
+// same reasoning this app already applies to safety-critical alert headings
+// (Section 1's font-black exception). Everything else in both groups is
+// ordered by realistic daily-driver-to-rarely-touched frequency.
 export const navItems = [
   { id: "overview" as const, label: "Overview", icon: BarChart3, group: "Operations" },
+  { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio, group: "Operations" },
   { id: "messages" as const, label: "Messages", icon: MessageCircle, group: "Operations" },
   { id: "tasks" as const, label: "Tasks & Reminders", icon: ClipboardList, group: "Operations" },
-  { id: "calendar" as const, label: "Calendar", icon: CalendarDays, group: "Operations" },
   { id: "locations" as const, label: "Locations", icon: Store, group: "Operations" },
+  { id: "calendar" as const, label: "Calendar", icon: CalendarDays, group: "Operations" },
   { id: "meetings" as const, label: "Meetings", icon: Video, group: "Operations" },
-  { id: "emergency" as const, label: "Emergency Broadcast", icon: Radio, group: "Operations" },
   { id: "users" as const, label: "Users", icon: Users, group: "Administration" },
   { id: "remote" as const, label: "Remote", icon: Monitor, group: "Administration" },
-  { id: "data-management" as const, label: "Data Management", icon: Database, group: "Administration" },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp, group: "Administration" },
+  { id: "data-management" as const, label: "Data Management", icon: Database, group: "Administration" },
   { id: "tenant-settings" as const, label: "Organization", icon: Settings, group: "Administration" },
 ];
 

@@ -109,3 +109,60 @@ Checked and ruled out: one of this pass's sub-agents flagged `--hub-red` (`globa
 6. **User Management** row-action overflow + permissions modal grid.
 7. **Messages** header overflow + group-info spacing fix.
 8. **App-wide dark-mode swatch sweep** — whenever convenient, independent of the above sequence.
+
+## Logged for follow-up — found during implementation, not yet scheduled
+
+Two issues surfaced from direct user testing while working through this
+plan, outside its original scope (notification volume/architecture,
+broadcast video). Decided to finish this plan in order first and treat
+these as their own follow-up pass — recording findings now so they aren't
+lost.
+
+### Notification system generates volume disproportionate to what's earned (Section 18)
+
+Confirmed: `task_completed` alone fans out via `createNotificationBulk`
+to every active ARL on every task completion at every location
+(`src/app/api/tasks/complete/route.ts:83-99`) — 100-750+/day for a
+20-50-location org, before counting `location_online`/`location_offline`
+(`src/lib/socket-server.ts:159-171, 340-349`, fires on every socket
+connect/disconnect) or `task_overdue_location`
+(`src/lib/task-notification-scheduler.ts:128-140`). One `task:completed`
+event currently produces a push, a DB notification row, a toast
+(`arl-dashboard-context.tsx:358-371`), *and* a Live Activity Feed entry
+simultaneously — the exact pattern Section 18 names.
+
+**Independent bug, regardless of redesign direction**: push sends
+(`src/lib/push.ts`'s `sendPushToAllARLs`/`sendPushToARL`) never check
+`isNotificationAllowed()` — only in-app notification creation does
+(`src/lib/notifications.ts:80-113`). An ARL who disables a notification
+type in `notification-settings-panel.tsx` still gets pushed to their
+phone for it. `task_overdue_location` has no toggle in that panel at all.
+
+Directional recommendation (not yet decided/implemented): push should be
+reserved for things needing attention *now, away from the app*
+(overdue, emergency) — routine completions are an "it's fine" signal
+already covered by the Live Activity Feed, not phone-buzz material.
+
+### Go Live broadcast — two confirmed bugs, one architecture question
+
+1. **Mic/camera prompt for passive location viewers.**
+   `MeetingRoomLiveKitCustom` calls `getUserMedia({ audio: true, ... })`
+   unconditionally on mount for every participant — no viewer-only mode
+   exists. The LiveKit token endpoint
+   (`src/app/api/livekit/token/route.ts:51-57`) issues identical
+   `canPublish: true` grants to hosts and viewers alike, so a location is
+   a full two-way publishing peer at the protocol level regardless of UI.
+2. **Navbar visually overlaps the meeting video — "Go Live" path only.**
+   `BroadcastStudio` ("Start Meeting") correctly hides the ARL shell via
+   `activeView === "broadcast"` (`arl/layout.tsx:102,112,131`).
+   `BroadcastLauncher` ("Go Live") never goes through that gate — it's a
+   plain in-page modal rendering `MeetingRoom` directly. The ARL header
+   is `z-[100]`; `MeetingRoom`'s root wrapper is `z-50`
+   (`meeting-room-livekit-custom.tsx:150`) — lower z-index loses, so the
+   header renders on top of the video wherever they overlap.
+3. **Architecture question, user-raised**: should one-way broadcast reuse
+   the full two-way conferencing component at all? The mic-prompt bug is
+   a direct symptom of that reuse — there's no "pure viewer" concept
+   anywhere in the stack. A real fix is a dedicated, stripped-down viewer
+   component for locations (no `getUserMedia`, `canPublish: false`,
+   subscribe-only) — a genuine feature change, not a quick patch.
