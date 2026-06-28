@@ -12,6 +12,7 @@ import {
   ClipboardList,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { TaskVirtualList } from "./task-virtual-list";
@@ -130,13 +131,24 @@ export function TaskManager() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
-      if (res.ok) fetchData();
-    } catch (err) {
-      console.error("Delete task error:", err);
-    }
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
+
+  const handleDelete = (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    showConfirm({
+      title: "Delete Task",
+      description: `Delete ${task?.title ?? "this task"}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+          if (res.ok) fetchData();
+        } catch (err) {
+          console.error("Delete task error:", err);
+        }
+      },
+    });
   };
 
   const handleToggleHidden = async (task: Task) => {
@@ -270,6 +282,8 @@ export function TaskManager() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

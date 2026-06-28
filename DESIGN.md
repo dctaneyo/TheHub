@@ -316,6 +316,52 @@ that's purely restating it.
 
 ---
 
+## 19. Copy & Microcopy
+
+Every piece of UI text earns its length the same way a UI element earns
+its presence (Section 18) — concise and specific reads as professional;
+padded and generic reads as a first draft. This applies to button
+labels, dialog titles, descriptions, and confirmation copy alike.
+
+- **Button/action labels name the object, not the manner.** "Delete
+  User" / "Delete Location", not "Delete Permanently" — *permanently* is
+  already implied by the action being a delete in the first place, and a
+  destructive label's job is to say *what* gets deleted so the user can
+  sanity-check it at a glance, not to editorialize about how thoroughly.
+  A concrete instance found in this codebase: `user-management.tsx`'s row
+  overflow rendered the literal label "Delete Permanently" for both ARLs
+  and Locations — generic, and longer than the specific version. Fixed to
+  "Delete User"/"Delete Location".
+- **Confirmation copy states the consequence in one short sentence, not
+  a warning essay.** "Delete David Santos? This cannot be undone." says
+  everything a "Permanently delete David Santos? This action is
+  irreversible and cannot be undone" version does, in half the words.
+  If the description needs two sentences, the second one should be new
+  information (what else gets deleted with it), not a restatement of the
+  first.
+- **Every destructive action requires a confirmation step — no
+  exceptions.** This is the one copy rule that's also a behavior rule:
+  a destructive button click is never the action itself, only the
+  trigger for a confirm dialog that states the consequence and requires
+  a second, deliberate click. A concrete instance found in this codebase:
+  `task-manager.tsx`'s task delete called the DELETE endpoint directly
+  from the row's trash icon with no confirmation at all, while every
+  other destructive action in the console (`user-management.tsx`,
+  `forms-repository.tsx`, `scheduled-meetings.tsx`) already gated through
+  `useConfirmDialog`. Fixed to match.
+- **Don't restate what the icon or label position already communicates.**
+  A trash icon next to "Delete" doesn't also need "(cannot be undone)"
+  appended to the button label itself — that belongs in the confirmation
+  step, where it's actually load-bearing (the user is about to act), not
+  on the trigger, where it's just longer text to scan past.
+
+**Check:** read every button label and dialog title out loud. If a word
+could be deleted without losing meaning, delete it. If a destructive
+action's button click does anything other than open a confirmation, that's
+a missing confirmation, not a style choice.
+
+---
+
 ## Part B — UI: Executes the UX
 
 Once Part A's questions are answered — what the user needs, when, and

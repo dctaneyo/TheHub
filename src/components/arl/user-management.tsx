@@ -268,9 +268,10 @@ export function UserManagement() {
   const { dialog, confirm: showConfirm } = useConfirmDialog();
 
   const handlePermanentDelete = (item: ArlUser | Location) => {
+    const noun = tab === "arls" ? "User" : "Location";
     showConfirm({
-      title: "Delete Permanently",
-      description: `Permanently delete ${item.name}? This cannot be undone.`,
+      title: `Delete ${noun}`,
+      description: `Delete ${item.name}? This cannot be undone.`,
       confirmLabel: "Delete",
       variant: "danger",
       onConfirm: async () => {
@@ -420,7 +421,7 @@ export function UserManagement() {
                                       </button>
                                     )}
                                     <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
-                                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
+                                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
                                     </button>
                                   </div>
                                 )}
@@ -508,7 +509,7 @@ export function UserManagement() {
                               </button>
                             )}
                             <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
-                              <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
                             </button>
                           </div>
                         )}
