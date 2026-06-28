@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Store,
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
+  Activity,
+  ChevronRight,
 } from "@/lib/icons";
 import { useSocket } from "@/lib/socket-context";
 import { cn } from "@/lib/utils";
@@ -133,6 +136,10 @@ export function OverviewDashboard() {
 
   if (!data) return null;
 
+  // `severity` is the second hierarchy signal alongside color (Section 7 —
+  // color alone isn't hierarchy): a card that represents a real problem
+  // ("bad") gets a heavier border, not just a different hue, so it still
+  // reads as more urgent with color removed from the screen entirely.
   const kpiCards = [
     {
       label: "Locations Online",
@@ -141,6 +148,7 @@ export function OverviewDashboard() {
       icon: Store,
       color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
       borderColor: data.locationsOnline === data.locationsTotal ? "border-emerald-200 dark:border-emerald-900" : "border-amber-200 dark:border-amber-900",
+      severity: data.locationsOnline === data.locationsTotal ? "good" : "warn",
       sparkData: null,
     },
     {
@@ -150,6 +158,7 @@ export function OverviewDashboard() {
       icon: data.overdueCount === 0 ? CheckCircle2 : AlertTriangle,
       color: data.overdueCount === 0 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
       borderColor: data.overdueCount === 0 ? "border-emerald-200 dark:border-emerald-900" : "border-red-200 dark:border-red-900",
+      severity: data.overdueCount === 0 ? "good" : "bad",
       sparkData: null,
     },
     {
@@ -158,10 +167,11 @@ export function OverviewDashboard() {
       subtext: `${data.completedToday} of ${data.totalDueToday} tasks done`,
       icon: TrendingUp,
       color: data.completionRate >= 80 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400" : data.completionRate >= 50 ? "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-      borderColor: "border-border",
+      borderColor: data.completionRate >= 80 ? "border-emerald-200 dark:border-emerald-900" : data.completionRate >= 50 ? "border-amber-200 dark:border-amber-900" : "border-red-200 dark:border-red-900",
+      severity: data.completionRate >= 80 ? "good" : data.completionRate >= 50 ? "warn" : "bad",
       sparkData: data.trend.map(t => t.completed),
     },
-  ];
+  ] as const;
 
   return (
     <div className="space-y-6">
@@ -192,7 +202,7 @@ export function OverviewDashboard() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className={cn("rounded-2xl border bg-card p-5", card.borderColor)}
+            className={cn("rounded-2xl bg-card p-5", card.severity === "bad" ? "border-2" : "border", card.borderColor)}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -216,73 +226,59 @@ export function OverviewDashboard() {
         ))}
       </div>
 
-      {/* Location Performance + 7-Day Trend */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Location Performance */}
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Location Performance Today</h3>
-          <div className="space-y-2">
-            {data.locationPerformance.slice(0, 8).map((loc) => (
-              <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-2">
-                <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground truncate">{loc.name}</span>
-                    <span className="text-xs text-muted-foreground">#{loc.storeNumber}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {loc.completedToday} tasks
-                  </span>
+      {/* Location Performance — the 7-Day Completion Trend chart that used
+          to sit beside this was a second implementation of the same chart
+          Analytics already owns (date-range controls, CSV export); Overview
+          links to it instead of recomputing it (Section 11/18). */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">Location Performance Today</h3>
+          <Link
+            href="/arl/analytics"
+            className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
+          >
+            View full analytics
+            <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="space-y-2">
+          {data.locationPerformance.slice(0, 8).map((loc) => (
+            <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-2">
+              <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground truncate">{loc.name}</span>
+                  <span className="text-xs text-muted-foreground">#{loc.storeNumber}</span>
                 </div>
               </div>
-            ))}
-            {data.locationPerformance.length === 0 && (
-              <p className="text-xs text-muted-foreground py-4 text-center">No location data available</p>
-            )}
-          </div>
-        </div>
-
-        {/* 7-Day Completion Trend */}
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h3 className="text-sm font-semibold text-foreground mb-4">7-Day Completion Trend</h3>
-          <div className="flex items-end gap-2 h-32">
-            {data.trend.map((day, i) => {
-              const maxCompleted = Math.max(...data.trend.map(d => d.completed), 1);
-              const barHeight = (day.completed / maxCompleted) * 100;
-              const dayLabel = new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" });
-              const isToday = i === data.trend.length - 1;
-              return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs font-semibold text-foreground tabular-nums">{day.completed}</span>
-                  <div className="w-full max-w-[32px] rounded-t-lg relative" style={{ height: "80px" }}>
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.max(barHeight, 4)}%` }}
-                      transition={{ delay: i * 0.05, duration: 0.4 }}
-                      className={cn(
-                        "absolute bottom-0 left-0 right-0 rounded-t-lg",
-                        isToday ? "bg-[var(--hub-red)]" : "bg-[var(--hub-red)]/30"
-                      )}
-                    />
-                  </div>
-                  <span className={cn("text-xs", isToday ? "font-semibold text-foreground" : "text-muted-foreground")}>{dayLabel}</span>
-                </div>
-              );
-            })}
-          </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {loc.completedToday} tasks
+                </span>
+              </div>
+            </div>
+          ))}
+          {data.locationPerformance.length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">No location data available</p>
+          )}
         </div>
       </div>
 
-      {/* Ticker Push */}
+      {/* Live Feed — ticker composer + live activity used to be two separate
+          cards for what's the same underlying concept: the kiosk-facing
+          ticker (GridTickerBar) already merges task completions and
+          ARL-pushed messages into one stream, so the ARL-facing view
+          shouldn't split what its own destination surface treats as one
+          (Section 18). */}
       <div className="rounded-2xl border border-border bg-card p-6">
-        <TickerPush />
-      </div>
-
-      {/* Live Activity */}
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <LiveActivityFeed maxItems={15} />
+        <div className="mb-4 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">Live Feed</h3>
+        </div>
+        <TickerPush showHeader={false} />
+        <div className="mt-4 border-t border-border pt-4">
+          <LiveActivityFeed maxItems={15} />
+        </div>
       </div>
     </div>
   );

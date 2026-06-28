@@ -24,7 +24,7 @@ const EXPIRY_OPTIONS = [
   { label: "No expiry", value: 0 },
 ];
 
-export function TickerPush() {
+export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
   const [messages, setMessages] = useState<TickerMessage[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
@@ -106,17 +106,22 @@ export function TickerPush() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header — suppressed when embedded under a panel that already
+          provides one (see overview-dashboard.tsx's merged Live Feed) */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950">
-            <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        {showHeader ? (
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950">
+              <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Live Ticker</h3>
+              <p className="text-xs text-muted-foreground">Push messages to location dashboards</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Live Ticker</h3>
-            <p className="text-xs text-muted-foreground">Push messages to location dashboards</p>
-          </div>
-        </div>
+        ) : (
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Push a Message</p>
+        )}
         <button
           onClick={() => setShowForm((f) => !f)}
           className={cn(

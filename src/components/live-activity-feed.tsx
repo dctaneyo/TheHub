@@ -117,18 +117,14 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Live Activity</h3>
-        <div className="flex items-center gap-1 ml-auto">
-          <button
-            onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
-            className="p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Clear all activity"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-muted-foreground">Live</span>
-        </div>
+        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Recent Activity</h3>
+        <button
+          onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
+          className="ml-auto p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          title="Clear all activity"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       <div className="space-y-1 max-h-[300px] overflow-y-auto">
