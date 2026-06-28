@@ -317,19 +317,17 @@ reasoning as the rest of this plan.
    Menu with cadence grouping (Connection Status as a plain status row;
    Theme/Notifications/Settings grouped below a separator) in the same
    pass.
-4. **`user-management.tsx` + `messaging.tsx` Ark Menu migration** — move
-   the three real ad hoc dropdowns (two row-overflow menus, one chat
-   header overflow) onto Ark Menu. Bundle in the destructive-action
-   overflow fix for `task-virtual-list.tsx` and `group-info-modal.tsx`
-   (#7) at the same time — same component (Ark Menu), same reason
-   (rare/destructive action shouldn't sit at equal weight to a frequent
-   one). Independent of the above, can happen any time.
-5. **Tabs convergence (#6)** — migrate `tenant-settings.tsx` and
-   `meetings/page.tsx` off shadcn `Tabs` and `user-management.tsx`'s
-   hand-rolled switcher onto the same Ark UI Tabs (Underline) component,
-   in one pass across all three files so the fix doesn't just relocate
-   the inconsistency. Bundle with `user-management.tsx`'s Ark Menu
-   migration (#4) since it's the same file.
+4. ~~**`user-management.tsx` + `messaging.tsx` Ark Menu migration**~~ —
+   **done.** Both row-overflow menus, the chat header overflow, and (bundled
+   in) the destructive-action overflow fix for `task-virtual-list.tsx` and
+   `group-info-modal.tsx` (#7) all moved to Ark Menu. Dead click-outside
+   state/effects removed from all four files.
+5. ~~**Tabs convergence (#6)**~~ — **done.** `tenant-settings.tsx` and
+   `meetings/page.tsx` converged automatically — they import the shared
+   `tabs.tsx` rebuilt in Phase 0, so rebuilding it underneath them was the
+   whole fix. `user-management.tsx`'s hand-rolled switcher (never imported
+   `Tabs` at all) needed an actual per-file change, now on the shared
+   component, controlled via value/onValueChange.
 6. **Native `<select>` → Ark Select, in-console (6 sites)** — do
    per-file alongside other work on that file where possible
    (`task-form-modal.tsx` and `scheduled-meetings.tsx` already have other
