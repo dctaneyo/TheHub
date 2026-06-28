@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TestTube, Send, ChevronDown, CheckCircle2 } from "@/lib/icons";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 
@@ -24,6 +25,15 @@ export function NotificationTester({ className }: NotificationTesterProps) {
   const [sentType, setSentType] = useState<string | null>(null);
   const [locations, setLocations] = useState<LocationOption[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const locationOptions = useMemo(() => createListCollection({
+    items: [
+      { value: "", label: "Select a location..." },
+      ...locations.map((loc) => ({
+        value: loc.id,
+        label: `${loc.storeNumber ? `#${loc.storeNumber} - ` : ""}${loc.name}${loc.isOnline ? " (Online)" : ""}`,
+      })),
+    ],
+  }), [locations]);
   const { socket } = useSocket();
 
   // Fetch real locations from API
@@ -192,18 +202,20 @@ export function NotificationTester({ className }: NotificationTesterProps) {
                     Loading locations...
                   </div>
                 ) : (
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  <Select
+                    collection={locationOptions}
+                    value={[selectedLocation]}
+                    onValueChange={(d) => setSelectedLocation(d.value[0])}
                   >
-                    <option value="">Select a location...</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.storeNumber ? `#${loc.storeNumber} - ` : ""}{loc.name}{loc.isOnline ? " (Online)" : ""}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValueText />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locationOptions.items.map((item) => (
+                        <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
                 {locations.length === 0 && !loadingLocations && (
                   <p className="text-xs text-muted-foreground mt-1">No locations found. Create locations in the Locations page first.</p>
