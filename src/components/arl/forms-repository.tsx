@@ -254,66 +254,147 @@ export function FormsRepository() {
       </div>
 
       {/* Forms list */}
-      <div className="space-y-2">
-        {filtered.length === 0 && (
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-border">
-            <div className="text-center">
-              <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">No forms yet</p>
+      {filtered.length === 0 ? (
+        <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-border">
+          <div className="text-center">
+            <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">No forms yet</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Table — desktop (md:+). Form fields (title, category, filename, size,
+              date) are same-shaped comparable records — a user scans for a specific
+              form by name or category, not by reading blobs left-to-right (§11). */}
+          <div className="hidden md:block rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="px-4 py-2.5 text-left font-semibold">Form</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">File</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Size</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Uploaded</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((form) => (
+                    <tr key={form.id} className="border-b border-border last:border-b-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-[var(--hub-red)]">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
+                              <span className={cn("shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
+                                {categoryLabel(form.category)}
+                              </span>
+                            </div>
+                            {form.description && (
+                              <p className="truncate text-xs text-muted-foreground">{form.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="max-w-40 px-4 py-3">
+                        <span className="block truncate text-xs text-muted-foreground">{form.fileName}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {formatBytes(form.fileSize)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(form.createdAt), "MMM d, yyyy")}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEmailModal(form)}
+                            title="Email to restaurant/ARL"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                          </button>
+                          <a
+                            href={`/api/forms/download?id=${form.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                          <button
+                            onClick={() => handleDelete(form.id)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-        {filtered.map((form, i) => (
-          <motion.div
-            key={form.id}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-[var(--hub-red)]">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
-                  {categoryLabel(form.category)}
-                </span>
-              </div>
-              {form.description && (
-                <p className="mt-1 truncate text-xs text-muted-foreground">{form.description}</p>
-              )}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {form.fileName} · {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                onClick={() => openEmailModal(form)}
-                title="Email to restaurant/ARL"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+
+          {/* Cards — mobile fallback, same data stacked */}
+          <div className="md:hidden space-y-2">
+            {filtered.map((form, i) => (
+              <motion.div
+                key={form.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
               >
-                <Mail className="h-4 w-4" />
-              </button>
-              <a
-                href={`/api/forms/download?id=${form.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <Download className="h-4 w-4" />
-              </a>
-              <button
-                onClick={() => handleDelete(form.id)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-[var(--hub-red)]">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
+                    <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
+                      {categoryLabel(form.category)}
+                    </span>
+                  </div>
+                  {form.description && (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{form.description}</p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.fileName} · {formatBytes(form.fileSize)} · {format(new Date(form.createdAt), "MMM d, yyyy")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => openEmailModal(form)}
+                    title="Email to restaurant/ARL"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    <Mail className="h-4 w-4" />
+                  </button>
+                  <a
+                    href={`/api/forms/download?id=${form.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                  <button
+                    onClick={() => handleDelete(form.id)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Email modal */}
       <AnimatePresence>

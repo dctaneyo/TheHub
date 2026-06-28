@@ -222,8 +222,7 @@ actually want."
   instead of columns.
 - `task-virtual-list.tsx:56` — same per-row card chrome; title, priority,
   type, due date/time, points, location all in one unaligned blob.
-- `forms-repository.tsx:272` — same pattern; category/filename/size/date
-  concatenated into one line instead of columns.
+- ~~`forms-repository.tsx:272`~~ — **done.** Real `<table>` on `md:` and up (Form/File/Size/Uploaded/Actions columns); stacked-card fallback on mobile preserves the existing animated rows.
 - `scheduled-meetings.tsx:417-420` — host/date/time/code metadata wraps
   instead of aligning; same-shaped, comparable records.
 - ~~`data-management-audit-log.tsx:79-80`~~ — **done.** Real `<table>` on `md:` and up (Actor / Action / Details / When / IP columns, sticky `<thead>`, scrolls within `max-h-96`); stacked-card fallback on mobile. Extracted `filteredLogs` variable to drive both views from one filter computation. Updated actor-type badge from flat `bg-purple-100 dark:bg-purple-950` to opacity-based `bg-purple-500/10`.
