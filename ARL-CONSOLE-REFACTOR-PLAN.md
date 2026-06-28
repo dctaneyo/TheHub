@@ -314,12 +314,23 @@ reasoning as the rest of this plan.
    in) the destructive-action overflow fix for `task-virtual-list.tsx` and
    `group-info-modal.tsx` (#7) all moved to Ark Menu. Dead click-outside
    state/effects removed from all four files.
-5. ~~**Tabs convergence (#6)**~~ — **done.** `tenant-settings.tsx` and
-   `meetings/page.tsx` converged automatically — they import the shared
-   `tabs.tsx` rebuilt in Phase 0, so rebuilding it underneath them was the
-   whole fix. `user-management.tsx`'s hand-rolled switcher (never imported
-   `Tabs` at all) needed an actual per-file change, now on the shared
-   component, controlled via value/onValueChange.
+5. ~~**Tabs convergence (#6)**~~ — **done, but the original audit's "two
+   ad hoc dropdowns... exactly three" inventory style mistake repeated
+   here too: the sweep that found `user-management.tsx`'s switcher wasn't
+   exhaustive.** User caught two more hand-rolled segmented-control tab
+   bars after this was marked done: `remote-management.tsx` ("View &
+   Control"/"Remote Login") and `analytics-dashboard.tsx` ("Tasks"/
+   "Messaging"). A follow-up grep for the same wrapper classes
+   (`rounded-xl bg-muted/bg-card p-1`) found two more in
+   `remote-login.tsx` (both explicitly commented "Type tabs" — the main
+   assign-type switcher and an identical one inside the force-reassign
+   panel). All five now on the shared `Tabs` component. Confirmed two
+   near-miss matches in `task-form-modal.tsx` are NOT tabs (Time/All Day
+   and This week/Next week are form-field segmented toggles, correctly
+   out of scope) — re-swept the whole console after each fix, zero
+   further matches. `tenant-settings.tsx` and `meetings/page.tsx`
+   converged automatically since they already imported the shared
+   `tabs.tsx` rebuilt in Phase 0.
 6. ~~**Native `<select>` → Ark Select, in-console**~~ — **done.** All 7
    sites (the original 6 plus `notification-tester.tsx`, discovered
    mid-pass — not in the original audit, reachable from Data Management).
