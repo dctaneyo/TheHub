@@ -11,6 +11,7 @@ import {
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -83,8 +84,6 @@ export function UserManagement() {
   const [editRoleId, setEditRoleId] = useState<string | null>(null);
   const [savingPerms, setSavingPerms] = useState(false);
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
-  // Which row's overflow menu is open (null = all closed)
-  const [overflowOpenId, setOverflowOpenId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -325,8 +324,7 @@ export function UserManagement() {
         ))}
       </div>
 
-      {/* List — clicking anywhere outside an overflow button closes any open overflow */}
-      <div onClick={() => setOverflowOpenId(null)}>
+      <div>
         {items.length === 0 ? (
           <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">No {tab} yet</p>
@@ -405,27 +403,24 @@ export function UserManagement() {
                               >
                                 {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
                               </button>
-                              <div className="relative">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                              <Menu>
+                                <MenuTrigger
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
                                   title="More actions"
                                 >
                                   <MoreVertical className="h-3.5 w-3.5" />
-                                </button>
-                                {overflowOpenId === item.id && (
-                                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
-                                    {isArl && isCallerAdmin && a.role !== "admin" && (
-                                      <button onClick={() => { openPermissions(a); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl">
-                                        <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
-                                      </button>
-                                    )}
-                                    <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
-                                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                                </MenuTrigger>
+                                <MenuContent>
+                                  {isArl && isCallerAdmin && a.role !== "admin" && (
+                                    <MenuItem value="permissions" onClick={() => openPermissions(a)}>
+                                      <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
+                                    </MenuItem>
+                                  )}
+                                  <MenuItem value="delete" variant="destructive" onClick={() => handlePermanentDelete(item)}>
+                                    <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
+                                  </MenuItem>
+                                </MenuContent>
+                              </Menu>
                             </div>
                           </td>
                         </tr>
@@ -493,27 +488,24 @@ export function UserManagement() {
                       >
                         {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
                       </button>
-                      <div className="relative">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                      <Menu>
+                        <MenuTrigger
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
                           title="More actions"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                        {overflowOpenId === item.id && (
-                          <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
-                            {isArl && isCallerAdmin && a.role !== "admin" && (
-                              <button onClick={() => { openPermissions(a); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl">
-                                <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
-                              </button>
-                            )}
-                            <button onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl">
-                              <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                        </MenuTrigger>
+                        <MenuContent>
+                          {isArl && isCallerAdmin && a.role !== "admin" && (
+                            <MenuItem value="permissions" onClick={() => openPermissions(a)}>
+                              <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
+                            </MenuItem>
+                          )}
+                          <MenuItem value="delete" variant="destructive" onClick={() => handlePermanentDelete(item)}>
+                            <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete {isArl ? "User" : "Location"}
+                          </MenuItem>
+                        </MenuContent>
+                      </Menu>
                     </div>
                   </motion.div>
                 );

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -17,6 +16,7 @@ import {
 } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -57,9 +57,6 @@ export function Messaging() {
     fetchMessages, getReceiptDetail,
     startTyping, stopTyping,
   } = useMessaging();
-
-  // Local: tracks overflow menu open state for the chat header (Group Info + Search)
-  const [showConvoOverflow, setShowConvoOverflow] = useState(false);
 
   const msgVirtualizer = useVirtualizer({
     count: visibleMessages.length,
@@ -258,10 +255,7 @@ export function Messaging() {
           Group Info + Search are secondary — reached when needed, not every time.
           Folded into a single overflow next to Mute so the header has 3 actions
           instead of 4-5, and none compete with Back for primary status (§12). */}
-      <div
-        className="flex items-center gap-3 border-b border-border px-4 py-3"
-        onClick={() => setShowConvoOverflow(false)}
-      >
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -287,46 +281,32 @@ export function Messaging() {
           {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
         </button>
         {/* Overflow — Group Info + Search (secondary, occasional) */}
-        <div className="relative">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowConvoOverflow((v) => !v); }}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-              showConvoOverflow ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
-            )}
+        <Menu>
+          <MenuTrigger
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted"
             title="More options"
             aria-label="More options"
           >
             <MoreVertical className="h-4 w-4" />
-          </button>
-          {showConvoOverflow && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[152px] rounded-xl border border-border bg-card shadow-lg py-1">
-              {isGroup && (
-                <button
-                  onClick={() => { setShowGroupInfo(true); setShowConvoOverflow(false); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl"
-                >
-                  <Info className="h-3.5 w-3.5 shrink-0" /> Group Info
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setShowSearch((v) => !v);
-                  setSearchQuery("");
-                  setShowConvoOverflow(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-muted",
-                  isGroup ? "rounded-b-xl" : "rounded-xl",
-                  showSearch ? "text-blue-600 dark:text-blue-400" : "text-foreground"
-                )}
-              >
-                <Search className="h-3.5 w-3.5 shrink-0" /> {showSearch ? "Close Search" : "Search"}
-              </button>
-            </div>
-          )}
-        </div>
+          </MenuTrigger>
+          <MenuContent>
+            {isGroup && (
+              <MenuItem value="group-info" onClick={() => setShowGroupInfo(true)}>
+                <Info className="h-3.5 w-3.5 shrink-0" /> Group Info
+              </MenuItem>
+            )}
+            <MenuItem
+              value="search"
+              onClick={() => {
+                setShowSearch((v) => !v);
+                setSearchQuery("");
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              }}
+            >
+              <Search className="h-3.5 w-3.5 shrink-0" /> {showSearch ? "Close Search" : "Search"}
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       </div>
 
       {/* Search bar */}
