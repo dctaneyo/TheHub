@@ -25,7 +25,7 @@ interface TaskVirtualListProps {
   onToggleHidden: (task: Task) => void;
 }
 
-const GRID_COLS = "2fr 1fr 1fr 1.5fr auto";
+const GRID_COLS = "minmax(0,1fr) 220px auto";
 
 export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }: TaskVirtualListProps) {
   const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
@@ -50,8 +50,6 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
         style={{ gridTemplateColumns: GRID_COLS }}
       >
         <div className="px-4 py-2.5 font-semibold">Task</div>
-        <div className="px-4 py-2.5 font-semibold">Type</div>
-        <div className="px-4 py-2.5 font-semibold">Priority</div>
         <div className="px-4 py-2.5 font-semibold">Schedule</div>
         <div className="px-4 py-2.5 font-semibold text-right">Actions</div>
       </div>
@@ -73,19 +71,20 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                   className="hidden md:grid items-center border-b border-border bg-card"
                   style={{ gridTemplateColumns: GRID_COLS }}
                 >
-                  {/* Task column */}
+                  {/* Task column — Type/Priority are finite-vocabulary fields, so
+                      they live here as chips next to the title (Section 11)
+                      rather than in their own mostly-empty columns; Recurring
+                      lives only in the Schedule column to avoid showing the
+                      same fact twice in one row (Section 18). */}
                   <div className="px-4 py-2.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
                       <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
                         {task.priority}
                       </Badge>
-                      {task.isRecurring && (
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <Repeat className="h-2.5 w-2.5" />
-                          Recurring
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {task.type}
+                      </Badge>
                       {task.allowEarlyComplete && (
                         <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                           Early OK
@@ -100,18 +99,6 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                     {task.description && (
                       <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                     )}
-                  </div>
-                  {/* Type column */}
-                  <div className="px-4 py-2.5">
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {task.type}
-                    </Badge>
-                  </div>
-                  {/* Priority column */}
-                  <div className="px-4 py-2.5">
-                    <Badge variant="secondary" className={cn("text-xs", priorityStyle?.color)}>
-                      {task.priority}
-                    </Badge>
                   </div>
                   {/* Schedule column */}
                   <div className="px-4 py-2.5 flex flex-col gap-0.5 text-xs text-muted-foreground">
