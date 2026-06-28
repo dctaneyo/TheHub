@@ -208,12 +208,15 @@ when a list gets built without ever asking "what shape does this data
 actually want."
 
 **Should become real tables:**
-- `locations-manager.tsx:183-193` — the strongest case. 8 same-shaped
-  fields per location (status, address, email, user ID, last-seen,
-  store#) in a 2-3 col card grid; "which locations haven't checked in"
-  currently requires reading every card instead of scanning one column.
-  No "Add Location" action exists on this surface at all (flow gap,
-  separately noted).
+- ~~`locations-manager.tsx:183-193`~~ — **done.** Real `<table>` on
+  `md:` and up (Location/Status+last-seen/Address/Email/User ID/Actions
+  columns), stacked-card fallback below `md:` mirroring the
+  desktop-table/mobile-card pattern `meeting-analytics.tsx` already
+  established for participants. PIN-reset inline form now expands as a
+  `colSpan`-ed row beneath the location instead of inside the card. The
+  "no Add Location entry point" flow gap noted alongside this finding
+  was *not* fixed — out of scope for a shape change, logged here so it
+  isn't lost.
 - `user-management.tsx:326-409` — 7 fields per row, each its own card
   (`:342-345`), ID/store/email string-mashed into one free-text line
   instead of columns.
