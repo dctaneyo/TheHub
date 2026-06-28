@@ -165,75 +165,84 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           </button>
         </div>
 
-        <div className="space-y-4">
-          {/* Title */}
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Title</label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task title..."
-              className="rounded-xl"
-            />
-          </div>
+        {/* Explicit margin per group (no outer space-y-*) so the larger gaps before
+            Recurring and Location actually override rather than conflict with a parent
+            space-y rule. Tight gap within the Title+Description text-field pair;
+            standard gap between most groups; wider gap where the concern shifts. */}
+        <div>
+          {/* Title + Description — same text-field type, tight group */}
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Title</label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Task title..."
+                className="rounded-xl"
+              />
+            </div>
 
-          {/* Description */}
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Description / Instructions</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Details, notes, or instructions..."
-              rows={3}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-
-          {/* Type */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Type</label>
-            <div className="flex flex-wrap gap-2">
-              {TYPES.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setType(t.value)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
-                    type === t.value
-                      ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
-                  )}
-                >
-                  <t.icon className="h-3.5 w-3.5" />
-                  {t.label}
-                </button>
-              ))}
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Description / Instructions</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Details, notes, or instructions..."
+                rows={3}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
           </div>
 
-          {/* Priority */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Priority</label>
-            <div className="flex flex-wrap gap-2">
-              {PRIORITIES.map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => setPriority(p.value)}
-                  className={cn(
-                    "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
-                    priority === p.value
-                      ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
+          {/* Type + Priority — 2-column grid: both answer "what kind of task is this"
+              so they belong side-by-side, not separated by the same gap as unrelated groups.
+              Selected state uses a solid fill (not a tint) so choosing a value produces a
+              real shape change, not just a color change (§7). */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-muted-foreground">Type</label>
+              <div className="flex flex-wrap gap-2">
+                {TYPES.map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setType(t.value)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
+                      type === t.value
+                        ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
+                    )}
+                  >
+                    <t.icon className="h-3.5 w-3.5" />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-muted-foreground">Priority</label>
+              <div className="flex flex-wrap gap-2">
+                {PRIORITIES.map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setPriority(p.value)}
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
+                      priority === p.value
+                        ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Due Date + Time */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
             {!isRecurring && (
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">Due Date</label>
@@ -283,8 +292,9 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             )}
           </div>
 
-          {/* Recurring */}
-          <div className="space-y-3">
+          {/* Recurring — scheduling section; mt-6 gap before it since this is a
+              qualitatively different decision from the Type/Priority above */}
+          <div className="space-y-3 mt-6">
             <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <input
                 type="checkbox"
@@ -296,7 +306,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             </label>
             {isRecurring && (
               <>
-                {/* Recurring type selector */}
+                {/* Recurring type selector — filled selected state, consistent with Type/Priority */}
                 <div className="flex gap-1">
                   {RECURRING_TYPES.map((rt) => (
                     <button
@@ -305,7 +315,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       className={cn(
                         "flex-1 rounded-xl border px-2 py-2 text-xs font-semibold transition-all",
                         recurringType === rt.value
-                          ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                          ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
                           : "border-border text-muted-foreground hover:border-muted-foreground/40"
                       )}
                     >
@@ -402,8 +412,9 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             )}
           </div>
 
-          {/* Location Assignment */}
-          <div className="space-y-2">
+          {/* Location Assignment — distinct concern from scheduling; mt-6 separates
+              "when/how often does this run" from "who is responsible for it" */}
+          <div className="space-y-2 mt-6">
             <label className="mb-1 block text-xs font-semibold text-muted-foreground">Assign to</label>
             <div className="flex gap-2">
               {(["all", "single", "multiple"] as const).map((mode) => (
@@ -413,7 +424,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                   className={cn(
                     "flex-1 rounded-xl border px-3 py-2 text-xs font-semibold capitalize transition-all",
                     assignMode === mode
-                      ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                      ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
                   )}
                 >
@@ -444,7 +455,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     className={cn(
                       "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       selectedLocationIds.includes(loc.id)
-                        ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                        ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
                         : "border-border text-muted-foreground hover:border-muted-foreground/40"
                     )}
                   >
@@ -461,7 +472,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           </div>
 
           {/* Options */}
-          <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3">
+          <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3 mt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Options</p>
 
             <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
@@ -498,7 +509,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                 ))}
               </div>
               {(!showInToday || !showInCalendar) && (
-                <p className="mt-1 text-xs text-amber-600">
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                   Hidden from: {[!showInToday && "Today's Tasks", !showInCalendar && "Calendar & 7-Day"].filter(Boolean).join(", ")}
                 </p>
               )}
@@ -506,7 +517,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           </div>
 
           {/* Submit */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 mt-4">
             <Button
               onClick={onClose}
               variant="outline"
