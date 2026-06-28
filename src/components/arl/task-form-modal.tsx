@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, SprayCan, Clock, ClipboardList } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import {
@@ -59,6 +60,9 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
   const [biweeklyStart, setBiweeklyStart] = useState<"this" | "next">(initialValues?.biweeklyStart ?? "this");
   const [assignMode, setAssignMode] = useState<"all" | "single" | "multiple">(initialValues?.assignMode ?? "all");
   const [locationId, setLocationId] = useState(initialValues?.locationId ?? "");
+  const locationOptions = useMemo(() => createListCollection({
+    items: [{ value: "", label: "Select a location..." }, ...locations.map((loc) => ({ value: loc.id, label: `${loc.name} (#${loc.storeNumber})` }))],
+  }), [locations]);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>(initialValues?.selectedLocationIds ?? []);
   const [allowEarlyComplete, setAllowEarlyComplete] = useState(initialValues?.allowEarlyComplete ?? false);
   const [showInToday, setShowInToday] = useState(initialValues?.showInToday ?? true);
@@ -433,16 +437,20 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
               ))}
             </div>
             {assignMode === "single" && (
-              <select
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+              <Select
+                collection={locationOptions}
+                value={[locationId]}
+                onValueChange={(d) => setLocationId(d.value[0])}
               >
-                <option value="">Select a location...</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.name} (#{loc.storeNumber})</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValueText />
+                </SelectTrigger>
+                <SelectContent>
+                  {locationOptions.items.map((item) => (
+                    <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
             {assignMode === "multiple" && (
               <div className="flex flex-wrap gap-2">

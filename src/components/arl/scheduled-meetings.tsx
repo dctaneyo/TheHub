@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
@@ -73,6 +74,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   const tzOptions = useRef<{ value: string; label: string }[]>(
     getTimeZoneList().map((tz) => ({ value: tz, label: timeZoneLabel(tz) }))
   );
+  const tzCollection = useMemo(() => createListCollection({ items: tzOptions.current }), []);
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringType, setRecurringType] = useState<string>("weekly");
@@ -316,15 +318,20 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
               {/* Timezone */}
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1">Timezone</label>
-                <select
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
+                <Select
+                  collection={tzCollection}
+                  value={[timezone]}
+                  onValueChange={(d) => setTimezone(d.value[0])}
                 >
-                  {tzOptions.current.map((tz) => (
-                    <option key={tz.value} value={tz.value}>{tz.label}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValueText />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tzCollection.items.map((tz) => (
+                      <SelectItem key={tz.value} item={tz}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {scheduledDate && scheduledTime && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Starts {formatDateTimeInZone(zonedWallTimeToUtcISO(scheduledDate, scheduledTime, timezone), timezone)}
