@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Edit2, Trash2, UserCheck, UserX,
-  Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin,
+  Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin, MoreVertical,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +83,8 @@ export function UserManagement() {
   const [editRoleId, setEditRoleId] = useState<string | null>(null);
   const [savingPerms, setSavingPerms] = useState(false);
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
+  // Which row's overflow menu is open (null = all closed)
+  const [overflowOpenId, setOverflowOpenId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -322,8 +324,8 @@ export function UserManagement() {
         ))}
       </div>
 
-      {/* List */}
-      <div className="space-y-2">
+      {/* List — clicking anywhere outside an overflow button closes any open overflow */}
+      <div className="space-y-2" onClick={() => setOverflowOpenId(null)}>
         {items.length === 0 && (
           <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">No {tab} yet</p>
@@ -373,19 +375,18 @@ export function UserManagement() {
                   {item.email && ` · ${item.email}`}
                 </p>
               </div>
+              {/* Row actions: Edit + Activate always visible (frequent); Permissions + Delete
+                  grouped in overflow (rare/destructive — not every visit needs them) */}
               <div className="flex shrink-0 items-center gap-1">
-                {isArl && isCallerAdmin && a.role !== "admin" && (
-                  <button
-                    onClick={() => openPermissions(a)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                    title="Manage permissions"
-                  >
-                    <Settings2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+                {/* Edit — frequent, primary visible action */}
+                <button
+                  onClick={() => openEdit(item)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  title="Edit"
+                >
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
+                {/* Toggle Active — moderate frequency, stays visible */}
                 <button
                   onClick={() => handleToggleActive(item)}
                   className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
@@ -395,13 +396,35 @@ export function UserManagement() {
                 >
                   {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
                 </button>
-                <button
-                  onClick={() => handlePermanentDelete(item)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title="Permanently delete"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {/* Overflow: Permissions (rare) + Delete (destructive) — one icon instead of two,
+                    so the visible row actions don't compete with the primary Edit/Activate pair */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOverflowOpenId(overflowOpenId === item.id ? null : item.id); }}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    title="More actions"
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </button>
+                  {overflowOpenId === item.id && (
+                    <div className="absolute right-0 top-full z-10 mt-1 min-w-[168px] rounded-xl border border-border bg-card shadow-lg py-1">
+                      {isArl && isCallerAdmin && a.role !== "admin" && (
+                        <button
+                          onClick={() => { openPermissions(a); setOverflowOpenId(null); }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-t-xl"
+                        >
+                          <Settings2 className="h-3.5 w-3.5 shrink-0" /> Manage Permissions
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { handlePermanentDelete(item); setOverflowOpenId(null); }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-b-xl"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Permanently
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           );
@@ -543,7 +566,7 @@ export function UserManagement() {
                 )}
 
                 {error && (
-                  <p className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
+                  <p className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">{error}</p>
                 )}
 
                 <Button
@@ -584,91 +607,111 @@ export function UserManagement() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                {/* Role Template Selector */}
-                {roles.length > 0 && (
-                  <div className="rounded-2xl border border-border p-3">
-                    <p className="text-xs font-semibold text-foreground mb-2">Apply Role Template</p>
-                    <div className="flex flex-wrap gap-1">
-                      {roles.map((role) => (
+              {/*
+               * Three structural sections, separated into two visual tiers:
+               *   "Configuration" (Role Template + Location Access) — set once when
+               *   onboarding a new ARL, tells the system who this person is and what
+               *   locations they can see. Grouped tightly with space-y-3.
+               *   "Permissions" (per-capability toggles) — the actual fine-grained
+               *   controls, separated by a larger gap since it's a different concern.
+               *
+               * Toggle sizes unified: Location toggles (h-5/w-9) now match the
+               * per-group toggles so they don't look like a different component.
+               *
+               * Role template selected state: solid fill (consistent with the
+               * task-form-modal changes in the same redesign pass).
+               */}
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                {/* ── Configuration: Role Template + Location Access ── */}
+                <div className="space-y-3">
+                  {/* Role Template Selector */}
+                  {roles.length > 0 && (
+                    <div className="rounded-2xl border border-border p-3">
+                      <p className="text-xs font-semibold text-foreground mb-2">Apply Role Template</p>
+                      <div className="flex flex-wrap gap-1">
+                        {roles.map((role) => (
+                          <button
+                            key={role.id}
+                            type="button"
+                            onClick={() => applyRoleTemplate(role.id)}
+                            className={cn(
+                              "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
+                              editRoleId === role.id
+                                ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
+                                : "border-border text-muted-foreground hover:bg-muted"
+                            )}
+                            title={role.description || role.name}
+                          >
+                            {role.name}
+                          </button>
+                        ))}
                         <button
-                          key={role.id}
                           type="button"
-                          onClick={() => applyRoleTemplate(role.id)}
+                          onClick={() => setEditRoleId(null)}
                           className={cn(
                             "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
-                            editRoleId === role.id
-                              ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
+                            editRoleId === null
+                              ? "border-purple-500 bg-purple-500 text-white"
                               : "border-border text-muted-foreground hover:bg-muted"
                           )}
-                          title={role.description || role.name}
                         >
-                          {role.name}
+                          Custom
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setEditRoleId(null)}
-                        className={cn(
-                          "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
-                          editRoleId === null
-                            ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                            : "border-border text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        Custom
-                      </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Location Assignment */}
-                <div className="rounded-2xl border border-border p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-xs font-semibold text-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> Location Access
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {editLocationIds.length === 0 ? "All locations" : `${editLocationIds.length} location${editLocationIds.length !== 1 ? "s" : ""}`}
-                      </p>
-                    </div>
-                    {editLocationIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setEditLocationIds([])}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Clear (all access)
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {locations.filter((l) => l.isActive).map((loc) => {
-                      const assigned = editLocationIds.includes(loc.id);
-                      return (
+                  {/* Location Assignment */}
+                  <div className="rounded-2xl border border-border p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> Location Access
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {editLocationIds.length === 0 ? "All locations" : `${editLocationIds.length} location${editLocationIds.length !== 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+                      {editLocationIds.length > 0 && (
                         <button
-                          key={loc.id}
                           type="button"
-                          onClick={() => toggleLocationAssignment(loc.id)}
-                          className="flex w-full items-center justify-between rounded-xl px-2 py-2 hover:bg-muted/50 transition-colors"
+                          onClick={() => setEditLocationIds([])}
+                          className="text-xs text-muted-foreground hover:text-foreground"
                         >
-                          <span className="text-xs text-foreground">{loc.name} <span className="text-muted-foreground">#{loc.storeNumber}</span></span>
-                          <div className={cn(
-                            "flex h-4 w-7 items-center rounded-full px-1 transition-colors",
-                            assigned ? "bg-blue-500" : "bg-muted"
-                          )}>
-                            <div className={cn(
-                              "h-3 w-3 rounded-full bg-white shadow transition-transform",
-                              assigned ? "translate-x-3" : "translate-x-0"
-                            )} />
-                          </div>
+                          Clear (all access)
                         </button>
-                      );
-                    })}
+                      )}
+                    </div>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {locations.filter((l) => l.isActive).map((loc) => {
+                        const assigned = editLocationIds.includes(loc.id);
+                        return (
+                          <button
+                            key={loc.id}
+                            type="button"
+                            onClick={() => toggleLocationAssignment(loc.id)}
+                            className="flex w-full items-center justify-between rounded-xl px-2 py-2 hover:bg-muted/50 transition-colors"
+                          >
+                            <span className="text-xs text-foreground">{loc.name} <span className="text-muted-foreground">#{loc.storeNumber}</span></span>
+                            {/* h-5/w-9 matches the permission-group group-toggle below */}
+                            <div className={cn(
+                              "flex h-5 w-9 items-center rounded-full px-1 transition-colors",
+                              assigned ? "bg-blue-500" : "bg-muted"
+                            )}>
+                              <div className={cn(
+                                "h-4 w-4 rounded-full bg-white shadow transition-transform",
+                                assigned ? "translate-x-4" : "translate-x-0"
+                              )} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
+                {/* ── Permission Groups — structurally distinct from config above; mt-6 gap ── */}
+                <div className="mt-6 space-y-3">
                 {PERMISSION_GROUPS.map((group) => {
                   const groupKeys = group.permissions.map((p) => p.key);
                   const allOn = groupKeys.every((k) => editPerms.includes(k));
@@ -721,7 +764,8 @@ export function UserManagement() {
                     </div>
                   );
                 })}
-              </div>
+                </div>{/* end Permission Groups space-y-3 */}
+              </div>{/* end flex-1 overflow-y-auto modal body */}
 
               <div className="border-t border-border px-6 py-4 flex items-center gap-3">
                 <div className="flex-1 text-xs text-muted-foreground">
