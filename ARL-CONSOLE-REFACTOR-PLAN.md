@@ -297,18 +297,26 @@ reasoning as the rest of this plan.
 
 ## Recommended sequencing
 
-1. **`meetings/page.tsx` cleanup** — remove the two redundant pulsing
-   dots (#1), tier Start/Schedule Meeting weight (logged item). Smallest,
-   highest-clarity fix; do first.
-2. **`meeting-analytics.tsx` stat promotion** — promote Total
-   Meetings + Avg Duration in both the summary and detail view (#2).
-   Independent of #1, can happen in parallel.
-3. **Notification bell removal + settings panel reframe** (#3 + #4) —
-   these two files must ship together (the panel's reframe only makes
-   sense once the bell is actually gone). Do the Quick Settings popover
-   cadence-grouping (#5) and its Ark Menu migration in the same
-   `arl/layout.tsx` pass since it's a small, contained addition to a
-   file already being touched.
+1. ~~**`meetings/page.tsx` cleanup**~~ — **done.** Removed both redundant
+   pulsing dots; tiered Start Meeting (bold/red, time-sensitive) vs.
+   Schedule Meeting (demoted to outline, routine/planned). Also
+   mono-hued the Go Live gradient while in the file (matches the
+   already-applied fix in broadcast-studio.tsx).
+2. ~~**`meeting-analytics.tsx` stat promotion**~~ — **done.** Added an
+   `emphasized` StatCard variant; promoted Total Meetings + Avg Duration
+   in the summary view, Duration + Peak Participants in the detail view
+   (the logged item's exact labels don't exist in the detail view, so
+   substituted that view's actual two most load-bearing stats).
+3. ~~**Notification bell removal + settings panel reframe**~~ — **done.**
+   `NotificationBell` now gated to `isMobileOrTablet`. This broke the
+   panel's only entry point (it lived inside the bell's dropdown) — added
+   a direct "Notification Settings" item to the rebuilt Quick Settings
+   menu so it's still reachable from desktop. Settings panel copy
+   reframed to "what gets pushed to your phone"; removed the now-dead
+   in-app/bell delivery toggle. Quick Settings popover rebuilt on Ark
+   Menu with cadence grouping (Connection Status as a plain status row;
+   Theme/Notifications/Settings grouped below a separator) in the same
+   pass.
 4. **`user-management.tsx` + `messaging.tsx` Ark Menu migration** — move
    the three real ad hoc dropdowns (two row-overflow menus, one chat
    header overflow) onto Ark Menu. Bundle in the destructive-action
