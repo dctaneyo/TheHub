@@ -138,10 +138,38 @@ simultaneously — the exact pattern Section 18 names.
 type in `notification-settings-panel.tsx` still gets pushed to their
 phone for it. `task_overdue_location` has no toggle in that panel at all.
 
-Directional recommendation (not yet decided/implemented): push should be
-reserved for things needing attention *now, away from the app*
-(overdue, emergency) — routine completions are an "it's fine" signal
-already covered by the Live Activity Feed, not phone-buzz material.
+**Decided direction (sharper than the original "gate push by
+preference" framing): remove the notification bell/panel from desktop
+chrome entirely, not just push.** A bell's only job is surfacing things
+you'd otherwise miss because you're not currently looking at the app —
+on a desktop ARL session that premise never holds; whatever it would
+tell you is already visible by being in the app (the merged Live Feed,
+the relevant page). The bell only earns its place where the premise is
+real: a phone, PWA-installed, where the point of push is specifically
+*not* having the app open. This is Section 18's test applied to the
+whole feature rather than one element: it's the genre-default trap (a
+dashboard "needs" a bell because dashboards have one) rather than
+something desktop usage actually lacks.
+
+Precondition before implementing — every notification type needs either
+a desktop-visible equivalent, or promotion to a toast (cross-page,
+time-sensitive, doesn't wait for someone to land on the right page):
+
+| Type | Desktop equivalent already visible? | Verdict |
+|---|---|---|
+| `task_completed` | Yes, once the Overview merge (next section) ships — the Live Feed | Bell unnecessary; push becomes mobile-only |
+| `location_online`/`location_offline` | Partially — current status shows on Locations/Overview, but no *history* of blips | The merged Live Feed needs to log these too, or it's a real gap, not just a removed bell |
+| `task_overdue_location` | Partially — Overview's "Tasks Overdue" KPI shows a count, not which location/task | Borderline — likely needs **promotion to a toast** (actionable, time-sensitive), not a panel entry |
+| `meeting_joined` (host-only) | Yes — visible live in the meeting UI itself while hosting | Bell unnecessary, it's already in-context |
+| Guest waiting to join (`socket-server.ts:195`, distinct from the above) | No — nothing else surfaces "X is waiting" | Needs a **toast**, not a panel entry and not push-gating — no other surface shows this at all |
+| `analytics_alert`, `system_update` (`notifications.ts:19-26`) | Type exists in the schema; no confirmed trigger call site found anywhere | Likely unused/reserved — confirm before designing around it, don't assume it's live |
+
+Settings/preferences page stays — reframed as "what gets pushed to your
+phone" rather than "what shows in your bell," configurable from either
+device. `NotificationBell`/`NotificationPanel` come out of
+`arl/layout.tsx`'s header on desktop via the same `isMobileOrTablet`
+branch point already used for `SettingsPanel`/`PageIndicator` — deleted
+for that branch, not conditionally hidden.
 
 ### Go Live broadcast — two confirmed bugs, one architecture question
 
