@@ -5,11 +5,12 @@ import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Trash2, Copy, Check, Clock, Calendar,
-  Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown, Play,
+  Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown, Play, MoreVertical,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
@@ -157,9 +158,10 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
   const { dialog, confirm: showConfirm } = useConfirmDialog();
 
   const handleDelete = (id: string) => {
+    const meeting = meetings.find((m) => m.id === id);
     showConfirm({
       title: "Delete Meeting",
-      description: "Are you sure you want to delete this scheduled meeting?",
+      description: `Delete ${meeting?.title ?? "this meeting"}? This cannot be undone.`,
       confirmLabel: "Delete",
       variant: "danger",
       onConfirm: async () => {
@@ -408,138 +410,259 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           <p className="text-xs text-muted-foreground mt-1">Create one to get started</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {meetings.map(m => {
-            const scheduledDate = new Date(m.scheduled_at);
-            const isPast = scheduledDate < new Date();
-
-            return (
-              <motion.div
-                key={m.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn(
-                  "bg-card rounded-xl border p-4 transition-colors",
-                  m.is_active ? "border-border" : "border-border opacity-60"
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-sm text-foreground truncate">{m.title}</h4>
-                      {m.is_recurring ? (
-                        <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                          <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
-                        </span>
-                      ) : null}
-                      {!m.is_active && (
-                        <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-1 rounded-full">Inactive</span>
-                      )}
-                    </div>
-
-                    {m.description && (
-                      <p className="text-xs text-muted-foreground mb-2 truncate">{m.description}</p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Host: {m.host_name}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {scheduledDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {m.timezone
-                          ? formatTimeInZone(m.scheduled_at, m.timezone)
-                          : scheduledDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-                        {" "}({m.duration_minutes}min)
-                      </span>
-                      {m.allow_guests ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <Globe className="h-3 w-3" />Guests allowed
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Lock className="h-3 w-3" />Internal only
-                        </span>
-                      )}
-                      {m.password && (
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <Lock className="h-3 w-3" />Password set
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Meeting code + actions */}
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
-                      <button
-                        onClick={() => copyCode(m.meeting_code)}
-                        className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                        title="Copy meeting code"
-                      >
-                        {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {m.is_active && (
-                        <button
-                          onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
-                        >
-                          <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleToggleActive(m.id, m.is_active)}
-                        className={cn(
-                          "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
-                          m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
+        <>
+          {/* Desktop table — host/date/time/code is tabular, comparable
+              data; same convention as locations-manager.tsx (Section 11). */}
+          <div className="hidden md:block rounded-2xl border border-border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="px-4 py-2.5 text-left font-semibold">Meeting</th>
+                  <th className="px-4 py-2.5 text-left font-semibold">Host</th>
+                  <th className="px-4 py-2.5 text-left font-semibold">Schedule</th>
+                  <th className="px-4 py-2.5 text-left font-semibold">Code</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meetings.map((m) => {
+                  const scheduledDate = new Date(m.scheduled_at);
+                  return (
+                    <tr key={m.id} className={cn("border-b border-border last:border-b-0", !m.is_active && "opacity-50")}>
+                      <td className="px-4 py-3 max-w-64">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-foreground truncate">{m.title}</span>
+                          {m.is_recurring ? (
+                            <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
+                              <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
+                            </span>
+                          ) : null}
+                          {!m.is_active && (
+                            <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full shrink-0">Inactive</span>
+                          )}
+                        </div>
+                        {m.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{m.description}</p>
                         )}
-                      >
-                        {m.is_active ? "Active" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(m.id)}
-                        className="p-1 rounded-md text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Delete meeting"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    {m.allow_guests && (
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => createInviteLink(m, null)}
-                          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                          title="Reusable link — password is never shown in the URL"
-                        >
-                          {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
-                        </button>
-                        <button
-                          onClick={() => createInviteLink(m, 24)}
-                          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                          title="Link expires 24 hours after it's generated (reusable within that window)"
-                        >
-                          {copiedCode === `invite-${m.id}-exp` ? "Copied!" : "Copy 24h link"}
-                        </button>
-                        {copiedCode === `err-${m.id}` && (
-                          <span className="text-xs font-semibold text-red-600">Failed</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{m.host_name}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {scheduledDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {m.timezone
+                              ? formatTimeInZone(m.scheduled_at, m.timezone)
+                              : scheduledDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                            {" "}({m.duration_minutes}min)
+                          </span>
+                          {m.allow_guests ? (
+                            <span className="flex items-center gap-1 text-green-600">
+                              <Globe className="h-3 w-3" />Guests allowed
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Lock className="h-3 w-3" />Internal only
+                            </span>
+                          )}
+                          {m.password && (
+                            <span className="flex items-center gap-1 text-amber-600">
+                              <Lock className="h-3 w-3" />Password set
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
+                          <button
+                            onClick={() => copyCode(m.meeting_code)}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                            title="Copy meeting code"
+                          >
+                            {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {m.is_active && (
+                            <button
+                              onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            >
+                              <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleToggleActive(m.id, m.is_active)}
+                            className={cn(
+                              "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
+                              m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            )}
+                          >
+                            {m.is_active ? "Active" : "Activate"}
+                          </button>
+                          <Menu>
+                            <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </MenuTrigger>
+                            <MenuContent>
+                              {m.allow_guests && (
+                                <>
+                                  <MenuItem value="invite-link" closeOnSelect={false} onClick={() => createInviteLink(m, null)}>
+                                    <Copy className="h-3.5 w-3.5 shrink-0" />
+                                    {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
+                                  </MenuItem>
+                                  <MenuItem value="invite-link-24h" closeOnSelect={false} onClick={() => createInviteLink(m, 24)}>
+                                    <Copy className="h-3.5 w-3.5 shrink-0" />
+                                    {copiedCode === `invite-${m.id}-exp` ? "Copied!" : "Copy 24h link"}
+                                  </MenuItem>
+                                </>
+                              )}
+                              <MenuItem value="delete" variant="destructive" onClick={() => handleDelete(m.id)}>
+                                <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Meeting
+                              </MenuItem>
+                            </MenuContent>
+                          </Menu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile — stacked cards, same data */}
+          <div className="md:hidden space-y-3">
+            {meetings.map((m) => {
+              const scheduledDate = new Date(m.scheduled_at);
+              return (
+                <motion.div
+                  key={m.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "bg-card rounded-xl border p-4 transition-colors",
+                    m.is_active ? "border-border" : "border-border opacity-60"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-sm text-foreground truncate">{m.title}</h4>
+                        {m.is_recurring ? (
+                          <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
+                          </span>
+                        ) : null}
+                        {!m.is_active && (
+                          <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-1 rounded-full">Inactive</span>
                         )}
                       </div>
-                    )}
+
+                      {m.description && (
+                        <p className="text-xs text-muted-foreground mb-2 truncate">{m.description}</p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Host: {m.host_name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {scheduledDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {m.timezone
+                            ? formatTimeInZone(m.scheduled_at, m.timezone)
+                            : scheduledDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                          {" "}({m.duration_minutes}min)
+                        </span>
+                        {m.allow_guests ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <Globe className="h-3 w-3" />Guests allowed
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Lock className="h-3 w-3" />Internal only
+                          </span>
+                        )}
+                        {m.password && (
+                          <span className="flex items-center gap-1 text-amber-600">
+                            <Lock className="h-3 w-3" />Password set
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Meeting code + actions */}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
+                        <button
+                          onClick={() => copyCode(m.meeting_code)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          title="Copy meeting code"
+                        >
+                          {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {m.is_active && (
+                          <button
+                            onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                          >
+                            <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleToggleActive(m.id, m.is_active)}
+                          className={cn(
+                            "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
+                            m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          {m.is_active ? "Active" : "Activate"}
+                        </button>
+                        <Menu>
+                          <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </MenuTrigger>
+                          <MenuContent>
+                            {m.allow_guests && (
+                              <>
+                                <MenuItem value="invite-link" closeOnSelect={false} onClick={() => createInviteLink(m, null)}>
+                                  <Copy className="h-3.5 w-3.5 shrink-0" />
+                                  {copiedCode === `invite-${m.id}` ? "Copied!" : "Copy invite link"}
+                                </MenuItem>
+                                <MenuItem value="invite-link-24h" closeOnSelect={false} onClick={() => createInviteLink(m, 24)}>
+                                  <Copy className="h-3.5 w-3.5 shrink-0" />
+                                  {copiedCode === `invite-${m.id}-exp` ? "Copied!" : "Copy 24h link"}
+                                </MenuItem>
+                              </>
+                            )}
+                            <MenuItem value="delete" variant="destructive" onClick={() => handleDelete(m.id)}>
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Meeting
+                            </MenuItem>
+                          </MenuContent>
+                        </Menu>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
       )}
       <ConfirmDialog {...dialog} />
     </div>
