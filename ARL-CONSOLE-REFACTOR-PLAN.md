@@ -216,6 +216,15 @@ complete in one place:
 
 ## Component primitive migration (Ark UI) — the execution layer underneath all of the above
 
+**Phase 0 — done.** The shared primitives themselves now exist as real
+`src/components/ui/*.tsx` files, not just the `/design-preview` prototype:
+`button.tsx` (neutral primary, app-wide token rollout), `tabs.tsx`
+(rebuilt on Ark, Underline), `select.tsx` (new, Ark Select), `menu.tsx`
+(new, Ark Menu), `dialog.tsx` (rebuilt on Ark). Full project typecheck
+clean after each. What's NOT done yet: converging the actual screens
+listed below onto them — building the primitive and adopting it
+everywhere are two different steps, and only the first one is finished.
+
 Separately decided earlier in this refactor (see `DESIGN.md` §2 and §15):
 when any of the screens above get touched, they should be built on these
 already-decided primitives, not shadcn/Radix or a raw native browser
