@@ -30,7 +30,7 @@ export default function MeetingsPage() {
           {/* Go Live broadcast button */}
           <button
             onClick={() => setShowBroadcastLauncher(true)}
-            className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-2xl p-5 flex items-center gap-4 transition-all"
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl p-5 flex items-center gap-4 transition-all"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
               <Radio className="h-6 w-6" />
@@ -39,13 +39,11 @@ export default function MeetingsPage() {
               <p className="text-lg font-semibold">Go Live</p>
               <p className="text-sm text-white/80">Broadcast to all online locations</p>
             </div>
-            <div className="h-3 w-3 rounded-full bg-white animate-pulse" />
           </button>
 
           {activeMeetings.length > 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+              <h2 className="text-lg font-semibold text-foreground mb-4">
                 Active Meetings
               </h2>
               <div className="space-y-3">

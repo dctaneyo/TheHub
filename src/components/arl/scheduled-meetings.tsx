@@ -261,11 +261,9 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             </Button>
           )}
           <Button
+            variant="outline"
             onClick={() => { setShowCreate(!showCreate); if (showCreate) resetForm(); }}
-            className={cn(
-              "rounded-xl font-semibold text-sm whitespace-nowrap",
-              showCreate ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary hover:bg-primary/90 text-primary-foreground"
-            )}
+            className="rounded-xl font-semibold text-sm whitespace-nowrap"
           >
             {showCreate ? <><X className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Cancel</span></> : <><Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Schedule Meeting</span><span className="sm:hidden">Schedule</span></>}
           </Button>
