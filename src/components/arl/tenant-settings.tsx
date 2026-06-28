@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Palette, Globe, Check, Loader2, Save,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant-context";
 
@@ -71,6 +72,12 @@ export function TenantSettings() {
   const [faviconUrl, setFaviconUrl] = useState("");
   const [customDomain, setCustomDomain] = useState("");
   const [timezone, setTimezone] = useState("Pacific/Honolulu");
+
+  const timezoneOptions = useMemo(() => createListCollection({
+    items: COMMON_TIMEZONES.some((tz) => tz.value === timezone)
+      ? COMMON_TIMEZONES
+      : [...COMMON_TIMEZONES, { value: timezone, label: timezone }],
+  }), [timezone]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -473,19 +480,20 @@ export function TenantSettings() {
                 <p className="text-xs text-muted-foreground">Used for task scheduling and notifications</p>
               </div>
             </div>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            <Select
+              collection={timezoneOptions}
+              value={[timezone]}
+              onValueChange={(d) => setTimezone(d.value[0])}
             >
-              {COMMON_TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
-              ))}
-              {/* If current timezone isn't in the common list, show it too */}
-              {!COMMON_TIMEZONES.some((tz) => tz.value === timezone) && (
-                <option value={timezone}>{timezone}</option>
-              )}
-            </select>
+              <SelectTrigger className="w-full h-10">
+                <SelectValueText />
+              </SelectTrigger>
+              <SelectContent>
+                {timezoneOptions.items.map((item) => (
+                  <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground mt-2">
               Task due-soon and overdue notifications fire based on this timezone
             </p>

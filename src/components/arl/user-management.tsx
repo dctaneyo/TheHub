@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -64,6 +65,21 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = { name: "", email: "", userId: "", pin: "", role: "arl", storeNumber: "", address: "", timezone: "" };
+
+const TIMEZONE_OPTIONS = createListCollection({
+  items: [
+    { value: "", label: "Use tenant default" },
+    { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+    { value: "America/Anchorage", label: "Alaska (AKST)" },
+    { value: "America/Los_Angeles", label: "Pacific (PST)" },
+    { value: "America/Denver", label: "Mountain (MST)" },
+    { value: "America/Chicago", label: "Central (CST)" },
+    { value: "America/New_York", label: "Eastern (EST)" },
+    { value: "America/Puerto_Rico", label: "Atlantic (AST)" },
+    { value: "Pacific/Guam", label: "Guam (ChST)" },
+    { value: "Pacific/Pago_Pago", label: "Samoa (SST)" },
+  ],
+});
 
 
 export function UserManagement() {
@@ -624,22 +640,20 @@ export function UserManagement() {
                 {tab === "locations" && (
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-muted-foreground">Timezone</label>
-                    <select
-                      value={form.timezone}
-                      onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}
-                      className="w-full h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    <Select
+                      collection={TIMEZONE_OPTIONS}
+                      value={[form.timezone]}
+                      onValueChange={(d) => setForm((p) => ({ ...p, timezone: d.value[0] }))}
                     >
-                      <option value="">Use tenant default</option>
-                      <option value="Pacific/Honolulu">Hawaii (HST)</option>
-                      <option value="America/Anchorage">Alaska (AKST)</option>
-                      <option value="America/Los_Angeles">Pacific (PST)</option>
-                      <option value="America/Denver">Mountain (MST)</option>
-                      <option value="America/Chicago">Central (CST)</option>
-                      <option value="America/New_York">Eastern (EST)</option>
-                      <option value="America/Puerto_Rico">Atlantic (AST)</option>
-                      <option value="Pacific/Guam">Guam (ChST)</option>
-                      <option value="Pacific/Pago_Pago">Samoa (SST)</option>
-                    </select>
+                      <SelectTrigger className="w-full h-9">
+                        <SelectValueText />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONE_OPTIONS.items.map((item) => (
+                          <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground mt-1">Leave blank to use the organization default</p>
                   </div>
                 )}
