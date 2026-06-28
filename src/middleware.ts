@@ -28,7 +28,7 @@ export function buildCspHeader(nonce: string): string {
   ].join("; ");
 }
 
-const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token"];
+const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token", "/design-preview"];
 const hubDomains = ["meetthehub.com"];
 
 // Edge-compatible JWT decode (no crypto verification — cookie is httpOnly,
@@ -275,6 +275,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/design-preview") ||
     pathname.includes(".")
   ) {
     return applyCsp(NextResponse.next());

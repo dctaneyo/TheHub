@@ -25,6 +25,8 @@ import {
   CaretRight,
   X,
   Check,
+  Moon,
+  Sun,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { IconWeight } from "@phosphor-icons/react";
@@ -42,27 +44,17 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /* ════════════════════════════════════════════════════════════════════════════
-   DESIGN PREVIEW — Current vs. New (Ark UI + Linear)
+   DESIGN PREVIEW — Standalone (no auth required)
 
-   Side-by-side comparison of the current shadcn/Radix implementation
-   against the target Ark UI + Linear (Refined) design.
+   Side-by-side comparison: current shadcn/Radix vs. new Ark UI + Linear.
+   Both columns are fully interactive. Theme toggle in top-right.
 
-   Left column  = CURRENT (real shadcn/Radix components, existing tokens)
-   Right column = NEW (real Ark UI components, --dp-* tokens, Linear style)
-
-   Design tokens follow DESIGN.md:
-   - §1: Four-size type scale (12/14/18/24), Space Mono for numerics
-   - §3: 12px card rounding (house style)
-   - §7: One dominant element per screen
-   - §8: Dark mode = warm near-black, light mode = warm off-white
-   - §10: Solid inverted fill for selection, dot+label for status
-   - §14: Phosphor regular weight (clean single-stroke)
-   - §17: Warm-tinted palette, not stock zinc
+   /design-preview — accessible without login.
    ════════════════════════════════════════════════════════════════════════════ */
 
 type PhosphorIconProps = { weight?: IconWeight; className?: string; size?: number };
@@ -70,7 +62,6 @@ function Icon({ icon: Ic, className, size }: { icon: React.ComponentType<Phospho
   return <Ic weight="regular" className={className} size={size} />;
 }
 
-// ─── Column headers ─────────────────────────────────────────────────────────
 function ColumnHeader({ side, label, sublabel }: { side: "current" | "new"; label: string; sublabel: string }) {
   return (
     <div className={cn(
@@ -95,7 +86,6 @@ function ColumnHeader({ side, label, sublabel }: { side: "current" | "new"; labe
   );
 }
 
-// ─── Section divider ────────────────────────────────────────────────────────
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-6">
@@ -106,7 +96,6 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-// ─── Current-side cell (uses existing card styles) ──────────────────────────
 function CurrentCell({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <Card className="gap-3 p-4">
@@ -114,14 +103,11 @@ function CurrentCell({ name, children }: { name: string; children: React.ReactNo
         <span className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">{name}</span>
         <span className="font-mono text-xs text-muted-foreground/60">shadcn/radix</span>
       </div>
-      <CardContent className="px-0">
-        {children}
-      </CardContent>
+      <CardContent className="px-0">{children}</CardContent>
     </Card>
   );
 }
 
-// ─── New-side cell (uses --dp-* tokens) ─────────────────────────────────────
 function NewCell({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3 rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-4">
@@ -129,15 +115,13 @@ function NewCell({ name, children }: { name: string; children: React.ReactNode }
         <span className="text-xs font-bold uppercase tracking-[0.06em] text-[var(--dp-text-tertiary)]">{name}</span>
         <span className="font-mono text-xs text-[var(--dp-teal)]">ark-ui</span>
       </div>
-      <div className="flex flex-col gap-3">
-        {children}
-      </div>
+      <div className="flex flex-col gap-3">{children}</div>
     </div>
   );
 }
 
 export default function DesignPreviewPage() {
-  // ─── State for Ark UI components ──────────────────────────────────────────
+  const [isDark, setIsDark] = useState(true);
   const [arkDialogOpen, setArkDialogOpen] = useState(false);
   const [arkFormDialogOpen, setArkFormDialogOpen] = useState(false);
   const [arkSwitchStates, setArkSwitchStates] = useState<Record<number, boolean>>({ 0: true, 1: false, 2: true, 3: true });
@@ -146,8 +130,6 @@ export default function DesignPreviewPage() {
   const [arkCheckboxStates, setArkCheckboxStates] = useState<Record<number, boolean>>({ 0: true, 1: true, 2: true, 3: false, 4: false, 5: false });
   const [arkSelectValue, setArkSelectValue] = useState("Pacific Time (PST)");
   const [arkAccordionValue, setArkAccordionValue] = useState<string[]>(["plan"]);
-
-  // ─── State for current shadcn components ──────────────────────────────────
   const [currentDialogOpen, setCurrentDialogOpen] = useState(false);
   const [currentTabsValue, setCurrentTabsValue] = useState("overview");
 
@@ -167,16 +149,40 @@ export default function DesignPreviewPage() {
     []
   );
 
+  // Apply dark/light class to <html> for token switching
+  useState(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.add("dark");
+    }
+  });
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", next);
+    }
+  }
+
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Theme toggle — fixed top-right */}
+      <button
+        onClick={toggleTheme}
+        className="fixed right-5 top-5 z-[200] flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-lg transition-colors hover:text-foreground"
+      >
+        {isDark ? <Icon icon={Sun} size={16} /> : <Icon icon={Moon} size={16} />}
+        <span className="font-mono">{isDark ? "LIGHT" : "DARK"}</span>
+      </button>
+
       {/* Page header */}
-      <div className="border-b border-border bg-card px-6 pb-4 pt-5">
+      <div className="border-b border-border bg-card px-6 pb-4 pt-6">
         <h1 className="mb-1 text-lg font-bold text-foreground">
           Design Preview — Current vs. New (Ark UI + Linear)
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="max-w-2xl text-sm text-muted-foreground">
           Side-by-side comparison. Left = current shadcn/Radix components. Right = target Ark UI + Linear design.
-          Both columns are fully interactive.
+          Both columns are fully interactive. Toggle dark/light in the top-right.
         </p>
       </div>
 
@@ -188,7 +194,6 @@ export default function DesignPreviewPage() {
         <div className="flex flex-col gap-4 bg-background p-4">
           <ColumnHeader side="current" label="Current" sublabel="shadcn / Radix UI" />
 
-          {/* Buttons */}
           <CurrentCell name="Buttons">
             <div className="flex flex-wrap items-center gap-2">
               <Button>Add User</Button>
@@ -199,7 +204,6 @@ export default function DesignPreviewPage() {
             </div>
           </CurrentCell>
 
-          {/* Dialog */}
           <CurrentCell name="Dialog">
             <p className="mb-2 text-sm text-muted-foreground">Click to open the current dialog.</p>
             <Dialog open={currentDialogOpen} onOpenChange={setCurrentDialogOpen}>
@@ -214,18 +218,13 @@ export default function DesignPreviewPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex justify-end gap-2">
-                  <DialogClose asChild>
-                    <Button variant="outline" size="sm">Cancel</Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                    <Button variant="destructive" size="sm">Delete account</Button>
-                  </DialogClose>
+                  <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
+                  <DialogClose asChild><Button variant="destructive" size="sm">Delete account</Button></DialogClose>
                 </div>
               </DialogContent>
             </Dialog>
           </CurrentCell>
 
-          {/* Tabs */}
           <CurrentCell name="Tabs">
             <Tabs value={currentTabsValue} onValueChange={setCurrentTabsValue}>
               <TabsList variant="line">
@@ -245,7 +244,6 @@ export default function DesignPreviewPage() {
             </Tabs>
           </CurrentCell>
 
-          {/* Badges */}
           <CurrentCell name="Badges">
             <div className="flex flex-wrap items-center gap-2">
               <Badge>Default</Badge>
@@ -253,12 +251,9 @@ export default function DesignPreviewPage() {
               <Badge variant="destructive">Destructive</Badge>
               <Badge variant="outline">Outline</Badge>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Pill-shaped, background-filled. Status is communicated by background color.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">Pill-shaped, background-filled.</p>
           </CurrentCell>
 
-          {/* KPI Cards */}
           <CurrentCell name="KPI Cards">
             <div className="grid grid-cols-3 gap-2">
               <Card className="gap-2 p-3">
@@ -279,7 +274,6 @@ export default function DesignPreviewPage() {
             </div>
           </CurrentCell>
 
-          {/* Input + Label */}
           <CurrentCell name="Input + Label">
             <div className="flex flex-col gap-2">
               <Label htmlFor="current-input">Display name</Label>
@@ -294,7 +288,6 @@ export default function DesignPreviewPage() {
         <div className="flex flex-col gap-4 bg-[var(--dp-bg)] p-4">
           <ColumnHeader side="new" label="New" sublabel="Ark UI + Linear" />
 
-          {/* Buttons */}
           <NewCell name="Buttons">
             <div className="flex flex-wrap items-center gap-2">
               <button className="dp-btn dp-btn-primary">Add User</button>
@@ -311,7 +304,6 @@ export default function DesignPreviewPage() {
             </div>
           </NewCell>
 
-          {/* Dialog */}
           <NewCell name="Dialog">
             <p className="text-sm text-[var(--dp-text-secondary)]">Click to open the new Ark UI dialog.</p>
             <button className="dp-btn dp-btn-destructive" onClick={() => setArkDialogOpen(true)}>
@@ -319,19 +311,12 @@ export default function DesignPreviewPage() {
             </button>
           </NewCell>
 
-          {/* Tabs */}
           <NewCell name="Tabs">
             <ArkTabs.Root defaultValue="overview" className="flex flex-col gap-3">
               <ArkTabs.List className="flex gap-0 border-b border-[var(--dp-border)]">
-                <ArkTabs.Trigger value="overview" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>
-                  Overview
-                </ArkTabs.Trigger>
-                <ArkTabs.Trigger value="tasks" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>
-                  Tasks
-                </ArkTabs.Trigger>
-                <ArkTabs.Trigger value="analytics" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>
-                  Analytics
-                </ArkTabs.Trigger>
+                <ArkTabs.Trigger value="overview" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Overview</ArkTabs.Trigger>
+                <ArkTabs.Trigger value="tasks" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Tasks</ArkTabs.Trigger>
+                <ArkTabs.Trigger value="analytics" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Analytics</ArkTabs.Trigger>
               </ArkTabs.List>
               <ArkTabs.Content value="overview" className="dp-tab-content" _data-selected={{ className: "dp-tab-content-active" }}>
                 <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
@@ -345,7 +330,6 @@ export default function DesignPreviewPage() {
             </ArkTabs.Root>
           </NewCell>
 
-          {/* Badges */}
           <NewCell name="Badges">
             <div className="flex flex-wrap items-center gap-4">
               <span className="dp-badge"><span className="dp-badge-dot dp-dot-green" /> Online</span>
@@ -354,39 +338,29 @@ export default function DesignPreviewPage() {
               <span className="dp-badge"><span className="dp-badge-dot dp-dot-teal" /> Remote active</span>
               <span className="dp-badge"><span className="dp-badge-dot dp-dot-muted" /> Inactive</span>
             </div>
-            <p className="text-xs text-[var(--dp-text-tertiary)]">
-              Dot + plain-weight label, no pill background (§10). Dot carries the semantic color.
-            </p>
+            <p className="text-xs text-[var(--dp-text-tertiary)]">Dot + plain-weight label, no pill background (§10).</p>
           </NewCell>
 
-          {/* KPI Cards */}
           <NewCell name="KPI Cards">
             <div className="grid grid-cols-3 gap-2">
               <div className="dp-kpi-card">
                 <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
                 <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-text)]">12</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]">
-                  <span className="dp-badge-dot dp-dot-green" /> 3 active
-                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
               </div>
               <div className="dp-kpi-card dp-kpi-urgent">
                 <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
                 <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-brand)]">2</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]">
-                  <span className="dp-badge-dot dp-dot-red" /> Needs review
-                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
               </div>
               <div className="dp-kpi-card">
                 <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
                 <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-text)]">8</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]">
-                  <span className="dp-badge-dot dp-dot-green" /> All online
-                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
               </div>
             </div>
           </NewCell>
 
-          {/* Input + Label */}
           <NewCell name="Input + Label">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-[var(--dp-text)]" htmlFor="new-input">Display name</label>
@@ -397,9 +371,7 @@ export default function DesignPreviewPage() {
       </div>
 
       {/* ═════════════════════════════════════════════════════════════════════
-          FULL-WIDTH SECTIONS — Ark UI only (no current equivalent)
-          These primitives don't have a direct shadcn counterpart or the
-          comparison is less important than seeing them work.
+          FULL-WIDTH Ark UI SECTION
           ═════════════════════════════════════════════════════════════════════ */}
       <div className="bg-[var(--dp-bg)] px-4 pb-10 pt-4">
         <SectionDivider label="Ark UI Primitives — Switch · Slider · Accordion · Radio · Select · Checkbox · Tooltip" />
@@ -605,10 +577,7 @@ export default function DesignPreviewPage() {
         </div>
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════
-          Ark UI Dialogs (rendered at end, portaled)
-          ═════════════════════════════════════════════════════════════════════ */}
-      {/* Confirmation dialog */}
+      {/* Ark UI Dialogs (portaled) */}
       <ArkDialog.Root open={arkDialogOpen} onOpenChange={({ open }) => setArkDialogOpen(open)}>
         <ArkDialog.Backdrop className="dp-dialog-backdrop" />
         <ArkDialog.Positioner className="dp-dialog-positioner">
@@ -621,14 +590,11 @@ export default function DesignPreviewPage() {
               <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
               <ArkDialog.CloseTrigger className="dp-btn dp-btn-destructive dp-btn-sm">Delete account</ArkDialog.CloseTrigger>
             </div>
-            <ArkDialog.CloseTrigger className="dp-dialog-close">
-              <Icon icon={X} size={16} />
-            </ArkDialog.CloseTrigger>
+            <ArkDialog.CloseTrigger className="dp-dialog-close"><Icon icon={X} size={16} /></ArkDialog.CloseTrigger>
           </ArkDialog.Content>
         </ArkDialog.Positioner>
       </ArkDialog.Root>
 
-      {/* Form dialog */}
       <ArkDialog.Root open={arkFormDialogOpen} onOpenChange={({ open }) => setArkFormDialogOpen(open)}>
         <ArkDialog.Backdrop className="dp-dialog-backdrop" />
         <ArkDialog.Positioner className="dp-dialog-positioner">
@@ -640,9 +606,7 @@ export default function DesignPreviewPage() {
               <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
               <ArkDialog.CloseTrigger className="dp-btn dp-btn-primary dp-btn-sm">Save changes</ArkDialog.CloseTrigger>
             </div>
-            <ArkDialog.CloseTrigger className="dp-dialog-close">
-              <Icon icon={X} size={16} />
-            </ArkDialog.CloseTrigger>
+            <ArkDialog.CloseTrigger className="dp-dialog-close"><Icon icon={X} size={16} /></ArkDialog.CloseTrigger>
           </ArkDialog.Content>
         </ArkDialog.Positioner>
       </ArkDialog.Root>
