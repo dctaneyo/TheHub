@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Monitor, Eye, LogIn } from "@/lib/icons";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RemoteLogin } from "./remote-login";
 import { RemoteViewer } from "./remote-viewer";
 
@@ -28,33 +28,16 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-muted p-1 mb-4 shrink-0">
-        <button
-          onClick={() => setActiveTab("view")}
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
-            activeTab === "view"
-              ? "bg-card text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Eye className="h-4 w-4" />
-          View & Control
-        </button>
-        <button
-          onClick={() => setActiveTab("login")}
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all flex-1 justify-center",
-            activeTab === "login"
-              ? "bg-card text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <LogIn className="h-4 w-4" />
-          Remote Login
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(d) => setActiveTab(d.value as RemoteTab)} className="mb-4 shrink-0">
+        <TabsList>
+          <TabsTrigger value="view" className="flex items-center gap-1.5">
+            <Eye className="h-3.5 w-3.5" /> View & Control
+          </TabsTrigger>
+          <TabsTrigger value="login" className="flex items-center gap-1.5">
+            <LogIn className="h-3.5 w-3.5" /> Remote Login
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-y-auto">

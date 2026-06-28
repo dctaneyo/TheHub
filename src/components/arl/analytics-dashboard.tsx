@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, CheckCircle2, MessageCircle,
   Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Target,
 } from "@/lib/icons";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
@@ -279,16 +280,15 @@ export function AnalyticsDashboard() {
 
       {/* Tab bar + Date range */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1 rounded-xl bg-muted p-1">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={cn("flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all",
-                activeTab === t.id ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}>
-              <t.icon className="h-3.5 w-3.5" /> {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={(d) => setActiveTab(d.value as "tasks" | "messaging")}>
+          <TabsList>
+            {tabs.map(t => (
+              <TabsTrigger key={t.id} value={t.id} className="flex items-center gap-1.5">
+                <t.icon className="h-3.5 w-3.5" /> {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
