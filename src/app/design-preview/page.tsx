@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog as ArkDialog,
   Switch as ArkSwitch,
@@ -121,7 +121,6 @@ function NewCell({ name, children }: { name: string; children: React.ReactNode }
 }
 
 export default function DesignPreviewPage() {
-  const [isDark, setIsDark] = useState(true);
   const [arkDialogOpen, setArkDialogOpen] = useState(false);
   const [arkFormDialogOpen, setArkFormDialogOpen] = useState(false);
   const [arkSwitchStates, setArkSwitchStates] = useState<Record<number, boolean>>({ 0: true, 1: false, 2: true, 3: true });
@@ -149,30 +148,32 @@ export default function DesignPreviewPage() {
     []
   );
 
-  // Apply dark/light class to <html> for token switching
-  useState(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("dark");
-    }
-  });
+  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function toggleTheme() {
-    const next = !isDark;
-    setIsDark(next);
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", next);
-    }
+    setIsDark((prev) => !prev);
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className={cn(
+        "fixed inset-0 overflow-y-auto overscroll-contain bg-background text-foreground",
+        isDark ? "dp-dark" : "dp-light"
+      )}
+      style={{ height: "100dvh" }}
+    >
       {/* Theme toggle — fixed top-right */}
       <button
         onClick={toggleTheme}
         className="fixed right-5 top-5 z-[200] flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-lg transition-colors hover:text-foreground"
       >
-        {isDark ? <Icon icon={Sun} size={16} /> : <Icon icon={Moon} size={16} />}
-        <span className="font-mono">{isDark ? "LIGHT" : "DARK"}</span>
+        {mounted && (isDark ? <Icon icon={Sun} size={16} /> : <Icon icon={Moon} size={16} />)}
+        <span className="font-mono">{mounted ? (isDark ? "LIGHT" : "DARK") : "..."}</span>
       </button>
 
       {/* Page header */}
@@ -394,6 +395,7 @@ export default function DesignPreviewPage() {
                     className="dp-switch-track"
                     _data-checked={{ className: "dp-switch-on" }}
                   >
+                    <ArkSwitch.HiddenInput />
                     <ArkSwitch.Thumb className="dp-switch-thumb" />
                   </ArkSwitch.Root>
                 </div>
@@ -482,6 +484,7 @@ export default function DesignPreviewPage() {
                   className="dp-radio-item"
                   _data-checked={{ className: "dp-radio-selected" }}
                 >
+                  <ArkRadioGroup.ItemHiddenInput />
                   <ArkRadioGroup.Indicator className="dp-radio-indicator" />
                   <div>
                     <div className="text-sm font-semibold text-[var(--dp-text)]">{item.label}</div>
@@ -533,6 +536,7 @@ export default function DesignPreviewPage() {
                   onCheckedChange={({ checked }) => setArkCheckboxStates((p) => ({ ...p, [idx]: checked === true }))}
                   className="dp-checkbox-group flex cursor-pointer items-center gap-2.5"
                 >
+                  <ArkCheckbox.HiddenInput />
                   <ArkCheckbox.Control className="dp-checkbox">
                     <ArkCheckbox.Indicator>
                       <Icon icon={Check} size={12} />

@@ -218,7 +218,8 @@ html {
    Token namespace: --dp-* (scoped to avoid collision with existing tokens)
    ════════════════════════════════════════════════════════════════════════════ */
 
-:root {
+:root,
+.dp-dark {
   /* Warm-tinted dark palette — not stock zinc (§17) */
   --dp-bg: #0e0c0d;
   --dp-surface-1: #161314;
@@ -263,12 +264,7 @@ html {
   --dp-overlay-scrim: rgba(0, 0, 0, 0.65);
 }
 
-.dark {
-  /* Dark mode is the default for these tokens — :root above is already dark.
-     This block exists so the tokens stay correct when .dark is applied. */
-}
-
-:root:not(.dark) {
+.dp-light {
   /* Light mode — deliberate pass per §8, not a naive invert */
   --dp-bg: #faf8f8;
   --dp-surface-1: #ffffff;
@@ -374,10 +370,18 @@ html {
   background: var(--dp-overlay-scrim);
   z-index: 100;
 }
+.dp-dialog-backdrop[hidden],
+.dp-dialog-backdrop[data-state="closed"] {
+  display: none;
+}
 .dp-dialog-positioner {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
   z-index: 101;
+  pointer-events: none;
+}
+.dp-dialog-positioner[data-state="open"] {
+  pointer-events: auto;
 }
 .dp-dialog {
   background: var(--dp-surface-3);

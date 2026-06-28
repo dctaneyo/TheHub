@@ -109,6 +109,26 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "localhost";
 
+  // ── Design preview: permissive CSP (Ark UI needs inline styles) ──
+  if (pathname.startsWith("/design-preview")) {
+    const response = NextResponse.next();
+    response.headers.set("Content-Security-Policy", [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob:",
+      "media-src 'self' blob:",
+      "connect-src 'self' wss: ws:",
+      "frame-src 'self'",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "));
+    return response;
+  }
+
   // Generate a per-request nonce for CSP
   const nonce = generateNonce();
   const cspHeader = buildCspHeader(nonce);
