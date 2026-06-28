@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Trash2, Database, AlertTriangle, CheckCircle2, Download, Calendar,
   HardDrive, Unlink, Shield, ListChecks, Copy, Upload,
-  BarChart3, RefreshCw, X, Archive, ScrollText,
+  BarChart3, RefreshCw, X, Archive, ScrollText, ChevronDown, ChevronUp,
 } from "@/lib/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,11 @@ export function DataManagement() {
   const [showConfirm, setShowConfirm] = useState<ConfirmAction | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Destructive/irreversible operations are collapsed by default — opening
+  // this is a deliberate "I want to see the dangerous stuff" step, not
+  // something every visit to this page should expose at the same visibility
+  // as routine maintenance (Section 12).
+  const [showDestructive, setShowDestructive] = useState(false);
 
   // Health monitor state
   const [report, setReport] = useState<SystemReport | null>(null);
@@ -244,86 +249,123 @@ export function DataManagement() {
     setShowConfirm({ id, title, confirmText, action });
   };
 
-  // ── Section definitions ──
-  const sections = [
+  // ── Section definitions, split by actual severity rather than feature
+  // area — every card here is either routine/reversible (safe tier, visible
+  // by default) or a permanent deletion / account-wide disruption
+  // (destructive tier, collapsed by default; see showDestructive). A card's
+  // color used to be picked per-card from an 11-hue palette with no shared
+  // meaning (Section 11); now color comes entirely from which tier a card is
+  // in (Section 7/8's ActionCard below), not from a per-card choice. ──
+  const safeSections = [
     {
-      title: "Destructive Actions",
-      subtitle: "Permanently delete data. Use with extreme caution.",
-      cards: [
-        { id: "purge-msg", icon: Trash2, color: "red", title: "Purge All Messages", desc: "Delete all messages, read receipts, and reactions.", btn: "Purge Messages", onClick: () => confirm("purge-msg", "Purge All Messages", "This will permanently delete ALL messages, read receipts, and reactions from every conversation.", purgeMessages) },
-        { id: "purge-convos", icon: Trash2, color: "red", title: "Purge All Conversations", desc: "Delete all conversations, messages, and related data.", btn: "Purge Conversations", onClick: () => confirm("purge-convos", "Purge All Conversations", "This will permanently delete ALL conversations, messages, read receipts, reactions, and conversation members. This is more destructive than purging messages alone.", purgeConversations) },
-        { id: "purge-broadcast", icon: Trash2, color: "red", title: "Purge Broadcast Data", desc: "Delete all broadcast records, messages, Q&A, reactions, and viewers.", btn: "Purge Broadcasts", onClick: () => confirm("purge-broadcast", "Purge All Broadcast Data", "This will permanently delete ALL broadcast records including messages, questions, reactions, and viewer data.", purgeBroadcastData) },
-        { id: "purge-notif", icon: Trash2, color: "red", title: "Purge Notifications", desc: "Delete all notifications and emergency messages.", btn: "Purge Notifications", onClick: () => confirm("purge-notif", "Purge All Notifications", "This will permanently delete ALL notifications and emergency broadcast messages.", purgeNotifications) },
-      ],
-    },
-    {
-      title: "Cleanup & Maintenance",
+      title: "Maintenance",
       subtitle: "Keep the database healthy and performant.",
       cards: [
-        { id: "vacuum", icon: HardDrive, color: "green", title: "Optimize Database", desc: "Vacuum and rebuild indexes for better performance.", btn: "Optimize", onClick: () => confirm("vacuum", "Optimize Database", "This will vacuum the database and rebuild indexes. Safe operation.", vacuumDb) },
-        { id: "purge-old", icon: Calendar, color: "orange", title: "Purge Old Tasks", desc: "Delete task completions older than 90 days.", btn: "Purge Old Data", onClick: () => confirm("purge-old", "Purge Old Task Data", "This will delete task completions older than 90 days. Recent data is preserved.", purgeOldTasks) },
-        { id: "orphaned", icon: Unlink, color: "amber", title: "Orphaned Data Cleanup", desc: "Remove records with broken references.", btn: "Clean Orphans", onClick: () => confirm("orphaned", "Orphaned Data Cleanup", "This will remove messages without conversations, reads without messages, etc.", orphanedCleanup) },
-        { id: "dupes", icon: Copy, color: "yellow", title: "Remove Duplicates", desc: "Find and remove duplicate records.", btn: "Remove Dupes", onClick: () => confirm("dupes", "Remove Duplicates", "This will remove duplicate task completions and sessions.", removeDuplicates) },
-        { id: "drop-tables", icon: Database, color: "red", title: "Drop Unused Tables", desc: "Remove legacy onboarding tables no longer used.", btn: "Drop Tables", onClick: () => confirm("drop-tables", "Drop Unused Tables", "This will permanently drop the onboarding_custom_forms, onboarding_sessions, and onboarding_submissions tables. These tables are not used by any feature.", dropUnusedTables) },
+        { id: "vacuum", icon: HardDrive, title: "Optimize Database", desc: "Vacuum and rebuild indexes for better performance.", btn: "Optimize", onClick: () => confirm("vacuum", "Optimize Database", "This will vacuum the database and rebuild indexes. Safe operation.", vacuumDb) },
+        { id: "orphaned", icon: Unlink, title: "Orphaned Data Cleanup", desc: "Remove records with broken references.", btn: "Clean Orphans", onClick: () => confirm("orphaned", "Orphaned Data Cleanup", "This will remove messages without conversations, reads without messages, etc.", orphanedCleanup) },
+        { id: "dupes", icon: Copy, title: "Remove Duplicates", desc: "Find and remove duplicate records.", btn: "Remove Dupes", onClick: () => confirm("dupes", "Remove Duplicates", "This will remove duplicate task completions and sessions.", removeDuplicates) },
       ],
     },
     {
-      title: "Session Management",
-      subtitle: "Manage active and stale user sessions.",
+      title: "Sessions",
+      subtitle: "Remove stale or offline sessions — recreated automatically on next login.",
       cards: [
-        { id: "stale-sess", icon: Shield, color: "blue", title: "Clear Stale Sessions", desc: "Remove offline sessions older than 7 days.", btn: "Clear Stale", onClick: () => confirm("stale-sess", "Clear Stale Sessions", "This will remove all offline sessions older than 7 days.", clearSessions("stale", "Stale sessions")) },
-        { id: "offline-sess", icon: Shield, color: "indigo", title: "Clear All Offline", desc: "Remove all currently offline sessions.", btn: "Clear Offline", onClick: () => confirm("offline-sess", "Clear Offline Sessions", "This will remove all sessions that are currently offline.", clearSessions("all-offline", "Offline sessions")) },
-        { id: "force-all", icon: Shield, color: "red", title: "Force Sign Out All", desc: "Sign out everyone except yourself.", btn: "Force Sign Out", onClick: () => confirm("force-all", "Force Sign Out All Users", "This will forcefully sign out ALL users except your current session.", clearSessions("force-all", "Force sign out")) },
+        { id: "stale-sess", icon: Shield, title: "Clear Stale Sessions", desc: "Remove offline sessions older than 7 days.", btn: "Clear Stale", onClick: () => confirm("stale-sess", "Clear Stale Sessions", "This will remove all offline sessions older than 7 days.", clearSessions("stale", "Stale sessions")) },
+        { id: "offline-sess", icon: Shield, title: "Clear All Offline", desc: "Remove all currently offline sessions.", btn: "Clear Offline", onClick: () => confirm("offline-sess", "Clear Offline Sessions", "This will remove all sessions that are currently offline.", clearSessions("all-offline", "Offline sessions")) },
       ],
     },
     {
-      title: "Task Operations",
-      subtitle: "Bulk operations on task completion data.",
+      title: "Archive",
+      subtitle: "Move old data to archive instead of deleting — restorable later.",
       cards: [
-        { id: "clear-today", icon: ListChecks, color: "sky", title: "Clear Today's Completions", desc: "Reset all task completions for today.", btn: "Clear Today", onClick: () => confirm("clear-today", "Clear Today's Completions", "This will remove all task completions recorded today.", bulkTasks("clear-completions-today", "Today's completions")) },
-        { id: "clear-week", icon: ListChecks, color: "blue", title: "Clear This Week", desc: "Reset task completions from the last 7 days.", btn: "Clear Week", onClick: () => confirm("clear-week", "Clear This Week's Completions", "This will remove all task completions from the last 7 days.", bulkTasks("clear-completions-week", "This week's completions")) },
-        { id: "clear-all-comp", icon: ListChecks, color: "red", title: "Clear All Completions", desc: "Remove every task completion record.", btn: "Clear All", onClick: () => confirm("clear-all-comp", "Clear All Completions", "This will remove EVERY task completion record from the database.", bulkTasks("clear-all-completions", "All completions")) },
+        { id: "archive-msgs", icon: Archive, title: "Archive Old Messages", desc: "Move messages older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-msgs", "Archive Old Messages", "This will move messages older than 180 days to the archive table. They can be restored later if needed.", archiveOldData("messages", 180, "Messages archived")) },
+        { id: "archive-tasks", icon: Archive, title: "Archive Old Tasks", desc: "Move task completions older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-tasks", "Archive Old Tasks", "This will move task completions older than 180 days to the archive table.", archiveOldData("task-completions", 180, "Task completions archived")) },
       ],
     },
     {
-      title: "Archive & Retention",
-      subtitle: "Move old data to archive instead of deleting.",
-      cards: [
-        { id: "archive-msgs", icon: Archive, color: "purple", title: "Archive Old Messages", desc: "Move messages older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-msgs", "Archive Old Messages", "This will move messages older than 180 days to the archive table. They can be restored later if needed.", archiveOldData("messages", 180, "Messages archived")) },
-        { id: "archive-tasks", icon: Archive, color: "indigo", title: "Archive Old Tasks", desc: "Move task completions older than 180 days to archive.", btn: "Archive", onClick: () => confirm("archive-tasks", "Archive Old Tasks", "This will move task completions older than 180 days to the archive table.", archiveOldData("task-completions", 180, "Task completions archived")) },
-      ],
-    },
-    {
-      title: "Analytics & Audit",
+      title: "Reports",
       subtitle: "View usage statistics and audit logs.",
       cards: [
-        { id: "audit-log", icon: ScrollText, color: "slate", title: "View Audit Log", desc: "See recent admin actions and changes.", btn: "View Log", onClick: viewAuditLog },
-        { id: "analytics", icon: BarChart3, color: "cyan", title: "Usage Analytics", desc: "View detailed usage statistics and trends.", btn: "View Analytics", onClick: viewAnalytics },
+        { id: "audit-log", icon: ScrollText, title: "View Audit Log", desc: "See recent admin actions and changes.", btn: "View Log", onClick: viewAuditLog },
+        { id: "analytics", icon: BarChart3, title: "Usage Analytics", desc: "View detailed usage statistics and trends.", btn: "View Analytics", onClick: viewAnalytics },
       ],
     },
     {
       title: "Backup & Export",
       subtitle: "Export and import system data.",
       cards: [
-        { id: "export", icon: Download, color: "blue", title: "Export All Data", desc: "Download a full backup as JSON.", btn: "Export", onClick: exportData },
-        { id: "import", icon: Upload, color: "green", title: "Import Data", desc: "Upload a JSON backup file.", btn: "Select File", onClick: () => document.getElementById("import-file")?.click() },
+        { id: "export", icon: Download, title: "Export All Data", desc: "Download a full backup as JSON.", btn: "Export", onClick: exportData },
+        { id: "import", icon: Upload, title: "Import Data", desc: "Upload a JSON backup file.", btn: "Select File", onClick: () => document.getElementById("import-file")?.click() },
       ],
     },
   ];
 
-  const colorMap: Record<string, { bg: string; text: string; btn: string }> = {
-    red:    { bg: "bg-red-50",    text: "text-red-600",    btn: "bg-red-600 hover:bg-red-700 disabled:bg-red-300" },
-    orange: { bg: "bg-orange-50", text: "text-orange-600", btn: "bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300" },
-    amber:  { bg: "bg-amber-50",  text: "text-amber-600",  btn: "bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300" },
-    yellow: { bg: "bg-yellow-50", text: "text-yellow-600", btn: "bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-300" },
-    green:  { bg: "bg-emerald-50",text: "text-emerald-600",btn: "bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300" },
-    blue:   { bg: "bg-blue-50",   text: "text-blue-600",   btn: "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300" },
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-600", btn: "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300" },
-    purple: { bg: "bg-purple-50", text: "text-purple-600", btn: "bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300" },
-    sky:    { bg: "bg-sky-50",    text: "text-sky-600",    btn: "bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300" },
-    slate:  { bg: "bg-muted",  text: "text-muted-foreground",  btn: "bg-slate-600 hover:bg-slate-700 disabled:bg-slate-300" },
-    cyan:   { bg: "bg-cyan-50",   text: "text-cyan-600",   btn: "bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300" },
-  };
+  const destructiveSections = [
+    {
+      title: "Conversations & Broadcasts",
+      subtitle: "Permanently delete entire categories of data. Cannot be undone.",
+      cards: [
+        { id: "purge-msg", icon: Trash2, title: "Purge All Messages", desc: "Delete all messages, read receipts, and reactions.", btn: "Purge Messages", onClick: () => confirm("purge-msg", "Purge All Messages", "This will permanently delete ALL messages, read receipts, and reactions from every conversation.", purgeMessages) },
+        { id: "purge-convos", icon: Trash2, title: "Purge All Conversations", desc: "Delete all conversations, messages, and related data.", btn: "Purge Conversations", onClick: () => confirm("purge-convos", "Purge All Conversations", "This will permanently delete ALL conversations, messages, read receipts, reactions, and conversation members. This is more destructive than purging messages alone.", purgeConversations) },
+        { id: "purge-broadcast", icon: Trash2, title: "Purge Broadcast Data", desc: "Delete all broadcast records, messages, Q&A, reactions, and viewers.", btn: "Purge Broadcasts", onClick: () => confirm("purge-broadcast", "Purge All Broadcast Data", "This will permanently delete ALL broadcast records including messages, questions, reactions, and viewer data.", purgeBroadcastData) },
+        { id: "purge-notif", icon: Trash2, title: "Purge Notifications", desc: "Delete all notifications and emergency messages.", btn: "Purge Notifications", onClick: () => confirm("purge-notif", "Purge All Notifications", "This will permanently delete ALL notifications and emergency broadcast messages.", purgeNotifications) },
+      ],
+    },
+    {
+      title: "Task Completion Data",
+      subtitle: "Permanently remove task completion records. Cannot be undone.",
+      cards: [
+        { id: "purge-old", icon: Calendar, title: "Purge Old Tasks", desc: "Delete task completions older than 90 days.", btn: "Purge Old Data", onClick: () => confirm("purge-old", "Purge Old Task Data", "This will delete task completions older than 90 days. Recent data is preserved.", purgeOldTasks) },
+        { id: "clear-today", icon: ListChecks, title: "Clear Today's Completions", desc: "Reset all task completions for today.", btn: "Clear Today", onClick: () => confirm("clear-today", "Clear Today's Completions", "This will remove all task completions recorded today.", bulkTasks("clear-completions-today", "Today's completions")) },
+        { id: "clear-week", icon: ListChecks, title: "Clear This Week", desc: "Reset task completions from the last 7 days.", btn: "Clear Week", onClick: () => confirm("clear-week", "Clear This Week's Completions", "This will remove all task completions from the last 7 days.", bulkTasks("clear-completions-week", "This week's completions")) },
+        { id: "clear-all-comp", icon: ListChecks, title: "Clear All Completions", desc: "Remove every task completion record.", btn: "Clear All", onClick: () => confirm("clear-all-comp", "Clear All Completions", "This will remove EVERY task completion record from the database.", bulkTasks("clear-all-completions", "All completions")) },
+      ],
+    },
+    {
+      title: "System",
+      subtitle: "Irreversible structural changes and account-wide disruption.",
+      cards: [
+        { id: "drop-tables", icon: Database, title: "Drop Unused Tables", desc: "Remove legacy onboarding tables no longer used.", btn: "Drop Tables", onClick: () => confirm("drop-tables", "Drop Unused Tables", "This will permanently drop the onboarding_custom_forms, onboarding_sessions, and onboarding_submissions tables. These tables are not used by any feature.", dropUnusedTables) },
+        { id: "force-all", icon: Shield, title: "Force Sign Out All", desc: "Sign out everyone except yourself.", btn: "Force Sign Out", onClick: () => confirm("force-all", "Force Sign Out All Users", "This will forcefully sign out ALL users except your current session.", clearSessions("force-all", "Force sign out")) },
+      ],
+    },
+  ];
+
+  // Single shared card renderer — color/border/button treatment comes
+  // entirely from `severity`, not a per-card choice, so removing color
+  // mentally still leaves border weight as a second hierarchy signal
+  // (Section 7) and dark mode gets one deliberately-paired pair of
+  // treatments instead of re-deriving it per hue (Section 8).
+  function ActionCard({ card, severity }: { card: { id: string; icon: typeof Trash2; title: string; desc: string; btn: string; onClick: () => void }; severity: "safe" | "destructive" }) {
+    const isDestructive = severity === "destructive";
+    return (
+      <div className={cn(
+        "flex flex-col rounded-2xl border bg-card p-5",
+        isDestructive ? "border-red-200 dark:border-red-900" : "border-border"
+      )}>
+        <div className={cn(
+          "mb-3 flex h-10 w-10 items-center justify-center rounded-xl",
+          isDestructive ? "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400" : "bg-muted text-muted-foreground"
+        )}>
+          <card.icon className="h-5 w-5" />
+        </div>
+        <h4 className="text-sm font-semibold text-foreground">{card.title}</h4>
+        <p className="mt-1 flex-1 text-xs text-muted-foreground">{card.desc}</p>
+        <button
+          onClick={card.onClick}
+          disabled={processing}
+          className={cn(
+            "mt-3 w-full rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50",
+            isDestructive
+              ? "bg-[var(--hub-red)] text-white hover:bg-red-700 active:bg-red-800"
+              : "border border-border bg-card text-foreground hover:bg-muted active:bg-muted/80"
+          )}
+        >
+          {card.btn}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -346,17 +388,17 @@ export function DataManagement() {
       {/* Alerts */}
       <AnimatePresence>
         {success && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-            <p className="flex-1 text-sm font-semibold text-emerald-900">{success}</p>
-            <button onClick={() => setSuccess(null)} className="text-emerald-600 hover:text-emerald-700"><X className="h-4 w-4" /></button>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/50 p-4">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <p className="flex-1 text-sm font-semibold text-emerald-900 dark:text-emerald-300">{success}</p>
+            <button onClick={() => setSuccess(null)} className="text-emerald-600 hover:text-emerald-700 active:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"><X className="h-4 w-4" /></button>
           </motion.div>
         )}
         {error && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
-            <p className="flex-1 text-sm font-semibold text-red-900">{error}</p>
-            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-700"><X className="h-4 w-4" /></button>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/50 p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+            <p className="flex-1 text-sm font-semibold text-red-900 dark:text-red-300">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-700 active:text-red-800 dark:text-red-400 dark:hover:text-red-300"><X className="h-4 w-4" /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -375,36 +417,56 @@ export function DataManagement() {
       {/* ── Health Dashboard ── */}
       <DataManagementHealth report={report} integrity={integrity} duplicates={duplicates} />
 
-      {/* ── Action Sections ── */}
-      {sections.map((section) => (
-        <div key={section.title}>
-          <div className="mb-3">
-            <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
-            <p className="text-xs text-muted-foreground">{section.subtitle}</p>
+      {/* ── Safe / routine sections — visible by default ── */}
+      <div className="space-y-6">
+        {safeSections.map((section) => (
+          <div key={section.title}>
+            <div className="mb-3">
+              <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
+              <p className="text-xs text-muted-foreground">{section.subtitle}</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {section.cards.map((card) => (
+                <ActionCard key={card.id} card={card} severity="safe" />
+              ))}
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {section.cards.map((card) => {
-              const colors = colorMap[card.color] || colorMap.blue;
-              return (
-                <div key={card.id} className="rounded-2xl border border-border bg-card p-5 flex flex-col">
-                  <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-xl", colors.bg, colors.text)}>
-                    <card.icon className="h-5 w-5" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-foreground">{card.title}</h4>
-                  <p className="mt-1 text-xs text-muted-foreground flex-1">{card.desc}</p>
-                  <button
-                    onClick={card.onClick}
-                    disabled={processing}
-                    className={cn("mt-3 w-full rounded-xl px-3 py-2 text-xs font-semibold text-white transition-colors", colors.btn)}
-                  >
-                    {card.btn}
-                  </button>
+        ))}
+      </div>
+
+      {/* ── Destructive & irreversible — collapsed by default (Section 12).
+          The wider top margin + dashed border is deliberate: this needs to
+          read as a different kind of thing, not just another section in the
+          same uniform rhythm as Maintenance/Archive/Reports above. ── */}
+      <div className="mt-10 border-t-2 border-dashed border-red-200 dark:border-red-900 pt-8">
+        <button
+          type="button"
+          onClick={() => setShowDestructive((v) => !v)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 px-4 py-4 text-sm font-semibold text-red-700 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-950/40"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          {showDestructive ? "Hide" : "Show"} Destructive &amp; Irreversible Operations
+          {showDestructive ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+
+        {showDestructive && (
+          <div className="mt-6 space-y-6">
+            {destructiveSections.map((section) => (
+              <div key={section.title}>
+                <div className="mb-3">
+                  <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
+                  <p className="text-xs text-muted-foreground">{section.subtitle}</p>
                 </div>
-              );
-            })}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {section.cards.map((card) => (
+                    <ActionCard key={card.id} card={card} severity="destructive" />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
+        )}
+      </div>
 
       {/* Hidden file input for import */}
       <input id="import-file" type="file" accept=".json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importData(f); e.target.value = ""; }} />
@@ -415,7 +477,7 @@ export function DataManagement() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !processing && setShowConfirm(null)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-lg font-semibold text-foreground">{showConfirm.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{showConfirm.confirmText} This action cannot be undone.</p>

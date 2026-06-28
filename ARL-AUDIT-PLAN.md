@@ -101,8 +101,8 @@ Checked and ruled out: one of this pass's sub-agents flagged `--hub-red` (`globa
 
 ## Recommended sequencing
 
-1. **Sidebar grouping** (`arl-sidebar.tsx`) — cheapest, reframes the whole console.
-2. **Data Management** — highest combined risk + principle count; the table above shows why this is the one file where "audit everything first" most clearly pays off.
+1. ~~**Sidebar grouping** (`arl-sidebar.tsx`)~~ — **done.** Grouped into Operations/Administration, then reordered both clusters by actual frequency/importance (Emergency Broadcast deliberately out of frequency order, given its safety-critical nature).
+2. ~~**Data Management**~~ — **done.** Collapsed the 21-card, 7-section, 11-color wall into two severity tiers: a "safe/routine" tier (Maintenance, Sessions, Archive, Reports, Backup & Export — 11 cards, visible by default, neutral chip/border/button) and a "destructive/irreversible" tier (Conversations & Broadcasts, Task Completion Data, System — 10 cards, collapsed behind a dashed-border "Show Destructive & Irreversible Operations" toggle, red chip/border/button). Reclassified several cards by actual risk rather than their old arbitrary color (e.g. `force-all`/drop-tables moved to destructive despite not being a "purge" card; `archive-*`/session-clearing stayed safe since they're reversible or ephemeral). Verified in both light and dark mode via Playwright against a temporary isolated route (local dev DB has the same pre-existing `grid_layout` schema drift noted in the sidebar commit, blocking real login).
 3. **Overview** (merge Ticker/Activity into one Live Feed, delete the duplicate trend chart, fix KPI hierarchy, scope the toast) + **Meetings tab split** — same "this page is doing too many jobs" shape, do together.
 4. **Tenant Settings** disclosure + spacing.
 5. **Task form modal** layout grid + selected-state fix (two principles, one diff).
