@@ -93,17 +93,17 @@ function applyBranding(tenant: TenantBranding) {
   const lightBg = lightenHex(color, 0.92);
   const darkVariant = darkenHex(color, 0.6);
 
-  // Core brand color — used as var(--hub-red) throughout the app
+  // Core brand color — used as var(--hub-red) throughout the app for
+  // branding/urgency/destructive signaling (DESIGN.md §2's claimed-color
+  // table), and for chart-1 so an org's own analytics reflect their brand.
+  // Deliberately NOT wired into --primary/--ring/--sidebar-primary/
+  // --sidebar-ring — those are UI chrome (buttons, focus rings, selected
+  // state) and stay the app's decided neutral regardless of org branding,
+  // so a tenant picking red as their brand color doesn't turn every button
+  // red and dilute red's meaning everywhere else (DESIGN.md §2 decision).
   root.style.setProperty("--hub-red", color);
   root.style.setProperty("--hub-red-light", lightBg);
-
-  // shadcn/ui primary theming
-  root.style.setProperty("--primary", color);
-  root.style.setProperty("--ring", color);
   root.style.setProperty("--chart-1", color);
-  root.style.setProperty("--sidebar-primary", color);
-  root.style.setProperty("--sidebar-ring", color);
-  root.style.setProperty("--sidebar-accent-foreground", color);
 
   // Document title
   if (tenant.appTitle) {

@@ -227,9 +227,10 @@ export default function LoginPage() {
   const applyBranding = useCallback((tenant: ResolvedTenant) => {
     const root = document.documentElement;
     const color = tenant.primaryColor || "#dc2626";
+    // --primary/--ring intentionally not overridden here — see
+    // tenant-context.tsx's applyBranding for why (DESIGN.md §2: primary
+    // action color is a fixed neutral, not the org's branding color).
     root.style.setProperty("--hub-red", color);
-    root.style.setProperty("--primary", color);
-    root.style.setProperty("--ring", color);
     if (tenant.appTitle) {
       document.title = tenant.appTitle;
     }

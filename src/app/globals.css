@@ -69,7 +69,11 @@ html {
   --card-foreground: #1e293b;
   --popover: #ffffff;
   --popover-foreground: #1e293b;
-  --primary: #e4002b;
+  /* Primary action color is a chromatic neutral, not brand red — DESIGN.md
+     §2 decision (prototyped as "Direction A — Neutral" at /design-preview).
+     Stays fixed regardless of an org's branding color (see
+     tenant-context.tsx's applyBranding — it no longer writes to this). */
+  --primary: #1e293b;
   --primary-foreground: #ffffff;
   --secondary: #eef2ff;
   --secondary-foreground: #3730a3;
@@ -80,7 +84,7 @@ html {
   --destructive: #ef4444;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #e4002b;
+  --ring: #1e293b;
   --chart-1: #e4002b;
   --chart-2: #3b82f6;
   --chart-3: #10b981;
@@ -88,12 +92,12 @@ html {
   --chart-5: #8b5cf6;
   --sidebar: #ffffff;
   --sidebar-foreground: #1e293b;
-  --sidebar-primary: #e4002b;
+  --sidebar-primary: #1e293b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fef2f2;
-  --sidebar-accent-foreground: #e4002b;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #e4002b;
+  --sidebar-ring: #1e293b;
 
   --hub-red: #e4002b;
   --hub-red-light: #fef2f2;
@@ -116,8 +120,8 @@ html {
   --card-foreground: #f2f2f2;
   --popover: #1c1c1c;
   --popover-foreground: #f2f2f2;
-  --primary: #e4002b;
-  --primary-foreground: #ffffff;
+  --primary: #f2f2f2;
+  --primary-foreground: #0a0a0a;
   --secondary: #262626;
   --secondary-foreground: #d4d4d4;
   --muted: #171717;
@@ -127,7 +131,7 @@ html {
   --destructive: #dc2626;
   --border: #2e2e2e;
   --input: #2e2e2e;
-  --ring: #ef4444;
+  --ring: #f2f2f2;
   --chart-1: #ef4444;
   --chart-2: #60a5fa;
   --chart-3: #34d399;
@@ -135,12 +139,12 @@ html {
   --chart-5: #a78bfa;
   --sidebar: #1c1c1c;
   --sidebar-foreground: #f2f2f2;
-  --sidebar-primary: #e4002b;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #f2f2f2;
+  --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: #262626;
-  --sidebar-accent-foreground: #fca5a5;
+  --sidebar-accent-foreground: #f2f2f2;
   --sidebar-border: #2e2e2e;
-  --sidebar-ring: #ef4444;
+  --sidebar-ring: #f2f2f2;
 
   --hub-red: #ef4444;
   --hub-red-light: #450a0a;
