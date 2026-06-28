@@ -11,8 +11,10 @@ import {
   Sparkles,
   Eye,
   EyeOff,
+  MoreVertical,
 } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 import { PRIORITIES, formatTime12 } from "./task-manager-types";
 import type { Task, Location } from "./task-manager-types";
@@ -157,12 +159,16 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => onDelete(task.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <Menu>
+                      <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </MenuTrigger>
+                      <MenuContent>
+                        <MenuItem value="delete" variant="destructive" onClick={() => onDelete(task.id)}>
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Task
+                        </MenuItem>
+                      </MenuContent>
+                    </Menu>
                   </div>
                 </div>
 
@@ -242,12 +248,16 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => onDelete(task.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <Menu>
+                      <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </MenuTrigger>
+                      <MenuContent>
+                        <MenuItem value="delete" variant="destructive" onClick={() => onDelete(task.id)}>
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" /> Delete Task
+                        </MenuItem>
+                      </MenuContent>
+                    </Menu>
                   </div>
                 </div>
               </div>

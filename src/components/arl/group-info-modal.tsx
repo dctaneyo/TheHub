@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,7 @@ import {
   Save,
   X,
   Palette,
+  MoreVertical,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -305,6 +307,18 @@ export function GroupInfoModal({
                 <Edit2 className="h-4 w-4" />
               </Button>
             )}
+            {!isGlobalChat && (
+              <Menu>
+                <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                  <MoreVertical className="h-4 w-4" />
+                </MenuTrigger>
+                <MenuContent>
+                  <MenuItem value="leave-group" variant="destructive" disabled={isLoading} onClick={handleLeaveGroup}>
+                    <LogOut className="h-3.5 w-3.5 shrink-0" /> Leave Group
+                  </MenuItem>
+                </MenuContent>
+              </Menu>
+            )}
           </DialogTitle>
           <DialogDescription>
             {groupInfo.memberCount} members · Created{" "}
@@ -511,22 +525,6 @@ export function GroupInfoModal({
               </div>
             </div>
 
-            {/* Leave Group Button - hidden for global chat */}
-            {/* pt-6 matches the space-y-6 used throughout this component, giving the
-                destructive action the visual separation it deserves (§5 — was pt-4) */}
-            {!isGlobalChat && (
-              <div className="pt-6 border-t">
-                <Button
-                  variant="destructive"
-                  onClick={handleLeaveGroup}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Leave Group
-                </Button>
-              </div>
-            )}
           </div>
         </ScrollArea>
       </DialogContent>
