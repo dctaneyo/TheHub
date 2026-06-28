@@ -194,3 +194,97 @@ for that branch, not conditionally hidden.
    anywhere in the stack. A real fix is a dedicated, stripped-down viewer
    component for locations (no `getUserMedia`, `canPublish: false`,
    subscribe-only) — a genuine feature change, not a quick patch.
+
+### Cards-as-fake-tables — a real, repeated pattern, not over-criticism
+
+Direct question: is "everything in ARL is cards, even when the data is
+tabular" actual AI-slop or just this product's house style? Ran a focused
+pass across every list/grid surface in ARL against Section 11's "many
+same-shaped records a user wants to scan/compare" test. Verdict: **real,
+and consistent** — six surfaces independently show the same tell (each
+row wrapped in its own `rounded-2xl border bg-card p-4`-style container
+instead of tight, column-aligned rows), which is exactly what happens
+when a list gets built without ever asking "what shape does this data
+actually want."
+
+**Should become real tables:**
+- `locations-manager.tsx:183-193` — the strongest case. 8 same-shaped
+  fields per location (status, address, email, user ID, last-seen,
+  store#) in a 2-3 col card grid; "which locations haven't checked in"
+  currently requires reading every card instead of scanning one column.
+  No "Add Location" action exists on this surface at all (flow gap,
+  separately noted).
+- `user-management.tsx:326-409` — 7 fields per row, each its own card
+  (`:342-345`), ID/store/email string-mashed into one free-text line
+  instead of columns.
+- `task-virtual-list.tsx:56` — same per-row card chrome; title, priority,
+  type, due date/time, points, location all in one unaligned blob.
+- `forms-repository.tsx:272` — same pattern; category/filename/size/date
+  concatenated into one line instead of columns.
+- `scheduled-meetings.tsx:417-420` — host/date/time/code metadata wraps
+  instead of aligning; same-shaped, comparable records.
+- `data-management-audit-log.tsx:79-80` — the clearest case of all: a
+  literal audit log (actor/action/timestamp/IP per row) rendered as
+  styled divs instead of a table. Textbook Section 11 case.
+- `meeting-analytics.tsx`'s "Recent Meetings" list (`:411-444`) — same
+  tell, and notably **inconsistent with itself**: this exact file's
+  participant detail view (`:193-245`) already correctly uses a real
+  `<table>` with a mobile-card fallback. The pattern already exists in
+  this codebase; it just wasn't applied to the list above it.
+
+**Confirmed correctly cards (control cases, not candidates):**
+`remote-viewer.tsx`'s location grid (action launchers, not comparable
+fields), `tenant-settings.tsx` (heterogeneous settings sections),
+`messaging.tsx`/`swipeable-convo-row.tsx` (variable-length threads, not
+tabular), `data-management.tsx` (independent maintenance tools — the
+file's own restructuring this session already validated this),
+`notification-settings-panel.tsx` (toggles, not sortable records),
+`broadcast-launcher.tsx`/`broadcast-studio.tsx` (single-purpose forms).
+`analytics-dashboard.tsx`'s "Task Performance" is **already a real
+`<table>`** (`:362-379`) — prior audit's "fake table" concern is
+resolved, no action needed there.
+
+**Sequencing**: fix Locations first (highest-value, no flow-gap-free
+alternative exists today), then the rest in roughly the order listed
+above — Users and the Audit Log next (clearest violations), Tasks/Forms/
+Scheduled Meetings after, Recent Meetings last (smallest list, lowest
+urgency, but should copy the table+mobile-card pattern its own file
+already has for participants rather than reinventing one).
+
+### Action-button weight — ran the focused pass, mostly clean
+
+Checked every route's PAGE-LEVEL header actions (not per-row actions,
+audited separately) for Section 12 equal-weight violations. Result: this
+was already in reasonably good shape — most routes have a single
+obvious primary action or two genuinely-comparable ones. Two findings:
+
+- **`messaging.tsx:204-220`** — real violation. "Direct" and "Group" new-
+  chat buttons are identical neutral `bg-muted` pills, same size/weight,
+  despite starting a DM being far more frequent than creating a group.
+  Direct should be primary/filled; Group demoted to secondary.
+- **`meetings/page.tsx:253-271`** — soft/minor miss. "Start Meeting" and
+  "Schedule Meeting" sit at near-equal weight despite differing
+  frequency (ad hoc vs. planned setup). Not flagrant; lower priority
+  than the Messages fix.
+
+Everywhere else checked (Tasks, Forms, Data Management, Tenant Settings,
+Analytics, Notification Settings, Audit Log, Emergency Broadcast,
+Broadcast Launcher/Studio, Remote) — confirmed fine, no tiering issue.
+
+### Overview as a true single-viewport dashboard — bigger than a file fix, logged for its own decision
+
+Direct feedback: Overview should be a real "look once, no scrolling"
+dashboard — at-a-glance only — not just the 3 KPI cards but the whole
+page (Location Performance + Live Feed included). Honest assessment:
+this is a good goal, but it's a structurally different ask than the
+merge/dedup work just done. `LiveActivityFeed` already bounds its own
+list height (`max-h-[300px] overflow-y-auto`), which is the right
+*mechanism* — the actual blocker is that Overview stacks full-width
+sections vertically with no shared height budget, so KPIs + Location
+Performance + Live Feed accumulate past one viewport regardless of any
+one section's internal scrolling. Making the whole page fit one
+viewport for real means giving it a fixed-height grid with each section
+owning an allocated region (closer to what the kiosk dashboard's grid
+system already does) rather than a stack of cards that each grow to fit
+their content. That's a real layout decision, not a tweak — logged here
+rather than folded into the current pass silently.
