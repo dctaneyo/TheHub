@@ -113,7 +113,7 @@ export function ArlSidebar({
           </div>
           <div>
             <h1 className="text-sm font-semibold text-foreground">{brandTitle}</h1>
-            <p className="text-xs text-muted-foreground">ARL Dashboard</p>
+            <p className="text-xs text-muted-foreground">ARL Console</p>
           </div>
         </div>
         {isMobileOrTablet && (

@@ -1,877 +1,384 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog as ArkDialog,
   Switch as ArkSwitch,
   Tabs as ArkTabs,
-  Accordion as ArkAccordion,
-  Slider as ArkSlider,
-  RadioGroup as ArkRadioGroup,
-  Checkbox as ArkCheckbox,
   Select as ArkSelect,
-  Tooltip as ArkTooltip,
   createListCollection,
 } from "@ark-ui/react";
 import {
   PencilSimple,
-  Copy,
   Trash,
-  DotsThreeVertical,
-  GearSix,
-  Bell,
-  SignOut,
   CaretDown,
-  CaretRight,
-  X,
   Check,
+  X,
   Moon,
   Sun,
+  CheckSquare,
+  ChatCircleText,
+  CalendarBlank,
+  FileText,
+  Quotes,
+  Siren,
+  House,
+  GearSix,
 } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
-import type { IconWeight } from "@phosphor-icons/react";
-
-// Current implementation components (shadcn/Radix)
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import "./preview.css";
 
 /* ════════════════════════════════════════════════════════════════════════════
-   DESIGN PREVIEW — Standalone (no auth required)
+   DESIGN PREVIEW — standalone, no auth (see middleware.ts).
 
-   Side-by-side comparison: current shadcn/Radix vs. new Ark UI + Linear.
-   Both columns are fully interactive. Theme toggle in top-right.
+   Two real screens, not isolated swatches:
+     1. ARL Console  — dense admin surface (Linear-inspired)
+     2. Main Dashboard (Kiosk) — restaurant-facing, glance-and-tap surface
+        (Toast POS-inspired layout, app's own colors — not Toast's palette)
 
-   /design-preview — accessible without login.
+   Both share the same light/dark + "direction" controls. Background, card,
+   and primary text colors are pinned to the app's real tokens in every
+   direction — only the primary action color (and the chrome built around it)
+   changes. See preview.css for the token wiring.
    ════════════════════════════════════════════════════════════════════════════ */
 
-type PhosphorIconProps = { weight?: IconWeight; className?: string; size?: number };
-function Icon({ icon: Ic, className, size }: { icon: React.ComponentType<PhosphorIconProps>; className?: string; size?: number }) {
-  return <Ic weight="regular" className={className} size={size} />;
+type Direction = "neutral" | "brand" | "tinted";
+type Surface = "console" | "kiosk";
+type Status = "online" | "reconnecting" | "offline" | "remote" | "inactive";
+
+const DIRECTIONS: { id: Direction; label: string; blurb: string }[] = [
+  {
+    id: "neutral",
+    label: "A — Neutral",
+    blurb:
+      "Primary action is near-black on light / near-white on dark — content-first, lowest visual noise. Status dots + plain pills carry all the color. (Linear, Vercel, Raycast.)",
+  },
+  {
+    id: "brand",
+    label: "B — Brand Red",
+    blurb:
+      "Primary action is a solid brand-red fill. High-visibility, matches the sidebar accent today — but spends the same red the urgency system uses for \"offline\"/\"destructive.\"",
+  },
+  {
+    id: "tinted",
+    label: "C — Tinted Brand",
+    blurb:
+      "Primary action is a soft red-tinted fill with red text. Softer presence than B, still reads as branded — a middle ground between A and B.",
+  },
+];
+
+const STATUS_META: Record<Status, { label: string; dot: string; pill: string; outline: string }> = {
+  online: { label: "Online", dot: "dp-dot-green", pill: "dp-badge-pill-green", outline: "dp-badge-outline-green" },
+  reconnecting: { label: "Reconnecting", dot: "dp-dot-amber", pill: "dp-badge-pill-amber", outline: "dp-badge-outline-amber" },
+  offline: { label: "Offline", dot: "dp-dot-red", pill: "dp-badge-pill-red", outline: "dp-badge-outline-red" },
+  remote: { label: "Remote active", dot: "dp-dot-teal", pill: "dp-badge-pill-teal", outline: "dp-badge-outline-teal" },
+  inactive: { label: "Inactive", dot: "dp-dot-muted", pill: "dp-badge-pill-muted", outline: "dp-badge-outline-muted" },
+};
+
+function StatusBadge({ status, direction }: { status: Status; direction: Direction }) {
+  const meta = STATUS_META[status];
+  if (direction === "neutral") {
+    return (
+      <span className="dp-badge-dot">
+        <span className={`dp-dot ${meta.dot}`} />
+        {meta.label}
+      </span>
+    );
+  }
+  if (direction === "brand") {
+    return <span className={`dp-badge-pill ${meta.pill}`}>{meta.label}</span>;
+  }
+  return <span className={`dp-badge-outline ${meta.outline}`}>{meta.label}</span>;
 }
 
-function ColumnHeader({ side, label, sublabel }: { side: "current" | "new"; label: string; sublabel: string }) {
+function tabListClass(direction: Direction) {
+  return direction === "neutral" ? "dp-tabs-underline-list" : direction === "brand" ? "dp-tabs-segmented-list" : "dp-tabs-top-list";
+}
+function tabTriggerClass(direction: Direction) {
+  return direction === "neutral" ? "dp-tab-underline" : direction === "brand" ? "dp-tab-segmented" : "dp-tab-top";
+}
+function inputClass(direction: Direction) {
+  return direction === "neutral" ? "dp-input-bordered" : direction === "brand" ? "dp-input-filled" : "dp-input-underline";
+}
+
+const locations = [
+  { name: "Downtown — 5th Ave", region: "West", status: "online" as Status, lastSync: "2 min ago" },
+  { name: "Riverside Plaza", region: "East", status: "remote" as Status, lastSync: "just now" },
+  { name: "Harbor View", region: "West", status: "reconnecting" as Status, lastSync: "11 min ago" },
+  { name: "Old Town Square", region: "Central", status: "offline" as Status, lastSync: "3 hrs ago" },
+  { name: "Lakeside Commons", region: "Central", status: "inactive" as Status, lastSync: "2 days ago" },
+];
+
+const regions = createListCollection({
+  items: [
+    { label: "West", value: "West" },
+    { label: "East", value: "East" },
+    { label: "Central", value: "Central" },
+  ],
+});
+
+function ConsoleMockup({ direction }: { direction: Direction }) {
+  const [tab, setTab] = useState("overview");
+  const [newOpen, setNewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [region, setRegion] = useState(["West"]);
+  const [active, setActive] = useState(true);
+
   return (
-    <div className={cn(
-      "sticky top-0 z-10 flex items-center gap-2 border-b px-4 py-2.5 backdrop-blur-sm",
-      side === "current"
-        ? "border-border bg-card/80"
-        : "border-[var(--dp-border)] bg-[var(--dp-surface-1)]/80"
-    )}>
-      <span className={cn(
-        "text-xs font-bold uppercase tracking-[0.08em]",
-        side === "current" ? "text-muted-foreground" : "text-[var(--dp-text-tertiary)]"
-      )}>
-        {label}
-      </span>
-      <span className={cn(
-        "text-xs",
-        side === "current" ? "text-muted-foreground/60" : "text-[var(--dp-text-tertiary)]"
-      )}>
-        {sublabel}
-      </span>
+    <div className="dp-page">
+      <ArkTabs.Root value={tab} onValueChange={(d) => setTab(d.value)}>
+        <ArkTabs.List className={tabListClass(direction)}>
+          <ArkTabs.Trigger value="overview" className={tabTriggerClass(direction)}>Overview</ArkTabs.Trigger>
+          <ArkTabs.Trigger value="locations" className={tabTriggerClass(direction)}>Locations</ArkTabs.Trigger>
+          <ArkTabs.Trigger value="settings" className={tabTriggerClass(direction)}>Settings</ArkTabs.Trigger>
+        </ArkTabs.List>
+
+        <ArkTabs.Content value="overview" className="dp-tab-content">
+          <div className="dp-page" style={{ padding: 0 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              <div className="dp-card dp-kpi-card">
+                <div className="dp-kpi-label">Total Locations</div>
+                <div className="dp-kpi-value">12</div>
+                <div className="dp-kpi-sub"><span className="dp-dot dp-dot-green" /> 9 online</div>
+              </div>
+              <div className="dp-card dp-kpi-card">
+                <div className="dp-kpi-label">Needs Review</div>
+                <div className="dp-kpi-value">2</div>
+                <div className="dp-kpi-sub"><span className="dp-dot dp-dot-red" /> Offline &gt; 1 hr</div>
+              </div>
+              <div className="dp-card dp-kpi-card">
+                <div className="dp-kpi-label">Open Tasks</div>
+                <div className="dp-kpi-value">37</div>
+                <div className="dp-kpi-sub"><span className="dp-dot dp-dot-amber" /> 6 overdue</div>
+              </div>
+            </div>
+          </div>
+        </ArkTabs.Content>
+
+        <ArkTabs.Content value="locations" className="dp-tab-content">
+          <div className="dp-card" style={{ overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid var(--dp-border)" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--dp-text)" }}>Locations</span>
+              <button className="dp-btn dp-btn-primary" onClick={() => setNewOpen(true)}>+ New Location</button>
+            </div>
+            <table className="dp-table">
+              <thead>
+                <tr><th>Name</th><th>Region</th><th>Status</th><th>Last sync</th><th></th></tr>
+              </thead>
+              <tbody>
+                {locations.map((loc) => (
+                  <tr key={loc.name}>
+                    <td style={{ fontWeight: 600 }}>{loc.name}</td>
+                    <td style={{ color: "var(--dp-text-secondary)" }}>{loc.region}</td>
+                    <td><StatusBadge status={loc.status} direction={direction} /></td>
+                    <td style={{ color: "var(--dp-text-tertiary)" }}>{loc.lastSync}</td>
+                    <td>
+                      <div className="dp-row-actions">
+                        <button className="dp-btn-icon"><PencilSimple size={15} /></button>
+                        <button className="dp-btn-icon dp-btn-icon-danger" onClick={() => { setDeleteTarget(loc.name); setDeleteOpen(true); }}>
+                          <Trash size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ArkTabs.Content>
+
+        <ArkTabs.Content value="settings" className="dp-tab-content">
+          <div className="dp-card" style={{ padding: 20, maxWidth: 360, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="dp-field">
+              <label className="dp-label">Display name</label>
+              <input className={inputClass(direction)} defaultValue="Downtown — 5th Ave" />
+            </div>
+            <div className="dp-field">
+              <label className="dp-label">Region</label>
+              <ArkSelect.Root collection={regions} value={region} onValueChange={(d) => setRegion(d.value)} positioning={{ sameWidth: true }}>
+                <ArkSelect.Control>
+                  <ArkSelect.Trigger className="dp-select-trigger">
+                    <ArkSelect.ValueText>{region[0]}</ArkSelect.ValueText>
+                    <ArkSelect.Indicator><CaretDown size={12} /></ArkSelect.Indicator>
+                  </ArkSelect.Trigger>
+                </ArkSelect.Control>
+                <ArkSelect.Positioner className="dp-select-positioner">
+                  <ArkSelect.Content className="dp-select-menu">
+                    {regions.items.map((r) => (
+                      <ArkSelect.Item key={r.value} item={r} className="dp-select-option">
+                        <ArkSelect.ItemText>{r.label}</ArkSelect.ItemText>
+                        <ArkSelect.ItemIndicator className="dp-select-check"><Check size={14} /></ArkSelect.ItemIndicator>
+                      </ArkSelect.Item>
+                    ))}
+                  </ArkSelect.Content>
+                </ArkSelect.Positioner>
+              </ArkSelect.Root>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span className="dp-label">Active</span>
+              <ArkSwitch.Root checked={active} onCheckedChange={(d) => setActive(d.checked)} className="dp-switch-track">
+                <ArkSwitch.HiddenInput />
+                <ArkSwitch.Thumb className="dp-switch-thumb" />
+              </ArkSwitch.Root>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</button>
+              <button className="dp-btn dp-btn-primary dp-btn-sm">Save changes</button>
+            </div>
+          </div>
+        </ArkTabs.Content>
+      </ArkTabs.Root>
+
+      {/* New Location dialog */}
+      <ArkDialog.Root open={newOpen} onOpenChange={(d) => setNewOpen(d.open)}>
+        <ArkDialog.Backdrop className="dp-dialog-backdrop" />
+        <ArkDialog.Positioner className="dp-dialog-positioner">
+          <ArkDialog.Content className="dp-dialog">
+            <ArkDialog.Title className="dp-dialog-title">New location</ArkDialog.Title>
+            <ArkDialog.Description className="dp-dialog-desc">Add a location to this organization.</ArkDialog.Description>
+            <div className="dp-field">
+              <label className="dp-label">Name</label>
+              <input className={inputClass(direction)} placeholder="e.g. Westfield Mall" />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
+              <ArkDialog.CloseTrigger className="dp-btn dp-btn-primary dp-btn-sm">Create</ArkDialog.CloseTrigger>
+            </div>
+            <ArkDialog.CloseTrigger className="dp-dialog-close"><X size={16} /></ArkDialog.CloseTrigger>
+          </ArkDialog.Content>
+        </ArkDialog.Positioner>
+      </ArkDialog.Root>
+
+      {/* Delete confirm dialog */}
+      <ArkDialog.Root open={deleteOpen} onOpenChange={(d) => setDeleteOpen(d.open)}>
+        <ArkDialog.Backdrop className="dp-dialog-backdrop" />
+        <ArkDialog.Positioner className="dp-dialog-positioner">
+          <ArkDialog.Content className="dp-dialog">
+            <ArkDialog.Title className="dp-dialog-title">Delete location?</ArkDialog.Title>
+            <ArkDialog.Description className="dp-dialog-desc">
+              This will permanently remove <strong style={{ color: "var(--dp-text)" }}>{deleteTarget}</strong> and all associated data. This cannot be undone.
+            </ArkDialog.Description>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
+              <ArkDialog.CloseTrigger className="dp-btn dp-btn-destructive dp-btn-sm">Delete</ArkDialog.CloseTrigger>
+            </div>
+            <ArkDialog.CloseTrigger className="dp-dialog-close"><X size={16} /></ArkDialog.CloseTrigger>
+          </ArkDialog.Content>
+        </ArkDialog.Positioner>
+      </ArkDialog.Root>
     </div>
   );
 }
 
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-3 py-6">
-      <div className="h-px flex-1 bg-border" />
-      <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">{label}</span>
-      <div className="h-px flex-1 bg-border" />
-    </div>
-  );
-}
+function KioskMockup() {
+  const [now, setNow] = useState<Date | null>(() => new Date());
+  const [activeNav, setActiveNav] = useState("home");
 
-function CurrentCell({ name, children }: { name: string; children: React.ReactNode }) {
-  return (
-    <Card className="gap-3 p-4">
-      <div className="flex items-center justify-between px-0">
-        <span className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">{name}</span>
-        <span className="font-mono text-xs text-muted-foreground/60">shadcn/radix</span>
-      </div>
-      <CardContent className="px-0">{children}</CardContent>
-    </Card>
-  );
-}
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
-function NewCell({ name, children }: { name: string; children: React.ReactNode }) {
+  const tiles = [
+    { id: "tasks", icon: CheckSquare, title: "Tasks", sub: "4 open today", badge: 4 },
+    { id: "messages", icon: ChatCircleText, title: "Messages", sub: "2 unread", badge: 2 },
+    { id: "upcoming", icon: CalendarBlank, title: "Upcoming", sub: "Lunch rush · 11:30", badge: null },
+    { id: "forms", icon: FileText, title: "Forms", sub: "Shift checklist", badge: null },
+    { id: "quote", icon: Quotes, title: "Quote of the Day", sub: '"Speed is a feature."', badge: null },
+  ];
+
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-[0.06em] text-[var(--dp-text-tertiary)]">{name}</span>
-        <span className="font-mono text-xs text-[var(--dp-teal)]">ark-ui</span>
+    <div className="dp-kiosk-shell">
+      <div className="dp-kiosk-header">
+        <div>
+          <div className="dp-kiosk-clock">{now ? now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}</div>
+          <div className="dp-kiosk-date">{now ? now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : ""}</div>
+        </div>
+        <span className="dp-kiosk-status-pill"><span className="dp-dot dp-dot-green" /> All systems online</span>
       </div>
-      <div className="flex flex-col gap-3">{children}</div>
+
+      <div className="dp-kiosk-grid">
+        {tiles.map((t) => {
+          const Icon = t.icon;
+          return (
+            <div key={t.id} className="dp-kiosk-tile">
+              {t.badge != null && <span className="dp-kiosk-tile-badge">{t.badge}</span>}
+              <span className="dp-kiosk-tile-icon"><Icon size={20} /></span>
+              <div>
+                <div className="dp-kiosk-tile-title">{t.title}</div>
+                <div className="dp-kiosk-tile-sub">{t.sub}</div>
+              </div>
+            </div>
+          );
+        })}
+        <div className="dp-kiosk-tile dp-kiosk-tile-emergency">
+          <span className="dp-kiosk-tile-icon"><Siren size={20} /></span>
+          <div>
+            <div className="dp-kiosk-tile-title">Emergency</div>
+            <div className="dp-kiosk-tile-sub">Broadcast to all staff</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dp-kiosk-nav">
+        <button className="dp-kiosk-nav-btn" data-active={activeNav === "home"} onClick={() => setActiveNav("home")}>
+          <House size={18} /> Home
+        </button>
+        <button className="dp-kiosk-nav-btn" data-active={activeNav === "tasks"} onClick={() => setActiveNav("tasks")}>
+          <CheckSquare size={18} /> Tasks
+        </button>
+        <button className="dp-kiosk-nav-btn" data-active={activeNav === "messages"} onClick={() => setActiveNav("messages")}>
+          <ChatCircleText size={18} /> Messages
+        </button>
+        <button className="dp-kiosk-nav-btn" data-active={activeNav === "settings"} onClick={() => setActiveNav("settings")}>
+          <GearSix size={18} /> Settings
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function DesignPreviewPage() {
-  const [arkDialogOpen, setArkDialogOpen] = useState(false);
-  const [arkFormDialogOpen, setArkFormDialogOpen] = useState(false);
-  const [arkSwitchStates, setArkSwitchStates] = useState<Record<number, boolean>>({ 0: true, 1: false, 2: true, 3: true });
-  const [arkSliderValues, setArkSliderValues] = useState<Record<number, number>>({ 0: 72, 1: 3, 2: 15 });
-  const [arkRadioValue, setArkRadioValue] = useState("manager");
-  const [arkCheckboxStates, setArkCheckboxStates] = useState<Record<number, boolean>>({ 0: true, 1: true, 2: true, 3: false, 4: false, 5: false });
-  const [arkSelectValue, setArkSelectValue] = useState("Pacific Time (PST)");
-  const [arkAccordionValue, setArkAccordionValue] = useState<string[]>(["plan"]);
-  const [currentDialogOpen, setCurrentDialogOpen] = useState(false);
-  const [currentTabsValue, setCurrentTabsValue] = useState("overview");
-
-  const checkboxLabels = ["View dashboard", "Create tasks", "Edit tasks", "Delete tasks", "Manage users", "Emergency broadcasts"];
-
-  const timezones = useMemo(
-    () =>
-      createListCollection({
-        items: [
-          { label: "Pacific Time (PST)", value: "Pacific Time (PST)" },
-          { label: "Mountain Time (MST)", value: "Mountain Time (MST)" },
-          { label: "Central Time (CST)", value: "Central Time (CST)" },
-          { label: "Eastern Time (EST)", value: "Eastern Time (EST)" },
-          { label: "UTC", value: "UTC" },
-        ],
-      }),
-    []
-  );
-
-  const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const [direction, setDirection] = useState<Direction>("neutral");
+  const [surface, setSurface] = useState<Surface>("console");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  function toggleTheme() {
-    setIsDark((prev) => !prev);
-  }
+  const activeDirection = DIRECTIONS.find((d) => d.id === direction)!;
 
   return (
     <div
-      className={cn(
-        "fixed inset-0 overflow-y-auto overscroll-contain bg-background text-foreground",
-        isDark ? "dp-dark dark" : "dp-light"
-      )}
-      style={{ height: "100dvh" }}
+      className={`dp-root dp-shell ${isDark ? "dp-dark" : "dp-light"}`}
+      data-direction={direction}
+      style={{ minHeight: "100dvh" }}
     >
-      {/* Theme toggle — fixed top-right */}
-      <button
-        onClick={toggleTheme}
-        className="fixed right-5 top-5 z-[200] flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground shadow-lg transition-colors hover:text-foreground"
-      >
-        {mounted && (isDark ? <Icon icon={Sun} size={16} /> : <Icon icon={Moon} size={16} />)}
-        <span className="font-mono">{mounted ? (isDark ? "LIGHT" : "DARK") : "..."}</span>
-      </button>
-
-      {/* Page header */}
-      <div className="border-b border-border bg-card px-6 pb-4 pt-6">
-        <h1 className="mb-1 text-lg font-bold text-foreground">
-          Design Preview — Current vs. New (Ark UI + Linear)
-        </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Side-by-side comparison. Left = current shadcn/Radix components. Right = target Ark UI + Linear design.
-          Both columns are fully interactive. Toggle dark/light in the top-right.
-        </p>
-      </div>
-
-      {/* Two-column comparison grid */}
-      <div className="grid grid-cols-2 gap-px bg-border">
-        {/* ═════════════════════════════════════════════════════════════════════
-            LEFT COLUMN — CURRENT (shadcn/Radix)
-            ═════════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col gap-4 bg-background p-4">
-          <ColumnHeader side="current" label="Current" sublabel="shadcn / Radix UI" />
-
-          <CurrentCell name="Buttons">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button>Add User</Button>
-              <Button variant="outline">Export</Button>
-              <Button variant="destructive">Delete</Button>
-              <Button size="sm">Small</Button>
-              <Button variant="outline" size="sm">Small Ghost</Button>
-            </div>
-          </CurrentCell>
-
-          <CurrentCell name="Dialog">
-            <p className="mb-2 text-sm text-muted-foreground">Click to open the current dialog.</p>
-            <Dialog open={currentDialogOpen} onOpenChange={setCurrentDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="destructive">Delete user account</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Delete user account?</DialogTitle>
-                  <DialogDescription>
-                    This will permanently remove David Santos and all associated data. This action cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex justify-end gap-2">
-                  <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
-                  <DialogClose asChild><Button variant="destructive" size="sm">Delete account</Button></DialogClose>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CurrentCell>
-
-          <CurrentCell name="Tabs">
-            <Tabs value={currentTabsValue} onValueChange={setCurrentTabsValue}>
-              <TabsList variant="line">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              </TabsList>
-              <TabsContent value="overview" className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-                <strong className="text-foreground">Overview</strong> — summary stats and quick actions.
-              </TabsContent>
-              <TabsContent value="tasks" className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-                <strong className="text-foreground">Tasks</strong> — 24 active tasks across 8 locations.
-              </TabsContent>
-              <TabsContent value="analytics" className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-                <strong className="text-foreground">Analytics</strong> — completion trends, last 7 days.
-              </TabsContent>
-            </Tabs>
-          </CurrentCell>
-
-          <CurrentCell name="Badges">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge>Default</Badge>
-              <Badge variant="secondary">Secondary</Badge>
-              <Badge variant="destructive">Destructive</Badge>
-              <Badge variant="outline">Outline</Badge>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">Pill-shaped, background-filled.</p>
-          </CurrentCell>
-
-          <CurrentCell name="KPI Cards">
-            <div className="grid grid-cols-3 gap-2">
-              <Card className="gap-2 p-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total ARLs</span>
-                <span className="font-mono text-xl font-bold text-foreground">12</span>
-                <Badge variant="secondary" className="w-fit">3 active</Badge>
-              </Card>
-              <Card className="gap-2 border-destructive/30 p-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inactive</span>
-                <span className="font-mono text-xl font-bold text-destructive">2</span>
-                <Badge variant="destructive" className="w-fit">Needs review</Badge>
-              </Card>
-              <Card className="gap-2 p-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Locations</span>
-                <span className="font-mono text-xl font-bold text-foreground">8</span>
-                <Badge variant="secondary" className="w-fit">All online</Badge>
-              </Card>
-            </div>
-          </CurrentCell>
-
-          <CurrentCell name="Input + Label">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="current-input">Display name</Label>
-              <Input id="current-input" defaultValue="David Santos" />
-            </div>
-          </CurrentCell>
+      <div className="dp-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 700 }}>Design Preview</span>
+          <div className="dp-segctl">
+            <button className="dp-segctl-btn" data-active={surface === "console"} onClick={() => setSurface("console")}>ARL Console</button>
+            <button className="dp-segctl-btn" data-active={surface === "kiosk"} onClick={() => setSurface("kiosk")}>Main Dashboard (Kiosk)</button>
+          </div>
         </div>
-
-        {/* ═════════════════════════════════════════════════════════════════════
-            RIGHT COLUMN — NEW (Ark UI + Linear)
-            ═════════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col gap-4 bg-[var(--dp-bg)] p-4">
-          <ColumnHeader side="new" label="New" sublabel="Ark UI + Linear" />
-
-          <NewCell name="Buttons">
-            <div className="flex flex-wrap items-center gap-2">
-              <button className="dp-btn dp-btn-primary">Add User</button>
-              <button className="dp-btn dp-btn-ghost">Export</button>
-              <button className="dp-btn dp-btn-destructive">Delete</button>
-              <button className="dp-btn dp-btn-primary dp-btn-sm">Small</button>
-              <button className="dp-btn dp-btn-ghost dp-btn-sm">Small Ghost</button>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="dp-btn-icon"><Icon icon={PencilSimple} size={16} /></button>
-              <button className="dp-btn-icon"><Icon icon={Copy} size={16} /></button>
-              <button className="dp-btn-icon dp-btn-icon-danger"><Icon icon={Trash} size={16} /></button>
-              <button className="dp-btn-icon"><Icon icon={DotsThreeVertical} size={16} /></button>
-            </div>
-          </NewCell>
-
-          <NewCell name="Dialog">
-            <p className="text-sm text-[var(--dp-text-secondary)]">Click to open the new Ark UI dialog.</p>
-            <button className="dp-btn dp-btn-destructive" onClick={() => setArkDialogOpen(true)}>
-              Delete user account
-            </button>
-          </NewCell>
-
-          <NewCell name="Tabs">
-            <ArkTabs.Root defaultValue="overview" className="flex flex-col gap-3">
-              <ArkTabs.List className="flex gap-0 border-b border-[var(--dp-border)]">
-                <ArkTabs.Trigger value="overview" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Overview</ArkTabs.Trigger>
-                <ArkTabs.Trigger value="tasks" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Tasks</ArkTabs.Trigger>
-                <ArkTabs.Trigger value="analytics" className="dp-tab" _data-selected={{ className: "dp-tab-active" }}>Analytics</ArkTabs.Trigger>
-              </ArkTabs.List>
-              <ArkTabs.Content value="overview" className="dp-tab-content" _data-selected={{ className: "dp-tab-content-active" }}>
-                <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
-              </ArkTabs.Content>
-              <ArkTabs.Content value="tasks" className="dp-tab-content" _data-selected={{ className: "dp-tab-content-active" }}>
-                <strong className="text-[var(--dp-text)]">Tasks</strong> — 24 active tasks across 8 locations.
-              </ArkTabs.Content>
-              <ArkTabs.Content value="analytics" className="dp-tab-content" _data-selected={{ className: "dp-tab-content-active" }}>
-                <strong className="text-[var(--dp-text)]">Analytics</strong> — completion trends, last 7 days.
-              </ArkTabs.Content>
-            </ArkTabs.Root>
-          </NewCell>
-
-          <NewCell name="Badges">
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="dp-badge"><span className="dp-badge-dot dp-dot-green" /> Online</span>
-              <span className="dp-badge"><span className="dp-badge-dot dp-dot-amber" /> Reconnecting</span>
-              <span className="dp-badge"><span className="dp-badge-dot dp-dot-red" /> Offline</span>
-              <span className="dp-badge"><span className="dp-badge-dot dp-dot-teal" /> Remote active</span>
-              <span className="dp-badge"><span className="dp-badge-dot dp-dot-muted" /> Inactive</span>
-            </div>
-            <p className="text-xs text-[var(--dp-text-tertiary)]">Dot + plain-weight label, no pill background (§10).</p>
-          </NewCell>
-
-          <NewCell name="KPI Cards">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="dp-kpi-card">
-                <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
-                <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-text)]">12</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
-              </div>
-              <div className="dp-kpi-card dp-kpi-urgent">
-                <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
-                <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-brand)]">2</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
-              </div>
-              <div className="dp-kpi-card">
-                <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
-                <div className="mb-1 font-mono text-xl font-bold leading-none text-[var(--dp-text)]">8</div>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
-              </div>
-            </div>
-          </NewCell>
-
-          <NewCell name="Input + Label">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-[var(--dp-text)]" htmlFor="new-input">Display name</label>
-              <input id="new-input" className="dp-input" defaultValue="David Santos" />
-            </div>
-          </NewCell>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div className="dp-segctl">
+            {DIRECTIONS.map((d) => (
+              <button key={d.id} className="dp-segctl-btn" data-active={direction === d.id} onClick={() => setDirection(d.id)}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <button className="dp-icon-toggle" onClick={() => setIsDark((v) => !v)}>
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════
-          FULL-WIDTH Ark UI SECTION
-          ═════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[var(--dp-bg)] px-4 pb-10 pt-4">
-        <SectionDivider label="Ark UI Primitives — Switch · Slider · Accordion · Radio · Select · Checkbox · Tooltip" />
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {/* Switch */}
-          <NewCell name="Switch">
-            <div className="flex flex-col gap-2">
-              {[
-                { label: "Task notifications", idx: 0 },
-                { label: "Email digest", idx: 1 },
-                { label: "Auto-assign", idx: 2 },
-                { label: "Emergency alerts", idx: 3 },
-              ].map((item) => (
-                <div key={item.idx} className="dp-switch-row">
-                  <span className="text-sm font-semibold text-[var(--dp-text)]">{item.label}</span>
-                  <ArkSwitch.Root
-                    checked={arkSwitchStates[item.idx]}
-                    onCheckedChange={({ checked }) => setArkSwitchStates((p) => ({ ...p, [item.idx]: checked }))}
-                    className="dp-switch-track"
-                    _data-checked={{ className: "dp-switch-on" }}
-                  >
-                    <ArkSwitch.HiddenInput />
-                    <ArkSwitch.Thumb className="dp-switch-thumb" />
-                  </ArkSwitch.Root>
-                </div>
-              ))}
-            </div>
-          </NewCell>
-
-          {/* Slider */}
-          <NewCell name="Slider">
-            <div className="flex flex-col gap-4">
-              {[
-                { label: "Volume", min: 0, max: 100, idx: 0 },
-                { label: "Threshold", min: 0, max: 10, idx: 1 },
-                { label: "Timeout (min)", min: 1, max: 60, idx: 2 },
-              ].map((item) => (
-                <div key={item.idx} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[var(--dp-text-secondary)]">{item.label}</span>
-                    <span className="font-mono text-sm font-semibold text-[var(--dp-text)]">{arkSliderValues[item.idx]}</span>
-                  </div>
-                  <ArkSlider.Root
-                    min={item.min}
-                    max={item.max}
-                    value={[arkSliderValues[item.idx]]}
-                    onValueChange={({ value }) => setArkSliderValues((p) => ({ ...p, [item.idx]: value[0] }))}
-                    className="dp-slider-track-wrap"
-                  >
-                    <ArkSlider.Control className="dp-slider-control">
-                      <ArkSlider.Track className="dp-slider-track">
-                        <ArkSlider.Range className="dp-slider-fill" />
-                      </ArkSlider.Track>
-                      <ArkSlider.Thumb index={0} className="dp-slider-thumb">
-                        <ArkSlider.HiddenInput />
-                      </ArkSlider.Thumb>
-                    </ArkSlider.Control>
-                  </ArkSlider.Root>
-                </div>
-              ))}
-            </div>
-          </NewCell>
-
-          {/* Accordion */}
-          <NewCell name="Accordion">
-            <ArkAccordion.Root
-              value={arkAccordionValue}
-              onValueChange={({ value }) => setArkAccordionValue(value as string[])}
-              multiple
-              className="flex flex-col"
-            >
-              {[
-                { id: "plan", title: "Plan & Billing", body: "Current plan: Business · 8 locations · $240/mo." },
-                { id: "branding", title: "Branding", body: "Upload a logo, set display name, configure brand colors." },
-                { id: "domain", title: "Domain & Assets", body: "Custom domain mapping, SSL certificates, CDN config." },
-                { id: "timezone", title: "Timezone & Locale", body: "Default timezone for all locations. Individual locations can override." },
-              ].map((item) => (
-                <ArkAccordion.Item key={item.id} value={item.id} className="dp-accordion-item">
-                  <ArkAccordion.ItemTrigger className="dp-accordion-trigger">
-                    {item.title}
-                    <ArkAccordion.ItemIndicator className="dp-accordion-chevron">
-                      <Icon icon={CaretRight} size={12} />
-                    </ArkAccordion.ItemIndicator>
-                  </ArkAccordion.ItemTrigger>
-                  <ArkAccordion.ItemContent className="dp-accordion-content">
-                    <div className="dp-accordion-content-inner">{item.body}</div>
-                  </ArkAccordion.ItemContent>
-                </ArkAccordion.Item>
-              ))}
-            </ArkAccordion.Root>
-          </NewCell>
-
-          {/* Radio Group */}
-          <NewCell name="Radio Group">
-            <ArkRadioGroup.Root
-              value={arkRadioValue}
-              onValueChange={({ value }) => value && setArkRadioValue(value)}
-              className="flex flex-col gap-2"
-            >
-              {[
-                { value: "arl", label: "ARL Staff", desc: "Standard location access" },
-                { value: "manager", label: "Manager", desc: "Location-level admin" },
-                { value: "admin", label: "Admin", desc: "Full console access" },
-              ].map((item) => (
-                <ArkRadioGroup.Item
-                  key={item.value}
-                  value={item.value}
-                  className="dp-radio-item"
-                  _data-checked={{ className: "dp-radio-selected" }}
-                >
-                  <ArkRadioGroup.ItemHiddenInput />
-                  <ArkRadioGroup.Indicator className="dp-radio-indicator" />
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--dp-text)]">{item.label}</div>
-                    <div className="text-xs text-[var(--dp-text-tertiary)]">{item.desc}</div>
-                  </div>
-                </ArkRadioGroup.Item>
-              ))}
-            </ArkRadioGroup.Root>
-          </NewCell>
-
-          {/* Select */}
-          <NewCell name="Select">
-            <ArkSelect.Root
-              collection={timezones}
-              value={[arkSelectValue]}
-              onValueChange={({ value }) => value[0] && setArkSelectValue(value[0] as string)}
-              positioning={{ sameWidth: true }}
-            >
-              <ArkSelect.Control>
-                <ArkSelect.Trigger className="dp-select-trigger">
-                  <ArkSelect.ValueText>{arkSelectValue}</ArkSelect.ValueText>
-                  <ArkSelect.Indicator className="dp-select-chevron">
-                    <Icon icon={CaretDown} size={12} />
-                  </ArkSelect.Indicator>
-                </ArkSelect.Trigger>
-              </ArkSelect.Control>
-              <ArkSelect.Positioner className="dp-select-positioner">
-                <ArkSelect.Content className="dp-select-menu">
-                  {timezones.items.map((tz) => (
-                    <ArkSelect.Item key={tz.value} item={tz} className="dp-select-option">
-                      <ArkSelect.ItemText>{tz.label}</ArkSelect.ItemText>
-                      <ArkSelect.ItemIndicator className="dp-select-check">
-                        <Icon icon={Check} size={14} />
-                      </ArkSelect.ItemIndicator>
-                    </ArkSelect.Item>
-                  ))}
-                </ArkSelect.Content>
-              </ArkSelect.Positioner>
-            </ArkSelect.Root>
-          </NewCell>
-
-          {/* Checkbox */}
-          <NewCell name="Checkbox">
-            <div className="flex flex-col gap-2">
-              {checkboxLabels.map((label, idx) => (
-                <ArkCheckbox.Root
-                  key={idx}
-                  checked={arkCheckboxStates[idx]}
-                  onCheckedChange={({ checked }) => setArkCheckboxStates((p) => ({ ...p, [idx]: checked === true }))}
-                  className="dp-checkbox-group flex cursor-pointer items-center gap-2.5"
-                >
-                  <ArkCheckbox.HiddenInput />
-                  <ArkCheckbox.Control className="dp-checkbox">
-                    <ArkCheckbox.Indicator>
-                      <Icon icon={Check} size={12} />
-                    </ArkCheckbox.Indicator>
-                  </ArkCheckbox.Control>
-                  <span className="text-sm text-[var(--dp-text)]">{label}</span>
-                </ArkCheckbox.Root>
-              ))}
-            </div>
-          </NewCell>
-
-          {/* Tooltip */}
-          <NewCell name="Tooltip">
-            <div className="flex items-center gap-4 py-3">
-              <ArkTooltip.Root>
-                <ArkTooltip.Trigger className="dp-btn-icon">
-                  <Icon icon={GearSix} size={16} />
-                </ArkTooltip.Trigger>
-                <ArkTooltip.Positioner>
-                  <ArkTooltip.Content className="dp-tooltip">Settings</ArkTooltip.Content>
-                </ArkTooltip.Positioner>
-              </ArkTooltip.Root>
-              <ArkTooltip.Root>
-                <ArkTooltip.Trigger className="dp-btn-icon">
-                  <Icon icon={Bell} size={16} />
-                </ArkTooltip.Trigger>
-                <ArkTooltip.Positioner>
-                  <ArkTooltip.Content className="dp-tooltip">Notifications</ArkTooltip.Content>
-                </ArkTooltip.Positioner>
-              </ArkTooltip.Root>
-              <ArkTooltip.Root>
-                <ArkTooltip.Trigger className="dp-btn-icon">
-                  <Icon icon={SignOut} size={16} />
-                </ArkTooltip.Trigger>
-                <ArkTooltip.Positioner>
-                  <ArkTooltip.Content className="dp-tooltip">Sign out</ArkTooltip.Content>
-                </ArkTooltip.Positioner>
-              </ArkTooltip.Root>
-            </div>
-            <p className="text-xs text-[var(--dp-text-tertiary)]">Hover or keyboard-focus to reveal.</p>
-          </NewCell>
-        </div>
+      <div className="dp-legend" style={{ marginTop: 12 }}>
+        <strong>{activeDirection.label}</strong> — {activeDirection.blurb} Background, card, and text colors are identical
+        across all three options and are not the organization&apos;s theme-picker color.
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════
-          DESIGN DIRECTIONS — options for key decisions
-          ═════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[var(--dp-bg)] px-4 pb-14 pt-4">
-        <SectionDivider label="Design Directions — Pick One Per Decision" />
-
-        {/* ─── Primary action color ─── */}
-        <div className="mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
-            Decision: Primary action color
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            <NewCell name="A — Neutral / High-contrast">
-              <div className="flex flex-wrap gap-2">
-                <button className="dp-btn dp-btn-primary">Add User</button>
-                <button className="dp-btn dp-btn-primary dp-btn-sm">Save</button>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">
-                Dark-on-light / light-on-dark. Content-first — matches Linear, Vercel, Raycast. Lowest visual noise.
-              </p>
-            </NewCell>
-            <NewCell name="B — Brand Red (#e4002b)">
-              <div className="flex flex-wrap gap-2">
-                <button className="dp-btn dp-btn-brand">Add User</button>
-                <button className="dp-btn dp-btn-brand dp-btn-sm">Save</button>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">
-                Solid brand fill. High-visibility, consistent with the sidebar accent and urgency system already in the app.
-              </p>
-            </NewCell>
-            <NewCell name="C — Tinted Brand">
-              <div className="flex flex-wrap gap-2">
-                <button className="dp-btn dp-btn-tinted">Add User</button>
-                <button className="dp-btn dp-btn-tinted dp-btn-sm">Save</button>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">
-                Subtle red fill + brand text. Softer presence — good when the button sits near other high-contrast elements.
-              </p>
-            </NewCell>
-          </div>
-        </div>
-
-        {/* ─── Status badge style ─── */}
-        <div className="mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
-            Decision: Status badge style
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            <NewCell name="A — Dot + Label (current direction)">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-4">
-                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-green" /> Online</span>
-                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-amber" /> Reconnecting</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-4">
-                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-red" /> Offline</span>
-                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-teal" /> Remote active</span>
-                  <span className="dp-badge"><span className="dp-badge-dot dp-dot-muted" /> Inactive</span>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Minimal — no pill background. Fits inline with text and dense rows without adding bulk.</p>
-            </NewCell>
-            <NewCell name="B — Tinted Pill">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="dp-pill-badge dp-pill-green">Online</span>
-                  <span className="dp-pill-badge dp-pill-amber">Reconnecting</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="dp-pill-badge dp-pill-red">Offline</span>
-                  <span className="dp-pill-badge dp-pill-teal">Remote active</span>
-                  <span className="dp-pill-badge dp-pill-muted">Inactive</span>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Filled tinted pill. More scannable in dense tables — color occupies more visual area.</p>
-            </NewCell>
-            <NewCell name="C — Outlined Pill">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="dp-outline-badge dp-outline-green">Online</span>
-                  <span className="dp-outline-badge dp-outline-amber">Reconnecting</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="dp-outline-badge dp-outline-red">Offline</span>
-                  <span className="dp-outline-badge dp-outline-teal">Remote active</span>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Border + color text, no fill. More formal — works well on white card surfaces without competing with tinted elements.</p>
-            </NewCell>
-          </div>
-        </div>
-
-        {/* ─── KPI card hierarchy ─── */}
-        <div className="mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
-            Decision: KPI card hierarchy signal
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            <NewCell name="A — Uniform + border tint (current)">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="dp-kpi-card">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">12</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
-                </div>
-                <div className="dp-kpi-card dp-kpi-urgent">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-brand)]">2</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
-                </div>
-                <div className="dp-kpi-card">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">8</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Urgency via border tint + metric color only. Clean but the signal is subtle.</p>
-            </NewCell>
-            <NewCell name="B — Left accent border">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="dp-kpi-card dp-kpi-left-muted">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">12</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
-                </div>
-                <div className="dp-kpi-card dp-kpi-left-red">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">2</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
-                </div>
-                <div className="dp-kpi-card dp-kpi-left-muted">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-text)]">8</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Severity-scaled left border (REFACTOR-PLAN §7). Metric stays neutral — position and color are independent signals.</p>
-            </NewCell>
-            <NewCell name="C — Semantic value color">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="dp-kpi-card">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Total ARLs</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-emerald)]">12</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> 3 active</div>
-                </div>
-                <div className="dp-kpi-card">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Inactive</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-destructive)]">2</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-red" /> Needs review</div>
-                </div>
-                <div className="dp-kpi-card">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--dp-text-tertiary)]">Locations</div>
-                  <div className="font-mono text-lg font-bold text-[var(--dp-emerald)]">8</div>
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--dp-text-tertiary)]"><span className="dp-badge-dot dp-dot-green" /> All online</div>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Semantic color on the value itself. Most direct — can get noisy if many cards are simultaneously urgent.</p>
-            </NewCell>
-          </div>
-        </div>
-
-        {/* ─── Input style ─── */}
-        <div className="mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
-            Decision: Input field style
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            <NewCell name="A — Bordered (current)">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
-                  <input className="dp-input" defaultValue="David Santos" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
-                  <input className="dp-input" defaultValue="Pacific Time (PST)" />
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Border all around. Clear field boundary — good default for multi-field forms.</p>
-            </NewCell>
-            <NewCell name="B — Underline only">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
-                  <input className="dp-input-underline" defaultValue="David Santos" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
-                  <input className="dp-input-underline" defaultValue="Pacific Time (PST)" />
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Less chrome. Works well on settings pages with a lot of inline editing.</p>
-            </NewCell>
-            <NewCell name="C — Filled surface">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Display name</label>
-                  <input className="dp-input-filled" defaultValue="David Santos" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-[var(--dp-text)]">Timezone</label>
-                  <input className="dp-input-filled" defaultValue="Pacific Time (PST)" />
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Elevated fill, borderless until focus. Blends with the card surface — feels embedded rather than inserted.</p>
-            </NewCell>
-          </div>
-        </div>
-
-        {/* ─── Tab navigation style ─── */}
-        <div className="mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-[var(--dp-text-secondary)]">
-            Decision: Tab navigation style
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            <NewCell name="A — Underline (current direction)">
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-0 border-b border-[var(--dp-border)]">
-                  <button className="dp-tab dp-tab-active">Overview</button>
-                  <button className="dp-tab">Tasks</button>
-                  <button className="dp-tab">Analytics</button>
-                </div>
-                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
-                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Bottom-border indicator. Clean on any surface. Used by the existing shadcn tabs.</p>
-            </NewCell>
-            <NewCell name="B — Segmented control">
-              <div className="flex flex-col gap-3">
-                <div className="dp-tabs-pill-list">
-                  <button className="dp-tab-pill dp-tab-pill-active">Overview</button>
-                  <button className="dp-tab-pill">Tasks</button>
-                  <button className="dp-tab-pill">Analytics</button>
-                </div>
-                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
-                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">iOS-style pill on a muted track. Immediately reads as mutually exclusive — good for switching views, not sub-pages.</p>
-            </NewCell>
-            <NewCell name="C — Top accent border">
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-0 border-b border-[var(--dp-border)]">
-                  <button className="dp-tab-top dp-tab-top-active">Overview</button>
-                  <button className="dp-tab-top">Tasks</button>
-                  <button className="dp-tab-top">Analytics</button>
-                </div>
-                <div className="rounded-[var(--dp-radius)] border border-[var(--dp-border)] bg-[var(--dp-surface-1)] p-3 text-sm text-[var(--dp-text-secondary)]">
-                  <strong className="text-[var(--dp-text)]">Overview</strong> — summary stats and quick actions.
-                </div>
-              </div>
-              <p className="text-xs text-[var(--dp-text-tertiary)]">Brand-red top border on active. Stronger visual accent — draws the eye upward, which feels deliberate on dense pages.</p>
-            </NewCell>
-          </div>
-        </div>
-      </div>
-
-      {/* Ark UI Dialogs (portaled) */}
-      <ArkDialog.Root open={arkDialogOpen} onOpenChange={({ open }) => setArkDialogOpen(open)}>
-        <ArkDialog.Backdrop className="dp-dialog-backdrop" />
-        <ArkDialog.Positioner className="dp-dialog-positioner">
-          <ArkDialog.Content className="dp-dialog">
-            <ArkDialog.Title className="dp-dialog-title">Delete user account?</ArkDialog.Title>
-            <ArkDialog.Description className="dp-dialog-desc">
-              This will permanently remove David Santos and all associated data. This action cannot be undone.
-            </ArkDialog.Description>
-            <div className="flex justify-end gap-2">
-              <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
-              <ArkDialog.CloseTrigger className="dp-btn dp-btn-destructive dp-btn-sm">Delete account</ArkDialog.CloseTrigger>
-            </div>
-            <ArkDialog.CloseTrigger className="dp-dialog-close"><Icon icon={X} size={16} /></ArkDialog.CloseTrigger>
-          </ArkDialog.Content>
-        </ArkDialog.Positioner>
-      </ArkDialog.Root>
-
-      <ArkDialog.Root open={arkFormDialogOpen} onOpenChange={({ open }) => setArkFormDialogOpen(open)}>
-        <ArkDialog.Backdrop className="dp-dialog-backdrop" />
-        <ArkDialog.Positioner className="dp-dialog-positioner">
-          <ArkDialog.Content className="dp-dialog">
-            <ArkDialog.Title className="dp-dialog-title">Edit profile</ArkDialog.Title>
-            <ArkDialog.Description className="dp-dialog-desc">Update the display name for this user.</ArkDialog.Description>
-            <input className="dp-input" type="text" defaultValue="David Santos" placeholder="Display name" />
-            <div className="flex justify-end gap-2">
-              <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
-              <ArkDialog.CloseTrigger className="dp-btn dp-btn-primary dp-btn-sm">Save changes</ArkDialog.CloseTrigger>
-            </div>
-            <ArkDialog.CloseTrigger className="dp-dialog-close"><Icon icon={X} size={16} /></ArkDialog.CloseTrigger>
-          </ArkDialog.Content>
-        </ArkDialog.Positioner>
-      </ArkDialog.Root>
+      {surface === "console" ? <ConsoleMockup direction={direction} /> : <KioskMockup />}
     </div>
   );
 }
