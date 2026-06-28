@@ -25,6 +25,16 @@ interface Props {
 export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
   const [filter, setFilter] = useState("");
 
+  const filteredLogs = logs.filter((log) => {
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return (
+      log.action.toLowerCase().includes(q) ||
+      log.user_name.toLowerCase().includes(q) ||
+      (log.details || "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -67,20 +77,80 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
         ) : logs.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No audit log entries found.</p>
         ) : (
-          <div className="space-y-1 max-h-96 overflow-y-auto">
-            {logs
-              .filter((log) => {
-                if (!filter) return true;
-                const q = filter.toLowerCase();
-                return log.action.toLowerCase().includes(q) ||
-                  log.user_name.toLowerCase().includes(q) ||
-                  (log.details || "").toLowerCase().includes(q);
-              })
-              .map((log) => (
+          <>
+            {/* Table — desktop (md:+). A literal audit log is a textbook
+                Section 11 case: same-shaped records (actor / action / details /
+                timestamp / IP) that a user scans to find a specific event.
+                Columns let the eye jump to "action" or "when" directly without
+                reading each blob from the left margin. */}
+            <div className="hidden md:block rounded-xl border border-border overflow-hidden">
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 z-10 bg-card">
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="px-3 py-2.5 text-left font-semibold">Actor</th>
+                      <th className="px-3 py-2.5 text-left font-semibold">Action</th>
+                      <th className="px-3 py-2.5 text-left font-semibold">Details</th>
+                      <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap">When</th>
+                      <th className="px-3 py-2.5 text-left font-semibold">IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+                          No entries match your filter.
+                        </td>
+                      </tr>
+                    ) : filteredLogs.map((log) => (
+                      <tr key={log.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "shrink-0 h-5 w-5 flex items-center justify-center rounded-md font-semibold",
+                              log.user_type === "arl"
+                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            )}>
+                              {log.user_type === "arl" ? "A" : "L"}
+                            </span>
+                            <span className="font-semibold text-foreground">{log.user_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className="rounded bg-muted px-2 py-1 font-mono text-muted-foreground whitespace-nowrap">
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="max-w-56 px-3 py-2.5">
+                          <span className="block truncate text-muted-foreground">
+                            {log.details || <span className="text-muted-foreground/50">—</span>}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
+                          {new Date(log.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5 text-muted-foreground">
+                          {log.ip_address && log.ip_address !== "unknown" ? log.ip_address : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Cards — mobile fallback, same data stacked */}
+            <div className="md:hidden space-y-1 max-h-96 overflow-y-auto">
+              {filteredLogs.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No entries match your filter.</p>
+              ) : filteredLogs.map((log) => (
                 <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-2 text-xs">
                   <div className={cn(
-                    "mt-1 shrink-0 h-5 w-5 flex items-center justify-center rounded-md text-xs font-semibold",
-                    log.user_type === "arl" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                    "mt-1 shrink-0 h-5 w-5 flex items-center justify-center rounded-md font-semibold",
+                    log.user_type === "arl"
+                      ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                   )}>
                     {log.user_type === "arl" ? "A" : "L"}
                   </div>
@@ -90,14 +160,15 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
                       <span className="rounded bg-muted px-2 py-1 font-mono text-muted-foreground">{log.action}</span>
                       {log.details && <span className="text-muted-foreground truncate">{log.details}</span>}
                     </div>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="mt-1 flex items-center gap-3 text-muted-foreground">
                       <span>{new Date(log.created_at).toLocaleString()}</span>
                       {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
                     </div>
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </motion.div>

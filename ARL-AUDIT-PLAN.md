@@ -226,9 +226,7 @@ actually want."
   concatenated into one line instead of columns.
 - `scheduled-meetings.tsx:417-420` — host/date/time/code metadata wraps
   instead of aligning; same-shaped, comparable records.
-- `data-management-audit-log.tsx:79-80` — the clearest case of all: a
-  literal audit log (actor/action/timestamp/IP per row) rendered as
-  styled divs instead of a table. Textbook Section 11 case.
+- ~~`data-management-audit-log.tsx:79-80`~~ — **done.** Real `<table>` on `md:` and up (Actor / Action / Details / When / IP columns, sticky `<thead>`, scrolls within `max-h-96`); stacked-card fallback on mobile. Extracted `filteredLogs` variable to drive both views from one filter computation. Updated actor-type badge from flat `bg-purple-100 dark:bg-purple-950` to opacity-based `bg-purple-500/10`.
 - `meeting-analytics.tsx`'s "Recent Meetings" list (`:411-444`) — same
   tell, and notably **inconsistent with itself**: this exact file's
   participant detail view (`:193-245`) already correctly uses a real
