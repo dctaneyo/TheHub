@@ -430,6 +430,18 @@ color for a new meaning; reuse before adding.
 | Emerald | Success / online / connected | Tailwind `emerald-*` |
 | Teal | Remote mirroring/viewing session is active | `--hub-teal`, `--hub-teal-light` |
 
+**Decided: primary action color is a chromatic neutral, not brand red.**
+Buttons, selected states, and other primary-action chrome use the
+highest-contrast neutral available — near-black on light, near-white on
+dark — never `--hub-red` or any other chromatic color. This was chosen
+over a solid-red or tinted-red primary (both prototyped in
+`/design-preview`, "Direction A — Neutral" vs. B/C) because red is
+already claimed above for brand/urgent/destructive/active-selected —
+every chromatic primary button would have spent that same signal on
+routine "Save"/"Add" actions, weakening red's meaning everywhere else.
+Reserve chromatic color for data; reserve the primary-action slot for
+the neutral. (Matches Linear, Stripe, Raycast.)
+
 ---
 
 ## 3. Spacing & Shape
