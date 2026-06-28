@@ -796,7 +796,7 @@ recorded with the alternatives it beat:
 
 | Primitive | Decision | Why |
 |---|---|---|
-| Tabs | **Underline** indicator | Matches the existing shadcn "line" variant already used on real ARL screens — ports as-is, no visual change. Beat segmented-pill and top-accent-border. |
+| Tabs | **Underline** indicator | Correction: an earlier pass claimed this matched a "line" variant already in production — false, re-verified directly, every real Tabs usage renders shadcn's default segmented-pill style and the line variant has zero production usage. Underline was re-confirmed anyway (lower visual noise) with that premise corrected — it's a real visual change to `tenant-settings.tsx`, `meetings/page.tsx`, and `user-management.tsx`'s hand-rolled switcher, not a no-op port. Beat segmented-pill (what's actually live today) and top-accent-border. |
 | Text inputs | **Bordered** (full border) | Matches the existing shadcn Input default already in production — ports as-is. Beat filled-surface and underline-only. |
 | Select (replaces all 7 native `<select>`s) | **Ark Select everywhere**, including the kiosk | One consistent custom-styled dropdown on every surface beats relying on the OS picker on touch — accepted the trade-off of losing the native touch picker for visual consistency. |
 | Dropdown/kebab menus (replaces 3 ad hoc implementations) | **Ark Menu**, one shared primitive | Was hand-rolled three separate times with no shared keyboard/focus handling; one primitive styled once matches the Dialog/Tabs/Select approach. |
