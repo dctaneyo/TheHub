@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { Select as SelectPrimitive } from "@ark-ui/react/select"
+import type { SelectRootComponentProps } from "@ark-ui/react/select"
+import type { CollectionItem } from "@ark-ui/react/collection"
 import { Check, ChevronDown } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
@@ -12,7 +14,10 @@ import { cn } from "@/lib/utils"
 // separate import for it.
 export { createListCollection } from "@ark-ui/react/collection"
 
-function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
+// Generic, matching Ark's own SelectRoot — without this, TS collapses the
+// collection's item type to `unknown` and every call site's `collection`
+// prop fails to typecheck against its own createListCollection() result.
+function Select<T extends CollectionItem>({ ...props }: SelectRootComponentProps<T>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 

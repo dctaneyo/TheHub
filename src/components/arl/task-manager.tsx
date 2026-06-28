@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
   ClipboardList,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -164,6 +165,10 @@ export function TaskManager() {
     }
   };
 
+  const locationOptions = useMemo(() => createListCollection({
+    items: [{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l.id, label: l.name }))],
+  }), [locations]);
+
   if (loading) {
     return <TaskListSkeleton />;
   }
@@ -181,16 +186,20 @@ export function TaskManager() {
           <p className="text-xs text-muted-foreground">{filteredTasks.length} of {tasks.length} tasks</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={filterLocationId}
-            onChange={(e) => setFilterLocationId(e.target.value)}
-            className="rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground"
+          <Select
+            collection={locationOptions}
+            value={[filterLocationId]}
+            onValueChange={(d) => setFilterLocationId(d.value[0])}
           >
-            <option value="all">All Locations</option>
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-auto text-xs py-2">
+              <SelectValueText />
+            </SelectTrigger>
+            <SelectContent>
+              {locationOptions.items.map((item) => (
+                <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <button
             onClick={() => setShowTemplates((t) => !t)}
             className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"

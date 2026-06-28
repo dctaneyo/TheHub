@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ClipboardList,
   CalendarDays,
@@ -23,6 +23,7 @@ import {
   isSameDay,
   isToday,
 } from "date-fns";
+import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface CalTask {
@@ -123,6 +124,10 @@ export function ArlCalendar() {
     ? tasks
     : tasks.filter((t) => t.locationId === null || t.locationId === filterLocationId);
 
+  const locationOptions = useMemo(() => createListCollection({
+    items: [{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l.id, label: `${l.name} (#${l.storeNumber})` }))],
+  }), [locations]);
+
   const getTasksForDate = (date: Date) =>
     filteredTasks
       .filter((t) => t.showInCalendar !== false && calTaskApplies(t, date))
@@ -146,16 +151,20 @@ export function ArlCalendar() {
       {/* Location filter */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-semibold text-muted-foreground shrink-0">Filter by location:</label>
-        <select
-          value={filterLocationId}
-          onChange={(e) => setFilterLocationId(e.target.value)}
-          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
+        <Select
+          collection={locationOptions}
+          value={[filterLocationId]}
+          onValueChange={(d) => setFilterLocationId(d.value[0])}
         >
-          <option value="all">All Locations</option>
-          {locations.map((l) => (
-            <option key={l.id} value={l.id}>{l.name} (#{l.storeNumber})</option>
-          ))}
-        </select>
+          <SelectTrigger className="w-auto text-sm">
+            <SelectValueText />
+          </SelectTrigger>
+          <SelectContent>
+            {locationOptions.items.map((item) => (
+              <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex flex-1 gap-4 overflow-hidden flex-col md:flex-row">
