@@ -250,32 +250,24 @@ the user flagged directly — "some dropdown menus... using the browser's
 built-in library, not Ark UI"). No native `<dialog>` or `window.confirm`/
 `alert` found in the console — those are clean. Three categories remain:
 
-**Native `<select>` (6 in-console, 2 out-of-scope):**
+**Native `<select>` — done, all 7 in-console sites migrated to Ark Select:**
 
-| File:line | Used for |
-|---|---|
-| `task-manager.tsx:172` | Task filter |
-| `tenant-settings.tsx:476` | Timezone picker |
-| `arl-calendar.tsx:149` | Calendar filter |
-| `user-management.tsx:639` | Role/location field in a form |
-| `task-form-modal.tsx:436` | Form field |
-| `scheduled-meetings.tsx:321` | Recurring-meeting field |
-| ~~`src/app/tasks/page.tsx:143,150`~~ | Out of scope — this route is the kiosk surface, not the console |
+`task-manager.tsx`, `tenant-settings.tsx`, `arl-calendar.tsx`,
+`user-management.tsx`, `task-form-modal.tsx`, `scheduled-meetings.tsx`,
+and `notification-tester.tsx` (discovered mid-pass, reachable from Data
+Management — not in the original 6-site inventory). `src/app/tasks/page.tsx`'s
+2 sites remain out of scope — that route is the kiosk surface, not the
+console. Confirmed via a final `grep -rn "<select"` across the console:
+zero remain.
 
-**Ad hoc custom dropdowns (real custom-built menus, not native `<select>`,
-that should move to Ark Menu) — exactly three, confirmed by checking every
-`MoreVertical`-triggered menu in the console:**
+**Ad hoc custom dropdowns — done, all four moved to Ark Menu:**
 
-| File:line | What it is |
-|---|---|
-| `messaging.tsx:300` | Chat header overflow (Group Info / Search) |
-| `user-management.tsx:413` | Row overflow, ARLs tab (Permissions / Delete) |
-| `user-management.tsx:501` | Row overflow, Locations tab |
-| `arl/layout.tsx:164` | Quick Settings popover (Connection / Theme / Notifications) |
-
-(Correction: an earlier draft of this plan claimed `meetings/page.tsx`
-had an overflow menu needing this fix — re-checked, it doesn't have one
-at all. Removed from this list.)
+`messaging.tsx` (chat header overflow), `user-management.tsx` (both
+row-overflow menus), `arl/layout.tsx` (Quick Settings popover, which also
+gained a "Notification Settings" entry when the bell was removed from
+desktop). (Correction: an earlier draft of this plan claimed
+`meetings/page.tsx` had an overflow menu needing this fix — re-checked,
+it doesn't have one at all.)
 
 **Native checkboxes (5) — lower priority, not previously decided, flagged
 for consistency with "no un-styled native control" now that the sweep is
@@ -328,15 +320,16 @@ reasoning as the rest of this plan.
    whole fix. `user-management.tsx`'s hand-rolled switcher (never imported
    `Tabs` at all) needed an actual per-file change, now on the shared
    component, controlled via value/onValueChange.
-6. **Native `<select>` → Ark Select, in-console (6 sites)** — do
-   per-file alongside other work on that file where possible
-   (`task-form-modal.tsx` and `scheduled-meetings.tsx` already have other
-   fixes queued in this plan; `tenant-settings.tsx`, `task-manager.tsx`,
-   `arl-calendar.tsx`, `user-management.tsx` can be done standalone).
+6. ~~**Native `<select>` → Ark Select, in-console**~~ — **done.** All 7
+   sites (the original 6 plus `notification-tester.tsx`, discovered
+   mid-pass — not in the original audit, reachable from Data Management).
+   Also fixed a real bug surfaced along the way: `select.tsx`'s wrapper
+   wasn't generic, so every `collection` prop failed to typecheck against
+   its own `createListCollection()` result — fixed once, benefits every
+   site. Native checkboxes (5, lower-priority per this plan) still open.
 7. **`scheduled-meetings.tsx`** table conversion — same pattern as the
    three screens that already got this fix, lowest-risk of the remaining
-   items. Bundle with its native `<select>`/checkbox migration (#6) since
-   it's the same file.
+   items. Its native `<select>`/checkbox migration is already done.
 8. **Go Live broadcast bugs** — functional, blocks a real feature;
    sequence based on how urgent the broadcast feature is to ship, not on
    design-system priority.
