@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Menu,
+  Menu as MenuIcon,
   Bell,
   BellOff,
   CheckCircle2,
@@ -14,6 +14,7 @@ import {
   Sun,
   Monitor,
   MoreVertical,
+  Settings,
 } from "@/lib/icons";
 import { useAuth } from "@/lib/auth-context";
 import { OfflineIndicator } from "@/components/offline-indicator";
@@ -26,6 +27,8 @@ import { useTheme } from "next-themes";
 import { ArlSidebar, navItems } from "@/components/arl/arl-sidebar";
 import { GlobalSearch } from "@/components/global-search";
 import { NotificationBell } from "@/components/notification-bell";
+import { NotificationSettingsPanel } from "@/components/arl/notification-settings-panel";
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { PageIndicator } from "@/components/arl/page-indicator";
 import {
   ArlDashboardProvider,
@@ -77,20 +80,12 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
     notifToast,
   } = useArlDashboard();
 
-  const [showQuickSettings, setShowQuickSettings] = useState(false);
-  const quickSettingsRef = useRef<HTMLDivElement>(null);
-
-  // Close quick settings on click outside
-  useEffect(() => {
-    if (!showQuickSettings) return;
-    const handleClick = (e: MouseEvent) => {
-      if (quickSettingsRef.current && !quickSettingsRef.current.contains(e.target as Node)) {
-        setShowQuickSettings(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showQuickSettings]);
+  // Opens NotificationSettingsPanel directly — the only entry point to it
+  // used to be through NotificationBell's dropdown, which no longer renders
+  // on desktop (Section 18: nothing the bell showed isn't already visible
+  // elsewhere on desktop). This keeps the settings panel itself reachable
+  // from either device, per the decided direction.
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   return (
     <div className="flex h-screen h-dvh w-screen overflow-hidden bg-[var(--background)]" style={{ overscrollBehavior: "none" }}>
@@ -139,7 +134,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 onClick={() => setSidebarOpen(true)}
                 className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground"
               >
-                <Menu className="h-4.5 w-4.5" />
+                <MenuIcon className="h-4.5 w-4.5" />
               </button>
             )}
             <h2 className="text-lg font-semibold text-foreground hidden sm:block">
@@ -153,127 +148,119 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
               else if (type === "form") navigateToView("forms");
               else if (type === "location") navigateToView("locations");
             }} />
-            <NotificationBell />
-            {/* Quick Settings — combines connection, theme, and push notification controls */}
-            <div className="relative" ref={quickSettingsRef}>
-              <button
-                onClick={() => setShowQuickSettings((v) => !v)}
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors"
-                title="Settings"
-              >
+            {/* NotificationBell only earns its place on mobile/PWA, where
+                the point of a bell (surfacing things you'd otherwise miss)
+                is real. On desktop, everything it would show is already
+                visible elsewhere in the app (Section 18). */}
+            {isMobileOrTablet && <NotificationBell />}
+
+            {/* Quick Settings — Connection Status (changes constantly) is a
+                plain status row; Theme/Notifications (rarely touched) are
+                grouped below a separator (Section 12 cadence grouping). */}
+            <Menu>
+              <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors outline-none">
                 <MoreVertical className="h-4.5 w-4.5" />
-                {/* Connection status dot */}
                 <div className={cn(
                   "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
                   isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
                 )} />
-              </button>
-              <AnimatePresence>
-                {showQuickSettings && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 z-[200] w-56 rounded-xl border border-border bg-card shadow-lg overflow-hidden"
-                  >
-                    {/* Connection Status */}
-                    <div className="px-3 py-2 border-b border-border">
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "flex h-7 w-7 items-center justify-center rounded-lg",
-                          isOnline && socketConnected ? "bg-emerald-100 dark:bg-emerald-950/50" : "bg-red-100 dark:bg-red-950/50"
-                        )}>
-                          {isOnline && socketConnected ? (
-                            <Wifi className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <WifiOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground">
-                            {isOnline && socketConnected ? "Connected" : "Offline"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {isOnline && socketConnected
-                              ? sessionCode
-                                ? <>
-                                    <span className="font-mono font-semibold tracking-wider">#{sessionCode}</span>
-                                    {sessionCount > 1 && <span> · +{sessionCount - 1} other{sessionCount > 2 ? "s" : ""}</span>}
-                                  </>
-                                : "Server reachable"
-                              : "Check your connection"}
-                          </p>
-                        </div>
-                        <div className={cn(
-                          "h-2 w-2 rounded-full",
-                          isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
-                        )} />
-                      </div>
+              </MenuTrigger>
+              <MenuContent className="w-64">
+                {/* Connection Status — informational, not an action */}
+                <div className="px-3 py-2 mb-1 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-lg",
+                      isOnline && socketConnected ? "bg-emerald-100 dark:bg-emerald-950/50" : "bg-red-100 dark:bg-red-950/50"
+                    )}>
+                      {isOnline && socketConnected ? (
+                        <Wifi className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <WifiOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                      )}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">
+                        {isOnline && socketConnected ? "Connected" : "Offline"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isOnline && socketConnected
+                          ? sessionCode
+                            ? <>
+                                <span className="font-mono font-semibold tracking-wider">#{sessionCode}</span>
+                                {sessionCount > 1 && <span> · +{sessionCount - 1} other{sessionCount > 2 ? "s" : ""}</span>}
+                              </>
+                            : "Server reachable"
+                          : "Check your connection"}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      "h-2 w-2 rounded-full",
+                      isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
+                    )} />
+                  </div>
+                </div>
 
-                    {/* Theme Toggle */}
-                    <button
-                      onClick={cycleTheme}
-                      className="w-full px-3 py-2 border-b border-border flex items-center gap-2 hover:bg-accent transition-colors"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                        {theme === "dark" ? (
-                          <Moon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                        ) : theme === "light" ? (
-                          <Sun className="h-3.5 w-3.5 text-amber-500" />
-                        ) : (
-                          <Monitor className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-xs font-semibold text-foreground">Theme</p>
-                        <p className="text-xs text-muted-foreground capitalize">{theme || "system"}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Tap to cycle</span>
-                    </button>
-
-                    {/* Push Notifications */}
-                    {pushSubscription ? (
-                      <div className="px-3 py-2 flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
-                          <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400">Enabled</p>
-                        </div>
-                        <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      </div>
-                    ) : notificationPermission === "denied" ? (
-                      <div className="px-3 py-2 flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-950/50">
-                          <BellOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-xs text-red-600 dark:text-red-400">Blocked by browser</p>
-                        </div>
-                      </div>
+                <MenuItem value="theme" onClick={cycleTheme} className="py-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                    {theme === "dark" ? (
+                      <Moon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                    ) : theme === "light" ? (
+                      <Sun className="h-3.5 w-3.5 text-amber-500" />
                     ) : (
-                      <button
-                        onClick={() => { requestNotificationPermission(); setShowQuickSettings(false); }}
-                        className="w-full px-3 py-2 flex items-center gap-2 hover:bg-accent transition-colors"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                          <Bell className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="text-xs font-semibold text-foreground">Notifications</p>
-                          <p className="text-xs text-muted-foreground">Tap to enable</p>
-                        </div>
-                      </button>
+                      <Monitor className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                     )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-foreground">Theme</p>
+                    <p className="font-normal text-muted-foreground capitalize">{theme || "system"}</p>
+                  </div>
+                  <span className="font-normal text-muted-foreground">Tap to cycle</span>
+                </MenuItem>
 
-                  </motion.div>
+                {pushSubscription ? (
+                  <div className="px-3 py-2 flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
+                      <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">Notifications</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">Enabled</p>
+                    </div>
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  </div>
+                ) : notificationPermission === "denied" ? (
+                  <div className="px-3 py-2 flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-950/50">
+                      <BellOff className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">Notifications</p>
+                      <p className="text-xs text-red-600 dark:text-red-400">Blocked by browser</p>
+                    </div>
+                  </div>
+                ) : (
+                  <MenuItem value="enable-push" onClick={requestNotificationPermission} className="py-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                      <Bell className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-foreground">Notifications</p>
+                      <p className="font-normal text-muted-foreground">Tap to enable</p>
+                    </div>
+                  </MenuItem>
                 )}
-              </AnimatePresence>
-            </div>
+
+                <MenuSeparator />
+
+                <MenuItem value="notification-settings" onClick={() => setShowNotificationSettings(true)} className="py-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                    <Settings className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <p className="text-foreground">Notification Settings</p>
+                </MenuItem>
+              </MenuContent>
+            </Menu>
 
           </div>
           </header>
@@ -321,6 +308,11 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
           />
         )}
       </div>
+
+      <NotificationSettingsPanel
+        open={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+      />
 
       {/* Broadcast Studio */}
       <BroadcastStudio

@@ -75,13 +75,12 @@ const categories = [
   },
 ];
 
+// "In-App"/bell delivery is intentionally not a configurable option here —
+// the desktop bell was removed (DESIGN.md §18: nothing it showed wasn't
+// already visible elsewhere on desktop), and this panel is now about what
+// reaches your phone, not what shows in an in-app bell. `inAppNotifications`
+// stays in the data model (still saved/sent) but has no toggle anymore.
 const deliveryMethods = [
-  {
-    id: "inApp",
-    title: "In-App Notifications",
-    icon: "🔔",
-    description: "Show in notification bell within the app",
-  },
   {
     id: "push",
     title: "Browser Push",
@@ -443,14 +442,9 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             label={method.title}
             description={method.description}
             icon={method.icon}
-            checked={
-              method.id === "inApp" ? preferences.inAppNotifications :
-              method.id === "push" ? preferences.pushNotifications :
-              preferences.emailNotifications
-            }
+            checked={method.id === "push" ? preferences.pushNotifications : preferences.emailNotifications}
             onChange={(checked) => {
-              if (method.id === "inApp") handleToggle("inAppNotifications", checked);
-              else if (method.id === "push") handleToggle("pushNotifications", checked);
+              if (method.id === "push") handleToggle("pushNotifications", checked);
               else handleToggle("emailNotifications", checked);
             }}
           />
@@ -488,7 +482,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                   Notification Settings
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Customize what notifications you receive
+                  Choose what gets pushed to your phone
                 </p>
               </div>
               <button
