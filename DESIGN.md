@@ -743,6 +743,23 @@ destructive action button, an empty state) and diff its actual class list
 between two unrelated files. Any unexplained difference is drift, not a
 deliberate per-screen decision.
 
+**Decided: component primitives are Ark UI, not shadcn/Radix**, styled
+once with custom CSS rather than an opinionated pre-built theme (prototyped
+across both surfaces at `/design-preview`). Concrete decisions, each
+recorded with the alternatives it beat:
+
+| Primitive | Decision | Why |
+|---|---|---|
+| Tabs | **Underline** indicator | Matches the existing shadcn "line" variant already used on real ARL screens — ports as-is, no visual change. Beat segmented-pill and top-accent-border. |
+| Text inputs | **Bordered** (full border) | Matches the existing shadcn Input default already in production — ports as-is. Beat filled-surface and underline-only. |
+| Select (replaces all 7 native `<select>`s) | **Ark Select everywhere**, including the kiosk | One consistent custom-styled dropdown on every surface beats relying on the OS picker on touch — accepted the trade-off of losing the native touch picker for visual consistency. |
+| Dropdown/kebab menus (replaces 3 ad hoc implementations) | **Ark Menu**, one shared primitive | Was hand-rolled three separate times with no shared keyboard/focus handling; one primitive styled once matches the Dialog/Tabs/Select approach. |
+| Dialog | Ark Dialog | Already prototyped; styled per Section 3's heavy-uniform radius, shadow reserved for this overlay. |
+| Status badges | No primitive — plain dot + label | Already specified in Section 10; doesn't need Ark, just the shared CSS class. |
+
+Migration of the live app's `src/components/ui/*.tsx` (currently shadcn/Radix)
+to these is not yet started — this is a decision record only.
+
 ---
 
 ## 17. Do Not Use

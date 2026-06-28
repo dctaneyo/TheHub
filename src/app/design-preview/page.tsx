@@ -90,15 +90,11 @@ function StatusBadge({ status, direction }: { status: Status; direction: Directi
   return <span className={`dp-badge-outline ${meta.outline}`}>{meta.label}</span>;
 }
 
-function tabListClass(direction: Direction) {
-  return direction === "neutral" ? "dp-tabs-underline-list" : direction === "brand" ? "dp-tabs-segmented-list" : "dp-tabs-top-list";
-}
-function tabTriggerClass(direction: Direction) {
-  return direction === "neutral" ? "dp-tab-underline" : direction === "brand" ? "dp-tab-segmented" : "dp-tab-top";
-}
-function inputClass(direction: Direction) {
-  return direction === "neutral" ? "dp-input-bordered" : direction === "brand" ? "dp-input-filled" : "dp-input-underline";
-}
+// Tabs (Underline) and Inputs (Bordered) are decided — DESIGN.md §15 — and
+// no longer vary with the primary-color direction below.
+const TAB_LIST_CLASS = "dp-tabs-underline-list";
+const TAB_TRIGGER_CLASS = "dp-tab-underline";
+const INPUT_CLASS = "dp-input-bordered";
 
 const locations = [
   { name: "Downtown — 5th Ave", region: "West", status: "online" as Status, lastSync: "2 min ago" },
@@ -127,10 +123,10 @@ function ConsoleMockup({ direction }: { direction: Direction }) {
   return (
     <div className="dp-page">
       <ArkTabs.Root value={tab} onValueChange={(d) => setTab(d.value)}>
-        <ArkTabs.List className={tabListClass(direction)}>
-          <ArkTabs.Trigger value="overview" className={tabTriggerClass(direction)}>Overview</ArkTabs.Trigger>
-          <ArkTabs.Trigger value="locations" className={tabTriggerClass(direction)}>Locations</ArkTabs.Trigger>
-          <ArkTabs.Trigger value="settings" className={tabTriggerClass(direction)}>Settings</ArkTabs.Trigger>
+        <ArkTabs.List className={TAB_LIST_CLASS}>
+          <ArkTabs.Trigger value="overview" className={TAB_TRIGGER_CLASS}>Overview</ArkTabs.Trigger>
+          <ArkTabs.Trigger value="locations" className={TAB_TRIGGER_CLASS}>Locations</ArkTabs.Trigger>
+          <ArkTabs.Trigger value="settings" className={TAB_TRIGGER_CLASS}>Settings</ArkTabs.Trigger>
         </ArkTabs.List>
 
         <ArkTabs.Content value="overview" className="dp-tab-content">
@@ -191,7 +187,7 @@ function ConsoleMockup({ direction }: { direction: Direction }) {
           <div className="dp-card" style={{ padding: 20, maxWidth: 360, display: "flex", flexDirection: "column", gap: 14 }}>
             <div className="dp-field">
               <label className="dp-label">Display name</label>
-              <input className={inputClass(direction)} defaultValue="Downtown — 5th Ave" />
+              <input className={INPUT_CLASS} defaultValue="Downtown — 5th Ave" />
             </div>
             <div className="dp-field">
               <label className="dp-label">Region</label>
@@ -238,7 +234,7 @@ function ConsoleMockup({ direction }: { direction: Direction }) {
             <ArkDialog.Description className="dp-dialog-desc">Add a location to this organization.</ArkDialog.Description>
             <div className="dp-field">
               <label className="dp-label">Name</label>
-              <input className={inputClass(direction)} placeholder="e.g. Westfield Mall" />
+              <input className={INPUT_CLASS} placeholder="e.g. Westfield Mall" />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <ArkDialog.CloseTrigger className="dp-btn dp-btn-ghost dp-btn-sm">Cancel</ArkDialog.CloseTrigger>
@@ -374,8 +370,10 @@ export default function DesignPreviewPage() {
       </div>
 
       <div className="dp-legend" style={{ marginTop: 12 }}>
-        <strong>{activeDirection.label}</strong> — {activeDirection.blurb} Background, card, and text colors are identical
-        across all three options and are not the organization&apos;s theme-picker color.
+        <strong>{activeDirection.label}</strong>
+        {direction === "neutral" ? " — decided (DESIGN.md §2, §15)." : " — rejected, kept for reference."} {activeDirection.blurb} Tabs (underline) and inputs (bordered) are
+        also decided and no longer change with this switcher. Background, card, and text colors are identical across
+        all three options and are not the organization&apos;s theme-picker color.
       </div>
 
       {surface === "console" ? <ConsoleMockup direction={direction} /> : <KioskMockup />}
