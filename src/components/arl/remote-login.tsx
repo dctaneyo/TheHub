@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell, Hand } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -377,33 +378,16 @@ export function RemoteLogin() {
             </div>
           </div>
 
-          {/* Type tabs */}
-          <div className="mb-4 flex gap-1 rounded-xl bg-muted p-1">
-            <button
-              onClick={() => setAssignType("location")}
-              className={cn(
-                "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
-                assignType === "location"
-                  ? "bg-card text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Store className="mr-2 inline h-3.5 w-3.5" />
-              Location
-            </button>
-            <button
-              onClick={() => setAssignType("arl")}
-              className={cn(
-                "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
-                assignType === "arl"
-                  ? "bg-card text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Users className="mr-2 inline h-3.5 w-3.5" />
-              ARL
-            </button>
-          </div>
+          <Tabs value={assignType} onValueChange={(d) => setAssignType(d.value as "location" | "arl")} className="mb-4">
+            <TabsList>
+              <TabsTrigger value="location" className="flex items-center gap-1.5">
+                <Store className="h-3.5 w-3.5" /> Location
+              </TabsTrigger>
+              <TabsTrigger value="arl" className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" /> ARL
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {/* Account list */}
           <div className="max-h-64 space-y-2 overflow-y-auto">
@@ -549,33 +533,16 @@ export function RemoteLogin() {
                         </span>
                       </div>
 
-                      {/* Type tabs */}
-                      <div className="mb-3 flex gap-1 rounded-xl bg-card p-1">
-                        <button
-                          onClick={() => setForceAssignType("location")}
-                          className={cn(
-                            "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
-                            forceAssignType === "location"
-                              ? "bg-muted text-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          <Store className="mr-1 inline h-3 w-3" />
-                          Location
-                        </button>
-                        <button
-                          onClick={() => setForceAssignType("arl")}
-                          className={cn(
-                            "flex-1 rounded-lg py-2 text-xs font-semibold transition-colors",
-                            forceAssignType === "arl"
-                              ? "bg-muted text-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          <Users className="mr-1 inline h-3 w-3" />
-                          ARL
-                        </button>
-                      </div>
+                      <Tabs value={forceAssignType} onValueChange={(d) => setForceAssignType(d.value as "location" | "arl")} className="mb-3">
+                        <TabsList>
+                          <TabsTrigger value="location" className="flex items-center gap-1.5">
+                            <Store className="h-3 w-3" /> Location
+                          </TabsTrigger>
+                          <TabsTrigger value="arl" className="flex items-center gap-1.5">
+                            <Users className="h-3 w-3" /> ARL
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
 
                       <div className="max-h-48 space-y-1 overflow-y-auto">
                         {forceAssignType === "location" ? (
