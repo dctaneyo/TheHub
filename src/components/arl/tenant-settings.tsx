@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  Building2, Palette, Globe, Check, Loader2, Save,
+  Palette, Globe, Check, Loader2, Save,
   Users, Store, Zap, Shield, Eye,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant-context";
 
@@ -162,12 +163,12 @@ export function TenantSettings() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
+      {/* Header — global Save covers all tabs; disabled when nothing is dirty */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-foreground">Organization Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Customize your hub's branding and configuration
+            Customize your hub&apos;s branding and configuration
           </p>
         </div>
         <Button
@@ -202,257 +203,295 @@ export function TenantSettings() {
         </div>
       )}
 
-      {/* Plan info card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-border bg-card p-5"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
-            <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Current Plan</h3>
-            <p className="text-xs text-muted-foreground">Your organization's subscription</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground">Plan</p>
-            <p className="text-lg font-semibold capitalize text-foreground">{tenant.plan}</p>
-          </div>
-          <div className="rounded-xl bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Store className="h-3 w-3" /> Max Locations</p>
-            <p className="text-lg font-semibold text-foreground">{tenant.maxLocations}</p>
-          </div>
-          <div className="rounded-xl bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> Max Users</p>
-            <p className="text-lg font-semibold text-foreground">{tenant.maxUsers}</p>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1">
-          {tenant.features.map((f: string) => (
-            <span
-              key={f}
-              className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
+      {/*
+       * Three tabs by edit cadence, not just topic (Section 12):
+       *   Branding  — touched during initial setup + whenever brand evolves; Plan info
+       *               is read-only context, surfaces here so limits are visible while
+       *               editing the identity fields that bump against them.
+       *   Domain & Assets — set once at launch (CNAME, logo/favicon URLs), rarely again.
+       *   Timezone  — changed even more rarely; isolated so it doesn't compete with
+       *               branding fields that someone is actively iterating on.
+       */}
+      <Tabs defaultValue="branding">
+        <TabsList>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger value="domain">Domain &amp; Assets</TabsTrigger>
+          <TabsTrigger value="timezone">Timezone</TabsTrigger>
+        </TabsList>
+
+        {/* ── Branding tab ── */}
+        <TabsContent value="branding" className="mt-4 space-y-4">
+
+          {/* Plan info — read-only; shown here for context (limits apply to the org
+              being configured) but never editable from this page */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/20">
+                <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Current Plan</h3>
+                <p className="text-xs text-muted-foreground">Your organization&apos;s subscription</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-xl bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Plan</p>
+                <p className="text-lg font-semibold capitalize text-foreground">{tenant.plan}</p>
+              </div>
+              <div className="rounded-xl bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Store className="h-3 w-3" /> Max Locations</p>
+                <p className="text-lg font-semibold text-foreground">{tenant.maxLocations}</p>
+              </div>
+              <div className="rounded-xl bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> Max Users</p>
+                <p className="text-lg font-semibold text-foreground">{tenant.maxUsers}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {tenant.features.map((f: string) => (
+                <span
+                  key={f}
+                  className="rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Branding — editable identity + color fields */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 dark:bg-purple-500/20">
+                <Palette className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Branding</h3>
+                <p className="text-xs text-muted-foreground">Customize how your hub looks</p>
+              </div>
+            </div>
+
+            {/* Identity group — Org Name + App Title are the same kind of field
+                (text, naming) and edited together; tight grid, no gap above */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-foreground">Organization Name</label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-foreground">App Title</label>
+                <Input
+                  value={appTitle}
+                  onChange={(e) => setAppTitle(e.target.value)}
+                  placeholder={`${name || "Your"} Hub`}
+                  className="h-10"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Shown in browser tab &amp; sidebar</p>
+              </div>
+            </div>
+
+            {/* Brand Color — wider gap before (mt-6): different interaction type
+                from the text fields above, a separate decision even if related */}
+            <div className="mt-6">
+              <label className="mb-2 block text-sm font-semibold text-foreground">Brand Color</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="h-10 w-14 rounded-lg cursor-pointer bg-transparent border-0"
+                />
+                <Input
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-28 font-mono text-sm h-10"
+                />
+                <div className="flex gap-1">
+                  {PRESET_COLORS.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => setPrimaryColor(c.value)}
+                      title={c.label}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border-2 transition-all",
+                        primaryColor === c.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                      )}
+                      style={{ backgroundColor: c.value }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Live preview — smaller gap (mt-4): directly reflects the color
+                chosen above; close proximity signals the relationship */}
+            <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-semibold">Live Preview</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="h-9 w-9 rounded-xl flex items-center justify-center text-white font-black"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {(name || "H").charAt(0).toUpperCase()}
+                </div>
+                <span className="font-semibold text-foreground">{appTitle || `${name || "Your"} Hub`}</span>
+              </div>
+              <div className="flex gap-2">
+                <div
+                  className="h-7 rounded-lg px-3 flex items-center text-white text-xs font-semibold"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Primary
+                </div>
+                <div
+                  className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold border"
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  Secondary
+                </div>
+                <div
+                  className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold"
+                  style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
+                >
+                  Accent
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </TabsContent>
+
+        {/* ── Domain & Assets tab ── */}
+        <TabsContent value="domain" className="mt-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
+                <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Domain &amp; Assets</h3>
+                <p className="text-xs text-muted-foreground">URLs and external assets</p>
+              </div>
+            </div>
+
+            {/* Domain group — Hub URL (reference) + Custom Domain (editable override)
+                are the same concept; tight proximity, small gap between them */}
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-foreground">Hub URL</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={`${tenant.slug}.meetthehub.com`}
+                  disabled
+                  className="h-10 font-mono text-sm bg-muted/50"
+                />
+                <a
+                  href={`https://${tenant.slug}.meetthehub.com`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <Eye className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-semibold text-foreground">
+                Custom Domain{" "}
+                <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <Input
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                placeholder="hub.yourcompany.com"
+                className="h-10"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Point a CNAME record to meetthehub.com</p>
+            </div>
+
+            {/* Assets group — Logo + Favicon are a different category (image files,
+                not routing); wider gap (mt-8) signals the boundary before the grid */}
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-foreground">
+                  Logo URL{" "}
+                  <span className="font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <Input
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="h-10"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-foreground">
+                  Favicon URL{" "}
+                  <span className="font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <Input
+                  value={faviconUrl}
+                  onChange={(e) => setFaviconUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="h-10"
+                />
+              </div>
+            </div>
+          </motion.div>
+        </TabsContent>
+
+        {/* ── Timezone tab ── */}
+        <TabsContent value="timezone" className="mt-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 dark:bg-sky-500/20">
+                <Globe className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Timezone</h3>
+                <p className="text-xs text-muted-foreground">Used for task scheduling and notifications</p>
+              </div>
+            </div>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              {f}
-            </span>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Branding section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-border bg-card p-5"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/30">
-            <Palette className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Branding</h3>
-            <p className="text-xs text-muted-foreground">Customize how your hub looks</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-foreground">Organization Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-foreground">App Title</label>
-              <Input
-                value={appTitle}
-                onChange={(e) => setAppTitle(e.target.value)}
-                placeholder={`${name || "Your"} Hub`}
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Shown in browser tab & sidebar</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-foreground">Brand Color</label>
-            <div className="flex items-center gap-3 flex-wrap">
-              <input
-                type="color"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="h-10 w-14 rounded-lg cursor-pointer bg-transparent border-0"
-              />
-              <Input
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="w-28 font-mono text-sm h-10"
-              />
-              <div className="flex gap-1">
-                {PRESET_COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    onClick={() => setPrimaryColor(c.value)}
-                    title={c.label}
-                    className={cn(
-                      "h-8 w-8 rounded-lg border-2 transition-all",
-                      primaryColor === c.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: c.value }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Live preview */}
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-semibold">Live Preview</p>
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center text-white font-black"
-                style={{ backgroundColor: primaryColor }}
-              >
-                {(name || "H").charAt(0).toUpperCase()}
-              </div>
-              <span className="font-semibold text-foreground">{appTitle || `${name || "Your"} Hub`}</span>
-            </div>
-            <div className="flex gap-2">
-              <div
-                className="h-7 rounded-lg px-3 flex items-center text-white text-xs font-semibold"
-                style={{ backgroundColor: primaryColor }}
-              >
-                Primary
-              </div>
-              <div
-                className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold border"
-                style={{ borderColor: primaryColor, color: primaryColor }}
-              >
-                Secondary
-              </div>
-              <div
-                className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold"
-                style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
-              >
-                Accent
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Timezone section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="rounded-2xl border border-border bg-card p-5"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-900/30">
-            <Globe className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Timezone</h3>
-            <p className="text-xs text-muted-foreground">Used for task scheduling and notifications</p>
-          </div>
-        </div>
-        <select
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {COMMON_TIMEZONES.map((tz) => (
-            <option key={tz.value} value={tz.value}>{tz.label}</option>
-          ))}
-          {/* If current timezone isn't in the common list, show it too */}
-          {!COMMON_TIMEZONES.some((tz) => tz.value === timezone) && (
-            <option value={timezone}>{timezone}</option>
-          )}
-        </select>
-        <p className="text-xs text-muted-foreground mt-1">
-          Task due-soon and overdue notifications fire based on this timezone
-        </p>
-      </motion.div>
-
-      {/* URLs section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-2xl border border-border bg-card p-5"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
-            <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Domain & Assets</h3>
-            <p className="text-xs text-muted-foreground">URLs and external assets</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-foreground">Hub URL</label>
-            <div className="flex items-center gap-2">
-              <Input
-                value={`${tenant.slug}.meetthehub.com`}
-                disabled
-                className="h-10 font-mono text-sm bg-muted/50"
-              />
-              <a
-                href={`https://${tenant.slug}.meetthehub.com`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <Eye className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-foreground">Custom Domain (optional)</label>
-            <Input
-              value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value)}
-              placeholder="hub.yourcompany.com"
-              className="h-10"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Point a CNAME record to meetthehub.com</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-foreground">Logo URL (optional)</label>
-              <Input
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://..."
-                className="h-10"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-foreground">Favicon URL (optional)</label>
-              <Input
-                value={faviconUrl}
-                onChange={(e) => setFaviconUrl(e.target.value)}
-                placeholder="https://..."
-                className="h-10"
-              />
-            </div>
-          </div>
-        </div>
-      </motion.div>
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+              {/* If current timezone isn't in the common list, show it too */}
+              {!COMMON_TIMEZONES.some((tz) => tz.value === timezone) && (
+                <option value={timezone}>{timezone}</option>
+              )}
+            </select>
+            <p className="text-xs text-muted-foreground mt-2">
+              Task due-soon and overdue notifications fire based on this timezone
+            </p>
+          </motion.div>
+        </TabsContent>
+      </Tabs>
 
       {/* Info footer */}
       <div className="rounded-xl bg-muted/30 p-4 text-xs text-muted-foreground flex items-center gap-2">
