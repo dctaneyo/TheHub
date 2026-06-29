@@ -368,9 +368,12 @@ contrast remain un-audited. Status: **still open as described.**
 
 ### Short-Term (Quality / Tests)
 
-5. Add tests for `task-utils.ts` recurrence math, the notification
-   scheduler, and `session/activate`/`force`. — high value, currently
-   untested
+5. ~~Add tests for `task-utils.ts` recurrence math~~ — done (25 tests,
+   `src/lib/task-utils.test.ts`). ~~`session/activate`/`force`~~ — done
+   (13 + 19 tests). The notification scheduler
+   (`task-notification-scheduler.ts`) remains untested — it manages
+   `setTimeout` timer state directly rather than pure functions, so it
+   needs a different testing approach (fake timers) than the other two.
 6. Add safety tests for `data-management/*` destructive routes.
 
 ### Medium-Term (Architecture / Performance)
