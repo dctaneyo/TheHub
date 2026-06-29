@@ -1,4 +1,5 @@
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
@@ -6,6 +7,10 @@ import { logAudit } from "@/lib/audit-logger";
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`data-management:${ip}`, { maxAttempts: 10, windowMs: 60_000, lockoutMs: 5 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const session = await getAuthSession();
     if (!session) return ApiErrors.unauthorized();
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);

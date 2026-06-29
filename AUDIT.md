@@ -122,14 +122,21 @@ route's whole job is to verify a token *before* a session exists (it's how
 the token becomes the session cookie), so it can't depend on
 `getAuthSession()` the way protected routes do.
 
-### 3.3 LOW — `data-management/*` routes have no rate limiting
+### 3.3 ~~LOW — `data-management/*` routes have no rate limiting~~ — **Fixed 2026-06-28**
 
-Confirmed: no rate-limit calls found anywhere under
-`src/app/api/data-management/`. These destructive purge/drop routes rely
-solely on session auth + audit logging (see 3.4). Lower severity than
-originally implied because they are now audit-logged and admin-gated, but
-still un-throttled. Status: **partially mitigated (now audit-logged), rate
-limiting still open.**
+Added `checkRateLimit`/`getClientIP` to all 12 destructive POST handlers
+(`archive-old-data`, `bulk-tasks`, `clear-sessions`, `drop-tables`,
+`duplicate-check`, `orphaned-cleanup`, `purge-broadcast-data`,
+`purge-conversations`, `purge-messages`, `purge-notifications`,
+`purge-old-tasks`, `vacuum`), keyed by a single shared
+`data-management:${ip}` bucket (10 attempts/60s, 5min lockout) rather than
+one bucket per route — these are all gated behind the same
+`DATA_MANAGEMENT_ACCESS` permission, so a per-route limit would let an
+attacker just round-robin across routes to bypass it. The six read-only
+GET handlers (`audit-log`, `export`, `integrity-check`, `system-report`,
+`usage-analytics`, plus `duplicate-check`'s own GET) were deliberately
+left alone — they don't mutate data, so the original concern (un-throttled
+destructive operations) doesn't apply to them.
 
 ### 3.4 RESOLVED — Audit logging coverage
 
@@ -357,7 +364,7 @@ contrast remain un-audited. Status: **still open as described.**
 1. ~~**Delete `src/app/api/migrate-users/route.ts`**~~ — done.
 2. ~~**Delete or auth-gate `src/app/api/admin/migrate-4digit/route.ts`.**~~ — done.
 3. ~~Add rate limiting to `auth/force-apply` (remote-login apply).~~ — done.
-4. Add rate limiting to `data-management/*` purge/drop routes. — LOW
+4. ~~Add rate limiting to `data-management/*` purge/drop routes.~~ — done.
 
 ### Short-Term (Quality / Tests)
 
