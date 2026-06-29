@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { IconTip } from "@/components/ui/icon-tip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -402,25 +403,31 @@ export function UserManagement() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleToggleActive(item)}
-                                className={cn("flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
-                                  item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
-                                )}
-                                title={item.isActive ? "Disable" : "Enable"}
-                              >
-                                {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                              </button>
-                              <Menu>
-                                <MenuTrigger
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
-                                  title="More actions"
+                              <IconTip label="Edit">
+                                <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                              </IconTip>
+                              <IconTip label={item.isActive ? "Disable" : "Enable"}>
+                                <button
+                                  onClick={() => handleToggleActive(item)}
+                                  className={cn("flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                                    item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
+                                  )}
+                                  title={item.isActive ? "Disable" : "Enable"}
                                 >
-                                  <MoreVertical className="h-3.5 w-3.5" />
-                                </MenuTrigger>
+                                  {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                                </button>
+                              </IconTip>
+                              <Menu>
+                                <IconTip label="More actions">
+                                  <MenuTrigger
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
+                                    title="More actions"
+                                  >
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </MenuTrigger>
+                                </IconTip>
                                 <MenuContent>
                                   {isArl && isCallerAdmin && a.role !== "admin" && (
                                     <MenuItem value="permissions" onClick={() => openPermissions(a)}>
@@ -487,25 +494,31 @@ export function UserManagement() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
-                      <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(item)}
-                        className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                          item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
-                        )}
-                        title={item.isActive ? "Disable" : "Enable"}
-                      >
-                        {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                      </button>
-                      <Menu>
-                        <MenuTrigger
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
-                          title="More actions"
+                      <IconTip label="Edit">
+                        <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      </IconTip>
+                      <IconTip label={item.isActive ? "Disable" : "Enable"}>
+                        <button
+                          onClick={() => handleToggleActive(item)}
+                          className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                            item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
+                          )}
+                          title={item.isActive ? "Disable" : "Enable"}
                         >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </MenuTrigger>
+                          {item.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                        </button>
+                      </IconTip>
+                      <Menu>
+                        <IconTip label="More actions">
+                          <MenuTrigger
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
+                            title="More actions"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </MenuTrigger>
+                        </IconTip>
                         <MenuContent>
                           {isArl && isCallerAdmin && a.role !== "admin" && (
                             <MenuItem value="permissions" onClick={() => openPermissions(a)}>
