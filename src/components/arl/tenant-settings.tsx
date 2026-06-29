@@ -184,8 +184,8 @@ export function TenantSettings() {
           className={cn(
             "gap-2 min-w-[120px]",
             saved
-              ? "bg-emerald-600 hover:bg-emerald-700"
-              : "bg-[var(--hub-red)] hover:bg-[var(--hub-red)]/90"
+              ? "bg-emerald-600 active:bg-emerald-700"
+              : "bg-[var(--hub-red)] active:bg-[var(--hub-red)]/90"
           )}
         >
           {saving ? (
@@ -335,7 +335,7 @@ export function TenantSettings() {
                       title={c.label}
                       className={cn(
                         "h-8 w-8 rounded-lg border-2 transition-all",
-                        primaryColor === c.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                        primaryColor === c.value ? "border-foreground scale-110" : "border-transparent active:scale-105"
                       )}
                       style={{ backgroundColor: c.value }}
                     />
@@ -412,7 +412,7 @@ export function TenantSettings() {
                   href={`https://${tenant.slug}.meetthehub.com`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground active:text-foreground active:bg-muted transition-colors"
                 >
                   <Eye className="h-4 w-4" />
                 </a>

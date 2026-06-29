@@ -29,7 +29,7 @@ export function PageIndicator({ pages, currentPageId, onPageChange, className }:
                 "relative rounded-full flex items-center justify-center",
                 isActive
                   ? "bg-[var(--hub-red)] h-5 px-2"
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2 h-2"
+                  : "bg-muted-foreground/30 active:bg-muted-foreground/50 w-2 h-2"
               )}
               whileTap={{ scale: 0.92 }}
             >

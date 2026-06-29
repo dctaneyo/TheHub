@@ -171,9 +171,9 @@ export function ArlCalendar() {
         {/* Calendar grid */}
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
+            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
             <h2 className="text-sm font-semibold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"><ChevronRight className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
             {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
@@ -192,7 +192,7 @@ export function ArlCalendar() {
                       className={cn("flex flex-col items-start justify-start border-r border-border p-2 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
                         !inMonth && "bg-muted/50",
                         isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
-                        inMonth && !isSelected && "hover:bg-muted/50"
+                        inMonth && !isSelected && "active:bg-muted/50"
                       )}>
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                         isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-foreground" : "text-muted-foreground/50"

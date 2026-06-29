@@ -128,7 +128,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
             "flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
             showForm
               ? "bg-muted text-muted-foreground"
-              : "bg-[var(--hub-red)] text-white hover:bg-[#c4001f]"
+              : "bg-[var(--hub-red)] text-white active:bg-[#c4001f]"
           )}
         >
           {showForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
@@ -158,7 +158,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                         "flex h-9 w-9 items-center justify-center rounded-xl text-lg transition-all",
                         icon === i
                           ? "bg-[var(--hub-red)]/10 ring-2 ring-[var(--hub-red)]"
-                          : "bg-muted hover:bg-muted/80"
+                          : "bg-muted active:bg-muted/80"
                       )}
                     >
                       {i}
@@ -193,7 +193,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                         "rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                         expiryOption === opt.value
                           ? "bg-[var(--hub-red)] text-white"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          : "bg-muted text-muted-foreground active:bg-muted/80"
                       )}
                     >
                       {opt.label}
@@ -221,7 +221,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
               <button
                 onClick={handleSend}
                 disabled={!content.trim() || sending}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--hub-red)] py-2 text-sm font-semibold text-white hover:bg-[#c4001f] disabled:opacity-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--hub-red)] py-2 text-sm font-semibold text-white active:bg-[#c4001f] disabled:opacity-50 transition-colors"
               >
                 <Send className="h-4 w-4" />
                 {sending ? "Sending..." : "Push to All Locations"}
@@ -261,7 +261,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                 <button
                   onClick={() => handleDelete(msg.id)}
                   disabled={deleting === msg.id}
-                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
+                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-red-50 active:text-red-500 dark:active:bg-red-950 transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

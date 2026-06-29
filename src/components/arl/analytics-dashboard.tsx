@@ -249,13 +249,13 @@ export function AnalyticsDashboard() {
           <p className="text-sm text-muted-foreground">Track performance across your locations</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={fetchData} className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors">
+          <button onClick={fetchData} className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground active:bg-accent transition-colors">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
           </button>
           <div className="relative">
             <button
               onClick={() => setShowExportMenu((v) => !v)}
-              className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors"
+              className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground active:bg-accent transition-colors"
             >
               <Download className="h-3.5 w-3.5" /> Export <ChevronDown className="h-3 w-3" />
             </button>
@@ -266,7 +266,7 @@ export function AnalyticsDashboard() {
                     key={opt.label}
                     onClick={opt.action}
                     disabled={!opt.enabled}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-foreground hover:bg-muted disabled:opacity-40 transition-colors"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-foreground active:bg-muted disabled:opacity-40 transition-colors"
                   >
                     <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {opt.label}
@@ -293,7 +293,7 @@ export function AnalyticsDashboard() {
           {dateRanges.map(d => (
             <button key={d.id} onClick={() => setDateRange(d.id)}
               className={cn("rounded-lg px-2 py-2 text-xs font-semibold transition-all",
-                dateRange === d.id ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+                dateRange === d.id ? "bg-card text-foreground" : "text-muted-foreground active:text-foreground"
               )}>
               {d.label}
             </button>
