@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { IconTip } from "@/components/ui/icon-tip";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
@@ -478,13 +479,15 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <span className="font-mono font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
-                          <button
-                            onClick={() => copyCode(m.meeting_code)}
-                            className="p-1.5 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
-                            title="Copy meeting code"
-                          >
-                            {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                          </button>
+                          <IconTip label="Copy meeting code">
+                            <button
+                              onClick={() => copyCode(m.meeting_code)}
+                              className="p-1.5 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
+                              title="Copy meeting code"
+                            >
+                              {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          </IconTip>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -607,13 +610,15 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <div className="flex items-center gap-1">
                         <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
-                        <button
-                          onClick={() => copyCode(m.meeting_code)}
-                          className="p-2 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
-                          title="Copy meeting code"
-                        >
-                          {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
+                        <IconTip label="Copy meeting code">
+                          <button
+                            onClick={() => copyCode(m.meeting_code)}
+                            className="p-2 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
+                            title="Copy meeting code"
+                          >
+                            {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        </IconTip>
                       </div>
                       <div className="flex items-center gap-1">
                         {m.is_active && (
