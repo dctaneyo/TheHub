@@ -90,21 +90,25 @@ Confirmed resolved against current code:
 
 ## 3. Security Issues
 
-### 3.1 CRITICAL (NEW) — Unauthenticated cross-tenant mutation endpoints
+### 3.1 ~~CRITICAL (NEW) — Unauthenticated cross-tenant mutation endpoints~~ — **Fixed 2026-06-28**
 
-**Files:** `src/app/api/migrate-users/route.ts`,
+**Files (deleted):** `src/app/api/migrate-users/route.ts`,
 `src/app/api/admin/migrate-4digit/route.ts`
 
-`migrate-users` POST has **zero authentication** (confirmed: no session, no
-admin secret, no token check) and rewrites `userId` for **all ARL users and
+`migrate-users` POST had **zero authentication** (confirmed: no session, no
+admin secret, no token check) and rewrote `userId` for **all ARL users and
 locations across every tenant** via raw `sqlite.prepare(... UPDATE ...)`.
-The comment even says "Simple migration endpoint - DELETE AFTER USE" — it
-was never deleted. `admin/migrate-4digit` similarly lacks an auth check.
-Neither path is CSRF-exempt, so an attacker still needs to send
-`x-hub-request: 1`, but that header is trivial to set and provides no real
-protection. This is a destructive, cross-tenant, unauthenticated operation.
-**Recommend deleting both routes outright.** Status: **NEW, open, highest
-priority.**
+The comment even said "Simple migration endpoint - DELETE AFTER USE" — it
+was never deleted. `admin/migrate-4digit` had the identical logic and the
+same missing auth check — the two routes were near-duplicates of each
+other. Both were one-time historical migrations from when user IDs were
+longer than 4 digits; the app has used 4-digit IDs exclusively for a long
+time, confirmed via the extensive ARL work in the same session, so the
+migration these routes performed is long since complete. Verified no other
+code, scripts, or docs called either route before removing them. Both
+files (and the now-empty `migrate-users/` and `admin/migrate-4digit/`
+directories) were deleted outright rather than auth-gated, since they had
+no remaining purpose.
 
 ### 3.2 MEDIUM — `auth/force-apply` still missing rate limiting (and uses raw token verify)
 
@@ -303,8 +307,8 @@ single-instance only. Status: **still open as described.**
 | `scripts/reset-pins.js` | Still present, still obsolete. |
 | `scripts/railway-migration.js` | Still present, still obsolete. |
 | `scripts/add-indexes.ts` | **Now redundant** — its logic was inlined into `src/lib/db/index.ts`. Candidate for removal. |
-| `src/app/api/migrate-users/route.ts` | **NOT dead — actively dangerous.** Unauthenticated destructive endpoint (see §3.1). Delete immediately. |
-| `src/app/api/admin/migrate-4digit/route.ts` | Same concern; delete if migration is complete. |
+| `src/app/api/migrate-users/route.ts` | **Deleted 2026-06-28** — see §3.1. |
+| `src/app/api/admin/migrate-4digit/route.ts` | **Deleted 2026-06-28** — see §3.1. |
 
 All five originally-flagged obsolete scripts **still exist**. Status:
 **still open as described**, plus two new cleanup items
@@ -346,12 +350,10 @@ contrast remain un-audited. Status: **still open as described.**
 
 ## 10. Recommended Priority Order
 
-### Immediate (Security)
+### Immediate (Security) — items 1 & 2 done 2026-06-28
 
-1. **Delete `src/app/api/migrate-users/route.ts`** (unauthenticated
-   cross-tenant destructive endpoint). — CRITICAL, NEW
-2. **Delete or auth-gate `src/app/api/admin/migrate-4digit/route.ts`.** —
-   HIGH, NEW
+1. ~~**Delete `src/app/api/migrate-users/route.ts`**~~ — done.
+2. ~~**Delete or auth-gate `src/app/api/admin/migrate-4digit/route.ts`.**~~ — done.
 3. Add rate limiting to `auth/force-apply` (remote-login apply). — MEDIUM
 4. Add rate limiting to `data-management/*` purge/drop routes. — LOW
 
