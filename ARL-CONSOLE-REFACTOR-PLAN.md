@@ -353,12 +353,17 @@ reasoning as the rest of this plan.
    the only caller used by passive viewers. The z-index overlap fixed by
    bumping MeetingRoom's 6 outer wrappers above the ARL header/sidebar,
    rather than rewiring Go Live onto BroadcastStudio's navigation gate.
-9. **Overview single-viewport redesign** — biggest single decision in
-   this plan. Do last, deliberately: it's a layout architecture change
-   (fixed-height grid, each section owning an allocated region) rather
-   than a content fix, and benefits from the Ark UI primitive decisions
-   above already being in use elsewhere so the new grid isn't built on
-   a component foundation that's about to change again.
+9. ~~**Overview single-viewport redesign**~~ — **done.** Desktop no
+   longer scrolls — KPIs/banner stay auto-height, Location Performance +
+   Live Feed each own an allocated region of a fixed-height grid and
+   scroll internally. Mobile keeps natural scroll. Removed Location
+   Performance's `.slice(0, 8)` cap (no longer needed with real internal
+   scroll). Also fixed a Section 18 redundant-header instance surfaced
+   while touching this exact panel: LiveActivityFeed rendered its own
+   "Recent Activity" header directly under the merged panel's "Live
+   Feed" header — added a `showHeader` prop (mirrors TickerPush's
+   existing convention) and made its height flexible instead of a fixed
+   `max-h-[300px]`.
 10. **App-wide dark-mode swatch sweep** — mechanical, no dependencies,
    fold into any of the above passes opportunistically or do as its own
    pass whenever convenient.
