@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { ApiErrors } from "@/lib/api-response";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 
 function setTokenCookie(response: NextResponse, token: string) {
   response.cookies.set("hub-token", token, {
@@ -24,6 +25,10 @@ function safeRedirect(raw: string | null): string {
 // GET - Apply token from query params, set cookie, client-side redirect via HTML
 // (avoids NextResponse.redirect which uses req.url → internal 0.0.0.0 address)
 export async function GET(req: NextRequest) {
+  const ip = getClientIP(req.headers);
+  const rl = checkRateLimit(`force-apply:${ip}`, { maxAttempts: 20, windowMs: 60_000, lockoutMs: 2 * 60_000 });
+  if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
   const token = req.nextUrl.searchParams.get("token");
   const redirectTo = safeRedirect(req.nextUrl.searchParams.get("redirect"));
 
@@ -45,6 +50,10 @@ export async function GET(req: NextRequest) {
 // POST - Apply token from JSON body, set cookie, client handles redirect
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIP(req.headers);
+    const rl = checkRateLimit(`force-apply:${ip}`, { maxAttempts: 20, windowMs: 60_000, lockoutMs: 2 * 60_000 });
+    if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
+
     const { token } = await req.json();
 
     if (!token || !verifyToken(token)) {

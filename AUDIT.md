@@ -110,15 +110,17 @@ files (and the now-empty `migrate-users/` and `admin/migrate-4digit/`
 directories) were deleted outright rather than auth-gated, since they had
 no remaining purpose.
 
-### 3.2 MEDIUM — `auth/force-apply` still missing rate limiting (and uses raw token verify)
+### 3.2 ~~MEDIUM — `auth/force-apply` still missing rate limiting~~ — **Fixed 2026-06-28**
 
 **File:** `src/app/api/auth/force-apply/route.ts`
 
-Confirmed: imports `verifyToken` directly (not `getAuthSession`), has **no
-`checkRateLimit` call** on its POST handler (lines 26 GET / 46 POST). This
-is the remote-login apply endpoint and was flagged originally; it remains
-the one sensitive route from the original list still lacking rate
-limiting. Status: **still open as described.**
+Added the same `checkRateLimit`/`getClientIP` pattern already used in
+`session/activate` (20 attempts/60s, 2min lockout) to both `GET` and
+`POST` handlers, keyed `force-apply:${ip}`. It still uses `verifyToken`
+directly rather than `getAuthSession()` — that's correct, not a gap: this
+route's whole job is to verify a token *before* a session exists (it's how
+the token becomes the session cookie), so it can't depend on
+`getAuthSession()` the way protected routes do.
 
 ### 3.3 LOW — `data-management/*` routes have no rate limiting
 
@@ -354,7 +356,7 @@ contrast remain un-audited. Status: **still open as described.**
 
 1. ~~**Delete `src/app/api/migrate-users/route.ts`**~~ — done.
 2. ~~**Delete or auth-gate `src/app/api/admin/migrate-4digit/route.ts`.**~~ — done.
-3. Add rate limiting to `auth/force-apply` (remote-login apply). — MEDIUM
+3. ~~Add rate limiting to `auth/force-apply` (remote-login apply).~~ — done.
 4. Add rate limiting to `data-management/*` purge/drop routes. — LOW
 
 ### Short-Term (Quality / Tests)
