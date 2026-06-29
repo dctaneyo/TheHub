@@ -76,23 +76,27 @@ function resolveOrgFromCookie(request: NextRequest): string | null {
 }
 
 /**
- * Extract an organization slug from a per-org subdomain, e.g.
- * "kazi.meetthehub.com" → "kazi". Edge-compatible (format check only — the
- * slug is validated against the DB later by /api/auth/resolve-org). Returns
- * null for the bare domain, www, and the reserved join/nimda subdomains.
+ * Tenants no longer resolve via per-org subdomains — they sign in at the
+ * root domain and resolve via the x-org-id cookie. nimda and join are the
+ * only subdomains still in active use. Any other subdomain (a stale
+ * bookmark, an old kazi.meetthehub.com-style link, someone guessing a
+ * tenant's slug) used to silently format-validate as if it were a real org
+ * — the slug looked fine, x-tenant-id got set to it, and login only failed
+ * once it tried to match a userId against whatever (possibly nonexistent)
+ * tenant the subdomain happened to spell — confusing for anyone who still
+ * has an old link. Reject it outright instead of letting it fall through
+ * to a half-working login attempt.
  */
-function resolveOrgFromSubdomain(hostname: string): string | null {
+function isUnrecognizedSubdomain(hostname: string): boolean {
   const host = hostname.split(":")[0];
   for (const d of hubDomains) {
-    if (host === d || host === `www.${d}`) return null; // bare/root domain
+    if (host === d || host === `www.${d}`) return false; // bare/root domain
     if (host.endsWith(`.${d}`)) {
       const sub = host.slice(0, host.length - d.length - 1); // label before ".domain"
-      if (!sub || sub === "www" || sub === "join" || sub === "nimda" || sub === "admin") return null;
-      if (!/^[a-zA-Z0-9]{2,10}$/.test(sub)) return null; // single-label slug only
-      return sub.toLowerCase();
+      return sub !== "nimda" && sub !== "join";
     }
   }
-  return null;
+  return false; // not a hub domain at all (e.g. localhost) — not our concern here
 }
 
 // Paths exempt from CSRF check (auth flow, health, webhooks)
@@ -156,6 +160,18 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // ── Unrecognized subdomain → bounce to the root domain ──
+  // Catches stale kazi.meetthehub.com-style links before they reach the
+  // org-resolution logic below, which would otherwise format-validate the
+  // subdomain as if it were a real org and only fail later, confusingly,
+  // when no user under it matches.
+  if (isUnrecognizedSubdomain(hostname)) {
+    const url = request.nextUrl.clone();
+    url.hostname = hubDomains[0];
+    url.protocol = "https";
+    return NextResponse.redirect(url);
+  }
+
   // ── Join subdomain → rewrite to /meeting ──
   if (isJoinDomain(hostname)) {
     if (pathname === "/") {
@@ -196,10 +212,7 @@ export function middleware(request: NextRequest) {
   }
 
   const rawOrgCookie = request.cookies.get("x-org-id")?.value;
-  // A per-org subdomain (e.g. kazi.meetthehub.com) takes priority over the
-  // saved org cookie — it's the most explicit signal of which org to load.
-  const subdomainSlug = resolveOrgFromSubdomain(hostname);
-  const orgSlug = subdomainSlug || resolveOrgFromCookie(request);
+  const orgSlug = resolveOrgFromCookie(request);
 
   // Cookie exists but slug is invalid format — clear it and redirect to /login
   if (rawOrgCookie && !orgSlug) {

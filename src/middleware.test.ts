@@ -220,29 +220,29 @@ describe("middleware — root domain handler", () => {
   });
 });
 
-describe("middleware — per-org subdomain resolution", () => {
+describe("middleware — unrecognized subdomains are rejected, not org-resolved", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // ── Subdomain provides tenant context without a cookie ──
+  // Tenants no longer resolve via per-org subdomains — they sign in at the
+  // root domain via the x-org-id cookie. A stale kazi.meetthehub.com-style
+  // link used to silently format-validate as a real org and only fail
+  // later, confusingly, on the userId check. It should bounce to the root
+  // domain instead, regardless of whether "kazi" happens to be a real
+  // tenant slug, an auth token is present, or a conflicting cookie exists.
 
-  it("allows /login on a per-org subdomain without any cookie", () => {
+  it("redirects a real tenant's old subdomain straight to the root domain", () => {
     const res = middleware(
       makeRequest("https://kazi.meetthehub.com/login", { host: "kazi.meetthehub.com" })
     );
-    expect(res.status).toBe(200);
-  });
-
-  it("redirects protected path to /login on subdomain when no auth token", () => {
-    const res = middleware(
-      makeRequest("https://kazi.meetthehub.com/dashboard", { host: "kazi.meetthehub.com" })
-    );
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
+    const location = new URL(res.headers.get("location")!);
+    expect(location.hostname).toBe("meetthehub.com");
+    expect(location.pathname).toBe("/login");
   });
 
-  it("allows protected path on subdomain with a matching auth token (no cookie)", () => {
+  it("redirects even with a valid matching auth token present", () => {
     const token = fakeJwt({ tenantId: "kazi", userType: "location" });
     const res = middleware(
       makeRequest("https://kazi.meetthehub.com/dashboard", {
@@ -250,78 +250,55 @@ describe("middleware — per-org subdomain resolution", () => {
         cookies: { "hub-token": token },
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).hostname).toBe("meetthehub.com");
   });
 
-  it("clears hub-token and redirects when token tenant doesn't match subdomain", () => {
-    const token = fakeJwt({ tenantId: "other", userType: "location" });
+  it("redirects even when a valid x-org-id cookie is also present", () => {
     const res = middleware(
       makeRequest("https://kazi.meetthehub.com/dashboard", {
         host: "kazi.meetthehub.com",
-        cookies: { "hub-token": token },
+        cookies: { "x-org-id": "kazi" },
       })
     );
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
-    expect(res.headers.get("set-cookie")).toContain("hub-token=");
+    expect(new URL(res.headers.get("location")!).hostname).toBe("meetthehub.com");
   });
 
-  // ── Subdomain takes priority over a conflicting org cookie ──
-
-  it("subdomain slug wins over a different x-org-id cookie", () => {
-    // Token matches the subdomain (kazi), not the stale cookie (other).
-    const token = fakeJwt({ tenantId: "kazi", userType: "location" });
+  it("redirects an arbitrary/nonexistent subdomain the same way a real tenant's would be", () => {
     const res = middleware(
-      makeRequest("https://kazi.meetthehub.com/dashboard", {
-        host: "kazi.meetthehub.com",
-        cookies: { "x-org-id": "other", "hub-token": token },
-      })
+      makeRequest("https://kfc.meetthehub.com/login", { host: "kfc.meetthehub.com" })
     );
-    // Subdomain resolved kazi → token tenant matches → allowed through.
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).hostname).toBe("meetthehub.com");
+  });
+
+  it("preserves the path when bouncing to the root domain", () => {
+    const res = middleware(
+      makeRequest("https://kazi.meetthehub.com/arl/tasks", { host: "kazi.meetthehub.com" })
+    );
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/arl/tasks");
+  });
+
+  it("does not redirect www — treated as the bare root domain", () => {
+    const res = middleware(
+      makeRequest("https://www.meetthehub.com/login", { host: "www.meetthehub.com" })
+    );
     expect(res.status).toBe(200);
   });
 
-  // ── Invalid org cookie is ignored when a valid subdomain is present ──
-
-  it("ignores an invalid x-org-id cookie when subdomain resolves", () => {
+  it("does not redirect the join subdomain", () => {
     const res = middleware(
-      makeRequest("https://kazi.meetthehub.com/login", {
-        host: "kazi.meetthehub.com",
-        cookies: { "x-org-id": "a" }, // invalid format
-      })
+      makeRequest("https://join.meetthehub.com/", { host: "join.meetthehub.com" })
     );
-    // Subdomain provides valid context, so no clear-cookie redirect.
     expect(res.status).toBe(200);
   });
 
-  // ── Reserved subdomains do NOT resolve as orgs ──
-
-  it("does not treat www subdomain as an org (redirects / to /login)", () => {
+  it("does not redirect the nimda (admin) subdomain", () => {
     const res = middleware(
-      makeRequest("https://www.meetthehub.com/", { host: "www.meetthehub.com" })
+      makeRequest("https://nimda.meetthehub.com/admin/login", { host: "nimda.meetthehub.com" })
     );
-    expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
-  });
-
-  it("does not treat an out-of-range subdomain label as an org", () => {
-    // 11-char label exceeds the 2-10 slug range → no tenant context → /login.
-    const res = middleware(
-      makeRequest("https://toolonglabel.meetthehub.com/dashboard", {
-        host: "toolonglabel.meetthehub.com",
-      })
-    );
-    expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
-  });
-
-  it("works the same on a subdomain with www prefix (not treated as org)", () => {
-    const res = middleware(
-      makeRequest("https://www.meetthehub.com/dashboard", {
-        host: "www.meetthehub.com",
-      })
-    );
-    expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
+    expect(res.status).toBe(200);
   });
 });
