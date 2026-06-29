@@ -29,6 +29,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { NotificationBell } from "@/components/notification-bell";
 import { NotificationSettingsPanel } from "@/components/arl/notification-settings-panel";
 import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import { IconTip } from "@/components/ui/icon-tip";
 import { PageIndicator } from "@/components/arl/page-indicator";
 import {
   ArlDashboardProvider,
@@ -130,12 +131,15 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
           )}>
           <div className="flex items-center gap-3">
             {isMobileOrTablet && (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground"
-              >
-                <MenuIcon className="h-4.5 w-4.5" />
-              </button>
+              <IconTip label="Open menu">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+                  title="Open menu"
+                >
+                  <MenuIcon className="h-4.5 w-4.5" />
+                </button>
+              </IconTip>
             )}
             <h2 className="text-lg font-semibold text-foreground hidden sm:block">
               {navItems.find((n) => n.id === displayView)?.label ?? ""}
@@ -158,13 +162,15 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 plain status row; Theme/Notifications (rarely touched) are
                 grouped below a separator (Section 12 cadence grouping). */}
             <Menu>
-              <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent transition-colors outline-none">
-                <MoreVertical className="h-4.5 w-4.5" />
-                <div className={cn(
-                  "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
-                  isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
-                )} />
-              </MenuTrigger>
+              <IconTip label="Settings">
+                <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent transition-colors outline-none" title="Settings">
+                  <MoreVertical className="h-4.5 w-4.5" />
+                  <div className={cn(
+                    "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
+                    isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
+                  )} />
+                </MenuTrigger>
+              </IconTip>
               <MenuContent className="w-64">
                 {/* Connection Status — informational, not an action */}
                 <div className="px-3 py-2 mb-1 border-b border-border">

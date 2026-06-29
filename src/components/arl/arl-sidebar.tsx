@@ -19,6 +19,7 @@ import {
   Settings,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import { VIEW_PERMISSIONS, PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { useTenant } from "@/lib/tenant-context";
 import type { ArlView } from "@/lib/arl-views";
@@ -117,12 +118,15 @@ export function ArlSidebar({
           </div>
         </div>
         {isMobileOrTablet && (
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <IconTip label="Close menu">
+            <button
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
+              title="Close menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </IconTip>
         )}
       </div>
 

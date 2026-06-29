@@ -24,6 +24,7 @@ import {
   isToday,
 } from "date-fns";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { IconTip } from "@/components/ui/icon-tip";
 import { cn } from "@/lib/utils";
 
 interface CalTask {
@@ -171,9 +172,13 @@ export function ArlCalendar() {
         {/* Calendar grid */}
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
+            <IconTip label="Previous month">
+              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted" title="Previous month"><ChevronLeft className="h-4 w-4" /></button>
+            </IconTip>
             <h2 className="text-sm font-semibold text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"><ChevronRight className="h-4 w-4" /></button>
+            <IconTip label="Next month">
+              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted" title="Next month"><ChevronRight className="h-4 w-4" /></button>
+            </IconTip>
           </div>
           <div className="grid grid-cols-7 border-b border-border min-w-[280px]">
             {CAL_DAYS.map((d) => <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d}</div>)}
