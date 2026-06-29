@@ -25,9 +25,11 @@ export function AdminSidebar() {
 
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-border bg-card">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <span className="font-mono text-sm font-bold tracking-tight text-foreground">nimda</span>
-        <span className="text-xs text-muted-foreground">Admin Console</span>
+      <div className="flex h-14 items-center border-b border-border px-4">
+        <div>
+          <p className="text-sm font-bold text-foreground">The Hub</p>
+          <p className="text-xs text-muted-foreground">Admin Console</p>
+        </div>
       </div>
 
       <nav className="flex-1 px-2 py-3">

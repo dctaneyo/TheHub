@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
         <div className="mb-6 text-center">
-          <span className="font-mono text-lg font-bold text-foreground">nimda</span>
+          <span className="text-lg font-bold text-foreground">The Hub</span>
           <p className="mt-1 text-sm text-muted-foreground">Admin Console</p>
         </div>
 

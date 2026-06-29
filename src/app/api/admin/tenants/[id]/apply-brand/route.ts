@@ -1,9 +1,38 @@
+import { NextRequest } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { requireAdminSession } from "@/lib/api-helpers";
 import { logAudit } from "@/lib/audit-logger";
+
+// DELETE — remove a brand association from a tenant. Does NOT remove tasks
+// that were already copied in (those belong to the tenant now), only removes
+// the tenantBrands join row so the brand no longer shows as a tag.
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
+
+  try {
+    const { id: tenantId } = await params;
+    const { brandId } = await req.json();
+    if (!brandId) return ApiErrors.badRequest("brandId required");
+
+    db.delete(schema.tenantBrands)
+      .where(and(eq(schema.tenantBrands.tenantId, tenantId), eq(schema.tenantBrands.brandId, brandId)))
+      .run();
+
+    logAudit({
+      userId: auth.session.adminId, userType: "platform_admin", operation: "brand_removed",
+      entityType: "tenant", tenantId, payload: { brandId }, status: "success",
+    });
+
+    return apiSuccess({ success: true });
+  } catch (error) {
+    console.error("Remove brand error:", error);
+    return ApiErrors.internal();
+  }
+}
 
 // POST — apply a brand's standard tasks to an existing tenant. One-time
 // copy-in, idempotent via sourceBrandTaskId (re-applying skips templates
