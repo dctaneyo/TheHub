@@ -54,7 +54,7 @@ function isRootDomain(hostname: string): boolean {
 
 function isAdminDomain(hostname: string): boolean {
   const host = hostname.split(":")[0];
-  return hubDomains.some((d) => host === `admin.${d}`);
+  return hubDomains.some((d) => host === `nimda.${d}`);
 }
 
 function isJoinDomain(hostname: string): boolean {
@@ -79,7 +79,7 @@ function resolveOrgFromCookie(request: NextRequest): string | null {
  * Extract an organization slug from a per-org subdomain, e.g.
  * "kazi.meetthehub.com" → "kazi". Edge-compatible (format check only — the
  * slug is validated against the DB later by /api/auth/resolve-org). Returns
- * null for the bare domain, www, and the reserved join/admin subdomains.
+ * null for the bare domain, www, and the reserved join/nimda subdomains.
  */
 function resolveOrgFromSubdomain(hostname: string): string | null {
   const host = hostname.split(":")[0];
@@ -87,7 +87,7 @@ function resolveOrgFromSubdomain(hostname: string): string | null {
     if (host === d || host === `www.${d}`) return null; // bare/root domain
     if (host.endsWith(`.${d}`)) {
       const sub = host.slice(0, host.length - d.length - 1); // label before ".domain"
-      if (!sub || sub === "www" || sub === "join" || sub === "admin") return null;
+      if (!sub || sub === "www" || sub === "join" || sub === "nimda" || sub === "admin") return null;
       if (!/^[a-zA-Z0-9]{2,10}$/.test(sub)) return null; // single-label slug only
       return sub.toLowerCase();
     }

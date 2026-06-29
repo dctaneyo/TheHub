@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { type PermissionKey, parsePermissions, parseAssignedLocations, hasPermission, hasLocationAccess } from "@/lib/permissions";
+import { getAdminSession, type AdminAuthPayload } from "@/lib/admin-auth";
+import { isAdminSessionIdle, touchAdminActivity } from "@/lib/admin-session-activity";
 
 /**
  * Get authenticated session with tenant context.
@@ -13,6 +15,13 @@ export async function getAuthSession(): Promise<(AuthPayload & { tenantId: strin
   const session = await getSession();
   if (!session) return null;
 
+  // Impersonation sessions carry their own short max-duration, independent
+  // of the JWT's own (longer) exp — enforced here, not just in a UI banner,
+  // so a still-valid-by-exp token can't outlive the impersonation window.
+  if (session.impersonationExpiresAt && new Date(session.impersonationExpiresAt) < new Date()) {
+    return null;
+  }
+
   // Get tenant from header (set by middleware) — fallback to session's tenantId
   const h = await headers();
   const headerTenantId = h.get("x-tenant-id");
@@ -21,6 +30,25 @@ export async function getAuthSession(): Promise<(AuthPayload & { tenantId: strin
   if (!tenantId) return null; // No tenant context — treat as unauthenticated
 
   return { ...session, tenantId };
+}
+
+/**
+ * Get the authenticated platform admin session, enforcing the 5-minute
+ * server-side inactivity timeout. A client-side idle timer can be bypassed
+ * by not running that JS — this is the rule that actually applies,
+ * independent of whatever the UI's visible countdown shows.
+ * Returns a 401 response if absent/expired/idle, or null if authorized.
+ */
+export async function requireAdminSession(): Promise<{ response: NextResponse } | { session: AdminAuthPayload }> {
+  const session = await getAdminSession();
+  if (!session) return { response: unauthorized() };
+
+  if (isAdminSessionIdle(session.adminId)) {
+    return { response: unauthorized() };
+  }
+
+  touchAdminActivity(session.adminId);
+  return { session };
 }
 
 /**

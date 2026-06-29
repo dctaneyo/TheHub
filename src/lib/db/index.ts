@@ -557,6 +557,60 @@ function runMigrations() {
     s.exec(`ALTER TABLE tasks ADD COLUMN is_all_day INTEGER NOT NULL DEFAULT 0`);
   });
 
+  // ── Admin Console: Brands + named platform admin accounts ──
+  migrate("052_brands", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS brands (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      logo_url TEXT,
+      primary_color TEXT,
+      created_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE TABLE IF NOT EXISTS tenant_brands (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      brand_id TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_brands_unique ON tenant_brands(tenant_id, brand_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_tenant_brands_tenant ON tenant_brands(tenant_id)`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_tenant_brands_brand ON tenant_brands(brand_id)`);
+    s.exec(`CREATE TABLE IF NOT EXISTS brand_task_templates (
+      id TEXT PRIMARY KEY,
+      brand_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL DEFAULT 'task',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      due_time TEXT NOT NULL,
+      is_recurring INTEGER NOT NULL DEFAULT 0,
+      recurring_type TEXT,
+      recurring_days TEXT,
+      biweekly_start TEXT,
+      points INTEGER NOT NULL DEFAULT 10,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+    s.exec(`CREATE INDEX IF NOT EXISTS idx_brand_task_templates_brand ON brand_task_templates(brand_id)`);
+  });
+
+  migrate("053_task_source_brand_task_id", () => {
+    s.exec(`ALTER TABLE tasks ADD COLUMN source_brand_task_id TEXT`);
+  });
+
+  migrate("054_platform_admins", () => {
+    s.exec(`CREATE TABLE IF NOT EXISTS platform_admins (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      pin_hash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

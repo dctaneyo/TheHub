@@ -20,10 +20,26 @@ export interface AuthPayload {
   locationId?: string; // for locations
   storeNumber?: string; // for locations
   sessionCode?: string; // unique per login session
+  impersonatedBy?: string; // platform admin id, set only on impersonation tokens
+  impersonationExpiresAt?: string; // ISO timestamp — enforced server-side in getAuthSession(), independent of the JWT's own exp
 }
 
 export function signToken(payload: AuthPayload): string {
   return jwt.sign(payload, getJwtSecret(), { expiresIn: "24h" });
+}
+
+/**
+ * Same shape as signToken, but a short 2-hour expiry (not the normal 24h ARL
+ * session) and carries impersonatedBy/impersonationExpiresAt so the session
+ * is distinguishable from the ARL's own login and independently enforceable.
+ */
+export function signImpersonationToken(payload: Omit<AuthPayload, "impersonatedBy" | "impersonationExpiresAt">, adminId: string): string {
+  const impersonationExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  return jwt.sign(
+    { ...payload, impersonatedBy: adminId, impersonationExpiresAt },
+    getJwtSecret(),
+    { expiresIn: "2h" }
+  );
 }
 
 export function verifyToken(token: string): AuthPayload | null {

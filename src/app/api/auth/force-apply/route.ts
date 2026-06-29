@@ -22,15 +22,32 @@ function safeRedirect(raw: string | null): string {
   return raw.replace(/["'<>\\]/g, "");
 }
 
+// Org slugs are 2-10 alphanumeric chars (same format check as resolve-org) —
+// reject anything else rather than interpolating it into the script tag.
+function safeOrgSlug(raw: string | null): string | null {
+  if (!raw || !/^[a-zA-Z0-9]{2,10}$/.test(raw)) return null;
+  return raw.toLowerCase();
+}
+
 // GET - Apply token from query params, set cookie, client-side redirect via HTML
 // (avoids NextResponse.redirect which uses req.url → internal 0.0.0.0 address)
 export async function GET(req: NextRequest) {
   const ip = getClientIP(req.headers);
-  const rl = checkRateLimit(`force-apply:${ip}`, { maxAttempts: 20, windowMs: 60_000, lockoutMs: 2 * 60_000 });
+  const isImpersonation = req.nextUrl.searchParams.get("imp") === "1";
+  // Impersonation hand-offs get their own rate-limit bucket — the default
+  // force-apply:${ip} bucket is also used by unrelated QR/remote-login
+  // traffic from the same office IP, which shouldn't collide with this.
+  const rlKey = isImpersonation ? `force-apply:imp:${ip}` : `force-apply:${ip}`;
+  const rl = checkRateLimit(rlKey, { maxAttempts: 20, windowMs: 60_000, lockoutMs: 2 * 60_000 });
   if (!rl.allowed) return ApiErrors.tooManyRequests(Math.ceil((rl.retryAfterMs || 0) / 1000));
 
   const token = req.nextUrl.searchParams.get("token");
   const redirectTo = safeRedirect(req.nextUrl.searchParams.get("redirect"));
+  // Tenants resolve via the x-org-id cookie on the root domain (not a
+  // per-org subdomain) — an impersonation hand-off from nimda.meetthehub.com
+  // needs to set this client-side cookie too, or middleware has no org
+  // context to resolve once it lands on meetthehub.com.
+  const orgSlug = safeOrgSlug(req.nextUrl.searchParams.get("org"));
 
   if (!token || !verifyToken(token)) {
     return new NextResponse(
@@ -39,8 +56,12 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const orgCookieScript = orgSlug
+    ? `document.cookie="x-org-id=${orgSlug}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict";`
+    : "";
+
   const response = new NextResponse(
-    `<html><body><script>window.location.href="${redirectTo}";</script></body></html>`,
+    `<html><body><script>${orgCookieScript}window.location.href="${redirectTo}";</script></body></html>`,
     { status: 200, headers: { "Content-Type": "text/html" } }
   );
   setTokenCookie(response, token);

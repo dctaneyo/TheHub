@@ -12,6 +12,7 @@
     "lint": "eslint",
     "design:scan": "python3 scripts/devibe-scan.py src --severity medium",
     "db:seed": "npx tsx src/lib/db/seed.ts",
+    "db:seed-admin": "npx tsx scripts/seed-admin.ts",
     "db:push": "npx drizzle-kit push",
     "db:backup": "npx tsx scripts/backup-database.ts backup",
     "db:list-backups": "npx tsx scripts/backup-database.ts list",

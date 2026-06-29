@@ -9,6 +9,7 @@ import { useTheme } from "next-themes";
 import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import { useAuth } from "@/lib/auth-context";
 import { HubMark } from "@/components/icons/hub-mark";
+import { PinPad } from "@/components/ui/pin-pad";
 
 type LoginStep = "userId" | "pin";
 
@@ -16,7 +17,7 @@ const HUB_DOMAINS = ["meetthehub.com"];
 
 /**
  * Extract a per-org slug from the current subdomain (kazi.meetthehub.com → "kazi").
- * Returns null on the bare domain, www, and the reserved join/admin subdomains.
+ * Returns null on the bare domain, www, and the reserved join/nimda subdomains.
  */
 function getSubdomainOrgSlug(): string | null {
   if (typeof window === "undefined") return null;
@@ -25,7 +26,7 @@ function getSubdomainOrgSlug(): string | null {
     if (host === d || host === `www.${d}`) return null;
     if (host.endsWith(`.${d}`)) {
       const sub = host.slice(0, host.length - d.length - 1);
-      if (!sub || sub === "www" || sub === "join" || sub === "admin") return null;
+      if (!sub || sub === "www" || sub === "join" || sub === "nimda" || sub === "admin") return null;
       if (!/^[a-zA-Z0-9]{2,10}$/.test(sub)) return null;
       return sub.toLowerCase();
     }
@@ -638,8 +639,6 @@ export default function LoginPage() {
     );
   });
 
-  const padButtons = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "action", "0", "delete"];
-
   // Loading state — waiting for localStorage check
   if (!orgChecked) {
     return (
@@ -968,51 +967,16 @@ export default function LoginPage() {
         </div>
 
         {/* PinPad */}
-        <div className="grid w-full grid-cols-3 gap-2 sm:gap-3 mt-1">
-          {padButtons.map((btn) => {
-            if (btn === "action") {
-              // Stable key so React updates content in-place (no unmount/remount
-              // flash when switching between the back arrow and "Clear" text).
-              return (
-                <motion.button
-                  key="action"
-                  whileTap={{ scale: 0.92 }}
-                  onClick={handleClearOrBack}
-                  disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-sm font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
-                >
-                  {step === "pin" ? <ChevronLeft className="h-5 w-5" /> : "Clear"}
-                </motion.button>
-              );
-            }
-            if (btn === "delete") {
-              return (
-                <motion.button
-                  key="delete"
-                  whileTap={{ scale: 0.92 }}
-                  onClick={handleDelete}
-                  disabled={loading || validating}
-                  className="flex h-12 sm:h-16 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted disabled:opacity-50"
-                >
-                  <Delete className="h-5 w-5" />
-                </motion.button>
-              );
-            }
-            const isLastDigit = step === "pin" && pin.length === maxLength && btn === pin[maxLength - 1];
-            return (
-              <motion.button
-                key={btn}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => handleDigit(btn)}
-                disabled={loading || validating}
-                {...(isLastDigit && { "data-login-button": true })}
-                className="flex h-12 sm:h-16 items-center justify-center rounded-2xl bg-background text-lg font-semibold text-foreground transition-colors active:bg-muted disabled:opacity-50"
-              >
-                {btn}
-              </motion.button>
-            );
-          })}
-        </div>
+        <PinPad
+          value={step === "pin" ? pin : userId}
+          maxLength={maxLength}
+          onDigit={handleDigit}
+          onDelete={handleDelete}
+          onAction={handleClearOrBack}
+          actionContent={step === "pin" ? <ChevronLeft className="h-5 w-5" /> : "Clear"}
+          disabled={loading || validating}
+          markLastDigit={step === "pin"}
+        />
 
         {/* Loading state below pad */}
         <div className="mt-3 h-6 flex items-center justify-center">

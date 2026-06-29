@@ -1,49 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { NextRequest } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { parseJsonColumn } from "@/lib/json-column";
+import { requireAdminSession } from "@/lib/api-helpers";
+import { verifyAdminPinReconfirmation } from "@/lib/admin-auth";
+import { createTenantWithFirstAdmin } from "@/lib/tenant-provisioning";
+import { logAudit } from "@/lib/audit-logger";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
-
-async function requireAdmin(): Promise<NextResponse | null> {
-  if (!ADMIN_SECRET) {
-    return ApiErrors.internal("Admin not configured");
-  }
-  const cookieStore = await cookies();
-  const token = cookieStore.get("hub-admin-token")?.value;
-  if (!token || token !== ADMIN_SECRET) {
-    return ApiErrors.unauthorized();
-  }
-  return null; // authorized
-}
-
-// GET all tenants with stats
+// GET all tenants with stats + passive backup-health signal
 export async function GET() {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
+
   try {
     const allTenants = db.select().from(schema.tenants).all();
 
     const tenants = allTenants.map((t) => {
-      const locationCount = db
-        .select()
-        .from(schema.locations)
-        .where(eq(schema.locations.tenantId, t.id))
-        .all().length;
-      const userCount = db
-        .select()
-        .from(schema.arls)
-        .where(eq(schema.arls.tenantId, t.id))
-        .all().length;
+      const locationCount = db.select().from(schema.locations).where(eq(schema.locations.tenantId, t.id)).all().length;
+      const userCount = db.select().from(schema.arls).where(eq(schema.arls.tenantId, t.id)).all().length;
+      const brandTags = db.select({ name: schema.brands.name, primaryColor: schema.brands.primaryColor })
+        .from(schema.tenantBrands)
+        .innerJoin(schema.brands, eq(schema.tenantBrands.brandId, schema.brands.id))
+        .where(eq(schema.tenantBrands.tenantId, t.id))
+        .all();
 
       return {
         ...t,
         features: parseJsonColumn(t.features, []),
         locationCount,
         userCount,
+        brands: brandTags,
       };
     });
 
@@ -54,44 +41,29 @@ export async function GET() {
   }
 }
 
-// POST create new tenant
+// POST — provision a new tenant (tenant + first ARL + optional brand task copy-in)
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
+
   try {
     const body = await req.json();
-    const { slug, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain } = body;
+    const { slug, name, appTitle, primaryColor, plan, adminName, adminUserId, adminPin, brandIds } = body;
 
-    if (!slug || !name) {
-      return ApiErrors.badRequest("Slug and name are required");
-    }
+    const result = await createTenantWithFirstAdmin({
+      slug, name, appTitle, primaryColor, plan, adminName, adminUserId, adminPin,
+      brandIds, provisionedBy: auth.session.adminId,
+    });
 
-    // Check slug uniqueness
-    const existing = db.select().from(schema.tenants).where(eq(schema.tenants.slug, slug)).get();
-    if (existing) {
-      return ApiErrors.badRequest("Slug already exists");
-    }
+    if (!result.ok) return ApiErrors.badRequest(result.error);
 
-    const now = new Date().toISOString();
-    const id = slug; // Use slug as ID for simplicity (matches middleware lookup)
+    logAudit({
+      userId: auth.session.adminId, userType: "platform_admin", operation: "tenant_provisioned",
+      entityType: "tenant", tenantId: result.tenantId,
+      payload: { slug: result.slug, brandIds: brandIds || [] }, status: "success",
+    });
 
-    db.insert(schema.tenants).values({
-      id,
-      slug,
-      name,
-      appTitle: appTitle || null,
-      primaryColor: primaryColor || "#dc2626",
-      plan: plan || "starter",
-      features: JSON.stringify(features || []),
-      maxLocations: maxLocations || 50,
-      maxUsers: maxUsers || 20,
-      isActive: true,
-      customDomain: customDomain || null,
-      createdAt: now,
-      updatedAt: now,
-    }).run();
-
-    return apiSuccess({ id });
+    return apiSuccess({ id: result.tenantId, slug: result.slug, adminId: result.adminId });
   } catch (error) {
     console.error("Create tenant error:", error);
     return ApiErrors.internal();
@@ -100,8 +72,9 @@ export async function POST(req: NextRequest) {
 
 // PUT update tenant
 export async function PUT(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
+
   try {
     const body = await req.json();
     const { id, name, appTitle, primaryColor, plan, features, maxLocations, maxUsers, customDomain, isActive } = body;
@@ -121,6 +94,8 @@ export async function PUT(req: NextRequest) {
 
     db.update(schema.tenants).set(updates).where(eq(schema.tenants.id, id)).run();
 
+    logAudit({ userId: auth.session.adminId, userType: "platform_admin", operation: "tenant_updated", entityType: "tenant", tenantId: id, payload: updates, status: "success" });
+
     return apiSuccess({ success: true });
   } catch (error) {
     console.error("Update tenant error:", error);
@@ -128,24 +103,30 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE tenant
+// DELETE tenant — PIN re-confirmation required, this is the highest-stakes
+// action in the whole console (soft-delete: marks inactive, doesn't purge data).
 export async function DELETE(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-  try {
-    const { id } = await req.json();
-    if (!id) return ApiErrors.badRequest("ID required");
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
 
-    // Prevent deleting the seed tenant
+  try {
+    const { id, pin } = await req.json();
+    if (!id) return ApiErrors.badRequest("ID required");
+    if (!pin) return ApiErrors.badRequest("PIN required");
+
+    const pinCheck = verifyAdminPinReconfirmation(auth.session.adminId, pin);
+    if (!pinCheck.ok) return ApiErrors.unauthorized();
+
     if (id === "kazi") {
       return ApiErrors.forbidden("Cannot delete the primary tenant");
     }
 
-    // Soft-delete: just mark inactive
     db.update(schema.tenants)
       .set({ isActive: false, updatedAt: new Date().toISOString() })
       .where(eq(schema.tenants.id, id))
       .run();
+
+    logAudit({ userId: auth.session.adminId, userType: "platform_admin", operation: "tenant_deleted", entityType: "tenant", tenantId: id, status: "success" });
 
     return apiSuccess({ success: true });
   } catch (error) {

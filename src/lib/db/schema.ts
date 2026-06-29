@@ -90,8 +90,9 @@ export const tasks = sqliteTable("tasks", {
   recurringDays: text("recurring_days"), // JSON array of days for weekly: ["mon","tue",...] or day-of-month for monthly
   biweeklyStart: text("biweekly_start"), // 'this' | 'next' for biweekly tasks
   locationId: text("location_id"), // null = all locations
-  createdBy: text("created_by").notNull(), // ARL id or location id who created it
-  createdByType: text("created_by_type").notNull().default("arl"), // 'arl' | 'location'
+  createdBy: text("created_by").notNull(), // ARL id, location id, or platform admin id who created it
+  createdByType: text("created_by_type").notNull().default("arl"), // 'arl' | 'location' | 'brand'
+  sourceBrandTaskId: text("source_brand_task_id"), // set when copied from a brand_task_templates row; makes "apply brand" idempotent
   isHidden: integer("is_hidden", { mode: "boolean" }).notNull().default(false), // hide from dashboard/calendar
   isAllDay: integer("is_all_day", { mode: "boolean" }).notNull().default(false), // true = no specific time; dueTime stored as "00:00"
   allowEarlyComplete: integer("allow_early_complete", { mode: "boolean" }).notNull().default(false), // can be completed before due date
@@ -534,4 +535,52 @@ export const meetingParticipants = sqliteTable("meeting_participants", {
   wasMutedByHost: integer("was_muted_by_host", { mode: "boolean" }).notNull().default(false),
   connectionQuality: text("connection_quality"), // 'excellent' | 'good' | 'poor'
   deviceType: text("device_type"), // 'desktop' | 'mobile' | 'tablet'
+});
+
+// Brands - franchise brand spanning multiple tenants (e.g. "McDonald's")
+export const brands = sqliteTable("brands", {
+  id: text("id").primaryKey(), // UUID
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Tenant <-> Brand association - many-to-many
+export const tenantBrands = sqliteTable("tenant_brands", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: text("tenant_id").notNull().references(() => tenants.id),
+  brandId: text("brand_id").notNull().references(() => brands.id),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Brand standard task templates - copied into a tenant's tasks table on "apply"
+export const brandTaskTemplates = sqliteTable("brand_task_templates", {
+  id: text("id").primaryKey(), // UUID
+  brandId: text("brand_id").notNull().references(() => brands.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("task"),
+  priority: text("priority").notNull().default("normal"),
+  dueTime: text("due_time").notNull(),
+  isRecurring: integer("is_recurring", { mode: "boolean" }).notNull().default(false),
+  recurringType: text("recurring_type"),
+  recurringDays: text("recurring_days"),
+  biweeklyStart: text("biweekly_start"),
+  points: integer("points").notNull().default(10),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Platform admins - named accounts for the Admin Console, replaces the
+// single shared ADMIN_SECRET
+export const platformAdmins = sqliteTable("platform_admins", {
+  id: text("id").primaryKey(), // UUID
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  pinHash: text("pin_hash").notNull(), // 6-digit PIN, second login factor, same bcrypt strength as the password
+  name: text("name").notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

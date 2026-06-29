@@ -10,9 +10,11 @@ import {
   SprayCan,
   Clock,
   ClipboardList,
+  Trash2,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -166,6 +168,31 @@ export function TaskManager() {
     }
   };
 
+  // Bulk completion clearing — moved here from the old ARL Data Management
+  // page (now relocated/admin-only for the genuinely destructive
+  // operations). This is routine tenant self-service work, not a nuclear
+  // option, so it stays in Task Manager under the ARL's own session.
+  const clearCompletions = (action: "clear-completions-today" | "clear-completions-week" | "clear-all-completions", label: string) => {
+    showConfirm({
+      title: label,
+      description: "Task completion history will be removed. This cannot be undone.",
+      confirmLabel: "Clear",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/tasks/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-hub-request": "1" },
+            body: JSON.stringify({ action }),
+          });
+          if (res.ok) fetchData();
+        } catch (err) {
+          console.error("Clear completions error:", err);
+        }
+      },
+    });
+  };
+
   const locationOptions = useMemo(() => createListCollection({
     items: [{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l.id, label: l.name }))],
   }), [locations]);
@@ -201,6 +228,19 @@ export function TaskManager() {
               ))}
             </SelectContent>
           </Select>
+          <Menu>
+            <MenuTrigger asChild>
+              <button className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground active:bg-muted transition-colors">
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear completions
+              </button>
+            </MenuTrigger>
+            <MenuContent>
+              <MenuItem value="today" onClick={() => clearCompletions("clear-completions-today", "Clear today's completions")}>Today</MenuItem>
+              <MenuItem value="week" onClick={() => clearCompletions("clear-completions-week", "Clear this week's completions")}>This week</MenuItem>
+              <MenuItem value="all" variant="destructive" onClick={() => clearCompletions("clear-all-completions", "Clear all completions")}>All time</MenuItem>
+            </MenuContent>
+          </Menu>
           <button
             onClick={() => setShowTemplates((t) => !t)}
             className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground active:bg-muted transition-colors"
