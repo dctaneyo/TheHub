@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
+import { StatusDot } from "@/components/ui/status-dot";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -441,7 +442,7 @@ export function Messaging() {
                                       const info = memberInfoMap.get(rm.memberId);
                                       return (
                                         <div key={rm.memberId} className="flex items-center gap-1 py-1">
-                                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                          <StatusDot color="emerald" />
                                           <span className="text-xs text-foreground">{info?.name ?? rm.memberId}</span>
                                         </div>
                                       );
@@ -455,7 +456,7 @@ export function Messaging() {
                                       const info = memberInfoMap.get(um.memberId);
                                       return (
                                         <div key={um.memberId} className="flex items-center gap-1 py-1">
-                                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                                          <StatusDot color="muted" />
                                           <span className="text-xs text-muted-foreground">{info?.name ?? um.memberId}</span>
                                         </div>
                                       );

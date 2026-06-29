@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Send, Trash2, Radio, Eye, EyeOff, Store, Check, ChevronDown, ChevronUp } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { StatusDot } from "@/components/ui/status-dot";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -183,7 +184,7 @@ export function EmergencyBroadcast() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[var(--hub-red)]">Active Broadcast</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--hub-red)] animate-pulse" />
+                    <StatusDot color="brand" pulse />
                   </div>
                   <p className="text-sm font-semibold text-foreground">{activeMessage.message}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -239,7 +240,7 @@ export function EmergencyBroadcast() {
                         <div className="mt-2 grid grid-cols-2 gap-1">
                           {[...viewed.map((l) => ({ ...l, seen: true })), ...notViewed.map((l) => ({ ...l, seen: false }))].map((l) => (
                             <div key={l.id} className="flex items-center gap-1 py-1">
-                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", l.seen ? "bg-emerald-400" : "bg-muted-foreground")} />
+                              <StatusDot color={l.seen ? "emerald" : "muted"} />
                               <span className={cn("text-xs truncate", l.seen ? "text-foreground" : "text-muted-foreground")}>
                                 {l.name}
                               </span>
@@ -262,7 +263,7 @@ export function EmergencyBroadcast() {
             exit={{ opacity: 0 }}
             className="flex items-center gap-3 rounded-2xl border border-border bg-card overflow-hidden px-5 py-4"
           >
-            <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
+            <StatusDot color="muted" />
             <p className="text-xs text-muted-foreground italic">No active emergency message</p>
           </motion.div>
         )}

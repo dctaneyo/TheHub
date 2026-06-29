@@ -30,6 +30,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { NotificationSettingsPanel } from "@/components/arl/notification-settings-panel";
 import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
+import { StatusDot } from "@/components/ui/status-dot";
 import { PageIndicator } from "@/components/arl/page-indicator";
 import {
   ArlDashboardProvider,
@@ -165,10 +166,10 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
               <IconTip label="Settings">
                 <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent transition-colors outline-none" title="Settings">
                   <MoreVertical className="h-4 w-4" />
-                  <div className={cn(
-                    "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
-                    isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
-                  )} />
+                  <StatusDot
+                    color={isOnline && socketConnected ? "emerald" : "red"}
+                    className="absolute top-1 right-1 border border-background"
+                  />
                 </MenuTrigger>
               </IconTip>
               <MenuContent className="w-64">
@@ -200,10 +201,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                           : "Check your connection"}
                       </p>
                     </div>
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"
-                    )} />
+                    <StatusDot color={isOnline && socketConnected ? "emerald" : "red"} />
                   </div>
                 </div>
 
@@ -233,7 +231,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                       <p className="text-xs font-semibold text-foreground">Notifications</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">Enabled</p>
                     </div>
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <StatusDot color="emerald" />
                   </div>
                 ) : notificationPermission === "denied" ? (
                   <div className="px-3 py-2 flex items-center gap-2">
@@ -411,7 +409,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <StatusDot color="red" pulse />
                     <span className="text-xs font-semibold text-red-600 uppercase">Live Now</span>
                   </div>
                   <p className="text-sm font-semibold text-foreground truncate">{activeBroadcast.title}</p>

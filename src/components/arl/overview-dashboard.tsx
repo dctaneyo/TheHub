@@ -15,6 +15,7 @@ import { useSocket } from "@/lib/socket-context";
 import { cn } from "@/lib/utils";
 import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { TickerPush } from "@/components/arl/ticker-push";
+import { StatusDot } from "@/components/ui/status-dot";
 
 interface OverviewData {
   locationsOnline: number;
@@ -252,7 +253,7 @@ export function OverviewDashboard() {
           <div className="space-y-2 md:flex-1 md:min-h-0 md:overflow-y-auto">
             {data.locationPerformance.map((loc) => (
               <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-2">
-                <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
+                <StatusDot color={loc.isOnline ? "emerald" : "muted"} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground truncate">{loc.name}</span>

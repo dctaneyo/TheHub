@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Radio, Play, X, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatusDot } from "@/components/ui/status-dot";
 import { useSocket } from "@/lib/socket-context";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
@@ -110,7 +111,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
         />
         {/* Viewer count badge */}
         <div className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white px-3 py-2 rounded-full">
-          <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <StatusDot color="red" pulse />
           <span className="text-xs font-semibold uppercase">Live</span>
           <span className="text-xs text-white/70">·</span>
           <Users className="h-3.5 w-3.5 text-white/70" />

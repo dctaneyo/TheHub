@@ -18,6 +18,7 @@ import {
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
+import { StatusDot } from "@/components/ui/status-dot";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 
@@ -238,11 +239,11 @@ export function LocationsManager() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1">
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <StatusDot color="emerald" />
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{onlineCount} Online</span>
           </div>
           <div className="flex items-center gap-1 rounded-full bg-muted px-3 py-1">
-            <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+            <StatusDot color="muted" />
             <span className="text-xs font-semibold text-muted-foreground">{locations.length - onlineCount} Offline</span>
           </div>
         </div>
