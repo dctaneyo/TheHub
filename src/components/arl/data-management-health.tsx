@@ -112,7 +112,7 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
 
         {/* Table breakdown */}
         <details className="group">
-          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground active:text-foreground">
             Table Breakdown ▸
           </summary>
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">

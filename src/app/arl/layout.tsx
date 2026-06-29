@@ -158,7 +158,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 plain status row; Theme/Notifications (rarely touched) are
                 grouped below a separator (Section 12 cadence grouping). */}
             <Menu>
-              <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors outline-none">
+              <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent transition-colors outline-none">
                 <MoreVertical className="h-4.5 w-4.5" />
                 <div className={cn(
                   "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
@@ -418,13 +418,13 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                     setWatchingBroadcast(true);
                     setShowBroadcastNotification(false);
                   }}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2 px-4 rounded-xl transition-colors"
+                  className="flex-1 bg-red-600 active:bg-red-700 text-white font-semibold text-sm py-2 px-4 rounded-xl transition-colors"
                 >
                   Join Broadcast
                 </button>
                 <button
                   onClick={() => setShowBroadcastNotification(false)}
-                  className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
+                  className="px-4 py-2 text-sm font-semibold text-muted-foreground active:text-foreground active:bg-muted rounded-xl transition-colors"
                 >
                   Dismiss
                 </button>

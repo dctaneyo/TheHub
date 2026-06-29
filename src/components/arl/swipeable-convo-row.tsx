@@ -119,7 +119,7 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
         onClick={handleRowClick}
         className={cn(
           "relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors cursor-pointer select-none",
-          convo.unreadCount > 0 ? "bg-[var(--hub-red)]/10" : "bg-card hover:bg-muted"
+          convo.unreadCount > 0 ? "bg-[var(--hub-red)]/10" : "bg-card active:bg-muted"
         )}
       >
         <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", convIconBg(convo.type))}>
@@ -150,7 +150,7 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
         {convo.type !== "global" && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="hidden sm:group-hover:flex absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400"
+            className="hidden sm:group-hover:flex absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 active:bg-red-500/20 active:text-red-600 dark:active:text-red-400"
             title="Delete conversation"
           >
             <Trash2 className="h-3 w-3" />

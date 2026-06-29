@@ -116,7 +116,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
-          <button onClick={() => onClose()} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button onClick={() => onClose()} className="p-2 active:bg-white/10 rounded-lg transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -145,7 +145,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
                 <span className="font-mono text-2xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}
-                className="p-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                className="p-2 rounded-lg bg-card border border-border active:bg-muted transition-colors text-muted-foreground active:text-foreground">
                 {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -173,7 +173,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
           <Button
             onClick={startMeeting}
             disabled={!title.trim()}
-            className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-lg font-semibold rounded-xl"
+            className="w-full bg-red-600 active:bg-red-700 text-white h-12 text-lg font-semibold rounded-xl"
           >
             <Play className="h-5 w-5 mr-2" />
             Start Meeting

@@ -147,20 +147,20 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
                         task.isHidden
-                          ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-muted text-muted-foreground active:bg-muted/80"
+                          : "text-muted-foreground active:bg-muted active:text-foreground"
                       )}
                     >
                       {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={() => onEdit(task)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <Menu>
-                      <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground">
+                      <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors active:bg-muted active:text-foreground">
                         <MoreVertical className="h-3.5 w-3.5" />
                       </MenuTrigger>
                       <MenuContent>
@@ -236,20 +236,20 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                         task.isHidden
-                          ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-muted text-muted-foreground active:bg-muted/80"
+                          : "text-muted-foreground active:bg-muted active:text-foreground"
                       )}
                     >
                       {task.isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={() => onEdit(task)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <Menu>
-                      <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground">
+                      <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors active:bg-muted active:text-foreground">
                         <MoreVertical className="h-3.5 w-3.5" />
                       </MenuTrigger>
                       <MenuContent>

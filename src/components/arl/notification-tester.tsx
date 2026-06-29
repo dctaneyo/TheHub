@@ -175,7 +175,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
     <div className={cn("", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted rounded-xl w-full"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors active:bg-muted rounded-xl w-full"
       >
         <TestTube className="h-4 w-4" />
         <span>Test Notifications</span>
@@ -233,7 +233,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
                       key={type.id}
                       onClick={() => sendNotification(type.id, type.payload)}
                       disabled={!selectedLocation || isSending}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg border border-border active:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="text-lg">{type.icon}</span>
                       <div className="flex-1 min-w-0">

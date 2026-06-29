@@ -309,7 +309,7 @@ export function GroupInfoModal({
             )}
             {!isGlobalChat && (
               <Menu>
-                <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                <MenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground">
                   <MoreVertical className="h-4 w-4" />
                 </MenuTrigger>
                 <MenuContent>
@@ -436,7 +436,7 @@ export function GroupInfoModal({
                       {availableMembers.map((member) => (
                         <label
                           key={member.id}
-                          className="flex items-center gap-3 p-2 rounded hover:bg-background cursor-pointer"
+                          className="flex items-center gap-3 p-2 rounded active:bg-background cursor-pointer"
                         >
                           <input
                             type="checkbox"

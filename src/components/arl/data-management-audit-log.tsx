@@ -62,7 +62,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
             />
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
             >
               <X className="h-4 w-4" />
             </button>
@@ -103,7 +103,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
                         </td>
                       </tr>
                     ) : filteredLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
+                      <tr key={log.id} className="border-b border-border last:border-b-0 active:bg-muted/30 transition-colors">
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className={cn(

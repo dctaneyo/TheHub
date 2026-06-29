@@ -139,7 +139,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
                 <p className="text-sm text-red-100">Broadcast to all online locations</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <button onClick={onClose} className="p-2 active:bg-white/10 rounded-lg transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -167,7 +167,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
             <Button
               onClick={goLive}
               disabled={!title.trim()}
-              className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white h-12 text-lg font-semibold rounded-xl"
+              className="w-full bg-gradient-to-r from-red-600 to-orange-600 active:from-red-700 active:to-orange-700 text-white h-12 text-lg font-semibold rounded-xl"
             >
               <Radio className="h-5 w-5 mr-2" />
               Go Live
