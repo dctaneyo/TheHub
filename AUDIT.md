@@ -418,13 +418,21 @@ contrast remain un-audited. Status: **still open as described.**
    `setTimeout` timer state directly rather than pure functions, so it
    needs a different testing approach (fake timers) than the other two.
 7. ~~Add safety tests for `data-management/*` destructive routes.~~ —
-   done for the two highest-risk routes: `drop-tables` (12 tests,
-   including 6 specifically proving the table-name allowlist can't be
-   bypassed) and `purge-messages` (7 tests, including a regression test
-   asserting every query carries the tenant-scoping fix from §3.3a).
-   Writing this `purge-messages` test is what surfaced §3.3a — the other
-   8 affected routes have the fix but not yet their own dedicated test
-   file; that's the remaining work here.
+   done for all 10 destructive routes (drop-tables, purge-messages,
+   purge-notifications, purge-old-tasks, purge-broadcast-data,
+   purge-conversations, clear-sessions, duplicate-check,
+   archive-old-data, bulk-tasks — 110 tests total). Every one of the 9
+   affected by §3.3a has a regression test asserting its queries carry
+   the tenant-scoping filter; `drop-tables` has 6 tests specifically
+   proving its table-name allowlist can't be bypassed (core table names,
+   a SQL-injection-shaped string). Writing the first of these
+   (`purge-messages`) is what surfaced §3.3a in the first place.
+   `orphaned-cleanup` and `vacuum` weren't given dedicated test files —
+   both are deliberately tenant-agnostic (see §3.3a) with no
+   tenant-scoping property to regression-test, and their business logic
+   is simple enough that the auth/permission/rate-limit gating they
+   share with every other route is the only thing worth asserting,
+   which the other 10 files already exercise as a pattern.
 
 ### Medium-Term (Architecture / Performance)
 
