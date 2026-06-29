@@ -120,23 +120,30 @@ if (needsSeed) {
 // The Admin Console has no self-serve signup — every account after the first
 // is created from /admin/team, but the very first one needs a way in. On a
 // fresh deploy nobody can SSH in to run scripts/seed-admin.ts, so we seed it
-// from environment variables here instead. Idempotent and first-admin-only:
-// if ANY platform admin already exists we never touch the table, so this can
-// never clobber a real account or reset a password on a later redeploy.
+// at startup here instead. Idempotent and first-admin-only: if ANY platform
+// admin already exists we never touch the table, so this can never clobber a
+// real account or reset a password on a later redeploy.
+//
+// Credentials come from SEED_ADMIN_* env vars when set. If they aren't, we
+// fall back to the GENERIC defaults below so a deploy "just works" with zero
+// config. ⚠️ Those defaults are public (they're right here in the repo) — on
+// first login you MUST create your own admin from /admin/team and deactivate
+// this one. There is no self-service password change.
+const DEFAULT_ADMIN = {
+  email: "admin@meetthehub.com",
+  name: "Admin",
+  password: "ChangeMe123!",
+  pin: "000000",
+};
+
 function seedFirstAdmin() {
-  const email = process.env.SEED_ADMIN_EMAIL?.trim();
-  const name = process.env.SEED_ADMIN_NAME?.trim();
-  const password = process.env.SEED_ADMIN_PASSWORD;
-  const pin = process.env.SEED_ADMIN_PIN;
+  const usingDefaults = !process.env.SEED_ADMIN_EMAIL && !process.env.SEED_ADMIN_PASSWORD;
 
-  // No config → nothing to do. (Once the first admin exists you can safely
-  // remove these env vars; they're only read on a from-empty deploy.)
-  if (!email && !name && !password && !pin) return;
+  const email = (process.env.SEED_ADMIN_EMAIL ?? DEFAULT_ADMIN.email).trim();
+  const name = (process.env.SEED_ADMIN_NAME ?? DEFAULT_ADMIN.name).trim();
+  const password = process.env.SEED_ADMIN_PASSWORD ?? DEFAULT_ADMIN.password;
+  const pin = process.env.SEED_ADMIN_PIN ?? DEFAULT_ADMIN.pin;
 
-  if (!email || !name || !password || !pin) {
-    console.warn("⚠️  SEED_ADMIN_* partially set — need EMAIL, NAME, PASSWORD and PIN together. Skipping admin seed.");
-    return;
-  }
   if (!/^\d{6}$/.test(pin)) {
     console.warn("⚠️  SEED_ADMIN_PIN must be exactly 6 digits. Skipping admin seed.");
     return;
@@ -176,7 +183,17 @@ function seedFirstAdmin() {
        VALUES (?, ?, ?, ?, ?, 1, ?, ?)`
     ).run(uuid(), email, hashSync(password, 10), hashSync(pin, 10), name, now, now);
 
-    console.log(`🔑 Seeded first platform admin: ${name} <${email}>`);
+    if (usingDefaults) {
+      console.warn(
+        `🔑 Seeded first platform admin with GENERIC DEFAULT credentials:\n` +
+        `      email: ${DEFAULT_ADMIN.email}\n` +
+        `      password: ${DEFAULT_ADMIN.password}\n` +
+        `      PIN: ${DEFAULT_ADMIN.pin}\n` +
+        `   ⚠️  These are public. Log in, create your own admin at /admin/team, then deactivate this one.`
+      );
+    } else {
+      console.log(`🔑 Seeded first platform admin: ${name} <${email}>`);
+    }
   } catch (err) {
     console.error("Admin seed error:", err);
   } finally {

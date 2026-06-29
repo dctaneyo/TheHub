@@ -68,9 +68,24 @@ DATABASE_PATH=./data/hub.db
 
 ### First Admin Console account
 
-The Admin Console (`nimda.*`) has no self-serve signup. On a **fresh** deploy,
-set these env vars and the first platform admin is seeded automatically at
-startup (see `src/lib/startup.ts`):
+The Admin Console (`nimda.*`) has no self-serve signup. On a **fresh** deploy
+the first platform admin is seeded automatically at startup (see
+`src/lib/startup.ts`).
+
+With **zero config** it seeds a generic default account:
+
+```
+email:    admin@meetthehub.com
+password: ChangeMe123!
+PIN:      000000
+```
+
+> ⚠️ These defaults are public (they live in this repo). There is no
+> self-service password change, so on first login you should immediately
+> create your own admin from `/admin/team` and deactivate the default one.
+
+To seed your **own** credentials directly instead, set these env vars (they
+take priority over the defaults):
 
 ```
 SEED_ADMIN_EMAIL=you@example.com
@@ -79,10 +94,9 @@ SEED_ADMIN_PASSWORD=your-password
 SEED_ADMIN_PIN=123456        # exactly 6 digits — second login factor
 ```
 
-The seed is **idempotent and first-admin-only**: if any platform admin already
-exists it does nothing, so it can never reset a password on a later redeploy.
-Once the first admin is in, you can remove these vars (create further admins
-from `/admin/team`). Locally you can still use `npm run db:seed-admin`.
+Either way the seed is **idempotent and first-admin-only**: if any platform
+admin already exists it does nothing, so it can never reset a password on a
+later redeploy. Locally you can still use `npm run db:seed-admin`.
 
 ## Project Structure
 
