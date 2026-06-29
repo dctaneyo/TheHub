@@ -1,6 +1,7 @@
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { parseJsonColumn } from "@/lib/json-column";
 
 interface ReportData {
   title: string;
@@ -175,7 +176,7 @@ export function generateReport(
   report: { name: string; type: string; frequency: string; tenantId: string; filters: string | null }
 ): ReportData {
   const dateRange = getDateRange(report.frequency);
-  const filters = report.filters ? JSON.parse(report.filters) : undefined;
+  const filters = parseJsonColumn<{ locationIds?: string[]; groupIds?: string[] } | undefined>(report.filters, undefined);
 
   let sections: ReportSection[];
   switch (report.type) {
@@ -296,7 +297,7 @@ export async function processScheduledReports(): Promise<{ processed: number; er
 
       // TODO: Send email with html content to recipients
       // For now, the report is stored in report_history and can be viewed/downloaded
-      const recipients = JSON.parse(report.recipients || "[]");
+      const recipients = parseJsonColumn<string[]>(report.recipients, []);
       console.log(`📊 Report "${report.name}" generated for ${recipients.length} recipients`);
 
       processed++;

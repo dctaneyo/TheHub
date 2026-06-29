@@ -15,6 +15,7 @@ import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { parseJsonColumn } from "@/lib/json-column";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -146,8 +147,8 @@ export function UserManagement() {
   };
 
   const openPermissions = (arl: ArlUser) => {
-    const parsed: PermissionKey[] = arl.permissions ? JSON.parse(arl.permissions) : [...ALL_PERMISSIONS];
-    const assignedLocs: string[] = arl.assignedLocationIds ? JSON.parse(arl.assignedLocationIds) : [];
+    const parsed = parseJsonColumn<PermissionKey[]>(arl.permissions, [...ALL_PERMISSIONS]);
+    const assignedLocs = parseJsonColumn<string[]>(arl.assignedLocationIds, []);
     setEditPerms(parsed);
     setEditLocationIds(assignedLocs);
     setEditRoleId(arl.roleId || null);

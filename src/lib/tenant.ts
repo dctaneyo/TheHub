@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
+import { parseJsonColumn } from "@/lib/json-column";
 
 export interface Tenant {
   id: string;
@@ -50,7 +51,7 @@ export async function getTenant(): Promise<Tenant | null> {
 
   const tenant: Tenant = {
     ...row,
-    features: JSON.parse(row.features || "[]") as string[],
+    features: parseJsonColumn<string[]>(row.features, []),
   };
 
   tenantCache.set(tenantId, { tenant, expiresAt: Date.now() + TENANT_CACHE_TTL });

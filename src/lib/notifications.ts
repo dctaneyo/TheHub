@@ -3,6 +3,7 @@ import { notifications, notificationPreferences } from "@/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { broadcastNotification, broadcastNotificationRead, broadcastNotificationDeleted } from "./socket-emit";
+import { parseJsonColumn } from "./json-column";
 
 export type NotificationType =
   // For Locations
@@ -423,7 +424,7 @@ export async function upgradeOverdueToMissed(
   if (rows.length === 0) return 0;
 
   for (const existing of rows) {
-    const taskId = existing.metadata ? JSON.parse(existing.metadata)?.taskId : null;
+    const taskId = parseJsonColumn<{ taskId?: string } | null>(existing.metadata, null)?.taskId ?? null;
     const taskTitle = existing.title?.replace(/^Overdue:\s*/, "") || "Task";
     const missedTitle = `Missed: ${taskTitle}`;
     const missedMsg = `Task "${taskTitle}" was not completed yesterday`;

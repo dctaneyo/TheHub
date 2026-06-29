@@ -6,6 +6,8 @@
  * and the real-time task notification scheduler.
  */
 
+import { parseJsonColumn } from "@/lib/json-column";
+
 /** Returns the Monday of the week containing `d`. */
 export function startOfWeekMonday(d: Date): Date {
   const day = d.getDay(); // 0=Sun,1=Mon,...,6=Sat
@@ -59,39 +61,24 @@ export function taskAppliesToDate(
   if (rType === "daily") return true;
 
   if (rType === "weekly") {
-    if (!task.recurringDays) return false;
-    try {
-      return (JSON.parse(task.recurringDays) as string[]).includes(dayOfWeek);
-    } catch {
-      return false;
-    }
+    return parseJsonColumn<string[]>(task.recurringDays, []).includes(dayOfWeek);
   }
 
   if (rType === "biweekly") {
-    if (!task.recurringDays) return false;
-    try {
-      const days = JSON.parse(task.recurringDays) as string[];
-      if (!days.includes(dayOfWeek)) return false;
-      const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
-      const anchorWeek = startOfWeekMonday(anchorDate);
-      const targetWeek = startOfWeekMonday(date);
-      const weeksDiff = Math.round(
-        (targetWeek.getTime() - anchorWeek.getTime()) / (7 * 86400000),
-      );
-      const isEvenInterval = weeksDiff % 2 === 0;
-      return task.biweeklyStart === "next" ? !isEvenInterval : isEvenInterval;
-    } catch {
-      return false;
-    }
+    const days = parseJsonColumn<string[]>(task.recurringDays, []);
+    if (!days.includes(dayOfWeek)) return false;
+    const anchorDate = task.createdAt ? new Date(task.createdAt) : new Date(0);
+    const anchorWeek = startOfWeekMonday(anchorDate);
+    const targetWeek = startOfWeekMonday(date);
+    const weeksDiff = Math.round(
+      (targetWeek.getTime() - anchorWeek.getTime()) / (7 * 86400000),
+    );
+    const isEvenInterval = weeksDiff % 2 === 0;
+    return task.biweeklyStart === "next" ? !isEvenInterval : isEvenInterval;
   }
 
   if (rType === "monthly") {
-    if (!task.recurringDays) return false;
-    try {
-      return (JSON.parse(task.recurringDays) as number[]).includes(date.getDate());
-    } catch {
-      return false;
-    }
+    return parseJsonColumn<number[]>(task.recurringDays, []).includes(date.getDate());
   }
 
   return false;

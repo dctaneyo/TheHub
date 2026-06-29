@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { logAudit } from "@/lib/audit-logger";
 import { invalidateTenantCache } from "@/lib/tenant";
+import { parseJsonColumn } from "@/lib/json-column";
 
 // GET — fetch current tenant settings (any authenticated user)
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
     return apiSuccess({
       tenant: {
         ...tenant,
-        features: JSON.parse(tenant.features || "[]"),
+        features: parseJsonColumn(tenant.features, []),
       },
     });
   } catch (error) {
@@ -80,7 +81,7 @@ export async function PUT(req: NextRequest) {
 
     return apiSuccess({
       success: true,
-      tenant: updated ? { ...updated, features: JSON.parse(updated.features || "[]") } : null,
+      tenant: updated ? { ...updated, features: parseJsonColumn(updated.features, []) } : null,
     });
   } catch (error) {
     console.error("Update tenant settings error:", error);

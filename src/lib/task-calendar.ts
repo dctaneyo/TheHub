@@ -6,6 +6,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { taskAppliesToDate } from "@/lib/task-utils";
 
 /**
  * Shared task-applies-to-date logic — the same rules used wherever a task is
@@ -14,6 +15,11 @@ import {
  * needs "what's due on date X") can't drift from how the widget computes it,
  * which is what happened to the previous standalone /calendar page: it had
  * its own separate, never-reconciled copy of this logic.
+ *
+ * The actual recurrence math now lives in task-utils.ts (taskAppliesToDate)
+ * — this used to be its own independent reimplementation, which is exactly
+ * the kind of drift the comment above warns about. taskApplies() is a thin
+ * adapter so calendar call sites don't need to precompute dateStr/dayOfWeek.
  */
 
 export interface CalTask {
@@ -39,38 +45,9 @@ const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 export function taskApplies(task: CalTask, date: Date): boolean {
   const dateStr = format(date, "yyyy-MM-dd");
   const dayKey = DAY_KEYS[date.getDay()];
-  if (task.createdAt) {
-    const created = task.createdAt.split("T")[0];
-    if (dateStr < created) return false;
-  }
-  if (!task.isRecurring) return task.dueDate === dateStr;
-  const rType = task.recurringType || "weekly";
-  if (rType === "daily") return true;
-  if (rType === "weekly") {
-    try { return (JSON.parse(task.recurringDays!) as string[]).includes(dayKey); } catch { return false; }
-  }
-  if (rType === "biweekly") {
-    try {
-      const days = JSON.parse(task.recurringDays!) as string[];
-      if (!days.includes(dayKey)) return false;
-      const anchor = task.createdAt ? new Date(task.createdAt) : new Date(0);
-      const anchorDay = anchor.getDay();
-      const anchorMon = new Date(anchor);
-      anchorMon.setDate(anchor.getDate() + (anchorDay === 0 ? -6 : 1 - anchorDay));
-      anchorMon.setHours(0, 0, 0, 0);
-      const targetDay = date.getDay();
-      const targetMon = new Date(date);
-      targetMon.setDate(date.getDate() + (targetDay === 0 ? -6 : 1 - targetDay));
-      targetMon.setHours(0, 0, 0, 0);
-      const weeksDiff = Math.round((targetMon.getTime() - anchorMon.getTime()) / (7 * 86400000));
-      const isEven = weeksDiff % 2 === 0;
-      return task.biweeklyStart === "next" ? !isEven : isEven;
-    } catch { return false; }
-  }
-  if (rType === "monthly") {
-    try { return (JSON.parse(task.recurringDays!) as number[]).includes(date.getDate()); } catch { return false; }
-  }
-  return false;
+  // false = no visibility gating — the calendar wants every task that's
+  // due on this date, not just the ones flagged to show in dashboard views.
+  return taskAppliesToDate(task, date, dateStr, dayKey, false);
 }
 
 export function buildWeeks(month: Date): Date[][] {

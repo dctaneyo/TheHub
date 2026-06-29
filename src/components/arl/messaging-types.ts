@@ -22,6 +22,7 @@ export interface Message {
   senderName: string;
   content: string;
   messageType: string;
+  metadata?: string | null;
   createdAt: string;
   reads: Array<{ readerType: string; readerId: string; readAt: string }>;
   reactions?: Array<{ emoji: string; userId: string; userName: string; createdAt: string }>;

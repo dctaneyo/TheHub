@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { validate, createScheduledReportSchema, updateScheduledReportSchema } from "@/lib/validations";
+import { parseJsonColumn } from "@/lib/json-column";
 
 function computeNextRunAt(frequency: string): string {
   const now = new Date();
@@ -52,8 +53,8 @@ export async function GET() {
 
       return {
         ...report,
-        recipients: JSON.parse(report.recipients || "[]"),
-        filters: report.filters ? JSON.parse(report.filters) : null,
+        recipients: parseJsonColumn(report.recipients, []),
+        filters: parseJsonColumn(report.filters, null),
         history,
       };
     });

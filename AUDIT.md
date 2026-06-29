@@ -442,9 +442,33 @@ contrast remain un-audited. Status: **still open as described.**
    `user-management.tsx` (924).
 9. Replace per-task × per-location `setTimeout` timers with a single
    periodic sweep, and replay missed fires after socket reconnect gaps.
-10. Introduce a shared JSON-column helper or Drizzle custom column type (64
-    `JSON.parse` sites across 30 files).
-11. Fully batch the `locations` GET online-status computation.
+10. ~~Introduce a shared JSON-column helper~~ — done. Added
+    `parseJsonColumn<T>(raw, fallback)` (`src/lib/json-column.ts`) and
+    migrated every genuine DB-JSON-column call site — ~36 occurrences
+    across 23 files (API routes, `lib/`, and the client components that
+    parse the same fields after receiving them from those routes).
+    Left alone, correctly: `lib/permissions.ts`'s two parsers (different
+    validation semantics — `Array.isArray` checks, special empty-array
+    handling — and already well-tested), `reload-diagnostics.ts` /
+    `live-activity-feed.tsx` / `notification-bell.tsx` (localStorage
+    serialization, not a DB column), and `data-management.tsx`'s
+    `JSON.parse(text)` (a pure "is this valid JSON" validation check, no
+    fallback semantics apply). Found and fixed two bonus issues along the
+    way: `task-calendar.ts` and `arl-calendar.tsx` each had their own
+    independent, undetected reimplementation of `task-utils.ts`'s
+    recurrence logic — a third and fourth copy of exactly the duplication
+    §4.1 already flagged once. Both now delegate to the canonical,
+    tested `taskAppliesToDate()`. Also dropped two `(x as any).metadata`
+    casts in `messaging.tsx`/`restaurant-chat.tsx` by adding the missing
+    `metadata` field to both `Message` interfaces instead of casting
+    around it.
+11. Fully batch the `locations` GET online-status computation. — On
+    review this is lower-value than it sounds: the GET handler already
+    batch-fetches all online sessions once into an in-memory Map (see
+    §4.3) and the "loop" is a JS `.map()` over that pre-fetched data, not
+    a per-row DB query. The real N+1 problem is already gone; turning
+    the remaining JS iteration into a single SQL JOIN would be cosmetic,
+    not a performance fix. Deprioritized in favor of item 10.
 
 ### Long-Term (Polish / Ops)
 

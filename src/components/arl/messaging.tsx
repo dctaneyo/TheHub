@@ -28,6 +28,7 @@ import { Emoji } from "@/components/ui/emoji";
 import { GroupInfoModal } from "@/components/arl/group-info-modal";
 import { Info, BellOff, Bell, Search, XCircle } from "@/lib/icons";
 import { VoiceRecorder, VoiceMessagePlayer } from "@/components/voice-recorder";
+import { parseJsonColumn } from "@/lib/json-column";
 import { MentionInput, MessageContent } from "@/components/mention-input";
 import { SwipeableConvoRow, convIcon, convIconBg } from "./swipeable-convo-row";
 import { useMessaging } from "./use-messaging";
@@ -375,10 +376,8 @@ export function Messaging() {
                       isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
                     )}>
                       {msg.messageType === "voice" ? (() => {
-                        try {
-                          const meta = JSON.parse((msg as any).metadata || "{}");
-                          return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
-                        } catch { return <MessageContent content={msg.content} />; }
+                        const meta = parseJsonColumn<{ durationMs?: number }>(msg.metadata, {});
+                        return <VoiceMessagePlayer audioUrl={`/api/messages/voice/${msg.id}`} duration={meta.durationMs || 0} />;
                       })() : <MessageContent content={msg.content} />}
 
                       {/* Reactions display - inline */}

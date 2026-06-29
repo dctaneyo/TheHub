@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { broadcastGridLayoutUpdate } from "@/lib/socket-emit";
 import { remoteViewSessions } from "@/lib/socket-handlers/state";
+import { parseJsonColumn } from "@/lib/json-column";
 
 // Returns the user's saved custom grid layout (JSON) or null if none saved.
 //
@@ -43,10 +44,7 @@ export async function GET(req: NextRequest) {
           .where(eq(locations.id, mirrorLocationId))
           .get();
 
-        let layout: unknown = null;
-        if (loc?.gridLayout) {
-          try { layout = JSON.parse(loc.gridLayout); } catch { layout = null; }
-        }
+        const layout = parseJsonColumn<unknown>(loc?.gridLayout, null);
         return apiSuccess({ layout });
       }
       // Session not found or mismatched — fall through to own layout
@@ -70,10 +68,7 @@ export async function GET(req: NextRequest) {
       raw = arl?.gridLayout ?? null;
     }
 
-    let layout: unknown = null;
-    if (raw) {
-      try { layout = JSON.parse(raw); } catch { layout = null; }
-    }
+    const layout = parseJsonColumn<unknown>(raw, null);
 
     return apiSuccess({ layout });
   } catch (error) {

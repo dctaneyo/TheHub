@@ -24,6 +24,7 @@ import {
   TEMPLATE_CATEGORIES,
 } from "./task-manager-types";
 import type { Task, Location, TaskTemplate } from "./task-manager-types";
+import { parseJsonColumn } from "@/lib/json-column";
 
 export function TaskManager() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -117,8 +118,8 @@ export function TaskManager() {
       dueDate: task.dueDate || "",
       isRecurring: task.isRecurring,
       recurringType: rType,
-      recurringDays: rType === "monthly" ? [] : (task.recurringDays ? JSON.parse(task.recurringDays) : []),
-      recurringMonthDays: rType === "monthly" ? (task.recurringDays ? JSON.parse(task.recurringDays) : [1]) : [1],
+      recurringDays: rType === "monthly" ? [] : parseJsonColumn<string[]>(task.recurringDays, []),
+      recurringMonthDays: rType === "monthly" ? parseJsonColumn<number[]>(task.recurringDays, [1]) : [1],
       biweeklyStart: "this" as const,
       assignMode: task.locationId ? "single" as const : "all" as const,
       locationId: task.locationId || "",

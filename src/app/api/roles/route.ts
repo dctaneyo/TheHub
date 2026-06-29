@@ -7,6 +7,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { setPendingForceAction } from "@/lib/socket-server";
 import { validate, createRoleSchema, updateRoleSchema, deleteRoleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit-logger";
+import { parseJsonColumn } from "@/lib/json-column";
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
     return apiSuccess({
       roles: roles.map((r) => ({
         ...r,
-        permissions: JSON.parse(r.permissions || "[]"),
+        permissions: parseJsonColumn(r.permissions, []),
       })),
     });
   } catch (error) {

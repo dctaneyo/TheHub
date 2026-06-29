@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowRightLeft } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { Participant, LocalParticipant } from "livekit-client";
+import type { ParticipantMetadata } from "./types";
+import { parseJsonColumn } from "@/lib/json-column";
 
 interface TransferDialogProps {
   participants: Participant[];
@@ -34,7 +36,7 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
         <p className="text-slate-400 text-xs mb-4">Select a participant to become the new host. You will become a co-host.</p>
         <div className="space-y-1 max-h-60 overflow-y-auto">
           {others.map(p => {
-            const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+            const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
             return (
               <button
                 key={p.identity}

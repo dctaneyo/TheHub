@@ -5,6 +5,14 @@ import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { getTenantTimezone, getLocationTimezone, tzTodayStr } from "@/lib/timezone";
+import { parseJsonColumn } from "@/lib/json-column";
+
+interface TaskAlertMeta {
+  taskId?: string;
+  taskTitle?: string;
+  title?: string;
+  dueTime?: string;
+}
 
 /**
  * GET /api/notifications/task-alerts
@@ -46,7 +54,7 @@ export async function GET(req: NextRequest) {
       let title = "";
       let dueTime = "";
       try {
-        const meta = row.metadata ? JSON.parse(row.metadata) : {};
+        const meta = parseJsonColumn<TaskAlertMeta>(row.metadata, {});
         taskId = meta.taskId || "";
         title = meta.taskTitle || meta.title || "";
         dueTime = meta.dueTime || "";
@@ -127,7 +135,7 @@ export async function POST(req: NextRequest) {
 
       for (const row of rows) {
         try {
-          const meta = row.metadata ? JSON.parse(row.metadata) : {};
+          const meta = parseJsonColumn<TaskAlertMeta>(row.metadata, {});
           const taskId = meta.taskId || "";
           const cid = row.type === "task_due_soon" ? `due-${taskId}` : `overdue-${taskId}`;
           if (requestedClientIds.has(cid)) {

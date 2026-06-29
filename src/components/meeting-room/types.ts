@@ -15,3 +15,10 @@ export interface Question {
 }
 
 export const REACTION_EMOJIS = ["❤️", "👍", "🔥", "😂", "👏", "💯"];
+
+/** Shape of the JSON LiveKit stores in `Participant.metadata`. */
+export interface ParticipantMetadata {
+  userType?: "arl" | "guest" | "location";
+  role?: "host" | "cohost" | "participant";
+  handRaised?: boolean;
+}

@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { parseJsonColumn } from "@/lib/json-column";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
@@ -40,7 +41,7 @@ export async function GET() {
 
       return {
         ...t,
-        features: JSON.parse(t.features || "[]"),
+        features: parseJsonColumn(t.features, []),
         locationCount,
         userCount,
       };

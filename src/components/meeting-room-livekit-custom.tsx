@@ -29,8 +29,9 @@ import { ChatPanel } from "./meeting-room/chat-panel";
 import { QAPanel } from "./meeting-room/qa-panel";
 import { ParticipantPanel } from "./meeting-room/participant-panel";
 import { ControlsBar } from "./meeting-room/controls-bar";
-import type { ChatMessage, Question } from "./meeting-room/types";
+import type { ChatMessage, Question, ParticipantMetadata } from "./meeting-room/types";
 import { REACTION_EMOJIS } from "./meeting-room/types";
+import { parseJsonColumn } from "@/lib/json-column";
 import { Track, RoomEvent, LocalParticipant } from "livekit-client";
 import "@livekit/components-styles";
 import { RNNoiseProcessor } from "@/lib/rnnoise-processor";
@@ -546,24 +547,24 @@ function MeetingUI({
 
   // Separate participants by type
   const videoParticipants = participants.filter(p => {
-    const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+    const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
     return metadata.userType === "arl" || metadata.userType === "guest";
   });
 
   const audioOnlyParticipants = participants.filter(p => {
-    const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+    const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
     return metadata.userType === "location";
   });
 
   // Find host for host-focused layout
   const hostParticipant = participants.find(p => {
-    const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+    const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
     return metadata.role === "host";
   });
 
   const localIsHost = myRole === "host";
   const otherVideoParticipants = videoParticipants.filter(p => {
-    const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+    const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
     return metadata.role !== "host";
   });
 
@@ -720,7 +721,7 @@ function MeetingUI({
     const handleMuteAll = () => {
       const myIdentity = localParticipant.identity;
       // Don't mute the host
-      const myMetadata = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+      const myMetadata = parseJsonColumn<ParticipantMetadata>(localParticipant.metadata, {});
       if (myMetadata.role !== "host") {
         localParticipant.setMicrophoneEnabled(false);
       }
@@ -993,7 +994,7 @@ function MeetingUI({
     if (raisedHands.has(p.identity)) return true;
     // Also check metadata as fallback
     try {
-      const meta = p.metadata ? JSON.parse(p.metadata) : {};
+      const meta = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
       return !!meta.handRaised;
     } catch { return false; }
   };
@@ -1299,7 +1300,7 @@ function MeetingUI({
                   >
                     {/* Remote non-host participants */}
                     {otherVideoParticipants.map((p) => {
-                      const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+                      const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
                       const camPub = p.getTrackPublication(Track.Source.Camera);
                       return (
                         <div key={p.identity} className="relative bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ width: 160, height: 120, scrollSnapAlign: 'start' }}>
@@ -1356,7 +1357,7 @@ function MeetingUI({
               }}
             >
               {audioOnlyParticipants.map(p => {
-                const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+                const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
                 return (
                   <div key={p.identity} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 shrink-0" style={{ scrollSnapAlign: 'start' }}>
                     <div

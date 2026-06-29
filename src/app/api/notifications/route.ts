@@ -8,6 +8,7 @@ import {
   deleteAllNotifications,
   autoDismissOldNotifications,
 } from "@/lib/notifications";
+import { parseJsonColumn } from "@/lib/json-column";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     const notifications = notificationsList.map((n) => ({
       ...n,
-      metadata: n.metadata ? JSON.parse(n.metadata) : null,
+      metadata: parseJsonColumn<unknown>(n.metadata, null),
     }));
 
     return apiSuccess({

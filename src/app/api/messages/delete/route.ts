@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { broadcastConversationUpdate } from "@/lib/socket-emit";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { parseJsonColumn } from "@/lib/json-column";
 
 // POST - soft-delete (hide) a conversation for the current user
 // The conversation and its messages are preserved; starting a new direct chat
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Add current user to deletedBy array
-    const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
+    const deletedBy: string[] = parseJsonColumn(conv.deletedBy, []);
     if (!deletedBy.includes(session.id)) {
       deletedBy.push(session.id);
     }

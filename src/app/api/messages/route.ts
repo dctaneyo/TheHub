@@ -7,6 +7,7 @@ import { v4 as uuid } from "uuid";
 import { sendPushToARL } from "@/lib/push";
 import { broadcastNewMessage, broadcastConversationUpdate, broadcastMessageRead } from "@/lib/socket-emit";
 import { validate, sendMessageSchema } from "@/lib/validations";
+import { parseJsonColumn } from "@/lib/json-column";
 
 /**
  * Batch unread counts for multiple conversations in a single query.
@@ -131,7 +132,7 @@ export async function GET(req: NextRequest) {
       const allConvs = db.select().from(schema.conversations).all()
         .filter((c) => convIds.includes(c.id))
         .filter((c) => {
-          const deletedBy: string[] = JSON.parse(c.deletedBy || "[]");
+          const deletedBy: string[] = parseJsonColumn(c.deletedBy, []);
           return !deletedBy.includes(session.id);
         });
 
@@ -290,7 +291,7 @@ export async function POST(req: NextRequest) {
     const conv = db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId)).get();
     if (conv) {
-      const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
+      const deletedBy: string[] = parseJsonColumn(conv.deletedBy, []);
       // Remove everyone except the sender — their own hide stays intact
       const updatedDeletedBy = deletedBy.filter((id) => id === session.id);
       if (updatedDeletedBy.length !== deletedBy.length) {
@@ -389,7 +390,7 @@ export async function PUT(req: NextRequest) {
       
       if (existing) {
         // If user had deleted this conversation, resurrect it by removing them from deletedBy
-        const deletedBy: string[] = JSON.parse(existing.deletedBy || "[]");
+        const deletedBy: string[] = parseJsonColumn(existing.deletedBy, []);
         if (deletedBy.includes(session.id)) {
           const updatedDeletedBy = deletedBy.filter((id) => id !== session.id);
           db.update(schema.conversations)

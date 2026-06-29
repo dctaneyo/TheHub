@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { notificationPreferences } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { parseJsonColumn } from "@/lib/json-column";
 
 type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       const defaults = getDefaultPreferences(session.userType);
       return apiSuccess({
         ...defaults,
-        priorityTypes: defaults.priorityTypes ? JSON.parse(defaults.priorityTypes as string) : [],
+        priorityTypes: parseJsonColumn<string[]>(defaults.priorityTypes as string | null, []),
       });
     }
 
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
       meetingReminder: prefs.meetingReminder,
       systemAlert: prefs.systemAlert,
       weeklyReport: prefs.weeklyReport,
-      priorityTypes: prefs.priorityTypes ? JSON.parse(prefs.priorityTypes) : [],
+      priorityTypes: parseJsonColumn<string[]>(prefs.priorityTypes, []),
       emailNotifications: prefs.emailNotifications,
       pushNotifications: prefs.pushNotifications,
       inAppNotifications: prefs.inAppNotifications,
@@ -169,7 +170,7 @@ export async function POST(req: NextRequest) {
         meetingReminder: updatedPrefs.meetingReminder,
         systemAlert: updatedPrefs.systemAlert,
         weeklyReport: updatedPrefs.weeklyReport,
-        priorityTypes: updatedPrefs.priorityTypes ? JSON.parse(updatedPrefs.priorityTypes) : [],
+        priorityTypes: parseJsonColumn<string[]>(updatedPrefs.priorityTypes, []),
         emailNotifications: updatedPrefs.emailNotifications,
         pushNotifications: updatedPrefs.pushNotifications,
         inAppNotifications: updatedPrefs.inAppNotifications,

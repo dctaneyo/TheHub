@@ -9,6 +9,7 @@ import path from "path";
 import { broadcastNewMessage, broadcastConversationUpdate } from "@/lib/socket-emit";
 import { sendPushToARL } from "@/lib/push";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
+import { parseJsonColumn } from "@/lib/json-column";
 
 const VOICE_DIR = path.join(process.cwd(), "data", "voice-messages");
 
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     const conv = db.select().from(schema.conversations)
       .where(eq(schema.conversations.id, conversationId)).get();
     if (conv) {
-      const deletedBy: string[] = JSON.parse(conv.deletedBy || "[]");
+      const deletedBy: string[] = parseJsonColumn(conv.deletedBy, []);
       const updatedDeletedBy = deletedBy.filter((id) => id === session.id);
       if (updatedDeletedBy.length !== deletedBy.length) {
         db.update(schema.conversations)

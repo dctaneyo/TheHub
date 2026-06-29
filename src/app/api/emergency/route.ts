@@ -10,6 +10,7 @@ import { createNotificationBulk } from "@/lib/notifications";
 import { validate, emergencyBroadcastSchema } from "@/lib/validations";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 import { logAudit } from "@/lib/audit-logger";
+import { parseJsonColumn } from "@/lib/json-column";
 
 // GET active emergency message (any authenticated user)
 // For locations: only returns message if they are a target (or message targets all)
@@ -33,14 +34,14 @@ export async function GET() {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .map((m) => ({
           ...m,
-          viewedBy: m.viewedBy ? JSON.parse(m.viewedBy) : [],
-          targetLocationIds: m.targetLocationIds ? JSON.parse(m.targetLocationIds) : null,
+          viewedBy: parseJsonColumn<string[]>(m.viewedBy, []),
+          targetLocationIds: parseJsonColumn<string[] | null>(m.targetLocationIds, null),
         }));
       return NextResponse.json({
         message: active ? {
           ...active,
-          viewedBy: active.viewedBy ? JSON.parse(active.viewedBy) : [],
-          targetLocationIds: active.targetLocationIds ? JSON.parse(active.targetLocationIds) : null,
+          viewedBy: parseJsonColumn<string[]>(active.viewedBy, []),
+          targetLocationIds: parseJsonColumn<string[] | null>(active.targetLocationIds, null),
         } : null,
         history,
       });
@@ -49,13 +50,11 @@ export async function GET() {
     // Location: filter by target and already-viewed
     if (!active) return NextResponse.json({ message: null });
 
-    const targets: string[] | null = active.targetLocationIds
-      ? JSON.parse(active.targetLocationIds)
-      : null;
+    const targets = parseJsonColumn<string[] | null>(active.targetLocationIds, null);
     if (targets && !targets.includes(session.id)) {
       return NextResponse.json({ message: null });
     }
-    const viewedByCheck: string[] = active.viewedBy ? JSON.parse(active.viewedBy) : [];
+    const viewedByCheck = parseJsonColumn<string[]>(active.viewedBy, []);
     if (viewedByCheck.includes(session.id)) {
       return NextResponse.json({ message: null });
     }
@@ -172,15 +171,13 @@ export async function PATCH(req: NextRequest) {
       .where(eq(schema.emergencyMessages.id, messageId)).get();
     if (!msg) return ApiErrors.notFound("Emergency message");
 
-    const viewedBy: string[] = msg.viewedBy ? JSON.parse(msg.viewedBy) : [];
+    const viewedBy = parseJsonColumn<string[]>(msg.viewedBy, []);
     if (!viewedBy.includes(session.id)) {
       viewedBy.push(session.id);
     }
 
     // Determine if all targets have now viewed it
-    const targets: string[] | null = msg.targetLocationIds
-      ? JSON.parse(msg.targetLocationIds)
-      : null;
+    const targets = parseJsonColumn<string[] | null>(msg.targetLocationIds, null);
 
     let shouldArchive = false;
     if (targets) {

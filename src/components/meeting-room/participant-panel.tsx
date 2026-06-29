@@ -3,6 +3,8 @@
 import { X, Mic, MicOff, Hand, Crown, Shield, Edit3 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { LocalParticipant, RemoteParticipant } from "livekit-client";
+import type { ParticipantMetadata } from "./types";
+import { parseJsonColumn } from "@/lib/json-column";
 
 interface ParticipantPanelProps {
   participants: (LocalParticipant | RemoteParticipant)[];
@@ -25,7 +27,7 @@ interface ParticipantPanelProps {
 function isHandRaised(p: LocalParticipant | RemoteParticipant, raisedHands: Set<string>): boolean {
   if (raisedHands.has(p.identity)) return true;
   try {
-    const meta = p.metadata ? JSON.parse(p.metadata) : {};
+    const meta = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
     return !!meta.handRaised;
   } catch { return false; }
 }
@@ -83,7 +85,7 @@ export function ParticipantPanel({
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         {participants.map(p => {
-          const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+          const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
           const isLocal = p === localParticipant;
           const raised = isHandRaised(p, raisedHands);
           return (
