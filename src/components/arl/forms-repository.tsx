@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IconTip } from "@/components/ui/icon-tip";
+import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -329,12 +330,11 @@ export function FormsRepository() {
                           >
                             <Download className="h-3.5 w-3.5" />
                           </a>
-                          <button
+                          <DestructiveIconButton
+                            icon={Trash2}
+                            label="Delete form"
                             onClick={() => handleDelete(form.id)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          />
                         </div>
                       </td>
                     </tr>
@@ -389,12 +389,11 @@ export function FormsRepository() {
                   >
                     <Download className="h-4 w-4" />
                   </a>
-                  <button
+                  <DestructiveIconButton
+                    icon={Trash2}
+                    label="Delete form"
                     onClick={() => handleDelete(form.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </div>
               </motion.div>
             ))}

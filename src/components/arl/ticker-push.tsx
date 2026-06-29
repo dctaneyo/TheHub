@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Plus, Trash2, Clock, Send, X } from "@/lib/icons";
+import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { cn } from "@/lib/utils";
 
 interface TickerMessage {
@@ -258,13 +259,13 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                     <span className="text-xs text-muted-foreground">by {msg.arlName}</span>
                   </div>
                 </div>
-                <button
+                <DestructiveIconButton
+                  icon={Trash2}
+                  label="Delete ticker message"
                   onClick={() => handleDelete(msg.id)}
                   disabled={deleting === msg.id}
-                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-red-50 active:text-red-500 dark:active:bg-red-950 transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                  className="shrink-0"
+                />
               </motion.div>
             ))}
           </AnimatePresence>
