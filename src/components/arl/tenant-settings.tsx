@@ -334,11 +334,21 @@ export function TenantSettings() {
                       onClick={() => setPrimaryColor(c.value)}
                       title={c.label}
                       className={cn(
-                        "h-8 w-8 rounded-lg border-2 transition-all",
+                        "relative flex h-8 w-8 items-center justify-center rounded-lg border-2 transition-all",
                         primaryColor === c.value ? "border-foreground scale-110" : "border-transparent active:scale-105"
                       )}
                       style={{ backgroundColor: c.value }}
-                    />
+                    >
+                      {/* A color swatch's background IS the information being
+                          shown, so it can't also be the solid-fill selection
+                          indicator (Section 10) without hiding what color
+                          this is — a checkmark overlay is the real
+                          shape-based signal instead, same pattern Select
+                          items already use for their selected state. */}
+                      {primaryColor === c.value && (
+                        <Check className="h-4 w-4 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]" />
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>

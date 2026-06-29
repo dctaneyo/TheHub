@@ -157,7 +157,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                       className={cn(
                         "flex h-9 w-9 items-center justify-center rounded-xl text-lg transition-all",
                         icon === i
-                          ? "bg-[var(--hub-red)]/10 ring-2 ring-[var(--hub-red)]"
+                          ? "bg-[var(--hub-red)] text-white"
                           : "bg-muted active:bg-muted/80"
                       )}
                     >

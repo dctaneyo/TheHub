@@ -196,11 +196,15 @@ export function ArlCalendar() {
                       onKeyDown={(e) => e.key === "Enter" && setSelectedDate(date)}
                       className={cn("flex flex-col items-start justify-start border-r border-border p-2 text-left transition-colors last:border-0 cursor-pointer overflow-hidden",
                         !inMonth && "bg-muted/50",
-                        isSelected && "bg-[var(--hub-red)]/5 ring-1 ring-inset ring-[var(--hub-red)]/20",
+                        isSelected && "bg-muted/50",
                         inMonth && !isSelected && "active:bg-muted/50"
                       )}>
+                      {/* Selected day gets the same solid-fill treatment as
+                          "today" (Section 10 — selected = solid inverted
+                          fill, not a tint/ring on the whole cell, which
+                          would clash with the task pills nested inside). */}
                       <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                        isToday(date) ? "bg-[var(--hub-red)] text-white" : inMonth ? "text-foreground" : "text-muted-foreground/50"
+                        isToday(date) ? "bg-[var(--hub-red)] text-white" : isSelected ? "bg-foreground text-background" : inMonth ? "text-foreground" : "text-muted-foreground/50"
                       )}>{format(date, "d")}</span>
                       <div className="mt-1 w-full space-y-1 overflow-hidden">
                         {dayTasks.slice(0, 2).map((task) => {
