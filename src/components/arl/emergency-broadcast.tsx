@@ -199,7 +199,7 @@ export function EmergencyBroadcast() {
                 disabled={clearing}
                 variant="outline"
                 size="sm"
-                className="shrink-0 rounded-xl border-[var(--hub-red)] text-[var(--hub-red)] hover:bg-[var(--hub-red)]/10"
+                className="shrink-0 rounded-xl border-[var(--hub-red)] text-[var(--hub-red)] active:bg-[var(--hub-red)]/10"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
                 {clearing ? "Clearing..." : "Clear"}
@@ -284,7 +284,7 @@ export function EmergencyBroadcast() {
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "all"
                   ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                  : "border-border text-muted-foreground hover:bg-muted"
+                  : "border-border text-muted-foreground active:bg-muted"
               )}
             >
               All Locations
@@ -295,7 +295,7 @@ export function EmergencyBroadcast() {
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "select"
                   ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
-                  : "border-border text-muted-foreground hover:bg-muted"
+                  : "border-border text-muted-foreground active:bg-muted"
               )}
             >
               Select Locations
@@ -315,7 +315,7 @@ export function EmergencyBroadcast() {
                     onClick={() => toggleLocation(loc.id)}
                     className={cn(
                       "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
-                      selected ? "bg-[var(--hub-red)]/10" : "hover:bg-muted"
+                      selected ? "bg-[var(--hub-red)]/10" : "active:bg-muted"
                     )}
                   >
                     <div className={cn(
@@ -357,7 +357,7 @@ export function EmergencyBroadcast() {
             className={cn(
               "gap-1 rounded-xl",
               draftMessage.trim() && (targetMode === "all" || selectedIds.length > 0)
-                ? "bg-[var(--hub-red)] hover:bg-[#c4001f]"
+                ? "bg-[var(--hub-red)] active:bg-[#c4001f]"
                 : "bg-muted text-muted-foreground"
             )}
             size="sm"
@@ -381,7 +381,7 @@ export function EmergencyBroadcast() {
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
           <button
             onClick={() => setShowHistory((v) => !v)}
-            className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/50"
+            className="flex w-full items-center justify-between px-5 py-4 active:bg-muted/50"
           >
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />

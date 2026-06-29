@@ -487,7 +487,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="p-2 active:bg-gray-100 dark:active:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="w-6 h-6 text-gray-500" />
               </button>
@@ -504,8 +504,8 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                     className={cn(
                       "px-3 py-2 text-sm rounded-lg transition-colors capitalize",
                       activePreset === mode
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        ? "bg-blue-600 active:bg-blue-700 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600"
                     )}
                   >
                     {mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -526,7 +526,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                       "px-3 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
                       activeCategory === category.id
                         ? "bg-blue-600 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        : "text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
                     )}
                   >
                     <span className="mr-1">{category.icon}</span>
@@ -551,8 +551,8 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                   loading
                     ? "bg-gray-400 cursor-not-allowed"
                     : saved
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                    ? "bg-green-600 active:bg-green-700 text-white"
+                    : "bg-blue-600 active:bg-blue-700 text-white"
                 )}
               >
                 {loading ? (
@@ -588,7 +588,7 @@ interface ToggleFieldProps {
 
 function ToggleField({ label, description, checked, onChange, icon, isCritical }: ToggleFieldProps) {
   return (
-    <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors">
+    <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg active:bg-gray-100 dark:active:bg-gray-750 transition-colors">
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon && <span className="text-xl">{icon}</span>}

@@ -157,7 +157,7 @@ export function MeetingAnalyticsDashboard() {
       <div className="space-y-4">
         <button
           onClick={() => { setSelectedMeeting(null); setMeetingDetail(null); }}
-          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 mb-2"
+          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 active:text-blue-500 dark:active:text-blue-300 mb-2"
         >
           <ArrowLeft className="h-4 w-4" /> Back to all meetings
         </button>
@@ -206,7 +206,7 @@ export function MeetingAnalyticsDashboard() {
               </thead>
               <tbody>
                 {participants.map(p => (
-                  <tr key={p.id} className="border-b border-border hover:bg-muted/50">
+                  <tr key={p.id} className="border-b border-border active:bg-muted/50">
                     <td className="px-4 py-2 text-foreground font-semibold">{p.participantName}</td>
                     <td className="px-4 py-2">
                       <span className={cn(
@@ -321,7 +321,7 @@ export function MeetingAnalyticsDashboard() {
         {meetings.length > 0 && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors"
           >
             <Trash2 className="h-4 w-4" />
             Delete All
@@ -354,14 +354,14 @@ export function MeetingAnalyticsDashboard() {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-sm font-semibold transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-lg bg-muted active:bg-muted/80 text-foreground text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAll}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -424,7 +424,7 @@ export function MeetingAnalyticsDashboard() {
                     <tr
                       key={m.id}
                       onClick={() => fetchDetail(m.id)}
-                      className="cursor-pointer border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors"
+                      className="cursor-pointer border-b border-border last:border-b-0 active:bg-muted/50 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -457,7 +457,7 @@ export function MeetingAnalyticsDashboard() {
                 <button
                   key={m.id}
                   onClick={() => fetchDetail(m.id)}
-                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
+                  className="w-full px-4 py-3 flex items-center justify-between active:bg-muted/50 transition-colors text-left"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
