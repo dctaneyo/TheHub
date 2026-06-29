@@ -370,7 +370,7 @@ export function LocationsManager() {
                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
                   loc.isOnline ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
                 )}>
-                  <Store className="h-4.5 w-4.5" />
+                  <Store className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{loc.name}</p>

@@ -177,7 +177,7 @@ export function ArlSidebar({
                       : "text-muted-foreground active:bg-muted"
                   )}
                 >
-                  <item.icon className="h-4.5 w-4.5 shrink-0" />
+                  <item.icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1 text-left">{item.label}</span>
                   {badge > 0 && (
                     <span className={cn(
@@ -207,7 +207,7 @@ export function ArlSidebar({
           onClick={onLogout}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors active:bg-red-50 active:text-red-600 dark:active:bg-red-950"
         >
-          <LogOut className="h-4.5 w-4.5" />
+          <LogOut className="h-4 w-4" />
           Sign Out
         </button>
       </div>

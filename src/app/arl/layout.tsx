@@ -137,7 +137,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                   className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground"
                   title="Open menu"
                 >
-                  <MenuIcon className="h-4.5 w-4.5" />
+                  <MenuIcon className="h-4 w-4" />
                 </button>
               </IconTip>
             )}
@@ -164,7 +164,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             <Menu>
               <IconTip label="Settings">
                 <MenuTrigger className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent transition-colors outline-none" title="Settings">
-                  <MoreVertical className="h-4.5 w-4.5" />
+                  <MoreVertical className="h-4 w-4" />
                   <div className={cn(
                     "absolute top-1 right-1 h-2 w-2 rounded-full border border-background",
                     isOnline && socketConnected ? "bg-emerald-500" : "bg-red-500"

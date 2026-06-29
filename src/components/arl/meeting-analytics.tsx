@@ -522,7 +522,7 @@ function StatCard({ icon: Icon, label, value, color, emphasized = false }: {
           emphasized ? "h-9 w-9" : "h-7 w-7",
           colorClasses[color] || colorClasses.blue
         )}>
-          <Icon className={emphasized ? "h-4.5 w-4.5" : "h-3.5 w-3.5"} />
+          <Icon className={emphasized ? "h-5 w-5" : "h-3.5 w-3.5"} />
         </div>
       </div>
       <p className={cn("text-foreground", emphasized ? "text-2xl font-bold" : "text-lg font-semibold")}>{value}</p>
