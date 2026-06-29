@@ -257,7 +257,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
           {onStartOnDemand && (
             <Button
               onClick={onStartOnDemand}
-              className="rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
+              className="rounded-xl font-semibold text-sm bg-red-600 active:bg-red-700 text-white whitespace-nowrap"
             >
               <Play className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Start Meeting</span>
@@ -356,7 +356,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         <button key={type} onClick={() => setRecurringType(type)}
                           className={cn(
                             "px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
-                            recurringType === type ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            recurringType === type ? "bg-red-600 text-white" : "bg-muted text-muted-foreground active:bg-muted/80"
                           )}>
                           {type.charAt(0).toUpperCase() + type.slice(1)}
                         </button>
@@ -368,7 +368,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           <button key={d.key} onClick={() => toggleDay(d.key)}
                             className={cn(
                               "h-8 w-8 rounded-full text-xs font-semibold transition-colors",
-                              recurringDays.includes(d.key) ? "bg-red-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              recurringDays.includes(d.key) ? "bg-red-600 text-white" : "bg-muted text-muted-foreground active:bg-muted/80"
                             )}>
                             {d.label.charAt(0)}
                           </button>
@@ -391,7 +391,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                   Cancel
                 </Button>
                 <Button onClick={handleCreate} disabled={creating || !title.trim() || !scheduledDate || !scheduledTime}
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold">
+                  className="bg-red-600 active:bg-red-700 text-white rounded-xl font-semibold">
                   {creating ? "Creating..." : "Create Meeting"}
                 </Button>
               </div>
@@ -480,7 +480,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           <span className="font-mono font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
                           <button
                             onClick={() => copyCode(m.meeting_code)}
-                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                            className="p-1.5 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
                             title="Copy meeting code"
                           >
                             {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -492,7 +492,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           {m.is_active && (
                             <button
                               onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
                             >
                               <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                             </button>
@@ -501,13 +501,13 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                             onClick={() => handleToggleActive(m.id, m.is_active)}
                             className={cn(
                               "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
-                              m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 active:bg-emerald-500/20" : "bg-muted text-muted-foreground active:bg-muted/80"
                             )}
                           >
                             {m.is_active ? "Active" : "Activate"}
                           </button>
                           <Menu>
-                            <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                            <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground">
                               <MoreVertical className="h-3.5 w-3.5" />
                             </MenuTrigger>
                             <MenuContent>
@@ -609,7 +609,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         <span className="font-mono text-lg font-semibold text-red-600 tracking-wider">{m.meeting_code}</span>
                         <button
                           onClick={() => copyCode(m.meeting_code)}
-                          className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          className="p-2 rounded-lg active:bg-muted transition-colors text-muted-foreground active:text-foreground"
                           title="Copy meeting code"
                         >
                           {copiedCode === m.meeting_code ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -619,7 +619,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         {m.is_active && (
                           <button
                             onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
                           >
                             <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                           </button>
@@ -628,13 +628,13 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           onClick={() => handleToggleActive(m.id, m.is_active)}
                           className={cn(
                             "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
-                            m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 active:bg-emerald-500/20" : "bg-muted text-muted-foreground active:bg-muted/80"
                           )}
                         >
                           {m.is_active ? "Active" : "Activate"}
                         </button>
                         <Menu>
-                          <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground">
+                          <MenuTrigger className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground">
                             <MoreVertical className="h-3.5 w-3.5" />
                           </MenuTrigger>
                           <MenuContent>
