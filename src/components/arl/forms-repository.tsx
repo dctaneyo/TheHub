@@ -19,6 +19,7 @@ import {
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { IconTip } from "@/components/ui/icon-tip";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -311,13 +312,15 @@ export function FormsRepository() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openEmailModal(form)}
-                            title="Email to restaurant/ARL"
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                          </button>
+                          <IconTip label="Email to restaurant/ARL">
+                            <button
+                              onClick={() => openEmailModal(form)}
+                              title="Email to restaurant/ARL"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                            </button>
+                          </IconTip>
                           <a
                             href={`/api/forms/download?id=${form.id}`}
                             target="_blank"
@@ -369,13 +372,15 @@ export function FormsRepository() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() => openEmailModal(form)}
-                    title="Email to restaurant/ARL"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
-                  >
-                    <Mail className="h-4 w-4" />
-                  </button>
+                  <IconTip label="Email to restaurant/ARL">
+                    <button
+                      onClick={() => openEmailModal(form)}
+                      title="Email to restaurant/ARL"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
+                    >
+                      <Mail className="h-4 w-4" />
+                    </button>
+                  </IconTip>
                   <a
                     href={`/api/forms/download?id=${form.id}`}
                     target="_blank"

@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { Trash2, Store, Globe, Users } from "@/lib/icons";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import type { Conversation, ConvType } from "./messaging-types";
 
 const SWIPE_THRESHOLD = 60;
@@ -148,13 +149,15 @@ export function SwipeableConvoRow({ convo, onOpen, onDelete }: SwipeableConvoRow
           </span>
         )}
         {convo.type !== "global" && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="hidden sm:group-hover:flex absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 active:bg-red-500/20 active:text-red-600 dark:active:text-red-400"
-            title="Delete conversation"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
+          <IconTip label="Delete conversation">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="hidden sm:group-hover:flex absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 active:bg-red-500/20 active:text-red-600 dark:active:text-red-400"
+              title="Delete conversation"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </IconTip>
         )}
       </motion.div>
     </div>

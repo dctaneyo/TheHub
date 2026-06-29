@@ -17,6 +17,7 @@ import {
   X,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { IconTip } from "@/components/ui/icon-tip";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 
@@ -191,34 +192,38 @@ export function LocationsManager() {
 
   const RowActions = ({ loc }: { loc: LocationWithStatus }) => (
     <div className="flex items-center justify-end gap-1">
-      <button
-        onClick={() => { setResetPinId(resetPinId === loc.id ? null : loc.id); setNewPin(""); setPinError(""); }}
-        title="Reset login PIN"
-        className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
-          resetPinId === loc.id
-            ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-            : pinSuccess === loc.id
-            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-            : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted"
-        )}
-      >
-        {pinSuccess === loc.id ? <Check className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
-      </button>
-      <button
-        onClick={() => handleSoundToggle(loc)}
-        disabled={togglingId === loc.id}
-        title={loc.soundMuted ? "Audio muted — click to unmute" : "Audio on — click to mute"}
-        className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
-          loc.soundMuted
-            ? "bg-red-50 text-red-400 hover:bg-red-100 active:bg-red-100 dark:bg-red-950 dark:text-red-400"
-            : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted",
-          togglingId === loc.id && "opacity-50 cursor-not-allowed"
-        )}
-      >
-        {loc.soundMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-      </button>
+      <IconTip label="Reset login PIN">
+        <button
+          onClick={() => { setResetPinId(resetPinId === loc.id ? null : loc.id); setNewPin(""); setPinError(""); }}
+          title="Reset login PIN"
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+            resetPinId === loc.id
+              ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+              : pinSuccess === loc.id
+              ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
+              : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted"
+          )}
+        >
+          {pinSuccess === loc.id ? <Check className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+        </button>
+      </IconTip>
+      <IconTip label={loc.soundMuted ? "Audio muted — click to unmute" : "Audio on — click to mute"}>
+        <button
+          onClick={() => handleSoundToggle(loc)}
+          disabled={togglingId === loc.id}
+          title={loc.soundMuted ? "Audio muted — click to unmute" : "Audio on — click to mute"}
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+            loc.soundMuted
+              ? "bg-red-50 text-red-400 hover:bg-red-100 active:bg-red-100 dark:bg-red-950 dark:text-red-400"
+              : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted",
+            togglingId === loc.id && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {loc.soundMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+        </button>
+      </IconTip>
     </div>
   );
 
