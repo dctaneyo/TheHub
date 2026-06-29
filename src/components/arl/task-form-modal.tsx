@@ -162,7 +162,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           </h3>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -214,7 +214,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       "flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       type === t.value
                         ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                        : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
+                        : "border-border text-muted-foreground active:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:active:border-muted-foreground/80 dark:active:text-muted-foreground/100"
                     )}
                   >
                     <t.icon className="h-3.5 w-3.5" />
@@ -235,7 +235,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       priority === p.value
                         ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                        : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
+                        : "border-border text-muted-foreground active:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:active:border-muted-foreground/80 dark:active:text-muted-foreground/100"
                     )}
                   >
                     {p.label}
@@ -320,7 +320,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                         "flex-1 rounded-xl border px-2 py-2 text-xs font-semibold transition-all",
                         recurringType === rt.value
                           ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                          : "border-border text-muted-foreground active:border-muted-foreground/40"
                       )}
                     >
                       {rt.label}
@@ -429,7 +429,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     "flex-1 rounded-xl border px-3 py-2 text-xs font-semibold capitalize transition-all",
                     assignMode === mode
                       ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:hover:border-muted-foreground/80 dark:hover:text-muted-foreground/100"
+                      : "border-border text-muted-foreground active:border-muted-foreground/40 dark:border-muted-foreground/60 dark:text-muted-foreground/80 dark:active:border-muted-foreground/80 dark:active:text-muted-foreground/100"
                   )}
                 >
                   {mode === "all" ? "All Locations" : mode === "single" ? "One Location" : "Multiple"}
@@ -464,7 +464,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       selectedLocationIds.includes(loc.id)
                         ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                        : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                        : "border-border text-muted-foreground active:border-muted-foreground/40"
                     )}
                   >
                     {loc.name}
@@ -535,7 +535,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             </Button>
             <Button
               onClick={handleSubmit}
-              className="flex-1 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+              className="flex-1 rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
               disabled={!title.trim()}
             >
               {editingTask ? "Update Task" : "Create Task"}

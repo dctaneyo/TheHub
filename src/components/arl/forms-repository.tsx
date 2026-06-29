@@ -129,9 +129,10 @@ export function FormsRepository() {
   const { dialog, confirm: showConfirm } = useConfirmDialog();
 
   const handleDelete = (id: string) => {
+    const form = forms.find((f) => f.id === id);
     showConfirm({
       title: "Delete Form",
-      description: "Are you sure you want to delete this form?",
+      description: `Delete ${form?.title ?? "this form"}? This cannot be undone.`,
       confirmLabel: "Delete",
       variant: "danger",
       onConfirm: async () => {
@@ -227,7 +228,7 @@ export function FormsRepository() {
         </div>
         <Button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
+          className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] text-xs active:bg-[#c4001f]"
           size="sm"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -245,7 +246,7 @@ export function FormsRepository() {
               "rounded-lg px-3 py-1 text-xs font-semibold capitalize transition-colors",
               filterCat === cat
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted text-muted-foreground active:bg-muted/80"
             )}
           >
             {cat === "all" ? "All" : categoryLabel(cat)}
@@ -313,7 +314,7 @@ export function FormsRepository() {
                           <button
                             onClick={() => openEmailModal(form)}
                             title="Email to restaurant/ARL"
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
                           >
                             <Mail className="h-3.5 w-3.5" />
                           </button>
@@ -321,13 +322,13 @@ export function FormsRepository() {
                             href={`/api/forms/download?id=${form.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground"
                           >
                             <Download className="h-3.5 w-3.5" />
                           </a>
                           <button
                             onClick={() => handleDelete(form.id)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -371,7 +372,7 @@ export function FormsRepository() {
                   <button
                     onClick={() => openEmailModal(form)}
                     title="Email to restaurant/ARL"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-blue-500/10 active:text-blue-600 dark:active:text-blue-400"
                   >
                     <Mail className="h-4 w-4" />
                   </button>
@@ -379,13 +380,13 @@ export function FormsRepository() {
                     href={`/api/forms/download?id=${form.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground"
                   >
                     <Download className="h-4 w-4" />
                   </a>
                   <button
                     onClick={() => handleDelete(form.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -416,7 +417,7 @@ export function FormsRepository() {
                   <h3 className="text-lg font-semibold text-foreground">Email Form</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm.title}</p>
                 </div>
-                <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -447,7 +448,7 @@ export function FormsRepository() {
                           disabled={!hasEmail}
                           className={cn(
                             "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
-                            checked ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card hover:bg-muted",
+                            checked ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card active:bg-muted",
                             !hasEmail && "opacity-40 cursor-not-allowed"
                           )}
                         >
@@ -473,7 +474,7 @@ export function FormsRepository() {
                   <Button
                     onClick={handleSendEmail}
                     disabled={selectedRecipients.size === 0 || sending}
-                    className="mt-3 w-full rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+                    className="mt-3 w-full rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
                   >
                     {sending ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
