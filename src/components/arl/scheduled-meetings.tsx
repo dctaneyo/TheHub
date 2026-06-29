@@ -245,8 +245,8 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
-            <Video className="h-5 w-5 text-red-600" />
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+            <Video className="h-5 w-5 text-red-600 dark:text-red-400" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">Scheduled Meetings</h2>
@@ -433,7 +433,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-foreground truncate">{m.title}</span>
                           {m.is_recurring ? (
-                            <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
+                            <span className="flex items-center gap-1 text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full shrink-0">
                               <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
                             </span>
                           ) : null}
@@ -501,7 +501,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                             onClick={() => handleToggleActive(m.id, m.is_active)}
                             className={cn(
                               "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
-                              m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20" : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}
                           >
                             {m.is_active ? "Active" : "Activate"}
@@ -557,7 +557,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-sm text-foreground truncate">{m.title}</h4>
                         {m.is_recurring ? (
-                          <span className="flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <span className="flex items-center gap-1 text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-1 rounded-full">
                             <RefreshCw className="h-2.5 w-2.5" />{m.recurring_type}
                           </span>
                         ) : null}
@@ -628,7 +628,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           onClick={() => handleToggleActive(m.id, m.is_active)}
                           className={cn(
                             "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
-                            m.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20" : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}
                         >
                           {m.is_active ? "Active" : "Activate"}

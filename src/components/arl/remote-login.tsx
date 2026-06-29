@@ -311,9 +311,9 @@ export function RemoteLogin() {
                   <div className={cn(
                     "flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition-all",
                     isSelfPinging
-                      ? "border-amber-400 bg-amber-50 ring-2 ring-amber-300/40"
+                      ? "border-amber-400 bg-amber-500/10 ring-2 ring-amber-300/40"
                       : isSelected
-                      ? "border-[var(--hub-red)] bg-red-50/50 ring-2 ring-[var(--hub-red)]/20"
+                      ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 ring-2 ring-[var(--hub-red)]/20"
                       : "border-border bg-card hover:border-border/80"
                   )}>
                     {/* "That's me!" badge */}
@@ -337,7 +337,7 @@ export function RemoteLogin() {
                       className="flex flex-col items-center gap-2 w-full"
                     >
                       <Monitor className={cn("h-6 w-6", isSelfPinging ? "text-amber-500" : isSelected ? "text-[var(--hub-red)]" : "text-muted-foreground")} />
-                      <span className={cn("text-2xl font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700" : "text-foreground")}>{ps.code}</span>
+                      <span className={cn("text-2xl font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700 dark:text-amber-400" : "text-foreground")}>{ps.code}</span>
                       <div className="text-xs text-muted-foreground">
                         <p>{getDeviceHint(ps.userAgent)}</p>
                         <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
@@ -350,7 +350,7 @@ export function RemoteLogin() {
                         "flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
                         pingingId === ps.id
                           ? "bg-amber-400 text-white scale-95"
-                          : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
+                          : "bg-muted text-muted-foreground hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-400"
                       )}
                       title="Send a visual ping to this device to confirm it's the right one"
                     >
@@ -465,7 +465,7 @@ export function RemoteLogin() {
                     className={cn(
                       "flex items-center gap-3 rounded-2xl border p-4 transition-all",
                       isForceTarget
-                        ? "border-amber-300 bg-amber-50/50 ring-2 ring-amber-200/50"
+                        ? "border-amber-300 bg-amber-500/10 ring-2 ring-amber-200/50"
                         : "border-border bg-card"
                     )}
                   >
@@ -491,8 +491,8 @@ export function RemoteLogin() {
                         className={cn(
                           "flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "reassign"
-                            ? "bg-amber-200 text-amber-800"
-                            : "bg-muted text-muted-foreground hover:bg-amber-100 hover:text-amber-700"
+                            ? "bg-amber-500/20 text-amber-800 dark:text-amber-300"
+                            : "bg-muted text-muted-foreground hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-400"
                         )}
                         title="Force reassign to another account"
                       >
@@ -513,7 +513,7 @@ export function RemoteLogin() {
                           "flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                           isForceTarget && forceAction === "logout"
                             ? "bg-red-500 text-white"
-                            : "bg-muted text-muted-foreground hover:bg-red-100 hover:text-red-700"
+                            : "bg-muted text-muted-foreground hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-400"
                         )}
                         title={isForceTarget && forceAction === "logout" ? "Click again to confirm" : "Force logout to login screen"}
                       >
@@ -525,7 +525,7 @@ export function RemoteLogin() {
 
                   {/* Force reassign panel */}
                   {isForceTarget && forceAction === "reassign" && (
-                    <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50/30 p-4">
+                    <div className="mt-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
                       <div className="mb-3 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-amber-600" />
                         <span className="text-xs font-semibold text-amber-800">

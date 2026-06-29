@@ -447,7 +447,7 @@ export function FormsRepository() {
                           disabled={!hasEmail}
                           className={cn(
                             "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
-                            checked ? "border-[var(--hub-red)]/30 bg-red-50" : "border-border bg-card hover:bg-muted",
+                            checked ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card hover:bg-muted",
                             !hasEmail && "opacity-40 cursor-not-allowed"
                           )}
                         >

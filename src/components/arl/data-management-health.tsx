@@ -86,26 +86,26 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
 
         {/* Integrity & Duplicates */}
         <div className="grid sm:grid-cols-2 gap-3">
-          <div className={cn("rounded-xl p-4 border", integrity?.healthy ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50")}>
+          <div className={cn("rounded-xl p-4 border", integrity?.healthy ? "border-emerald-500/20 bg-emerald-500/10" : "border-red-500/20 bg-red-500/10")}>
             <div className="flex items-center gap-2 mb-1">
-              {integrity?.healthy ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-red-600" />}
-              <p className={cn("text-sm font-semibold", integrity?.healthy ? "text-emerald-800" : "text-red-800")}>
+              {integrity?.healthy ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+              <p className={cn("text-sm font-semibold", integrity?.healthy ? "text-emerald-800 dark:text-emerald-300" : "text-red-800 dark:text-red-300")}>
                 Integrity: {integrity?.healthy ? "Healthy" : `${integrity?.issues.length} issue(s)`}
               </p>
             </div>
             {integrity?.issues.map((iss, i) => (
-              <p key={i} className="text-xs text-red-600 ml-6">{iss.issue}: {iss.count} records</p>
+              <p key={i} className="text-xs text-red-600 dark:text-red-400 ml-6">{iss.issue}: {iss.count} records</p>
             ))}
           </div>
-          <div className={cn("rounded-xl p-4 border", !duplicates?.hasDuplicates ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50")}>
+          <div className={cn("rounded-xl p-4 border", !duplicates?.hasDuplicates ? "border-emerald-500/20 bg-emerald-500/10" : "border-amber-500/20 bg-amber-500/10")}>
             <div className="flex items-center gap-2 mb-1">
-              {!duplicates?.hasDuplicates ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-amber-600" />}
-              <p className={cn("text-sm font-semibold", !duplicates?.hasDuplicates ? "text-emerald-800" : "text-amber-800")}>
+              {!duplicates?.hasDuplicates ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+              <p className={cn("text-sm font-semibold", !duplicates?.hasDuplicates ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-300")}>
                 Duplicates: {!duplicates?.hasDuplicates ? "None found" : `${duplicates.duplicates.length} type(s)`}
               </p>
             </div>
             {duplicates?.duplicates.map((d, i) => (
-              <p key={i} className="text-xs text-amber-600 ml-6">{d.description}: {d.count}</p>
+              <p key={i} className="text-xs text-amber-600 dark:text-amber-400 ml-6">{d.description}: {d.count}</p>
             ))}
           </div>
         </div>

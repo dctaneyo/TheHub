@@ -169,7 +169,7 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="rounded-2xl border-2 border-[var(--hub-red)] bg-red-50 p-5 space-y-3"
+            className="rounded-2xl border-2 border-[var(--hub-red)] bg-[var(--hub-red)]/10 p-5 space-y-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
@@ -199,7 +199,7 @@ export function EmergencyBroadcast() {
                 disabled={clearing}
                 variant="outline"
                 size="sm"
-                className="shrink-0 rounded-xl border-[var(--hub-red)] text-[var(--hub-red)] hover:bg-red-50"
+                className="shrink-0 rounded-xl border-[var(--hub-red)] text-[var(--hub-red)] hover:bg-[var(--hub-red)]/10"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
                 {clearing ? "Clearing..." : "Clear"}
@@ -222,7 +222,7 @@ export function EmergencyBroadcast() {
                         {viewed.length} / {total} viewed
                       </span>
                       {viewed.length === total && total > 0 && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">All seen</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">All seen</span>
                       )}
                     </div>
                     {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -283,7 +283,7 @@ export function EmergencyBroadcast() {
               className={cn(
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "all"
-                  ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
+                  ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                   : "border-border text-muted-foreground hover:bg-muted"
               )}
             >
@@ -294,7 +294,7 @@ export function EmergencyBroadcast() {
               className={cn(
                 "flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                 targetMode === "select"
-                  ? "border-[var(--hub-red)] bg-red-50 text-[var(--hub-red)]"
+                  ? "border-[var(--hub-red)] bg-[var(--hub-red)]/10 text-[var(--hub-red)]"
                   : "border-border text-muted-foreground hover:bg-muted"
               )}
             >
@@ -315,7 +315,7 @@ export function EmergencyBroadcast() {
                     onClick={() => toggleLocation(loc.id)}
                     className={cn(
                       "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
-                      selected ? "bg-red-50" : "hover:bg-muted"
+                      selected ? "bg-[var(--hub-red)]/10" : "hover:bg-muted"
                     )}
                   >
                     <div className={cn(

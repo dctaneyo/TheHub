@@ -202,8 +202,8 @@ export function ArlCalendar() {
                           const Icon = calTypeIcons[task.type] || ClipboardList;
                           return (
                             <div key={task.id} className={cn("flex w-full items-center gap-1 rounded px-1 py-1 text-xs font-semibold",
-                              task.priority === "urgent" ? "bg-red-100 text-red-700" : task.priority === "high" ? "bg-orange-100 text-orange-700" :
-                              task.type === "cleaning" ? "bg-purple-100 text-purple-700" : task.type === "reminder" ? "bg-sky-100 text-sky-700" : "bg-blue-100 text-blue-700"
+                              task.priority === "urgent" ? "bg-red-500/10 text-red-700 dark:text-red-400" : task.priority === "high" ? "bg-orange-500/10 text-orange-700 dark:text-orange-400" :
+                              task.type === "cleaning" ? "bg-purple-500/10 text-purple-700 dark:text-purple-400" : task.type === "reminder" ? "bg-sky-500/10 text-sky-700 dark:text-sky-400" : "bg-blue-500/10 text-blue-700 dark:text-blue-400"
                             )}>
                               <Icon className="h-2 w-2 shrink-0" /><span className="truncate">{task.title}</span>
                             </div>
@@ -237,7 +237,7 @@ export function ArlCalendar() {
                 )}>
                   <div className="flex items-start gap-2">
                     <div className={cn("mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
-                      task.type === "cleaning" ? "bg-purple-100 text-purple-600" : task.type === "reminder" ? "bg-sky-100 text-sky-600" : "bg-blue-100 text-blue-600"
+                      task.type === "cleaning" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : task.type === "reminder" ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                     )}><Icon className="h-3 w-3" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{task.title}</p>
