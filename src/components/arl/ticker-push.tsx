@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Plus, Trash2, Clock, Send, X } from "@/lib/icons";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 interface TickerMessage {
@@ -33,6 +35,8 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
   const [expiryOption, setExpiryOption] = useState<number | null>(60);
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [listError, setListError] = useState("");
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -81,18 +85,29 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    setDeleting(id);
-    try {
-      await fetch("/api/ticker", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      setMessages((prev) => prev.filter((m) => m.id !== id));
-    } finally {
-      setDeleting(null);
-    }
+  const handleDelete = (id: string) => {
+    showConfirm({
+      title: "Delete Ticker Message",
+      description: "Delete this ticker message? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        setDeleting(id);
+        try {
+          const res = await fetch("/api/ticker", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          if (!res.ok) { setListError("Failed to delete ticker message"); return; }
+          setMessages((prev) => prev.filter((m) => m.id !== id));
+        } catch {
+          setListError("Network error");
+        } finally {
+          setDeleting(null);
+        }
+      },
+    });
   };
 
   const formatExpiry = (expiresAt: string | null) => {
@@ -271,6 +286,13 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
           </AnimatePresence>
         )}
       </div>
+      {listError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+          {listError}
+          <ModalCloseButton onClick={() => setListError("")} className="h-6 w-6 text-red-600 dark:text-red-400 active:bg-red-500/10" />
+        </div>
+      )}
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

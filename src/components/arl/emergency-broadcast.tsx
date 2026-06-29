@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Send, Trash2, Radio, Eye, EyeOff, Store, Check, ChevronDown, ChevronUp } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/status-dot";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -33,6 +35,8 @@ export function EmergencyBroadcast() {
   const [draftMessage, setDraftMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const { dialog, confirm: showConfirm } = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<Location[]>([]);
   const [targetMode, setTargetMode] = useState<TargetMode>("all");
@@ -116,18 +120,34 @@ export function EmergencyBroadcast() {
         setSelectedIds([]);
         setTargetMode("all");
         await fetchMessage();
+      } else {
+        setActionError("Failed to send broadcast");
       }
-    } catch {}
+    } catch {
+      setActionError("Network error");
+    }
     setSending(false);
   };
 
-  const handleClear = async () => {
-    setClearing(true);
-    try {
-      await fetch("/api/emergency", { method: "DELETE" });
-      setActiveMessage(null);
-    } catch {}
-    setClearing(false);
+  const handleClear = () => {
+    showConfirm({
+      title: "Clear Active Broadcast",
+      description: "This will stop showing the emergency message on every location's dashboard. This cannot be undone.",
+      confirmLabel: "Clear Broadcast",
+      variant: "danger",
+      onConfirm: async () => {
+        setClearing(true);
+        try {
+          const res = await fetch("/api/emergency", { method: "DELETE" });
+          if (!res.ok) { setActionError("Failed to clear broadcast"); return; }
+          setActiveMessage(null);
+        } catch {
+          setActionError("Network error");
+        } finally {
+          setClearing(false);
+        }
+      },
+    });
   };
 
   // Build viewer info for active message
@@ -432,6 +452,13 @@ export function EmergencyBroadcast() {
           </AnimatePresence>
         </div>
       )}
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+          {actionError}
+          <ModalCloseButton onClick={() => setActionError("")} className="h-6 w-6 text-red-600 dark:text-red-400 active:bg-red-500/10" />
+        </div>
+      )}
+      <ConfirmDialog {...dialog} />
     </div>
   );
 }

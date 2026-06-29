@@ -54,7 +54,9 @@ export function DataManagement() {
       if (rptRes.ok) setReport(await rptRes.json());
       if (intRes.ok) setIntegrity(await intRes.json());
       if (dupRes.ok) setDuplicates(await dupRes.json());
-    } catch {} finally { setLoadingReport(false); }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load system report");
+    } finally { setLoadingReport(false); }
   }, []);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);

@@ -73,6 +73,7 @@ function categoryColor(cat: string): string {
 export function FormsRepository() {
   const [forms, setForms] = useState<Form[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -140,9 +141,12 @@ export function FormsRepository() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          await fetch("/api/forms", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+          const res = await fetch("/api/forms", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+          if (!res.ok) { setListError(`Failed to delete ${form?.title ?? "form"}`); return; }
           setForms((prev) => prev.filter((f) => f.id !== id));
-        } catch {}
+        } catch {
+          setListError("Network error");
+        }
       },
     });
   };
@@ -160,7 +164,9 @@ export function FormsRepository() {
         }));
         setRecipients([...locs, ...arls]);
       }
-    } catch {}
+    } catch (err) {
+      console.error("Failed to fetch recipients:", err);
+    }
   }, []);
 
   const openEmailModal = (form: Form) => {
@@ -238,6 +244,13 @@ export function FormsRepository() {
           Upload PDF
         </Button>
       </div>
+
+      {listError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+          {listError}
+          <ModalCloseButton onClick={() => setListError("")} className="h-6 w-6 text-red-600 dark:text-red-400 active:bg-red-500/10" />
+        </div>
+      )}
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-1">

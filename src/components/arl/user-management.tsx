@@ -103,6 +103,8 @@ export function UserManagement() {
   const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
   const [editRoleId, setEditRoleId] = useState<string | null>(null);
   const [savingPerms, setSavingPerms] = useState(false);
+  const [permsError, setPermsError] = useState("");
+  const [listError, setListError] = useState("");
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
 
   const fetchData = useCallback(async () => {
@@ -119,7 +121,9 @@ export function UserManagement() {
         setLocations(locData.locations || []);
       }
       if (rolesRes.ok) setRoles((await rolesRes.json()).roles || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to fetch users/locations:", err);
+    }
     setLoading(false);
   }, []);
 
@@ -147,6 +151,7 @@ export function UserManagement() {
     setEditPerms(parsed);
     setEditLocationIds(assignedLocs);
     setEditRoleId(arl.roleId || null);
+    setPermsError("");
     setPermissionsTarget(arl);
   };
 
@@ -180,6 +185,7 @@ export function UserManagement() {
   const savePermissions = async () => {
     if (!permissionsTarget) return;
     setSavingPerms(true);
+    setPermsError("");
     try {
       const res = await fetch("/api/arls", {
         method: "PUT",
@@ -194,8 +200,12 @@ export function UserManagement() {
       if (res.ok) {
         setPermissionsTarget(null);
         await fetchData();
+      } else {
+        setPermsError("Failed to save permissions");
       }
-    } catch {}
+    } catch {
+      setPermsError("Network error");
+    }
     setSavingPerms(false);
   };
 
@@ -275,13 +285,16 @@ export function UserManagement() {
   const handleToggleActive = async (item: ArlUser | Location) => {
     try {
       const endpoint = tab === "arls" ? "/api/arls" : "/api/locations";
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, isActive: !item.isActive }),
       });
+      if (!res.ok) { setListError(`Failed to ${item.isActive ? "disable" : "enable"} ${item.name}`); return; }
       await fetchData();
-    } catch {}
+    } catch {
+      setListError("Network error");
+    }
   };
 
   const { dialog, confirm: showConfirm } = useConfirmDialog();
@@ -296,13 +309,16 @@ export function UserManagement() {
       onConfirm: async () => {
         try {
           const endpoint = tab === "arls" ? "/api/arls" : "/api/locations";
-          await fetch(endpoint, {
+          const res = await fetch(endpoint, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: item.id }),
           });
+          if (!res.ok) { setListError(`Failed to delete ${item.name}`); return; }
           await fetchData();
-        } catch {}
+        } catch {
+          setListError("Network error");
+        }
       },
     });
   };
@@ -326,6 +342,13 @@ export function UserManagement() {
           Add {tab === "arls" ? "ARL" : "Location"}
         </Button>
       </div>
+
+      {listError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+          {listError}
+          <ModalCloseButton onClick={() => setListError("")} className="h-6 w-6 text-red-600 dark:text-red-400 active:bg-red-500/10" />
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(d) => setTab(d.value as Tab)}>
         <TabsList>
@@ -871,7 +894,7 @@ export function UserManagement() {
 
               <div className="border-t border-border px-6 py-4 flex items-center gap-3">
                 <div className="flex-1 text-xs text-muted-foreground">
-                  {editPerms.length}/{ALL_PERMISSIONS.length} permissions enabled
+                  {permsError ? <span className="text-red-600 dark:text-red-400">{permsError}</span> : `${editPerms.length}/${ALL_PERMISSIONS.length} permissions enabled`}
                 </div>
                 <Button
                   variant="outline"

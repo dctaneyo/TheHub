@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
 import { StatusDot } from "@/components/ui/status-dot";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 
@@ -56,6 +57,7 @@ export function LocationsManager() {
   const [pinSaving, setPinSaving] = useState(false);
   const [pinError, setPinError] = useState("");
   const [pinSuccess, setPinSuccess] = useState<string | null>(null);
+  const [listError, setListError] = useState("");
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -101,14 +103,16 @@ export function LocationsManager() {
     // Optimistic update
     setLocations((prev) => prev.map((l) => l.id === loc.id ? { ...l, soundMuted: next } : l));
     try {
-      await fetch("/api/locations/sound", {
+      const res = await fetch("/api/locations/sound", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locationId: loc.id, muted: next }),
       });
+      if (!res.ok) throw new Error();
     } catch {
       // Revert on failure
       setLocations((prev) => prev.map((l) => l.id === loc.id ? { ...l, soundMuted: loc.soundMuted } : l));
+      setListError(`Failed to update sound setting for ${loc.name}`);
     } finally {
       setTogglingId(null);
     }
@@ -249,6 +253,13 @@ export function LocationsManager() {
           </div>
         </div>
       </div>
+
+      {listError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+          {listError}
+          <ModalCloseButton onClick={() => setListError("")} className="h-6 w-6 text-red-600 dark:text-red-400 active:bg-red-500/10" />
+        </div>
+      )}
 
       {/* Table — desktop */}
       <div className="hidden md:block rounded-2xl border border-border bg-card overflow-hidden">
