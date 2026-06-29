@@ -41,17 +41,21 @@ interface MeetingRoomLiveKitCustomProps {
   isHost: boolean;
   onLeave: (didEndMeeting?: boolean, wasDisconnected?: boolean) => void;
   shouldStartMeeting?: boolean;
+  // Passive broadcast viewers (StreamViewer) — never asked for mic/camera
+  // permission, never granted publish rights. Skips the join lobby
+  // entirely since there's nothing to configure.
+  viewOnly?: boolean;
 }
 
-export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, shouldStartMeeting }: MeetingRoomLiveKitCustomProps) {
+export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, shouldStartMeeting, viewOnly = false }: MeetingRoomLiveKitCustomProps) {
   const { user } = useAuth();
   const [token, setToken] = useState<string>("");
   const [wsUrl, setWsUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [setupComplete, setSetupComplete] = useState(false);
+  const [setupComplete, setSetupComplete] = useState(viewOnly);
   const [joinWithVideo, setJoinWithVideo] = useState(false);
-  const [joinWithAudio, setJoinWithAudio] = useState(true);
+  const [joinWithAudio, setJoinWithAudio] = useState(!viewOnly);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -84,6 +88,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
             participantName: user?.name || "Guest",
             role: isHost ? "host" : "participant",
             isGuest: user?.userType === "guest",
+            canPublish: !viewOnly,
           }),
         });
 
@@ -103,11 +108,11 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
     };
 
     fetchToken();
-  }, [meetingId, user?.name, isHost]);
+  }, [meetingId, user?.name, isHost, viewOnly]);
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+      <div className="fixed inset-0 z-[160] bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 text-white animate-spin mx-auto mb-4" />
           <p className="text-white text-lg">Connecting to meeting...</p>
@@ -118,7 +123,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+      <div className="fixed inset-0 z-[160] bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 text-lg mb-4">{error}</p>
           <Button onClick={() => onLeave()}>Go Back</Button>
@@ -147,7 +152,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900">
+    <div className="fixed inset-0 z-[160] bg-slate-900">
       <LiveKitRoom
         video={joinWithVideo}
         audio={joinWithAudio}
@@ -185,6 +190,7 @@ export function MeetingRoomLiveKitCustom({ meetingId, title, isHost, onLeave, sh
                   participantName: user?.name || "Guest",
                   role: isHost ? "host" : "participant",
                   isGuest: user?.userType === "guest",
+                  canPublish: !viewOnly,
                 }),
               });
               
@@ -340,7 +346,7 @@ function MeetingSetup({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+    <div className="fixed inset-0 z-[160] bg-slate-900 flex items-center justify-center">
       <div className="w-full max-w-lg mx-4">
         {/* Header */}
         <div className="text-center mb-6">
@@ -996,7 +1002,7 @@ function MeetingUI({
 
   if (waitingForHost) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+      <div className="fixed inset-0 z-[160] bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="h-20 w-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
             <Users className="h-10 w-10 text-slate-400" />
@@ -1019,7 +1025,7 @@ function MeetingUI({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col">
+    <div className="fixed inset-0 z-[160] bg-slate-900 flex flex-col">
       {/* Override LiveKit's default video object-fit to prevent cropping on host video */}
       <style>{`
         .lk-host-video video { object-fit: contain !important; }

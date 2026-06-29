@@ -5,7 +5,7 @@ import { apiSuccess, ApiErrors } from "@/lib/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const { roomName, participantName, role, isGuest } = await req.json();
+    const { roomName, participantName, role, isGuest, canPublish = true } = await req.json();
     if (!roomName || !participantName) {
       return ApiErrors.badRequest("Missing roomName or participantName");
     }
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     at.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: true,
+      canPublish: Boolean(canPublish),
       canSubscribe: true,
       canPublishData: true,
     });
