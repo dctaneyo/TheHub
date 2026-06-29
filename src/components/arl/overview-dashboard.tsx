@@ -208,7 +208,7 @@ export function OverviewDashboard() {
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-muted-foreground">{card.label}</p>
-                <p className="mt-2 text-3xl font-black text-foreground tabular-nums">{card.value}</p>
+                <p className="mt-2 text-2xl font-mono font-black text-foreground">{card.value}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{card.subtext}</p>
               </div>
               <div className="flex flex-col items-end gap-2">

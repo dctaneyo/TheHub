@@ -337,7 +337,7 @@ export function RemoteLogin() {
                       className="flex flex-col items-center gap-2 w-full"
                     >
                       <Monitor className={cn("h-6 w-6", isSelfPinging ? "text-amber-500" : isSelected ? "text-[var(--hub-red)]" : "text-muted-foreground")} />
-                      <span className={cn("text-2xl font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700 dark:text-amber-400" : "text-foreground")}>{ps.code}</span>
+                      <span className={cn("text-2xl font-mono font-black tracking-[0.2em]", isSelfPinging ? "text-amber-700 dark:text-amber-400" : "text-foreground")}>{ps.code}</span>
                       <div className="text-xs text-muted-foreground">
                         <p>{getDeviceHint(ps.userAgent)}</p>
                         <p>{formatDistanceToNow(new Date(ps.createdAt), { addSuffix: true })}</p>
