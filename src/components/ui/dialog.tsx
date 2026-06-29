@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@ark-ui/react/dialog"
+import { Portal } from "@ark-ui/react/portal"
 import { XIcon } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
@@ -49,8 +50,12 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  // Portal even though Positioner is `position: fixed` — fixed escapes
+  // ancestor overflow clipping, but not a transformed ancestor (any
+  // framer-motion wrapper mid-animation creates a new containing block),
+  // so this is the same risk class as Menu/Select without one.
   return (
-    <>
+    <Portal>
       <DialogOverlay />
       <DialogPrimitive.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <DialogPrimitive.Content
@@ -73,7 +78,7 @@ function DialogContent({
           )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Positioner>
-    </>
+    </Portal>
   )
 }
 

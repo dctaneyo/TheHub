@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Menu as MenuPrimitive } from "@ark-ui/react/menu"
+import { Portal } from "@ark-ui/react/portal"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -24,17 +25,23 @@ function MenuContent({
   className,
   ...props
 }: React.ComponentProps<typeof MenuPrimitive.Content>) {
+  // Portal is required — without it the positioner is `position: absolute`
+  // inside whatever DOM parent rendered it, so any ancestor with
+  // overflow-hidden/auto (a scrollable table, a virtualized list row)
+  // clips the dropdown instead of letting it float above the page.
   return (
-    <MenuPrimitive.Positioner>
-      <MenuPrimitive.Content
-        data-slot="menu-content"
-        className={cn(
-          "z-50 min-w-[168px] overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg outline-none",
-          className
-        )}
-        {...props}
-      />
-    </MenuPrimitive.Positioner>
+    <Portal>
+      <MenuPrimitive.Positioner>
+        <MenuPrimitive.Content
+          data-slot="menu-content"
+          className={cn(
+            "z-50 min-w-[168px] overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg outline-none",
+            className
+          )}
+          {...props}
+        />
+      </MenuPrimitive.Positioner>
+    </Portal>
   )
 }
 

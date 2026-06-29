@@ -4,6 +4,7 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@ark-ui/react/select"
 import type { SelectRootComponentProps } from "@ark-ui/react/select"
 import type { CollectionItem } from "@ark-ui/react/collection"
+import { Portal } from "@ark-ui/react/portal"
 import { Check, ChevronDown } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
@@ -56,17 +57,23 @@ function SelectContent({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  // Portal is required — without it the positioner is `position: absolute`
+  // inside whatever DOM parent rendered it, so any ancestor with
+  // overflow-hidden/auto (a scrollable table, a modal body) clips the
+  // dropdown instead of letting it float above the page.
   return (
-    <SelectPrimitive.Positioner>
-      <SelectPrimitive.Content
-        data-slot="select-content"
-        className={cn(
-          "z-50 min-w-[var(--reference-width)] overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
-          className
-        )}
-        {...props}
-      />
-    </SelectPrimitive.Positioner>
+    <Portal>
+      <SelectPrimitive.Positioner>
+        <SelectPrimitive.Content
+          data-slot="select-content"
+          className={cn(
+            "z-50 min-w-[var(--reference-width)] overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+            className
+          )}
+          {...props}
+        />
+      </SelectPrimitive.Positioner>
+    </Portal>
   )
 }
 
