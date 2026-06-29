@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { IconTip } from "@/components/ui/icon-tip";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -267,28 +268,32 @@ export function Messaging() {
           <p className="text-xs text-muted-foreground">{activeConvo.subtitle} · {activeConvo.memberCount} members</p>
         </div>
         {/* Mute — persistent state, earns permanent visibility */}
-        <button
-          onClick={() => toggleMute(activeConvo.id)}
-          className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-            mutedConvos.has(activeConvo.id)
-              ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-              : "text-muted-foreground active:bg-muted"
-          )}
-          title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
-          aria-label={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
-        >
-          {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-        </button>
+        <IconTip label={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}>
+          <button
+            onClick={() => toggleMute(activeConvo.id)}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+              mutedConvos.has(activeConvo.id)
+                ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                : "text-muted-foreground active:bg-muted"
+            )}
+            title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
+            aria-label={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
+          >
+            {mutedConvos.has(activeConvo.id) ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+          </button>
+        </IconTip>
         {/* Overflow — Group Info + Search (secondary, occasional) */}
         <Menu>
-          <MenuTrigger
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors active:bg-muted"
-            title="More options"
-            aria-label="More options"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </MenuTrigger>
+          <IconTip label="More options">
+            <MenuTrigger
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors active:bg-muted"
+              title="More options"
+              aria-label="More options"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </MenuTrigger>
+          </IconTip>
           <MenuContent>
             {isGroup && (
               <MenuItem value="group-info" onClick={() => setShowGroupInfo(true)}>
@@ -407,16 +412,18 @@ export function Messaging() {
                         {isMe && (
                           <div className="relative">
                             {isGroup ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setReceiptPopover(showPopover ? null : msg.id); }}
-                                className="flex items-center"
-                                title="See who read this"
-                              >
-                                {hasBeenRead
-                                  ? <CheckCheck className="h-3 w-3 text-white cursor-pointer active:text-white/70" />
-                                  : <Check className="h-3 w-3 text-white/50" />
-                                }
-                              </button>
+                              <IconTip label="See who read this" side="top">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setReceiptPopover(showPopover ? null : msg.id); }}
+                                  className="flex items-center"
+                                  title="See who read this"
+                                >
+                                  {hasBeenRead
+                                    ? <CheckCheck className="h-3 w-3 text-white cursor-pointer active:text-white/70" />
+                                    : <Check className="h-3 w-3 text-white/50" />
+                                  }
+                                </button>
+                              </IconTip>
                             ) : (
                               hasBeenRead
                                 ? <CheckCheck className="h-3 w-3 text-white/80" />
@@ -463,13 +470,15 @@ export function Messaging() {
                           </div>
                         )}
                         {/* Reaction button */}
-                        <button
-                          onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                          className={cn("ml-1 transition-opacity active:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
-                          title="Add reaction"
-                        >
-                          <Smile className="h-3 w-3" />
-                        </button>
+                        <IconTip label="Add reaction" side="top">
+                          <button
+                            onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
+                            className={cn("ml-1 transition-opacity active:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
+                            title="Add reaction"
+                          >
+                            <Smile className="h-3 w-3" />
+                          </button>
+                        </IconTip>
                       </div>
                     </div>
 
