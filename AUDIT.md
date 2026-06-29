@@ -318,13 +318,21 @@ core business logic largely untested.**
 
 ## 7. Reliability
 
-### 7.1 STILL OPEN — Cron jobs have no retry/alerting
+### 7.1 ~~STILL OPEN — Cron jobs have no retry/alerting~~ — **Fixed 2026-06-29**
 
-`server.ts` (lines 46–88) wraps each cron job (backup ×3, cleanup, hourly
-reports) in try/catch that only `console.error`s. **No Sentry capture, no
-retry, no external alert** (confirmed: zero `Sentry`/`captureException`/
-`retry`/`notify` matches in server.ts). A failed nightly backup is silent.
-Status: **still open as described.**
+`server.ts` wrapped each cron job (backup ×3, cleanup, hourly reports) in
+try/catch that only `console.error`'d — no retry, no external alert, a
+failed nightly backup was silent.
+
+Added `src/lib/cron-runner.ts`'s `runCronJob(name, fn, options)`: retries
+the job (2 retries / 3 attempts total, 60s apart, by default) before
+giving up, then reports to Sentry — already configured for the app via
+`instrumentation.ts`, just never called from the cron jobs — only once
+retries are exhausted, so a human actually gets paged instead of the
+failure sitting silently in logs. All 5 cron jobs in `server.ts` now go
+through it. The Sentry call itself is wrapped so a Sentry-reporting
+failure can never produce an unhandled rejection in a fire-and-forget
+cron callback.
 
 ### 7.2 ~~PARTIALLY ADDRESSED — Socket.io reconnection~~ — **Fixed 2026-06-29**
 
@@ -482,8 +490,8 @@ contrast remain un-audited. Status: **still open as described.**
 
 ### Long-Term (Polish / Ops)
 
-12. Add Sentry capture + alerting (and ideally retry) to `server.ts` cron
-    jobs.
+12. ~~Add Sentry capture + alerting (and retry) to `server.ts` cron
+    jobs.~~ — done, see §7.1.
 13. Move rate limiter to a shared store (Redis) if scaling beyond single
     instance.
 14. Complete accessibility migration: convert remaining raw
@@ -514,6 +522,5 @@ contrast remain un-audited. Status: **still open as described.**
   `data-management/*` destructive route deleting data across every
   tenant at once with zero scoping (§3.3a). Both fixed.
 - **Still open:** oversized components (deliberately left alone for now),
-  per-task notification timers, cron alerting, in-memory rate limiter,
-  color contrast, accessibility migration for the remaining raw
-  `fixed inset-0` modals.
+  in-memory rate limiter, color contrast, accessibility migration for the
+  remaining raw `fixed inset-0` modals.

@@ -8,6 +8,7 @@ import { startTaskNotificationScheduler } from "./src/lib/task-notification-sche
 import { cleanupStaleData } from "./src/lib/cleanup";
 import { processScheduledReports } from "./src/lib/report-generator";
 import { ensureIndexes } from "./src/lib/ensure-indexes";
+import { runCronJob } from "./src/lib/cron-runner";
 
 // This custom server (dist/server.js) is the PRODUCTION entrypoint — local
 // development uses `next dev` directly. Default to production mode and only run
@@ -43,57 +44,41 @@ app.prepare().then(() => {
     console.log('📅 Setting up automated backup schedule...');
     
     // Daily backup at 2 AM
-    cron.schedule('0 2 * * *', async () => {
+    cron.schedule('0 2 * * *', () => {
       console.log('🔄 Running scheduled daily backup...');
-      try {
-        await createBackup('daily');
-      } catch (error) {
-        console.error('❌ Scheduled daily backup failed:', error);
-      }
+      runCronJob('daily-backup', () => createBackup('daily'));
     });
 
     // Weekly backup on Sunday at 3 AM
-    cron.schedule('0 3 * * 0', async () => {
+    cron.schedule('0 3 * * 0', () => {
       console.log('🔄 Running scheduled weekly backup...');
-      try {
-        await createBackup('weekly');
-      } catch (error) {
-        console.error('❌ Scheduled weekly backup failed:', error);
-      }
+      runCronJob('weekly-backup', () => createBackup('weekly'));
     });
 
     // Monthly backup on the 1st at 4 AM
-    cron.schedule('0 4 1 * *', async () => {
+    cron.schedule('0 4 1 * *', () => {
       console.log('🔄 Running scheduled monthly backup...');
-      try {
-        await createBackup('monthly');
-      } catch (error) {
-        console.error('❌ Scheduled monthly backup failed:', error);
-      }
+      runCronJob('monthly-backup', () => createBackup('monthly'));
     });
 
     // Daily stale data cleanup at 1:30 AM (before backup)
-    cron.schedule('30 1 * * *', async () => {
+    cron.schedule('30 1 * * *', () => {
       console.log('🧹 Running scheduled data cleanup...');
-      try {
+      runCronJob('daily-cleanup', async () => {
         const result = await cleanupStaleData();
         console.log('✅ Cleanup complete:', result);
-      } catch (error) {
-        console.error('❌ Scheduled cleanup failed:', error);
-      }
+      });
     });
 
     // Process scheduled reports every hour
-    cron.schedule('0 * * * *', async () => {
+    cron.schedule('0 * * * *', () => {
       console.log('📊 Checking for due scheduled reports...');
-      try {
+      runCronJob('scheduled-reports', async () => {
         const result = await processScheduledReports();
         if (result.processed > 0 || result.errors > 0) {
           console.log(`📊 Reports: ${result.processed} processed, ${result.errors} errors`);
         }
-      } catch (error) {
-        console.error('❌ Report processing failed:', error);
-      }
+      });
     });
 
     console.log('✅ Automated backups configured:');
