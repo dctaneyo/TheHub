@@ -344,9 +344,15 @@ reasoning as the rest of this plan.
    actions folded into an Ark Menu overflow on both layouts. Also
    tightened the delete-confirmation copy (DESIGN.md §19) and dropped a
    dead variable surfaced while rewriting the block.
-8. **Go Live broadcast bugs** — functional, blocks a real feature;
-   sequence based on how urgent the broadcast feature is to ship, not on
-   design-system priority.
+8. ~~**Go Live broadcast bugs**~~ — **done, scoped to the two confirmed
+   bugs only** (the "dedicated viewer component" architecture question
+   stays logged, not attempted). `/api/livekit/token` now honors a
+   `canPublish` field instead of hardcoding `true`; `MeetingRoomLiveKitCustom`
+   gained a `viewOnly` prop (skips the join lobby, never calls
+   getUserMedia, requests `canPublish: false`) used by `StreamViewer`,
+   the only caller used by passive viewers. The z-index overlap fixed by
+   bumping MeetingRoom's 6 outer wrappers above the ARL header/sidebar,
+   rather than rewiring Go Live onto BroadcastStudio's navigation gate.
 9. **Overview single-viewport redesign** — biggest single decision in
    this plan. Do last, deliberately: it's a layout architecture change
    (fixed-height grid, each section owning an allocated region) rather
