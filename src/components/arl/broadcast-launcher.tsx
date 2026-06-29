@@ -131,7 +131,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
           className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white p-5 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Radio className="h-6 w-6" />
               <div>
@@ -167,7 +167,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
             <Button
               onClick={goLive}
               disabled={!title.trim()}
-              className="w-full bg-gradient-to-r from-red-600 to-orange-600 active:from-red-700 active:to-orange-700 text-white h-12 text-lg font-semibold rounded-xl"
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white h-12 text-lg font-semibold rounded-xl"
             >
               <Radio className="h-5 w-5 mr-2" />
               Go Live
