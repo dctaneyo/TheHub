@@ -364,9 +364,22 @@ reasoning as the rest of this plan.
    Feed" header — added a `showHeader` prop (mirrors TickerPush's
    existing convention) and made its height flexible instead of a fixed
    `max-h-[300px]`.
-10. **App-wide dark-mode swatch sweep** — mechanical, no dependencies,
-   fold into any of the above passes opportunistically or do as its own
-   pass whenever convenient.
+10. ~~**Dark-mode swatch sweep**~~ — **done, console-scoped** (this
+   plan's title and scope statement say ARL Console only, even though
+   this step's original wording said "app-wide" — kept to that scope
+   rather than touching landing-page.tsx/the kiosk's restaurant-chat.tsx).
+   Fixed all 13 real instances across 6 files; re-grepped after to
+   confirm zero remain in the console.
+
+**This completes ARL-CONSOLE-REFACTOR-PLAN.md — all 10 steps done.**
+Phase 0 (Ark UI primitive foundation) plus all 10 sequencing steps are
+now shipped. Remaining future-facing items are everything logged
+elsewhere as separate, larger tracks: `ARL-AUDIT.md`'s mechanical/visual
+punch list (hover/active sweep, IconTip adoption, indigo cleanup outside
+this plan's scope, etc.), `CODE-STYLE-AUDIT.md` (deferred until after
+this design-system work, per the user), the "dedicated viewer component"
+architecture question logged alongside the Go Live bug fix, and the
+app-wide (non-console) instances of the dark-mode swatch pattern.
 
 ---
 
