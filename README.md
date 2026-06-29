@@ -66,6 +66,24 @@ DATABASE_PATH=./data/hub.db
 4. Set environment variables: `JWT_SECRET`, `DATABASE_PATH=/data/hub.db`, `NODE_ENV=production`
 5. Railway will auto-detect the `railway.toml` config
 
+### First Admin Console account
+
+The Admin Console (`nimda.*`) has no self-serve signup. On a **fresh** deploy,
+set these env vars and the first platform admin is seeded automatically at
+startup (see `src/lib/startup.ts`):
+
+```
+SEED_ADMIN_EMAIL=you@example.com
+SEED_ADMIN_NAME=Your Name
+SEED_ADMIN_PASSWORD=your-password
+SEED_ADMIN_PIN=123456        # exactly 6 digits — second login factor
+```
+
+The seed is **idempotent and first-admin-only**: if any platform admin already
+exists it does nothing, so it can never reset a password on a later redeploy.
+Once the first admin is in, you can remove these vars (create further admins
+from `/admin/team`). Locally you can still use `npm run db:seed-admin`.
+
 ## Project Structure
 
 ```

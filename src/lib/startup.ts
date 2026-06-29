@@ -115,3 +115,73 @@ if (needsSeed) {
     console.error("Global Chat migration error:", err);
   }
 }
+
+// ── First platform admin (Admin Console) ──────────────────────────────────
+// The Admin Console has no self-serve signup — every account after the first
+// is created from /admin/team, but the very first one needs a way in. On a
+// fresh deploy nobody can SSH in to run scripts/seed-admin.ts, so we seed it
+// from environment variables here instead. Idempotent and first-admin-only:
+// if ANY platform admin already exists we never touch the table, so this can
+// never clobber a real account or reset a password on a later redeploy.
+function seedFirstAdmin() {
+  const email = process.env.SEED_ADMIN_EMAIL?.trim();
+  const name = process.env.SEED_ADMIN_NAME?.trim();
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  const pin = process.env.SEED_ADMIN_PIN;
+
+  // No config → nothing to do. (Once the first admin exists you can safely
+  // remove these env vars; they're only read on a from-empty deploy.)
+  if (!email && !name && !password && !pin) return;
+
+  if (!email || !name || !password || !pin) {
+    console.warn("⚠️  SEED_ADMIN_* partially set — need EMAIL, NAME, PASSWORD and PIN together. Skipping admin seed.");
+    return;
+  }
+  if (!/^\d{6}$/.test(pin)) {
+    console.warn("⚠️  SEED_ADMIN_PIN must be exactly 6 digits. Skipping admin seed.");
+    return;
+  }
+
+  let sqlite: InstanceType<typeof Database> | null = null;
+  try {
+    sqlite = new Database(DB_PATH);
+
+    // The platform_admins table is otherwise created by a programmatic
+    // migration that only runs once the Next server first touches the DB —
+    // i.e. after this startup script. Create it here (idempotently) so the
+    // first-boot seed doesn't race that migration. DDL mirrors schema.ts.
+    sqlite.exec(`CREATE TABLE IF NOT EXISTS platform_admins (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      pin_hash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`);
+
+    const existing = sqlite.prepare("SELECT COUNT(*) as count FROM platform_admins").get() as { count: number };
+    if (existing.count > 0) {
+      console.log("✅ Platform admin already exists, skipping admin seed");
+      return;
+    }
+
+    const { hashSync } = require("bcryptjs");
+    const { v4: uuid } = require("uuid");
+    const now = new Date().toISOString();
+
+    sqlite.prepare(
+      `INSERT INTO platform_admins (id, email, password_hash, pin_hash, name, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`
+    ).run(uuid(), email, hashSync(password, 10), hashSync(pin, 10), name, now, now);
+
+    console.log(`🔑 Seeded first platform admin: ${name} <${email}>`);
+  } catch (err) {
+    console.error("Admin seed error:", err);
+  } finally {
+    sqlite?.close();
+  }
+}
+
+seedFirstAdmin();
