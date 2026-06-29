@@ -350,18 +350,16 @@ single-instance only. Status: **still open as described.**
 | File/Module | Current Status |
 |-------------|----------------|
 | `src/lib/audit-logger.ts` | **No longer dead** — imported by 16 routes. Keep. |
-| `scripts/migrate-to-turso.ts` | Still present, still obsolete. |
-| `scripts/migrate-to-4digit.js` | Still present, still obsolete. |
-| `scripts/cleanup-duplicate-conversations.js` | Still present, still obsolete. |
-| `scripts/reset-pins.js` | Still present, still obsolete. |
-| `scripts/railway-migration.js` | Still present, still obsolete. |
-| `scripts/add-indexes.ts` | **Now redundant** — its logic was inlined into `src/lib/db/index.ts`. Candidate for removal. |
+| `scripts/migrate-to-turso.ts` | **Deleted 2026-06-29** — Turso migration was abandoned. |
+| `scripts/migrate-to-4digit.js` | **Deleted 2026-06-29** — pointed at a stale `data/database.sqlite` path that doesn't match the app's actual DB path; the migration itself is long since complete (confirmed via the corresponding API endpoints, deleted §3.1). |
+| `scripts/cleanup-duplicate-conversations.js` | **Deleted 2026-06-29** — targeted `drizzle-orm/postgres-js`, a Postgres setup this app never runs (SQLite via better-sqlite3 throughout). |
+| `scripts/reset-pins.js` | **Deleted 2026-06-29** — superseded by the in-app admin "Reset PIN" feature in `user-management.tsx`. |
+| `scripts/railway-migration.js` | **Deleted 2026-06-29** — a manual-console-run duplicate of the same 4-digit migration as the deleted `migrate-users`/`admin/migrate-4digit` API routes (§3.1). |
+| `scripts/add-indexes.ts` | **Deleted 2026-06-29** — confirmed every index it created already exists (and more) in the auto-applied migrations in `src/lib/db/index.ts`; also removed the now-pointless `db:add-indexes` script entry from `package.json`. |
 | `src/app/api/migrate-users/route.ts` | **Deleted 2026-06-28** — see §3.1. |
 | `src/app/api/admin/migrate-4digit/route.ts` | **Deleted 2026-06-28** — see §3.1. |
 
-All five originally-flagged obsolete scripts **still exist**. Status:
-**still open as described**, plus two new cleanup items
-(`add-indexes.ts` redundancy, the migration route endpoints).
+All six obsolete scripts are now removed. Status: **resolved.**
 
 ---
 
@@ -480,10 +478,8 @@ contrast remain un-audited. Status: **still open as described.**
     `fixed inset-0` modals (ARL + dashboard/chat/meeting) to the Ark
     `Dialog` primitive; run a WCAG AA contrast audit on `--hub-red` and
     dark mode.
-15. Remove now-redundant `scripts/add-indexes.ts` and the obsolete
-    one-time migration scripts (`migrate-to-turso.ts`,
-    `migrate-to-4digit.js`, `cleanup-duplicate-conversations.js`,
-    `reset-pins.js`, `railway-migration.js`).
+15. ~~Remove now-redundant `scripts/add-indexes.ts` and the obsolete
+    one-time migration scripts~~ — done, see §8.
 
 ---
 
@@ -505,7 +501,7 @@ contrast remain un-audited. Status: **still open as described.**
   writing safety tests, more severe than either — every
   `data-management/*` destructive route deleting data across every
   tenant at once with zero scoping (§3.3a). Both fixed.
-- **Still open:** the other 8 `data-management/*` routes have the
-  tenant-scoping fix but no dedicated regression test yet; oversized
-  components, scattered JSON.parse, per-task timers, cron alerting,
-  in-memory rate limiter, color contrast, obsolete scripts.
+- **Still open:** oversized components (deliberately left alone for now),
+  per-task notification timers, cron alerting, in-memory rate limiter,
+  color contrast, accessibility migration for the remaining raw
+  `fixed inset-0` modals.

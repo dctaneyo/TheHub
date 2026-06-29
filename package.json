@@ -16,7 +16,6 @@
     "db:backup": "npx tsx scripts/backup-database.ts backup",
     "db:list-backups": "npx tsx scripts/backup-database.ts list",
     "db:restore": "npx tsx scripts/backup-database.ts restore",
-    "db:add-indexes": "npx tsx scripts/add-indexes.ts",
     "push:keys": "npx tsx scripts/generate-vapid-keys.ts",
     "test": "vitest",
     "test:run": "vitest run",
