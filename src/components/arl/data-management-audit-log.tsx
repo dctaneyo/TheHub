@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ScrollText, RefreshCw, X, Search } from "@/lib/icons";
+import { ScrollText, RefreshCw, Search } from "@/lib/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 
 interface AuditLogEntry {
   id: string;
@@ -61,12 +62,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
               placeholder="Filter..."
               className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring w-32 sm:w-56"
             />
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <ModalCloseButton onClick={onClose} />
           </div>
         </div>
 

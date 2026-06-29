@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bell, BellOff, Settings, CheckCircle2, AlertCircle } from "@/lib/icons";
+import { Bell, BellOff, Settings, CheckCircle2, AlertCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 
 interface NotificationPreferences {
   id?: string;
@@ -485,12 +486,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                   Choose what gets pushed to your phone
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 active:bg-gray-100 dark:active:bg-gray-800 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
+              <ModalCloseButton onClick={onClose} />
             </div>
 
             {/* Quick Presets */}

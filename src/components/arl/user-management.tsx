@@ -6,7 +6,7 @@ import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, X, Edit2, Trash2, UserCheck, UserX,
+  Plus, Edit2, Trash2, UserCheck, UserX,
   Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin, MoreVertical,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -557,9 +558,7 @@ export function UserManagement() {
                 <h3 className="text-lg font-semibold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
-                <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
-                  <X className="h-4 w-4" />
-                </button>
+                <ModalCloseButton onClick={() => setShowForm(false)} />
               </div>
 
               <div className="space-y-3">
@@ -707,9 +706,7 @@ export function UserManagement() {
                   <h3 className="text-lg font-semibold text-foreground">Permissions</h3>
                   <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
                 </div>
-                <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
-                  <X className="h-4 w-4" />
-                </button>
+                <ModalCloseButton onClick={() => setPermissionsTarget(null)} />
               </div>
 
               {/*

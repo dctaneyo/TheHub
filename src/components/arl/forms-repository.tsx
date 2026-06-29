@@ -9,7 +9,6 @@ import {
   Trash2,
   Download,
   Plus,
-  X,
   Loader2,
   FolderOpen,
   Mail,
@@ -22,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { IconTip } from "@/components/ui/icon-tip";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -417,9 +417,7 @@ export function FormsRepository() {
                   <h3 className="text-lg font-semibold text-foreground">Email Form</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm.title}</p>
                 </div>
-                <button onClick={() => setEmailForm(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
-                  <X className="h-4 w-4" />
-                </button>
+                <ModalCloseButton onClick={() => setEmailForm(null)} />
               </div>
 
               {emailSuccess ? (

@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { X, SprayCan, Clock, ClipboardList } from "@/lib/icons";
+import { SprayCan, Clock, ClipboardList } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
@@ -160,13 +161,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           <h3 className="text-lg font-semibold text-foreground">
             {editingTask ? "Edit Task" : "New Task"}
           </h3>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <ModalCloseButton onClick={onClose} />
         </div>
 
         {/* Explicit margin per group (no outer space-y-*) so the larger gaps before
