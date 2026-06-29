@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IconTip } from "@/components/ui/icon-tip";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -258,12 +259,7 @@ export function FormsRepository() {
 
       {/* Forms list */}
       {filtered.length === 0 ? (
-        <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-border">
-          <div className="text-center">
-            <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">No forms yet</p>
-          </div>
-        </div>
+        <EmptyState icon={FolderOpen} title="No forms yet" bordered className="h-40 py-0" />
       ) : (
         <>
           {/* Table — desktop (md:+). Form fields (title, category, filename, size,

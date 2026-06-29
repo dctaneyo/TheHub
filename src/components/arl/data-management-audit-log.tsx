@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ScrollText, RefreshCw, X, Search } from "@/lib/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface AuditLogEntry {
   id: string;
@@ -75,7 +76,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
             <span className="text-sm text-muted-foreground">Loading audit log...</span>
           </div>
         ) : logs.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No audit log entries found.</p>
+          <EmptyState title="No audit log entries found" className="py-8" />
         ) : (
           <>
             {/* Table — desktop (md:+). A literal audit log is a textbook

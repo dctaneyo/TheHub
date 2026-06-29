@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { IconTip } from "@/components/ui/icon-tip";
 import { StatusDot } from "@/components/ui/status-dot";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 
@@ -345,7 +346,7 @@ export function LocationsManager() {
               ))}
               {locations.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-xs text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No locations yet
                   </td>
                 </tr>
@@ -410,7 +411,7 @@ export function LocationsManager() {
           </div>
         ))}
         {locations.length === 0 && (
-          <p className="py-8 text-center text-xs text-muted-foreground">No locations yet</p>
+          <EmptyState title="No locations yet" className="py-8" />
         )}
       </div>
     </div>

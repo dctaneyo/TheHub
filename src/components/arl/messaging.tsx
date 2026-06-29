@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
 import { StatusDot } from "@/components/ui/status-dot";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EmojiQuickReplies } from "@/components/emoji-quick-replies";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -237,12 +238,7 @@ export function Messaging() {
           ))}
 
           {conversations.length === 0 && (
-            <div className="flex h-40 items-center justify-center">
-              <div className="text-center">
-                <MessageCircle className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-xs text-muted-foreground">No conversations yet</p>
-              </div>
-            </div>
+            <EmptyState icon={MessageCircle} title="No conversations yet" className="h-40 py-0" />
           )}
         </div>
       </div>

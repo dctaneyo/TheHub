@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -338,9 +339,7 @@ export function UserManagement() {
 
       <div>
         {items.length === 0 ? (
-          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">No {tab} yet</p>
-          </div>
+          <EmptyState title={`No ${tab} yet`} bordered className="h-32 py-0" />
         ) : (
           <>
             {/* Table — desktop (md:+). Seven fields per row (name, role, ID, store#,

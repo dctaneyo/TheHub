@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
@@ -405,11 +406,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
       {loading ? (
         <div className="text-center py-12 text-muted-foreground text-sm">Loading meetings...</div>
       ) : meetings.length === 0 ? (
-        <div className="text-center py-12">
-          <Video className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No scheduled meetings yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Create one to get started</p>
-        </div>
+        <EmptyState icon={Video} title="No scheduled meetings yet" subtext="Create one to get started" />
       ) : (
         <>
           {/* Desktop table — host/date/time/code is tabular, comparable

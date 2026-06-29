@@ -12,6 +12,7 @@ import {
   WifiOff,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth-context";
 
 interface RemoteTarget {
@@ -265,11 +266,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
         </div>
 
         {targets.length === 0 ? (
-          <div className="py-16 text-center">
-            <WifiOff className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No online locations found</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Locations appear here when they&apos;re signed in</p>
-          </div>
+          <EmptyState icon={WifiOff} title="No online locations found" subtext="Locations appear here when they're signed in" className="py-16" />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {targets.map((t) => (
