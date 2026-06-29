@@ -138,6 +138,46 @@ GET handlers (`audit-log`, `export`, `integrity-check`, `system-report`,
 left alone — they don't mutate data, so the original concern (un-throttled
 destructive operations) doesn't apply to them.
 
+### 3.3a ~~CRITICAL (NEW) — `data-management/*` deletes had zero tenant scoping~~ — **Fixed 2026-06-28**
+
+Found while writing safety tests for these routes, not by the original
+2026-03-20 audit. Every one of the 10 destructive purge/cleanup/bulk
+routes (`archive-old-data`, `bulk-tasks`, `clear-sessions`,
+`duplicate-check`, `purge-broadcast-data`, `purge-conversations`,
+`purge-messages`, `purge-notifications`, `purge-old-tasks`) deleted data
+**across every tenant at once** — `tenantId` only ever appeared in the
+audit-log call (recording *who* ran the operation), never in a `WHERE`
+clause. Any tenant admin with `DATA_MANAGEMENT_ACCESS` (an ordinary
+permission, not a platform-superadmin one) could wipe out every other
+tenant's messages, conversations, broadcasts, notifications, and sessions
+in one click. This is more severe than the unauthenticated migration
+endpoints in §3.1 — it required only a normal authenticated session, not
+zero auth.
+
+`bulk-tasks`'s `create-tasks-bulk` action had a second, distinct bug: the
+`INSERT INTO tasks` statement never set `tenant_id` at all, so every
+bulk-created task silently fell back to the column's default (`'kazi'`)
+regardless of which tenant's admin created it — a data-integrity bug, not
+just an authorization gap.
+
+Fixed by adding `WHERE tenant_id = ?` (or the appropriate join/subquery
+for tables without their own `tenantId`, e.g. `messages` scoped via
+`conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)`,
+`sessions` scoped via the `locations`/`arls` row the session's `user_id`
+points at) to every query in all 9 affected routes, and adding
+`tenant_id` to `bulk-tasks`'s task INSERT.
+
+`drop-tables` and `vacuum` needed no change — `drop-tables` operates on
+unused onboarding tables via an allowlist (not tenant data), and `vacuum`
+is whole-database-file maintenance, not row deletion. `orphaned-cleanup`
+was deliberately left global too, for a different reason: every row it
+deletes has already lost its parent record, so there's no tenant left to
+attribute it to or restrict the cleanup to.
+
+Added a tenant-scoping regression test for `purge-messages` (asserts
+every prepared SQL statement contains a `tenant_id = ?` filter) alongside
+the new safety tests in priority item 6 below.
+
 ### 3.4 RESOLVED — Audit logging coverage
 
 The original "only `bulk-tasks`" claim and the later "16 routes" note:
@@ -359,46 +399,56 @@ contrast remain un-audited. Status: **still open as described.**
 
 ## 10. Recommended Priority Order
 
-### Immediate (Security) — items 1 & 2 done 2026-06-28
+### Immediate (Security) — all done 2026-06-28
 
 1. ~~**Delete `src/app/api/migrate-users/route.ts`**~~ — done.
 2. ~~**Delete or auth-gate `src/app/api/admin/migrate-4digit/route.ts`.**~~ — done.
 3. ~~Add rate limiting to `auth/force-apply` (remote-login apply).~~ — done.
 4. ~~Add rate limiting to `data-management/*` purge/drop routes.~~ — done.
+5. ~~**Add tenant scoping to all `data-management/*` deletes**~~ — done.
+   See §3.3a — found while writing the safety tests below, more severe
+   than items 1-2.
 
 ### Short-Term (Quality / Tests)
 
-5. ~~Add tests for `task-utils.ts` recurrence math~~ — done (25 tests,
+6. ~~Add tests for `task-utils.ts` recurrence math~~ — done (25 tests,
    `src/lib/task-utils.test.ts`). ~~`session/activate`/`force`~~ — done
    (13 + 19 tests). The notification scheduler
    (`task-notification-scheduler.ts`) remains untested — it manages
    `setTimeout` timer state directly rather than pure functions, so it
    needs a different testing approach (fake timers) than the other two.
-6. Add safety tests for `data-management/*` destructive routes.
+7. ~~Add safety tests for `data-management/*` destructive routes.~~ —
+   done for the two highest-risk routes: `drop-tables` (12 tests,
+   including 6 specifically proving the table-name allowlist can't be
+   bypassed) and `purge-messages` (7 tests, including a regression test
+   asserting every query carries the tenant-scoping fix from §3.3a).
+   Writing this `purge-messages` test is what surfaced §3.3a — the other
+   8 affected routes have the fix but not yet their own dedicated test
+   file; that's the remaining work here.
 
 ### Medium-Term (Architecture / Performance)
 
-7. Break down oversized components — current top targets:
+8. Break down oversized components — current top targets:
    `meeting-room-livekit-custom.tsx` (1515), `login/page.tsx` (1271),
    `restaurant-chat.tsx` (1170), `meeting/page.tsx` (983),
    `user-management.tsx` (924).
-8. Replace per-task × per-location `setTimeout` timers with a single
+9. Replace per-task × per-location `setTimeout` timers with a single
    periodic sweep, and replay missed fires after socket reconnect gaps.
-9. Introduce a shared JSON-column helper or Drizzle custom column type (64
-   `JSON.parse` sites across 30 files).
-10. Fully batch the `locations` GET online-status computation.
+10. Introduce a shared JSON-column helper or Drizzle custom column type (64
+    `JSON.parse` sites across 30 files).
+11. Fully batch the `locations` GET online-status computation.
 
 ### Long-Term (Polish / Ops)
 
-11. Add Sentry capture + alerting (and ideally retry) to `server.ts` cron
+12. Add Sentry capture + alerting (and ideally retry) to `server.ts` cron
     jobs.
-12. Move rate limiter to a shared store (Redis) if scaling beyond single
+13. Move rate limiter to a shared store (Redis) if scaling beyond single
     instance.
-13. Complete accessibility migration: convert remaining raw
+14. Complete accessibility migration: convert remaining raw
     `fixed inset-0` modals (ARL + dashboard/chat/meeting) to the Ark
     `Dialog` primitive; run a WCAG AA contrast audit on `--hub-red` and
     dark mode.
-14. Remove now-redundant `scripts/add-indexes.ts` and the obsolete
+15. Remove now-redundant `scripts/add-indexes.ts` and the obsolete
     one-time migration scripts (`migrate-to-turso.ts`,
     `migrate-to-4digit.js`, `cleanup-duplicate-conversations.js`,
     `reset-pins.js`, `railway-migration.js`).
@@ -419,8 +469,11 @@ contrast remain un-audited. Status: **still open as described.**
   indexes, tenant cache, locations DELETE N+1, skip link, Ark UI focus
   primitives.
 - **New issues found:** unauthenticated `migrate-users` /
-  `admin/migrate-4digit` endpoints (the single most serious current
-  finding).
-- **Still open as originally described:** `auth/force-apply` rate
-  limiting, oversized components, scattered JSON.parse, per-task timers,
-  cron alerting, in-memory rate limiter, color contrast, obsolete scripts.
+  `admin/migrate-4digit` endpoints, and — found later the same day while
+  writing safety tests, more severe than either — every
+  `data-management/*` destructive route deleting data across every
+  tenant at once with zero scoping (§3.3a). Both fixed.
+- **Still open:** the other 8 `data-management/*` routes have the
+  tenant-scoping fix but no dedicated regression test yet; oversized
+  components, scattered JSON.parse, per-task timers, cron alerting,
+  in-memory rate limiter, color contrast, obsolete scripts.

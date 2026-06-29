@@ -16,11 +16,12 @@ export async function POST(request: Request) {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
+    const tenantId = session.tenantId;
     let deletedNotifications = 0;
     let deletedEmergency = 0;
 
-    try { deletedNotifications = sqlite.prepare("DELETE FROM notifications").run().changes; } catch (e) { console.error("Purge notifications error:", e); }
-    try { deletedEmergency = sqlite.prepare("DELETE FROM emergency_messages").run().changes; } catch (e) { console.error("Purge emergency_messages error:", e); }
+    try { deletedNotifications = sqlite.prepare("DELETE FROM notifications WHERE tenant_id = ?").run(tenantId).changes; } catch (e) { console.error("Purge notifications error:", e); }
+    try { deletedEmergency = sqlite.prepare("DELETE FROM emergency_messages WHERE tenant_id = ?").run(tenantId).changes; } catch (e) { console.error("Purge emergency_messages error:", e); }
 
     logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "notifications", affectedCount: deletedNotifications + deletedEmergency, payload: { deletedNotifications, deletedEmergency }, status: "success" });
 

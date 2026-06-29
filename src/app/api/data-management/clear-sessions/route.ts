@@ -5,6 +5,14 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { sqlite } from "@/lib/db";
 import { logAudit } from "@/lib/audit-logger";
 
+// sessions.userId references either locations.id or arls.id, with no
+// tenantId of its own — scope through whichever parent table user_type
+// points at. Takes two tenantId params (one per branch of the OR).
+const IN_TENANT = `(
+  (user_type = 'location' AND user_id IN (SELECT id FROM locations WHERE tenant_id = ?))
+  OR (user_type = 'arl' AND user_id IN (SELECT id FROM arls WHERE tenant_id = ?))
+)`;
+
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request.headers);
@@ -17,6 +25,7 @@ export async function POST(request: Request) {
     if (denied) return denied;
 
     const { mode } = await request.json();
+    const tenantId = session.tenantId;
 
     let deleted = 0;
 
@@ -25,18 +34,18 @@ export async function POST(request: Request) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const r = sqlite.prepare(
-        "DELETE FROM sessions WHERE is_online = 0 AND last_seen < ?"
-      ).run(sevenDaysAgo.toISOString());
+        `DELETE FROM sessions WHERE is_online = 0 AND last_seen < ? AND ${IN_TENANT}`
+      ).run(sevenDaysAgo.toISOString(), tenantId, tenantId);
       deleted = r.changes;
     } else if (mode === "all-offline") {
       // Clear all offline sessions
-      const r = sqlite.prepare("DELETE FROM sessions WHERE is_online = 0").run();
+      const r = sqlite.prepare(`DELETE FROM sessions WHERE is_online = 0 AND ${IN_TENANT}`).run(tenantId, tenantId);
       deleted = r.changes;
     } else if (mode === "force-all") {
-      // Force logout everyone (except current session)
+      // Force logout everyone in this tenant (except current session)
       const r = sqlite.prepare(
-        "DELETE FROM sessions WHERE session_code != ?"
-      ).run(session.sessionCode || "");
+        `DELETE FROM sessions WHERE session_code != ? AND ${IN_TENANT}`
+      ).run(session.sessionCode || "", tenantId, tenantId);
       deleted = r.changes;
     } else {
       return ApiErrors.badRequest("Invalid mode");

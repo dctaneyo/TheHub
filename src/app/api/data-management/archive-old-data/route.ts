@@ -17,12 +17,14 @@ export async function POST(request: Request) {
     if (denied) return denied;
 
     const { dataType, daysOld } = await request.json();
+    const tenantId = session.tenantId;
 
     // Create archive tables if they don't exist
     try {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS archived_messages (
           id TEXT PRIMARY KEY,
+          tenant_id TEXT,
           conversation_id TEXT,
           sender_type TEXT,
           sender_id TEXT,
@@ -36,6 +38,7 @@ export async function POST(request: Request) {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS archived_task_completions (
           id TEXT PRIMARY KEY,
+          tenant_id TEXT,
           task_id TEXT,
           location_id TEXT,
           completed_at TEXT,
@@ -49,6 +52,11 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error("Archive table creation error:", e);
     }
+    // These two tables predate tenant scoping — add the column to any
+    // pre-existing archive table that was created before this change.
+    // ALTER TABLE ADD COLUMN fails (harmlessly) if the column already exists.
+    try { sqlite.exec(`ALTER TABLE archived_messages ADD COLUMN tenant_id TEXT`); } catch { /* already has the column */ }
+    try { sqlite.exec(`ALTER TABLE archived_task_completions ADD COLUMN tenant_id TEXT`); } catch { /* already has the column */ }
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - (daysOld || 180));
@@ -58,28 +66,30 @@ export async function POST(request: Request) {
     let archived = 0;
 
     if (dataType === "messages") {
-      // Move old messages to archive
-      const result = sqlite.prepare(`
-        INSERT INTO archived_messages 
-        SELECT id, conversation_id, sender_type, sender_id, sender_name, content, message_type, created_at, ? as archived_at
-        FROM messages 
-        WHERE created_at < ?
-      `).run(archivedAt, cutoff);
-      
-      // Delete from main table
-      const deleted = sqlite.prepare("DELETE FROM messages WHERE created_at < ?").run(cutoff);
+      // Messages have no tenantId of their own — scope via their conversation's.
+      sqlite.prepare(`
+        INSERT INTO archived_messages
+        SELECT id, ? as tenant_id, conversation_id, sender_type, sender_id, sender_name, content, message_type, created_at, ? as archived_at
+        FROM messages
+        WHERE created_at < ? AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)
+      `).run(tenantId, archivedAt, cutoff, tenantId);
+
+      const deleted = sqlite.prepare(
+        "DELETE FROM messages WHERE created_at < ? AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)"
+      ).run(cutoff, tenantId);
       archived = deleted.changes;
     } else if (dataType === "task-completions") {
-      // Move old task completions to archive
-      const result = sqlite.prepare(`
-        INSERT INTO archived_task_completions 
-        SELECT id, task_id, location_id, completed_at, completed_date, notes, points_earned, bonus_points, ? as archived_at
-        FROM task_completions 
-        WHERE completed_date < ?
-      `).run(archivedAt, cutoff.split("T")[0]);
-      
-      // Delete from main table
-      const deleted = sqlite.prepare("DELETE FROM task_completions WHERE completed_date < ?").run(cutoff.split("T")[0]);
+      // task_completions have no tenantId of their own — scope via the task.
+      sqlite.prepare(`
+        INSERT INTO archived_task_completions
+        SELECT id, ? as tenant_id, task_id, location_id, completed_at, completed_date, notes, points_earned, bonus_points, ? as archived_at
+        FROM task_completions
+        WHERE completed_date < ? AND task_id IN (SELECT id FROM tasks WHERE tenant_id = ?)
+      `).run(tenantId, archivedAt, cutoff.split("T")[0], tenantId);
+
+      const deleted = sqlite.prepare(
+        "DELETE FROM task_completions WHERE completed_date < ? AND task_id IN (SELECT id FROM tasks WHERE tenant_id = ?)"
+      ).run(cutoff.split("T")[0], tenantId);
       archived = deleted.changes;
     } else {
       return ApiErrors.badRequest("Invalid data type");
@@ -107,18 +117,19 @@ export async function GET() {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
+    const tenantId = session.tenantId;
     let archivedMessages = 0;
     let archivedCompletions = 0;
 
     try {
-      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_messages").get() as any;
+      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_messages WHERE tenant_id = ?").get(tenantId) as { c: number } | undefined;
       archivedMessages = r?.c || 0;
     } catch (e) {
       console.error("Count archived messages error:", e);
     }
 
     try {
-      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_task_completions").get() as any;
+      const r = sqlite.prepare("SELECT COUNT(*) as c FROM archived_task_completions WHERE tenant_id = ?").get(tenantId) as { c: number } | undefined;
       archivedCompletions = r?.c || 0;
     } catch (e) {
       console.error("Count archived task completions error:", e);

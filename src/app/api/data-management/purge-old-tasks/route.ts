@@ -21,9 +21,12 @@ export async function POST(request: Request) {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     const cutoffDate = ninetyDaysAgo.toISOString().split("T")[0];
 
+    // task_completions has no tenantId of its own — scope via the task it
+    // completes (tasks.tenant_id), not locations, since a task belongs to
+    // exactly one tenant regardless of which location completed it.
     const result = sqlite.prepare(
-      "DELETE FROM task_completions WHERE completed_date < ?"
-    ).run(cutoffDate);
+      "DELETE FROM task_completions WHERE completed_date < ? AND task_id IN (SELECT id FROM tasks WHERE tenant_id = ?)"
+    ).run(cutoffDate, session.tenantId);
 
     logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "task_completions", affectedCount: result.changes, payload: { cutoffDate }, status: "success" });
 

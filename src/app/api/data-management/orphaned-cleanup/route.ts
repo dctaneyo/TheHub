@@ -16,6 +16,12 @@ export async function POST(request: Request) {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
+    // Deliberately not tenant-scoped, unlike the other data-management
+    // routes: every row this deletes has already lost its parent (the
+    // conversation/message/task it referenced no longer exists), so there
+    // is no tenant left to attribute it to or restrict the cleanup to —
+    // same category as vacuum (hygiene on disconnected data, not a
+    // specific tenant's live data).
     let orphanedMessages = 0;
     let orphanedReads = 0;
     let orphanedReactions = 0;

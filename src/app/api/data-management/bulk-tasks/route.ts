@@ -19,6 +19,9 @@ export async function POST(request: Request) {
     if (denied) return denied;
 
     const { action, payload } = await request.json();
+    const tenantId = session.tenantId;
+    // task_completions has no tenantId of its own — scope via the task.
+    const completionsInTenant = "task_id IN (SELECT id FROM tasks WHERE tenant_id = ?)";
 
     let deleted = 0;
     let created = 0;
@@ -29,8 +32,8 @@ export async function POST(request: Request) {
       case "clear-completions-today": {
         const today = new Date().toISOString().split("T")[0];
         const r = sqlite.prepare(
-          "DELETE FROM task_completions WHERE completed_date = ?"
-        ).run(today);
+          `DELETE FROM task_completions WHERE completed_date = ? AND ${completionsInTenant}`
+        ).run(today, tenantId);
         deleted = r.changes;
         break;
       }
@@ -38,13 +41,13 @@ export async function POST(request: Request) {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         const r = sqlite.prepare(
-          "DELETE FROM task_completions WHERE completed_date >= ?"
-        ).run(weekAgo.toISOString().split("T")[0]);
+          `DELETE FROM task_completions WHERE completed_date >= ? AND ${completionsInTenant}`
+        ).run(weekAgo.toISOString().split("T")[0], tenantId);
         deleted = r.changes;
         break;
       }
       case "clear-all-completions": {
-        const r = sqlite.prepare("DELETE FROM task_completions").run();
+        const r = sqlite.prepare(`DELETE FROM task_completions WHERE ${completionsInTenant}`).run(tenantId);
         deleted = r.changes;
         break;
       }
@@ -57,8 +60,8 @@ export async function POST(request: Request) {
         }
 
         const insertStmt = sqlite.prepare(`
-          INSERT INTO tasks (id, title, description, type, priority, due_time, due_date, is_recurring, recurring_type, recurring_days, biweekly_start, location_id, created_by, created_by_type, is_hidden, allow_early_complete, show_in_today, show_in_7day, show_in_calendar, points, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, tenant_id, title, description, type, priority, due_time, due_date, is_recurring, recurring_type, recurring_days, biweekly_start, location_id, created_by, created_by_type, is_hidden, allow_early_complete, show_in_today, show_in_7day, show_in_calendar, points, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const now = new Date().toISOString();
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
           for (const task of taskList) {
             insertStmt.run(
               uuid(),
+              tenantId,
               task.title,
               task.description || null,
               task.type || "task",
@@ -105,15 +109,15 @@ export async function POST(request: Request) {
 
         const placeholders = taskIds.map(() => "?").join(",");
 
-        // Delete completions first
+        // Delete completions first, still scoped to this tenant's tasks
         sqlite.prepare(
-          `DELETE FROM task_completions WHERE task_id IN (${placeholders})`
-        ).run(...taskIds);
+          `DELETE FROM task_completions WHERE task_id IN (${placeholders}) AND ${completionsInTenant}`
+        ).run(...taskIds, tenantId);
 
-        // Delete tasks
+        // Delete tasks — only the ones in taskIds that actually belong to this tenant
         const r = sqlite.prepare(
-          `DELETE FROM tasks WHERE id IN (${placeholders})`
-        ).run(...taskIds);
+          `DELETE FROM tasks WHERE id IN (${placeholders}) AND tenant_id = ?`
+        ).run(...taskIds, tenantId);
         deleted = r.changes;
         break;
       }
@@ -144,8 +148,8 @@ export async function POST(request: Request) {
 
         const placeholdersUpdate = taskIds.map(() => "?").join(",");
         const r = sqlite.prepare(
-          `UPDATE tasks SET ${setClauses.join(", ")} WHERE id IN (${placeholdersUpdate})`
-        ).run(...setParams, ...taskIds);
+          `UPDATE tasks SET ${setClauses.join(", ")} WHERE id IN (${placeholdersUpdate}) AND tenant_id = ?`
+        ).run(...setParams, ...taskIds, tenantId);
         updated = r.changes;
         break;
       }

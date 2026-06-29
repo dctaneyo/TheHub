@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { getAuthSession, requirePermission } from "@/lib/api-helpers";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
@@ -18,78 +17,74 @@ export async function POST(request: Request) {
     const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
     if (denied) return denied;
 
-    // Get global conversation ID before purging
-    const globalConvo = sqlite.prepare(
-      "SELECT id FROM conversations WHERE type = 'global' LIMIT 1"
-    ).get() as { id: string } | undefined;
+    const tenantId = session.tenantId;
 
-    // Delete messages from non-global conversations
+    // Get this tenant's global conversation ID before purging
+    const globalConvo = sqlite.prepare(
+      "SELECT id FROM conversations WHERE type = 'global' AND tenant_id = ? LIMIT 1"
+    ).get(tenantId) as { id: string } | undefined;
+
+    // Delete messages from this tenant's non-global conversations
     let deletedMessages = 0;
     try {
-      if (globalConvo) {
-        const r = sqlite.prepare("DELETE FROM messages WHERE conversation_id != ?").run(globalConvo.id);
-        deletedMessages = r.changes;
-      } else {
-        const r = sqlite.prepare("DELETE FROM messages").run();
-        deletedMessages = r.changes;
-      }
+      const r = globalConvo
+        ? sqlite.prepare("DELETE FROM messages WHERE conversation_id != ? AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)").run(globalConvo.id, tenantId)
+        : sqlite.prepare("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)").run(tenantId);
+      deletedMessages = r.changes;
     } catch (e) {
       console.error("Failed to delete messages from non-global conversations:", e);
     }
 
-    // Delete all message reads
+    // Delete this tenant's message reads (scoped via the messages just identified by conversation)
     let deletedReads = 0;
     try {
-      const r = sqlite.prepare("DELETE FROM message_reads").run();
+      const r = sqlite.prepare(
+        "DELETE FROM message_reads WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?))"
+      ).run(tenantId);
       deletedReads = r.changes;
     } catch (e) {
       console.error("Failed to delete message reads:", e);
     }
 
-    // Delete all message reactions
+    // Delete this tenant's message reactions
     let deletedReactions = 0;
     try {
-      const r = sqlite.prepare("DELETE FROM message_reactions").run();
+      const r = sqlite.prepare(
+        "DELETE FROM message_reactions WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?))"
+      ).run(tenantId);
       deletedReactions = r.changes;
     } catch (e) {
       console.error("Failed to delete message reactions:", e);
     }
 
-    // Delete conversation members from non-global conversations
+    // Delete conversation members from this tenant's non-global conversations
     let deletedMembers = 0;
     try {
-      if (globalConvo) {
-        const r = sqlite.prepare("DELETE FROM conversation_members WHERE conversation_id != ?").run(globalConvo.id);
-        deletedMembers = r.changes;
-      } else {
-        const r = sqlite.prepare("DELETE FROM conversation_members").run();
-        deletedMembers = r.changes;
-      }
+      const r = globalConvo
+        ? sqlite.prepare("DELETE FROM conversation_members WHERE conversation_id != ? AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)").run(globalConvo.id, tenantId)
+        : sqlite.prepare("DELETE FROM conversation_members WHERE conversation_id IN (SELECT id FROM conversations WHERE tenant_id = ?)").run(tenantId);
+      deletedMembers = r.changes;
     } catch (e) {
       console.error("Failed to delete conversation members:", e);
     }
 
-    // Delete all non-global conversations
-    let deletedConversations = 0;
-    if (globalConvo) {
-      const result = sqlite.prepare("DELETE FROM conversations WHERE type != 'global'").run();
-      deletedConversations = result.changes;
-    } else {
-      const result = sqlite.prepare("DELETE FROM conversations").run();
-      deletedConversations = result.changes;
-    }
+    // Delete this tenant's non-global conversations
+    const result = globalConvo
+      ? sqlite.prepare("DELETE FROM conversations WHERE type != 'global' AND tenant_id = ?").run(tenantId)
+      : sqlite.prepare("DELETE FROM conversations WHERE tenant_id = ?").run(tenantId);
+    const deletedConversations = result.changes;
 
-    // Ensure global conversation exists
+    // Ensure this tenant still has a global conversation
     const globalExists = sqlite.prepare(
-      "SELECT id FROM conversations WHERE type = 'global' LIMIT 1"
-    ).get();
+      "SELECT id FROM conversations WHERE type = 'global' AND tenant_id = ? LIMIT 1"
+    ).get(tenantId);
 
     if (!globalExists) {
       const globalId = uuid();
       sqlite.prepare(`
-        INSERT INTO conversations (id, type, name, created_at)
-        VALUES (?, 'global', 'Global Chat', ?)
-      `).run(globalId, new Date().toISOString());
+        INSERT INTO conversations (id, tenant_id, type, name, created_at)
+        VALUES (?, ?, 'global', 'Global Chat', ?)
+      `).run(globalId, tenantId, new Date().toISOString());
     }
 
     logAudit({ tenantId: session.tenantId, userId: session.id, userType: session.userType, operation: "purge", entityType: "conversations", affectedCount: deletedConversations + deletedMessages, payload: { deletedConversations, deletedMessages, deletedReads, deletedReactions, deletedMembers }, status: "success" });
