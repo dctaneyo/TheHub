@@ -75,7 +75,7 @@ export function Messaging() {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+          <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
           <h3 className="text-lg font-semibold text-foreground">New Group Chat</h3>
@@ -95,7 +95,7 @@ export function Messaging() {
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">Add Members ({newGroup.memberIds.length} selected)</label>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {participants.length === 0 && (
-              <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
+              <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground active:border-border/80">
                 Load participants
               </button>
             )}
@@ -107,7 +107,7 @@ export function Messaging() {
                   onClick={() => toggleMember(p)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
-                    selected ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card hover:bg-muted"
+                    selected ? "border-[var(--hub-red)]/30 bg-[var(--hub-red)]/10" : "border-border bg-card active:bg-muted"
                   )}
                 >
                   <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
@@ -129,7 +129,7 @@ export function Messaging() {
         <Button
           onClick={handleCreateGroup}
           disabled={!newGroup.name.trim() || newGroup.memberIds.length === 0 || creatingGroup}
-          className="w-full rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+          className="w-full rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
         >
           {creatingGroup ? "Creating..." : "Create Group"}
         </Button>
@@ -146,7 +146,7 @@ export function Messaging() {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+          <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
             <ArrowLeft className="h-4 w-4" />
           </button>
           <h3 className="text-lg font-semibold text-foreground">New Direct Message</h3>
@@ -163,7 +163,7 @@ export function Messaging() {
         </div>
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {participants.length === 0 && (
-            <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-border/80">
+            <button onClick={fetchParticipants} className="w-full rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground active:border-border/80">
               Load participants
             </button>
           )}
@@ -172,7 +172,7 @@ export function Messaging() {
               key={p.id}
               onClick={() => startDirectChat(p)}
               disabled={startingDirect}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors active:bg-muted disabled:opacity-50"
             >
               <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                 p.type === "location" ? "bg-muted text-muted-foreground" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
@@ -208,7 +208,7 @@ export function Messaging() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setShowNewDirect(true); fetchParticipants(); }}
-              className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--hub-red)]/90"
+              className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] px-3 py-2 text-xs font-semibold text-white active:bg-[var(--hub-red)]/90"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Direct</span>
@@ -216,7 +216,7 @@ export function Messaging() {
             </button>
             <button
               onClick={() => { setShowNewGroup(true); fetchParticipants(); }}
-              className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground active:bg-muted/80"
             >
               <Plus className="h-3.5 w-3.5" />
               Group
@@ -256,7 +256,7 @@ export function Messaging() {
           Folded into a single overflow next to Mute so the header has 3 actions
           instead of 4-5, and none compete with Back for primary status (§12). */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label="Back to conversations">
+        <button onClick={() => setActiveConvo(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", convIconBg(activeConvo.type))}>
@@ -273,7 +273,7 @@ export function Messaging() {
             "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
             mutedConvos.has(activeConvo.id)
               ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-              : "text-muted-foreground hover:bg-muted"
+              : "text-muted-foreground active:bg-muted"
           )}
           title={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
           aria-label={mutedConvos.has(activeConvo.id) ? "Unmute notifications" : "Mute notifications"}
@@ -283,7 +283,7 @@ export function Messaging() {
         {/* Overflow — Group Info + Search (secondary, occasional) */}
         <Menu>
           <MenuTrigger
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors active:bg-muted"
             title="More options"
             aria-label="More options"
           >
@@ -322,7 +322,7 @@ export function Messaging() {
               className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
+              <button onClick={() => setSearchQuery("")} className="text-muted-foreground active:text-foreground">
                 <XCircle className="h-3.5 w-3.5" />
               </button>
             )}
@@ -340,7 +340,7 @@ export function Messaging() {
           <div className="flex justify-center pb-3">
             <button
               onClick={() => setShowAllMessages(true)}
-              className="rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted/80"
+              className="rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground active:bg-muted/80"
             >
               View Past Messages
             </button>
@@ -413,7 +413,7 @@ export function Messaging() {
                                 title="See who read this"
                               >
                                 {hasBeenRead
-                                  ? <CheckCheck className="h-3 w-3 text-white cursor-pointer hover:text-white/70" />
+                                  ? <CheckCheck className="h-3 w-3 text-white cursor-pointer active:text-white/70" />
                                   : <Check className="h-3 w-3 text-white/50" />
                                 }
                               </button>
@@ -465,7 +465,7 @@ export function Messaging() {
                         {/* Reaction button */}
                         <button
                           onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)}
-                          className={cn("ml-1 transition-opacity hover:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
+                          className={cn("ml-1 transition-opacity active:opacity-70", isMe ? "text-white/60" : "text-muted-foreground")}
                           title="Add reaction"
                         >
                           <Smile className="h-3 w-3" />
@@ -486,7 +486,7 @@ export function Messaging() {
                             <button
                               key={emoji}
                               onClick={() => addReaction(msg.id, emoji)}
-                              className="hover:scale-125 transition-transform"
+                              className="active:scale-125 transition-transform"
                             >
                               <Emoji emoji={emoji} size={24} />
                             </button>
@@ -551,7 +551,7 @@ export function Messaging() {
               }}
             />
             <Button onClick={() => handleSend()} disabled={!newMessage.trim() || sending} size="icon"
-              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+              className="h-10 w-10 shrink-0 rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />

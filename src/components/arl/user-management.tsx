@@ -318,7 +318,7 @@ export function UserManagement() {
           <h3 className="text-lg font-semibold text-foreground">User Management</h3>
           <p className="text-xs text-muted-foreground">{arls.length} ARLs · {locations.length} locations</p>
         </div>
-        <Button onClick={openCreate} size="sm" className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]">
+        <Button onClick={openCreate} size="sm" className="flex items-center gap-1 rounded-xl bg-[var(--hub-red)] text-xs active:bg-[#c4001f]">
           <Plus className="h-3.5 w-3.5" />
           Add {tab === "arls" ? "ARL" : "Location"}
         </Button>
@@ -402,13 +402,13 @@ export function UserManagement() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
+                              <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => handleToggleActive(item)}
                                 className={cn("flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
-                                  item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
+                                  item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
                                 )}
                                 title={item.isActive ? "Disable" : "Enable"}
                               >
@@ -416,7 +416,7 @@ export function UserManagement() {
                               </button>
                               <Menu>
                                 <MenuTrigger
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
                                   title="More actions"
                                 >
                                   <MoreVertical className="h-3.5 w-3.5" />
@@ -487,13 +487,13 @@ export function UserManagement() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
-                      <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" title="Edit">
+                      <button onClick={() => openEdit(item)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted active:text-foreground" title="Edit">
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleToggleActive(item)}
                         className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                          item.isActive ? "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400" : "text-muted-foreground hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400"
+                          item.isActive ? "text-muted-foreground active:bg-red-500/10 active:text-red-600 dark:active:text-red-400" : "text-muted-foreground active:bg-green-500/10 active:text-green-600 dark:active:text-green-400"
                         )}
                         title={item.isActive ? "Disable" : "Enable"}
                       >
@@ -501,7 +501,7 @@ export function UserManagement() {
                       </button>
                       <Menu>
                         <MenuTrigger
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground outline-none active:bg-muted active:text-foreground"
                           title="More actions"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
@@ -545,7 +545,7 @@ export function UserManagement() {
                 <h3 className="text-lg font-semibold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
-                <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -612,7 +612,7 @@ export function UserManagement() {
                               ? r === "admin"
                                 ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
                                 : "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                              : "border-border text-muted-foreground hover:bg-muted"
+                              : "border-border text-muted-foreground active:bg-muted"
                           )}
                         >
                           {r === "admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
@@ -665,7 +665,7 @@ export function UserManagement() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full rounded-xl bg-[var(--hub-red)] hover:bg-[#c4001f]"
+                  className="w-full rounded-xl bg-[var(--hub-red)] active:bg-[#c4001f]"
                 >
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (editTarget ? "Save Changes" : "Create")}
                 </Button>
@@ -695,7 +695,7 @@ export function UserManagement() {
                   <h3 className="text-lg font-semibold text-foreground">Permissions</h3>
                   <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
                 </div>
-                <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                <button onClick={() => setPermissionsTarget(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -731,7 +731,7 @@ export function UserManagement() {
                               "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
                               editRoleId === role.id
                                 ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
-                                : "border-border text-muted-foreground hover:bg-muted"
+                                : "border-border text-muted-foreground active:bg-muted"
                             )}
                             title={role.description || role.name}
                           >
@@ -745,7 +745,7 @@ export function UserManagement() {
                             "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
                             editRoleId === null
                               ? "border-purple-500 bg-purple-500 text-white"
-                              : "border-border text-muted-foreground hover:bg-muted"
+                              : "border-border text-muted-foreground active:bg-muted"
                           )}
                         >
                           Custom
@@ -769,7 +769,7 @@ export function UserManagement() {
                         <button
                           type="button"
                           onClick={() => setEditLocationIds([])}
-                          className="text-xs text-muted-foreground hover:text-foreground"
+                          className="text-xs text-muted-foreground active:text-foreground"
                         >
                           Clear (all access)
                         </button>
@@ -783,7 +783,7 @@ export function UserManagement() {
                             key={loc.id}
                             type="button"
                             onClick={() => toggleLocationAssignment(loc.id)}
-                            className="flex w-full items-center justify-between rounded-xl px-2 py-2 hover:bg-muted/50 transition-colors"
+                            className="flex w-full items-center justify-between rounded-xl px-2 py-2 active:bg-muted/50 transition-colors"
                           >
                             <span className="text-xs text-foreground">{loc.name} <span className="text-muted-foreground">#{loc.storeNumber}</span></span>
                             {/* h-5/w-9 matches the permission-group group-toggle below */}
@@ -838,7 +838,7 @@ export function UserManagement() {
                               key={perm.key}
                               type="button"
                               onClick={() => togglePerm(perm.key)}
-                              className="flex w-full items-center justify-between rounded-xl px-2 py-2 hover:bg-muted/50 transition-colors"
+                              className="flex w-full items-center justify-between rounded-xl px-2 py-2 active:bg-muted/50 transition-colors"
                             >
                               <span className="text-xs text-foreground">{perm.label}</span>
                               <div className={cn(
@@ -874,7 +874,7 @@ export function UserManagement() {
                 </Button>
                 <Button
                   size="sm"
-                  className="rounded-xl bg-[var(--hub-red)] text-xs hover:bg-[#c4001f]"
+                  className="rounded-xl bg-[var(--hub-red)] text-xs active:bg-[#c4001f]"
                   onClick={savePermissions}
                   disabled={savingPerms}
                 >

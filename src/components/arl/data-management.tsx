@@ -375,7 +375,7 @@ export function DataManagement() {
           <h2 className="text-2xl font-semibold text-foreground">Data Management</h2>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Monitor, maintain, and manage all system data.</p>
         </div>
-        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50">
+        <button onClick={fetchReport} disabled={loadingReport} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground active:bg-muted/80 transition-colors disabled:opacity-50">
           <RefreshCw className={cn("h-4 w-4", loadingReport && "animate-spin")} /> Refresh
         </button>
       </div>
@@ -482,8 +482,8 @@ export function DataManagement() {
               <h3 className="text-lg font-semibold text-foreground">{showConfirm.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{showConfirm.confirmText} This action cannot be undone.</p>
               <div className="mt-6 flex gap-3">
-                <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50">Cancel</button>
-                <button onClick={() => showConfirm.action()} disabled={processing} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-red-300">
+                <button onClick={() => setShowConfirm(null)} disabled={processing} className="flex-1 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground active:bg-muted disabled:opacity-50">Cancel</button>
+                <button onClick={() => showConfirm.action()} disabled={processing} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white active:bg-red-700 disabled:bg-red-300">
                   {processing ? "Processing..." : "Yes, Continue"}
                 </button>
               </div>
