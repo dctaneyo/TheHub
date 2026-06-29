@@ -174,13 +174,14 @@ export function OverviewDashboard() {
   ] as const;
 
   return (
-    <div className="space-y-6">
-      {/* Emergency Alert Banner */}
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
+      {/* Emergency Alert Banner — rare, sits outside the fixed-height grid
+          below so it doesn't eat into KPI/panel space when absent. */}
       {data.activeEmergencies > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/50 px-5 py-4"
+          className="shrink-0 flex items-center gap-3 rounded-2xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/50 px-5 py-4"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900">
             <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -194,8 +195,8 @@ export function OverviewDashboard() {
         </motion.div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* KPI Cards — fixed height, never grows past its content */}
+      <div className="shrink-0 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpiCards.map((card, i) => (
           <motion.div
             key={card.label}
@@ -226,58 +227,68 @@ export function OverviewDashboard() {
         ))}
       </div>
 
-      {/* Location Performance — the 7-Day Completion Trend chart that used
-          to sit beside this was a second implementation of the same chart
-          Analytics already owns (date-range controls, CSV export); Overview
-          links to it instead of recomputing it (Section 11/18). */}
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Location Performance Today</h3>
-          <Link
-            href="/arl/analytics"
-            className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
-          >
-            View full analytics
-            <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-        <div className="space-y-2">
-          {data.locationPerformance.slice(0, 8).map((loc) => (
-            <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-2">
-              <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground truncate">{loc.name}</span>
-                  <span className="text-xs text-muted-foreground">#{loc.storeNumber}</span>
+      {/* Remaining space — Location Performance + Live Feed each own an
+          allocated region and scroll internally, so the page itself never
+          scrolls on desktop (a real "look once" dashboard, not a stack of
+          cards that happens to add up past one viewport). Mobile keeps
+          natural stacking/scroll — there's not enough width for two
+          columns to make sense there anyway. */}
+      <div className="flex flex-col gap-4 md:flex-1 md:min-h-0 md:grid md:grid-cols-2">
+        {/* Location Performance — the 7-Day Completion Trend chart that used
+            to sit beside this was a second implementation of the same chart
+            Analytics already owns (date-range controls, CSV export); Overview
+            links to it instead of recomputing it (Section 11/18). */}
+        <div className="flex flex-col md:min-h-0 rounded-2xl border border-border bg-card p-6 overflow-hidden">
+          <div className="mb-4 flex items-center justify-between shrink-0">
+            <h3 className="text-sm font-semibold text-foreground">Location Performance Today</h3>
+            <Link
+              href="/arl/analytics"
+              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
+            >
+              View full analytics
+              <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="space-y-2 md:flex-1 md:min-h-0 md:overflow-y-auto">
+            {data.locationPerformance.map((loc) => (
+              <div key={loc.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-2">
+                <div className={cn("h-2 w-2 rounded-full shrink-0", loc.isOnline ? "bg-emerald-400" : "bg-slate-300")} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground truncate">{loc.name}</span>
+                    <span className="text-xs text-muted-foreground">#{loc.storeNumber}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {loc.completedToday} tasks
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-muted-foreground">
-                  {loc.completedToday} tasks
-                </span>
-              </div>
-            </div>
-          ))}
-          {data.locationPerformance.length === 0 && (
-            <p className="text-xs text-muted-foreground py-4 text-center">No location data available</p>
-          )}
+            ))}
+            {data.locationPerformance.length === 0 && (
+              <p className="text-xs text-muted-foreground py-4 text-center">No location data available</p>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Live Feed — ticker composer + live activity used to be two separate
-          cards for what's the same underlying concept: the kiosk-facing
-          ticker (GridTickerBar) already merges task completions and
-          ARL-pushed messages into one stream, so the ARL-facing view
-          shouldn't split what its own destination surface treats as one
-          (Section 18). */}
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Live Feed</h3>
-        </div>
-        <TickerPush showHeader={false} />
-        <div className="mt-4 border-t border-border pt-4">
-          <LiveActivityFeed maxItems={15} />
+        {/* Live Feed — ticker composer + live activity used to be two separate
+            cards for what's the same underlying concept: the kiosk-facing
+            ticker (GridTickerBar) already merges task completions and
+            ARL-pushed messages into one stream, so the ARL-facing view
+            shouldn't split what its own destination surface treats as one
+            (Section 18). */}
+        <div className="flex flex-col md:min-h-0 rounded-2xl border border-border bg-card p-6 overflow-hidden">
+          <div className="mb-4 flex items-center gap-2 shrink-0">
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">Live Feed</h3>
+          </div>
+          <div className="shrink-0">
+            <TickerPush showHeader={false} />
+          </div>
+          <div className="mt-4 border-t border-border pt-4 md:flex-1 md:min-h-0">
+            <LiveActivityFeed maxItems={15} showHeader={false} />
+          </div>
         </div>
       </div>
     </div>

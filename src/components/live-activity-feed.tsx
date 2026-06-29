@@ -15,7 +15,7 @@ interface ActivityItem {
   icon?: string;
 }
 
-export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
+export function LiveActivityFeed({ maxItems = 10, showHeader = true }: { maxItems?: number; showHeader?: boolean }) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const { socket } = useSocket();
 
@@ -114,10 +114,18 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 mb-3">
-        <Activity className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Recent Activity</h3>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Header — suppressed when embedded under a panel that already
+          provides one (see overview-dashboard.tsx's merged Live Feed) */}
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        {showHeader ? (
+          <>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Recent Activity</h3>
+          </>
+        ) : (
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</p>
+        )}
         <button
           onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
           className="ml-auto p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -127,7 +135,7 @@ export function LiveActivityFeed({ maxItems = 10 }: { maxItems?: number }) {
         </button>
       </div>
 
-      <div className="space-y-1 max-h-[300px] overflow-y-auto">
+      <div className="space-y-1 flex-1 min-h-0 overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {activities.map((activity, index) => (
             <motion.div
