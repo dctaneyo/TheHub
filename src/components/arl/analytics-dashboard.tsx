@@ -30,7 +30,7 @@ interface MessagingAnalytics {
   summary: { totalMessages: number; uniqueSenders: number; activeConversations: number };
 }
 
-const CHART_COLORS = ["#dc2626", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
+const CHART_COLORS = ["#dc2626", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#0d9488", "#ec4899", "#14b8a6"];
 
 function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }: {
   label: string; value: string | number; icon: any; trend?: number; trendLabel?: string; color?: string;
@@ -400,7 +400,7 @@ export function AnalyticsDashboard() {
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
                       <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
                       <Area type="monotone" dataKey="count" stroke="#3b82f6" fill="#3b82f620" name="Messages" />
-                      <Area type="monotone" dataKey="uniqueSenders" stroke="#8b5cf6" fill="#8b5cf620" name="Unique Senders" />
+                      <Area type="monotone" dataKey="uniqueSenders" stroke="#0d9488" fill="#0d948820" name="Unique Senders" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -429,7 +429,7 @@ export function AnalyticsDashboard() {
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                       <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
                       <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)" }} />
-                      <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Messages" />
+                      <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]} name="Messages" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>

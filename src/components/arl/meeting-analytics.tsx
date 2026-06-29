@@ -181,7 +181,7 @@ export function MeetingAnalyticsDashboard() {
           <StatCard icon={HelpCircle} label="Questions" value={String(m.totalQuestions)} color="orange" />
           <StatCard icon={Hand} label="Hand Raises" value={String(m.totalHandRaises)} color="red" />
           <StatCard icon={Users} label="Restaurants" value={String(m.totalLocations)} color="teal" />
-          <StatCard icon={Users} label="ARLs + Guests" value={String(m.totalArls + m.totalGuests)} color="indigo" />
+          <StatCard icon={Users} label="ARLs + Guests" value={String(m.totalArls + m.totalGuests)} color="slate" />
         </div>
 
         {/* Participants table - Desktop */}
@@ -390,7 +390,7 @@ export function MeetingAnalyticsDashboard() {
           <StatCard icon={ThumbsUp} label="Total Reactions" value={String(summary.totalReactions)} color="orange" />
           <StatCard icon={HelpCircle} label="Total Questions" value={String(summary.totalQuestions)} color="red" />
           <StatCard icon={Hand} label="Total Hand Raises" value={String(summary.totalHandRaises)} color="teal" />
-          <StatCard icon={Clock} label="Total Duration" value={formatDuration(summary.totalDuration)} color="indigo" />
+          <StatCard icon={Clock} label="Total Duration" value={formatDuration(summary.totalDuration)} color="slate" />
         </div>
       )}
 
@@ -511,7 +511,7 @@ function StatCard({ icon: Icon, label, value, color, emphasized = false }: {
     orange: "bg-orange-100 text-orange-700 dark:bg-orange-600/20 dark:text-orange-400",
     red: "bg-red-100 text-red-700 dark:bg-red-600/20 dark:text-red-400",
     teal: "bg-teal-100 text-teal-700 dark:bg-teal-600/20 dark:text-teal-400",
-    indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-600/20 dark:text-indigo-400",
+    slate: "bg-slate-100 text-slate-700 dark:bg-slate-600/20 dark:text-slate-400",
   };
 
   return (

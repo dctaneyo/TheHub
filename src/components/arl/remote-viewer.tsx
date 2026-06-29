@@ -250,8 +250,8 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-              <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--hub-teal-light)]">
+              <Monitor className="h-5 w-5 text-[var(--hub-teal)]" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Remote View</h2>
@@ -297,12 +297,12 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
                       : ""}
                   </p>
                   {t.currentPage && (
-                    <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1 truncate">
+                    <p className="text-xs text-[var(--hub-teal)] mt-1 truncate">
                       {t.currentPage}
                     </p>
                   )}
                 </div>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-500 dark:text-indigo-400 transition-colors group-active:bg-indigo-100 dark:group-active:bg-indigo-900">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--hub-teal-light)] text-[var(--hub-teal)] transition-colors">
                   <Eye className="h-4 w-4" />
                 </div>
               </button>
@@ -375,7 +375,7 @@ function MirrorModal({
           {connectionStatus === "reconnecting" ? (
             <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400 animate-pulse" />
           ) : isConnecting ? (
-            <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-400 animate-pulse" />
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--hub-teal)] animate-pulse" />
           ) : isEnded ? (
             <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
           ) : (
@@ -452,8 +452,8 @@ function MirrorModal({
               className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-neutral-950"
             >
               <div className="relative h-16 w-16">
-                <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
+                <div className="absolute inset-0 rounded-full border-4 border-teal-500/20" />
+                <div className="absolute inset-0 rounded-full border-4 border-teal-500 border-t-transparent animate-spin" />
               </div>
               <div className="text-center">
                 <p className="text-lg font-semibold text-white">Connecting to {target.name}</p>

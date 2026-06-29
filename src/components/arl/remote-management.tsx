@@ -19,8 +19,8 @@ export function RemoteManagement({ userRole }: RemoteManagementProps) {
     <div className="flex flex-col h-full min-h-0">
       {/* Tab header */}
       <div className="flex items-center gap-2 mb-4 shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-          <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--hub-teal-light)]">
+          <Monitor className="h-5 w-5 text-[var(--hub-teal)]" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-foreground">Remote Management</h2>
