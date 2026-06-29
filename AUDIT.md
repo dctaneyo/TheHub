@@ -326,16 +326,27 @@ retry, no external alert** (confirmed: zero `Sentry`/`captureException`/
 `retry`/`notify` matches in server.ts). A failed nightly backup is silent.
 Status: **still open as described.**
 
-### 7.2 PARTIALLY ADDRESSED — Socket.io reconnection
+### 7.2 ~~PARTIALLY ADDRESSED — Socket.io reconnection~~ — **Fixed 2026-06-29**
 
 `src/lib/socket-context.tsx` configures `reconnection: true`,
 `reconnectionAttempts: Infinity`, delay 1000ms / max 5000ms (lines 65–72),
 and handles `connect`/`disconnect`/`connect_error` with an
-instance-settle timer (lines 76–174). Client reconnection is robust.
-However, the underlying concern remains: server-side task-notification
-timers fired during a disconnect gap are still lost (the scheduler
-reschedules on reconnect but does not replay missed fires). Status:
-**client reconnection solid; missed-fire-during-gap still open.**
+instance-settle timer (lines 76–174). Client reconnection was already
+robust. The remaining gap — server-side task-notification timers fired
+during a process restart were lost entirely, since `scheduleAllForToday()`
+only ever scheduled *future* delays and silently skipped anything whose
+window had already passed — is now fixed in
+`src/lib/task-notification-scheduler.ts`: every reschedule (startup,
+midnight, `refreshTaskTimers()`, and a new 5-minute safety-sweep
+`setInterval`) checks the notifications table (the durable record, not
+in-memory timer state) for windows that have already started but weren't
+sent yet, and fires them immediately instead of dropping them. Kept exact
+`setTimeout`-based firing for the normal case — see the design discussion
+that led here; a durable queue (Redis/DB-polled) was considered and
+deliberately not used at this app's current scale (single server
+instance), see the file's top-of-module comment for the explicit
+trigger condition (multiple server instances) that would warrant
+revisiting that decision.
 
 ### 7.3 STILL OPEN — In-memory rate limiter
 
@@ -438,8 +449,9 @@ contrast remain un-audited. Status: **still open as described.**
    `meeting-room-livekit-custom.tsx` (1515), `login/page.tsx` (1271),
    `restaurant-chat.tsx` (1170), `meeting/page.tsx` (983),
    `user-management.tsx` (924).
-9. Replace per-task × per-location `setTimeout` timers with a single
-   periodic sweep, and replay missed fires after socket reconnect gaps.
+9. ~~Replace per-task × per-location `setTimeout` timers~~ — kept the
+   exact-timer architecture (right-sized for a single server instance)
+   and ~~replay missed fires after reconnect gaps~~ — done, see §7.2.
 10. ~~Introduce a shared JSON-column helper~~ — done. Added
     `parseJsonColumn<T>(raw, fallback)` (`src/lib/json-column.ts`) and
     migrated every genuine DB-JSON-column call site — ~36 occurrences

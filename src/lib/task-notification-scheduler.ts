@@ -1,8 +1,9 @@
 import { db, schema } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { createNotification, createNotificationBulk } from "./notifications";
 import { tzNow, tzTodayStr, tzDayOfWeek } from "./timezone";
 import { taskAppliesToDate } from "./task-utils";
+import { parseJsonColumn } from "./json-column";
 
 /**
  * Real-time task notification scheduler
@@ -18,15 +19,40 @@ import { taskAppliesToDate } from "./task-utils";
  *   - On server startup (for all today's tasks)
  *   - At midnight (for the new day's tasks)
  *   - When refreshTaskTimers() is called (after task CRUD)
+ *   - Every SAFETY_SWEEP_MINUTES, as a backstop (see startTaskNotificationScheduler)
+ *
+ * In-memory timers don't survive a process restart, so every reschedule
+ * (not just at midnight) checks for windows that have ALREADY started —
+ * if a task is currently due-soon/overdue and that notification was never
+ * sent today (checked against the notifications table, not memory), it
+ * fires immediately instead of being silently skipped. This is what keeps
+ * exact-second precision for the normal case while still being correct
+ * after a restart: the schedule is re-derived from the DB every time, not
+ * carried only in memory.
+ *
+ * This deliberately stays in-process (no Redis/durable queue) rather than
+ * a polled delay-queue. That's the right tradeoff for a single server
+ * instance; it stops being correct the moment this runs on more than one
+ * instance at once (each instance would independently schedule and fire
+ * the same notifications — duplicates, not gaps). If that ever happens,
+ * this needs the durable-queue rearchitecture, not another patch here.
  */
 
 const DUE_SOON_MINUTES = 30;
+
+// Backstop interval — re-derives the schedule from the DB even if nothing
+// else triggered a reschedule (defense in depth alongside startup/midnight/
+// refreshTaskTimers; cheap since scheduleAllForToday() is idempotent).
+const SAFETY_SWEEP_MINUTES = 5;
 
 // Active timers: key = "locationId:taskId:due-soon" or "locationId:taskId:overdue"
 const _timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // Midnight rollover timer
 let _midnightTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Periodic safety-sweep interval
+let _safetyInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Get current time in the given IANA timezone (server runs on Railway in UTC).
@@ -59,6 +85,35 @@ function isTaskDueToday(task: any, todayDate: string, tz: string): boolean {
   const date = new Date(todayDate + "T12:00:00");
   const dayOfWeek = tzDayOfWeek(tz);
   return taskAppliesToDate(task, date, todayDate, dayOfWeek, false);
+}
+
+/**
+ * Build a set of "locationId:taskId:type" keys already notified today, by
+ * querying the notifications table (the durable record) rather than
+ * trusting in-memory timer state — this is what makes the catch-up check
+ * in scheduleAllForToday() idempotent across restarts and repeated
+ * refreshTaskTimers() calls within the same day.
+ */
+function getAlreadyNotifiedToday(todayDate: string): Set<string> {
+  const rows = db.select({
+    userId: schema.notifications.userId,
+    type: schema.notifications.type,
+    metadata: schema.notifications.metadata,
+  })
+    .from(schema.notifications)
+    .where(and(
+      eq(schema.notifications.userType, "location"),
+      sql`${schema.notifications.type} IN ('task_due_soon', 'task_overdue')`,
+      sql`${schema.notifications.createdAt} >= ${todayDate}`
+    ))
+    .all();
+
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const taskId = parseJsonColumn<{ taskId?: string }>(row.metadata, {}).taskId;
+    if (taskId) seen.add(`${row.userId}:${taskId}:${row.type}`);
+  }
+  return seen;
 }
 
 /**
@@ -171,6 +226,19 @@ function scheduleAllForToday() {
 
   let dueSoonCount = 0;
   let overdueCount = 0;
+  let caughtUpCount = 0;
+
+  // Per-distinct-date cache — most locations share a timezone/date, no
+  // need to re-query the notifications table for each one individually.
+  const notifiedCache = new Map<string, Set<string>>();
+  const getNotified = (todayDate: string) => {
+    let set = notifiedCache.get(todayDate);
+    if (!set) {
+      set = getAlreadyNotifiedToday(todayDate);
+      notifiedCache.set(todayDate, set);
+    }
+    return set;
+  };
 
   for (const location of allLocations) {
     const tz = location.timezone || tenantTzMap.get(location.tenantId) || "Pacific/Honolulu";
@@ -178,6 +246,7 @@ function scheduleAllForToday() {
     const now = localNow(tz);
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const nowSeconds = now.getSeconds();
+    const alreadyNotified = getNotified(todayDate);
 
     const locationTasks = allTasks.filter(
       (t) => t.tenantId === location.tenantId && (!t.locationId || t.locationId === location.id)
@@ -188,27 +257,31 @@ function scheduleAllForToday() {
 
       const taskMinutes = timeToMinutes(task.dueTime);
 
-      // "Due soon" fires 30 minutes before due time
       const dueSoonMinutes = taskMinutes - DUE_SOON_MINUTES;
       const dueSoonDelay = (dueSoonMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
-
-      if (dueSoonDelay > 0) {
-        const key = `${location.id}:${task.id}:due-soon`;
-        const timer = setTimeout(
-          () => {
-            _timers.delete(key);
-            fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
-          },
-          dueSoonDelay
-        );
-        _timers.set(key, timer);
-        dueSoonCount++;
-      }
-
-      // "Overdue" fires exactly at due time
       const overdueDelay = (taskMinutes - nowMinutes) * 60 * 1000 - nowSeconds * 1000;
 
       if (overdueDelay > 0) {
+        // Not yet due — schedule the normal future timers.
+        if (dueSoonDelay > 0) {
+          const key = `${location.id}:${task.id}:due-soon`;
+          const timer = setTimeout(
+            () => {
+              _timers.delete(key);
+              fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
+            },
+            dueSoonDelay
+          );
+          _timers.set(key, timer);
+          dueSoonCount++;
+        } else if (!alreadyNotified.has(`${location.id}:${task.id}:task_due_soon`)) {
+          // Due-soon window already started (but task isn't overdue yet)
+          // and we restarted/rescheduled since then — catch up now instead
+          // of silently losing this notification until the next due date.
+          fireDueSoon(task.id, task.title, task.dueTime, task.priority, location.id, location.name, tz);
+          caughtUpCount++;
+        }
+
         const key = `${location.id}:${task.id}:overdue`;
         const timer = setTimeout(
           () => {
@@ -219,11 +292,17 @@ function scheduleAllForToday() {
         );
         _timers.set(key, timer);
         overdueCount++;
+      } else if (!alreadyNotified.has(`${location.id}:${task.id}:task_overdue`)) {
+        // Already overdue and we missed sending it (process was down,
+        // or this is the first reschedule since the due time passed).
+        // Due-soon is moot at this point — just catch up the overdue alert.
+        fireOverdue(task.id, task.title, task.dueTime, location.id, location.name, tz);
+        caughtUpCount++;
       }
     }
   }
 
-  console.log(`🔔 Scheduled ${dueSoonCount} due-soon + ${overdueCount} overdue timers`);
+  console.log(`🔔 Scheduled ${dueSoonCount} due-soon + ${overdueCount} overdue timers${caughtUpCount > 0 ? ` (${caughtUpCount} caught up immediately)` : ""}`);
 }
 
 /**
@@ -300,4 +379,13 @@ export function startTaskNotificationScheduler() {
       try { scheduleAllForToday(); scheduleMidnightRollover(); } catch (e) { console.error("🔔 Retry failed:", e); }
     }, fallbackDelay);
   }
+
+  if (_safetyInterval) clearInterval(_safetyInterval);
+  _safetyInterval = setInterval(() => {
+    try {
+      scheduleAllForToday();
+    } catch (err) {
+      console.error("🔔 Safety sweep failed:", err);
+    }
+  }, SAFETY_SWEEP_MINUTES * 60 * 1000);
 }
