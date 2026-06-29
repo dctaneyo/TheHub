@@ -55,7 +55,14 @@ AI-slop patterns. They're found by manual review below.
 
 ## Genuine findings
 
-### 1. Hover-only feedback — the largest finding, scanner-invisible
+### 1. ~~Hover-only feedback — the largest finding, scanner-invisible~~ — **Fixed 2026-06-28**
+
+Swept all ~230 `hover:` instances across the 30 affected files to
+`active:`, preserving the two flagged exceptions deliberately:
+`hover:shadow-md` decorative card polish was left as a lower-priority
+item (not the sole feedback signal), and `swipeable-convo-row.tsx`'s
+`group-hover:flex` *reveal* mechanism was kept (mobile gets swipe-to-
+delete instead) while its trailing color feedback was moved to `active:`.
 
 **~230 `hover:` instances across 30 of the 47 ARL files**, and ARL never
 got the hover→active sweep that login and `/dashboard` already had. DESIGN.md
@@ -96,7 +103,14 @@ Two lower-priority sub-cases to *not* lump in with the mechanical swap:
 This is the single highest-value, lowest-risk fix available — the same
 mechanical pattern as the login/dashboard sweeps.
 
-### 2. Zero IconTip adoption — icon-only controls still rely on `title=`
+### 2. ~~Zero IconTip adoption — icon-only controls still rely on `title=`~~ — **Fixed 2026-06-28**
+
+Wrapped every icon-only control listed above in `IconTip`, plus several
+more found via a full sweep that the original audit missed (e.g. the
+ticker-message and form delete buttons, both later consolidated into
+`DestructiveIconButton` under Finding 8). The no-label-at-all controls
+(mobile menu button, sidebar close, calendar month-nav) got both a
+`title=` and an `IconTip`.
 
 `IconTip` (the touch-compatible tooltip built for exactly this, Section
 13) is used in **zero** ARL files. Meanwhile ~16 icon-only controls rely
@@ -118,7 +132,17 @@ at all: the mobile menu button (`layout.tsx:140`), the sidebar close
 `analytics-dashboard.tsx` are a component prop, not the HTML attribute —
 not a finding.
 
-### 3. Indigo still drives the remote-view feature — the teal migration missed ARL
+### 3. ~~Indigo still drives the remote-view feature — the teal migration missed ARL~~ — **Fixed 2026-06-28**
+
+`remote-viewer.tsx` and `remote-management.tsx` now use `--hub-teal`/
+`--hub-teal-light` throughout. The arbitrary-accent indigo
+(`meeting-analytics.tsx`'s StatCard palette) was replaced with a neutral
+`slate` rather than another chromatic hue — an 8-item categorical
+palette with 7 slots already legitimately claimed didn't need a second
+"unconsidered" color, it needed one fewer. The banned violet
+(`#8b5cf6`) in `analytics-dashboard.tsx`'s chart palette was swapped to
+teal (`#0d9488`) for brand consistency. Re-grepped: zero indigo anywhere
+in the ARL console.
 
 DESIGN.md Section 2's claimed-color table assigns **`--hub-teal`** to
 "remote mirroring/viewing session active," and the Changelog
@@ -145,7 +169,18 @@ Separately, indigo is used as an **arbitrary accent with no semantic job**
   but `#8b5cf6` (32, 403, 432) is specifically the banned Tailwind violet;
   swap that one series hue.
 
-### 4. Selected-state drift — tint/border where it should be solid inverted fill
+### 4. ~~Selected-state drift — tint/border where it should be solid inverted fill~~ — **Fixed 2026-06-28**
+
+`task-form-modal.tsx` was already solid-fill compliant from an earlier
+pass. The three remaining instances each needed a different fix since
+literal "solid inverted fill" doesn't apply uniformly: `ticker-push.tsx`'s
+emoji picker converted directly; `arl-calendar.tsx`'s selected day made
+the day-number circle (not the whole cell, which holds nested task
+pills with their own colors) the real solid-fill signal, matching how
+"today" is already rendered; `tenant-settings.tsx`'s color swatch can't
+be solid-filled without hiding the color it represents, so it got a
+checkmark overlay instead — the same shape-based signal `Select` items
+already use.
 
 Section 10: selected = solid inverted fill, not a tint, border, ring, or
 checkmark. ARL does this **right** in several places (`arl-sidebar.tsx:145`
@@ -162,7 +197,14 @@ violations below are drift from it, not an unknown:
 - `tenant-settings.tsx:307` — color picker selected uses `border-foreground
   scale-110` (border + scale).
 
-### 5. Numeric/code displays using `--font-sans` + `tabular-nums` instead of `--font-mono`
+### 5. ~~Numeric/code displays using `--font-sans` + `tabular-nums` instead of `--font-mono`~~ — **Fixed 2026-06-28**
+
+`overview-dashboard.tsx`'s KPI value fixed on both counts: `font-mono`
+added and the off-scale `text-3xl` corrected to the real Display size
+(`text-2xl`). `remote-login.tsx`'s session code got `font-mono` added.
+The third instance (the trend value) is moot — that chart was deleted
+during this session's Overview redesign, replaced with a link to
+Analytics.
 
 Section 1 names this specifically as "the one safe font tell, disguised
 with a CSS property." The mono pattern already exists in ARL
@@ -176,7 +218,14 @@ applied consistently:
   (sans). `font-black` for a code is the allowed exception; the missing
   `font-mono` is the violation.
 
-### 6. Decorative red→orange gradients vs the flat house style
+### 6. ~~Decorative red→orange gradients vs the flat house style~~ — **Fixed 2026-06-28**
+
+`broadcast-studio.tsx` and `meetings/page.tsx` were already mono-hue
+(`from-red-600 to-red-700`) from an earlier pass; `broadcast-launcher.tsx`
+had the last two red→orange instances (header banner + Go Live button),
+now matching the same mono-hue treatment. The only other gradients left
+in the console are neutral loading-shimmer placeholders
+(`locations-manager.tsx`) — functional, not decorative.
 
 Section 3 makes the house style flat fill-contrast; Behavior Rules require
 stating what a gradient communicates. The broadcast/meetings surfaces use
@@ -190,13 +239,32 @@ At least it's consistent across the broadcast feature, but it's off the
 flat-fill direction and compounds effects (gradient + shadow + colored
 shadow) on one element — pick a flat semantic fill.
 
-### 7. Off-scale icon sizing in the shell/sidebar
+### 7. ~~Off-scale icon sizing in the shell/sidebar~~ — **Fixed 2026-06-28**
 
-Section 14's icon scale is `h-3.5 / h-4 / h-5`. The shell nav uses a
-one-off `h-4.5 w-4.5`: `layout.tsx:142,164` and `arl-sidebar.tsx:149,178`.
-Round to `h-4` or `h-5`.
+Section 14's icon scale is `h-3.5 / h-4 / h-5`. Rounded the shell nav's
+`h-4.5 w-4.5` to `h-4` for standalone button/nav icons
+(`layout.tsx`, `arl-sidebar.tsx`) and to `h-5` for icons sitting inside
+larger chips (`meeting-analytics.tsx`, `locations-manager.tsx`),
+matching the convention already used elsewhere for each context. Found
+two more instances than the original audit named — one introduced by
+this session's own `StatCard` `emphasized` prop.
 
-### 8. Component drift — the same element rebuilt several ways (Section 15)
+### 8. ~~Component drift — the same element rebuilt several ways (Section 15)~~ — **Fixed 2026-06-28**
+
+Extracted all four named candidates into `src/components/ui/`:
+`StatusDot` (settled the `h-1.5`/`h-2`/`h-2.5` size drift on `h-2`, plus
+a `brand` color variant for the one instance tied to org branding
+rather than a generic status), `DestructiveIconButton` (settled size
+and red shade, wraps `IconTip` internally so consolidated instances
+that had no label before now get one automatically), `EmptyState`
+(icon + title + optional subtext + optional dashed border, covering
+both the icon and icon-less variants found), and `ModalCloseButton`
+(named "ModalHeader" in the original finding, scoped down to just the
+X-close button — header *layouts* otherwise vary legitimately by
+content). Each extraction's writeup notes the deliberate exceptions
+left out (colored-background headers, the swipeable row's reveal
+button, back-navigation buttons) rather than forcing every instance
+into the shared component.
 
 Recurring patterns implemented slightly differently per file, each a
 candidate for one shared component:
@@ -215,7 +283,19 @@ candidate for one shared component:
 - **Modal header** — `user-management.tsx:423` vs `task-form-modal.tsx:155`
   differ in wrapper/close-button styling.
 
-### 9. User-flow: silent failures (Section 16)
+### 9. ~~User-flow: silent failures (Section 16)~~ — **Fixed 2026-06-28**
+
+Wired every named empty `catch` into the file's existing error-display
+pattern (or added one where none existed). Two were worse than just
+silent: `user-management.tsx`'s toggle/delete actions didn't check
+`res.ok` at all, so a failed enable/disable or delete proceeded as if
+it had succeeded; `forms-repository.tsx`'s delete updated UI state
+before checking the response, a "looks deleted but wasn't" bug. Also
+added the missing confirm dialog to `ticker-push.tsx`'s delete and
+`emergency-broadcast.tsx`'s "Clear" (which could dismiss an active
+emergency broadcast — visible on every location's dashboard — with one
+tap and no confirmation), using the same `useConfirmDialog` pattern
+already established elsewhere in the console.
 
 Section 16 already names "an action can fail with zero feedback" as an open
 issue on the dashboard; ARL has the same pattern in several places —
@@ -297,23 +377,22 @@ receipt + reaction popovers (`shadow-lg`), analytics filter popover
 Mirror the dashboard audit's sequencing — mechanical, low-risk sweeps
 first, design decisions last:
 
-1. **Hover→active sweep** (Finding 1) — mechanical, highest value, same as
-   the login/dashboard sweeps. Move the hover treatment to `active:`, or
-   drop it where there's no real press equivalent.
-2. **IconTip pass** (Finding 2) — replace `title=` on icon-only controls
-   with `IconTip`; add labels to the unlabeled ones. The component already
-   exists.
-3. **Finish the indigo→teal migration** (Finding 3) — port `remote-viewer`
-   and `remote-management` to `--hub-teal`; replace the arbitrary indigo
-   accents in `meeting-analytics`/`data-management` with semantic or
-   neutral colors; swap the violet chart hue.
-4. **Selected-state + numeric-font drift** (Findings 4, 5) — match the
-   patterns ARL already implements correctly elsewhere.
-5. **Extract shared components** (Finding 8) — `StatusDot`, destructive
-   `IconButton`, `EmptyState`, `ModalHeader` — to stop the drift recurring.
+1. ~~**Hover→active sweep** (Finding 1)~~ — **done 2026-06-28.**
+2. ~~**IconTip pass** (Finding 2)~~ — **done 2026-06-28.**
+3. ~~**Finish the indigo→teal migration** (Finding 3)~~ — **done
+   2026-06-28.**
+4. ~~**Selected-state + numeric-font drift** (Findings 4, 5)~~ — **done
+   2026-06-28.**
+5. ~~**Extract shared components** (Finding 8)~~ — **done 2026-06-28.**
+   `StatusDot`, `DestructiveIconButton`, `EmptyState`, `ModalCloseButton`
+   now live in `src/components/ui/`.
 6. ~~**Elevation pass** (Finding 10)~~ — **done 2026-06-27.** 69→17
    shadows; all remaining are true overlays at two standardized depths.
-7. **Design decisions, deferred to a real pass** — the radius system
-   (Finding / scanner `rounded-everything`), the broadcast gradients
-   (Finding 6), hierarchy on the overview KPI cards, and the silent-failure
-   flow fixes (Finding 9). These need decisions, not a find-and-replace.
+7. ~~**Decorative gradients + silent-failure flow fixes** (Findings 6,
+   9)~~ — **done 2026-06-28.**
+
+All nine numbered findings plus the elevation pass are now resolved.
+Remaining open items are the broader design decisions noted in the
+scanner table (the radius system / `rounded-everything`, fade-in
+duration standardization) and the Section 11 data-polish minor items
+(Finding 11) — these need a real design pass, not a find-and-replace.
