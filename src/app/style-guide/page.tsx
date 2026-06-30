@@ -4,18 +4,25 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import {
   CheckSquare,
-  ClipboardList,
   Trash2,
   Pencil,
   Sun,
   Moon,
   FolderOpen,
   Bell,
+  Loader2,
+  Settings,
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarBadge } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarBadge,
+  AvatarGroup,
+  AvatarGroupCount,
+} from "@/components/ui/avatar";
 import {
   Card,
   CardHeader,
@@ -42,7 +49,7 @@ import {
   createListCollection,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -52,18 +59,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { IconTip } from "@/components/ui/icon-tip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Shake } from "@/components/ui/shake";
+import { SuccessCheckmark } from "@/components/ui/success-checkmark";
+import { Emoji } from "@/components/ui/emoji";
+import { PinPad } from "@/components/ui/pin-pad";
+import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 
 /* ════════════════════════════════════════════════════════════════════════════
    STYLE GUIDE — standalone, no auth (see middleware.ts).
 
-   A living reference, not a snapshot: every example below renders the real
-   src/components/ui/* primitives this app actually ships, so this page stays
-   accurate automatically as those components change. Organized to mirror
-   DESIGN.md's own structure (Part A's UX rules aren't restated here — they
-   govern *when* to use a pattern, not what it looks like; this page is the
-   "what it looks like" half). For "/design-preview", which is a different,
-   narrower tool: an A/B/C comparison for specific undecided UI choices, not
-   a reference of decided ones.
+   A UI kit, not a snapshot: every example below renders the real
+   src/components/ui/* primitives this app actually ships (plus
+   confirm-dialog.tsx, the one shared pattern that lives a level up), in
+   every variant/size/state each one actually supports — interactive, not
+   static screenshots. Stays accurate automatically as those components
+   change, since it imports the same modules every real screen does.
+
+   Organized to mirror DESIGN.md's own structure (Part A's UX rules aren't
+   restated here — they govern *when* to use a pattern, not what it looks
+   like; this page is the "what it looks like" half).
+
+   Distinct from /design-preview: that page is a narrower A/B/C comparison
+   tool for specific *undecided* UI choices (e.g. primary-button color).
+   This page is the reference for what's already decided.
    ════════════════════════════════════════════════════════════════════════════ */
 
 const priorityOptions = createListCollection({
@@ -74,6 +93,15 @@ const priorityOptions = createListCollection({
     { value: "urgent", label: "Urgent" },
   ],
 });
+
+const regionOptions = createListCollection({
+  items: [
+    { value: "west", label: "West" },
+    { value: "east", label: "East" },
+  ],
+});
+
+const queueItems = Array.from({ length: 14 }, (_, i) => `Task ${i + 1} — Morning Line Check`);
 
 function Section({
   id,
@@ -95,6 +123,10 @@ function Section({
   );
 }
 
+function SubLabel({ children }: { children: React.ReactNode }) {
+  return <p className="mb-2 text-xs font-semibold text-muted-foreground">{children}</p>;
+}
+
 function Swatch({ label, token, className }: { label: string; token: string; className: string }) {
   return (
     <div className="flex flex-col gap-2">
@@ -111,6 +143,11 @@ export default function StyleGuidePage() {
   const { theme, setTheme } = useTheme();
   const [selectedPriority, setSelectedPriority] = useState(["normal"]);
   const [skeletonView, setSkeletonView] = useState(false);
+  const [shakeTrigger, setShakeTrigger] = useState(false);
+  const [checkShow, setCheckShow] = useState(false);
+  const [pin, setPin] = useState("");
+  const [savingDemo, setSavingDemo] = useState(false);
+  const { dialog, confirm } = useConfirmDialog();
 
   const nav = [
     ["typography", "Typography"],
@@ -120,10 +157,14 @@ export default function StyleGuidePage() {
     ["badges-avatars", "Badges & Avatars"],
     ["cards", "Cards"],
     ["forms", "Form Controls"],
-    ["overlays", "Dialog & Menu"],
+    ["overlays", "Dialog, Confirm & Menu"],
     ["tabs", "Tabs"],
-    ["status", "Status & Empty States"],
-    ["motion", "Motion"],
+    ["status", "Status, Empty & Loading"],
+    ["feedback", "Feedback Motion"],
+    ["scroll", "Scroll Area"],
+    ["pinpad", "Pin Pad"],
+    ["emoji", "Emoji"],
+    ["motion", "Press Motion"],
   ] as const;
 
   return (
@@ -132,9 +173,9 @@ export default function StyleGuidePage() {
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">The Hub — Style Guide</h1>
+            <h1 className="text-lg font-semibold text-foreground">The Hub — UI Kit</h1>
             <p className="text-xs text-muted-foreground">
-              Live reference, not a mockup — every example below is the real component. See
+              Every primitive in <span className="font-mono">src/components/ui</span>, live and interactive. See
               {" "}<span className="font-mono">DESIGN.md</span> in the repo root for the rules behind it.
             </p>
           </div>
@@ -200,17 +241,25 @@ export default function StyleGuidePage() {
           title="Color"
           blurb="Every color has a job — palette, brand, or semantic — stated, not implied. Reuse a claimed semantic color before introducing a new one."
         >
+          <SubLabel>Claimed semantic colors</SubLabel>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Swatch label="Red — brand/urgent/destructive" token="--hub-red" className="bg-[var(--hub-red)]" />
             <Swatch label="Amber — priority warning" token="amber-500" className="bg-amber-500" />
             <Swatch label="Emerald — success/online" token="emerald-500" className="bg-emerald-500" />
             <Swatch label="Teal — remote session active" token="--hub-teal" className="bg-[var(--hub-teal)]" />
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <SubLabel>
+            <span className="mt-6 inline-block">Surface tokens</span>
+          </SubLabel>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Swatch label="Background" token="bg-background" className="bg-background" />
             <Swatch label="Card" token="bg-card" className="bg-card" />
             <Swatch label="Muted" token="bg-muted" className="bg-muted" />
             <Swatch label="Primary (neutral)" token="bg-primary" className="bg-primary" />
+            <Swatch label="Secondary" token="bg-secondary" className="bg-secondary" />
+            <Swatch label="Accent" token="bg-accent" className="bg-accent" />
+            <Swatch label="Destructive" token="bg-destructive" className="bg-destructive" />
+            <Swatch label="Border" token="border-border" className="border-2 bg-transparent" />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Primary action color is a chromatic neutral (near-black on light, near-white on dark) — not brand
@@ -225,6 +274,7 @@ export default function StyleGuidePage() {
           title="Spacing & Shape"
           blurb="8pt grid for rhythm (padding/margin/gap), with a 4px half-step as a stated exception. Heavy, near-uniform radius is this app's deliberate house style."
         >
+          <SubLabel>Spacing scale</SubLabel>
           <div className="flex flex-wrap items-end gap-4">
             {[1, 2, 3, 4, 6, 8].map((n) => (
               <div key={n} className="flex flex-col items-center gap-2">
@@ -233,11 +283,14 @@ export default function StyleGuidePage() {
               </div>
             ))}
           </div>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-border text-xs text-muted-foreground">rounded-lg<br />icon buttons</div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-border text-xs text-muted-foreground">rounded-xl<br />controls</div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border text-xs text-muted-foreground">rounded-2xl<br />cards/modals</div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border text-xs text-muted-foreground">rounded-full<br />pills/avatars</div>
+          <SubLabel>
+            <span className="mt-6 inline-block">Radius scale, by role</span>
+          </SubLabel>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-border text-center text-xs text-muted-foreground">rounded-lg<br />icon buttons</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-border text-center text-xs text-muted-foreground">rounded-xl<br />controls</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border text-center text-xs text-muted-foreground">rounded-2xl<br />cards/modals</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border text-center text-xs text-muted-foreground">rounded-full<br />pills/avatars</div>
           </div>
         </Section>
 
@@ -247,6 +300,7 @@ export default function StyleGuidePage() {
           title="Buttons"
           blurb="Every hover: is paired with an active: of the same treatment — this is a touchscreen kiosk product too, and hover-only feedback is invisible on that hardware."
         >
+          <SubLabel>Variants</SubLabel>
           <div className="flex flex-wrap items-center gap-3">
             <Button>Default</Button>
             <Button variant="destructive">Destructive</Button>
@@ -254,16 +308,41 @@ export default function StyleGuidePage() {
             <Button variant="secondary">Secondary</Button>
             <Button variant="ghost">Ghost</Button>
             <Button variant="link">Link</Button>
-            <Button disabled>Disabled</Button>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+
+          <SubLabel><span className="mt-6 inline-block">States</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button>Rest</Button>
+            <Button disabled>Disabled</Button>
+            <Button
+              disabled={savingDemo}
+              onClick={() => {
+                setSavingDemo(true);
+                setTimeout(() => setSavingDemo(false), 1800);
+              }}
+            >
+              {savingDemo ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : "Click to simulate save"}
+            </Button>
+          </div>
+
+          <SubLabel><span className="mt-6 inline-block">Sizes</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-3">
             <Button size="xs">Extra small</Button>
             <Button size="sm">Small</Button>
             <Button size="default">Default</Button>
             <Button size="lg">Large</Button>
-            <Button size="icon" aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+
+          <SubLabel><span className="mt-6 inline-block">Icon-only sizes</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="icon-xs" aria-label="Edit"><Pencil /></Button>
+            <Button size="icon-sm" aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
+            <Button size="icon" aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
+            <Button size="icon-lg" aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
+          </div>
+
+          <SubLabel><span className="mt-6 inline-block">Icon-button primitives</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-3">
             <ModalCloseButton onClick={() => {}} />
             <DestructiveIconButton icon={Trash2} label="Delete" onClick={() => {}} />
             <IconTip label="This is a tooltip on an icon-only control">
@@ -278,23 +357,47 @@ export default function StyleGuidePage() {
           title="Badges & Avatars"
           blurb="A field with a small, fixed vocabulary becomes a colored chip, not a plain text column. An avatar next to an identity column is a faster lookup path than reading a name."
         >
+          <SubLabel>Badge variants</SubLabel>
           <div className="flex flex-wrap items-center gap-2">
             <Badge>Default</Badge>
             <Badge variant="secondary">Secondary</Badge>
             <Badge variant="destructive">Destructive</Badge>
             <Badge variant="outline">Outline</Badge>
+          </div>
+          <SubLabel><span className="mt-6 inline-block">Badges as status (custom className, the actual app pattern)</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-2">
             <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Active</Badge>
             <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400">Pending</Badge>
+            <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
+            <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400">ARL</Badge>
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-6">
+
+          <SubLabel><span className="mt-6 inline-block">Avatar sizes</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-6">
             <Avatar size="sm"><AvatarFallback className="bg-primary/10 text-primary">JS</AvatarFallback></Avatar>
             <Avatar><AvatarFallback className="bg-primary/10 text-primary">DC</AvatarFallback></Avatar>
             <Avatar size="lg"><AvatarFallback className="bg-blue-600 text-white">AR</AvatarFallback></Avatar>
+          </div>
+
+          <SubLabel><span className="mt-6 inline-block">Avatar with status badge overlay</span></SubLabel>
+          <div className="flex flex-wrap items-center gap-6">
             <Avatar>
               <AvatarFallback className="bg-primary/10 text-primary">U</AvatarFallback>
               <AvatarBadge className="bg-destructive ring-card" />
             </Avatar>
+            <Avatar>
+              <AvatarFallback className="bg-primary/10 text-primary">U</AvatarFallback>
+              <AvatarBadge className="bg-emerald-500 ring-card" />
+            </Avatar>
           </div>
+
+          <SubLabel><span className="mt-6 inline-block">Avatar group (overlapping, + overflow count)</span></SubLabel>
+          <AvatarGroup>
+            <Avatar><AvatarFallback className="bg-blue-600 text-white">AR</AvatarFallback></Avatar>
+            <Avatar><AvatarFallback className="bg-emerald-600 text-white">DC</AvatarFallback></Avatar>
+            <Avatar><AvatarFallback className="bg-purple-600 text-white">JS</AvatarFallback></Avatar>
+            <AvatarGroupCount>+5</AvatarGroupCount>
+          </AvatarGroup>
         </Section>
 
         {/* ── Cards (DESIGN.md §17 — no shadow-sm) ── */}
@@ -303,29 +406,50 @@ export default function StyleGuidePage() {
           title="Cards"
           blurb="rounded-xl, no resting shadow — fill-color contrast separates surfaces, not the untouched shadcn rounded-lg/shadow-sm combo (DESIGN.md §17's named tell)."
         >
-          <Card className="max-w-sm">
-            <CardHeader>
-              <CardTitle>Morning Line Check</CardTitle>
-              <CardDescription>Check all food line temperatures and log readings.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <StatusDot color="emerald" /> Due 06:00 — daily
-              </div>
-            </CardContent>
-            <CardFooter className="gap-2">
-              <Button size="sm" variant="outline">Edit</Button>
-              <Button size="sm">Mark Done</Button>
-            </CardFooter>
-          </Card>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Morning Line Check</CardTitle>
+                <CardDescription>Check all food line temperatures and log readings.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <StatusDot color="emerald" /> Due 06:00 — daily
+                </div>
+              </CardContent>
+              <CardFooter className="gap-2">
+                <Button size="sm" variant="outline">Edit</Button>
+                <Button size="sm">Mark Done</Button>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Locations</CardTitle>
+                <CardDescription>Stat card — header + content only, no footer.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="font-mono text-3xl font-bold text-foreground">47<span className="text-base font-normal text-muted-foreground"> / 52</span></p>
+              </CardContent>
+            </Card>
+          </div>
         </Section>
 
         {/* ── Form Controls (DESIGN.md §15 — Select replaces native <select>) ── */}
         <Section id="forms" title="Form Controls" blurb="Bordered inputs, Ark-powered Select (replaces the native element app-wide), underline tabs — the app's decided patterns, not a per-component choice.">
           <div className="grid max-w-md gap-5">
             <div>
-              <Label htmlFor="sg-input">Text input</Label>
+              <Label htmlFor="sg-input">Text input — rest</Label>
               <Input id="sg-input" placeholder="e.g. Morning Huddle" className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="sg-input-disabled">Text input — disabled</Label>
+              <Input id="sg-input-disabled" placeholder="Disabled" disabled className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="sg-input-invalid">Text input — invalid</Label>
+              <Input id="sg-input-invalid" aria-invalid defaultValue="not-an-email" className="mt-1.5" />
+              <p className="mt-1 text-xs text-destructive">Enter a valid email address.</p>
             </div>
             <div>
               <Label htmlFor="sg-textarea">Textarea</Label>
@@ -348,15 +472,29 @@ export default function StyleGuidePage() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Select — disabled</Label>
+              <Select collection={regionOptions} disabled>
+                <SelectTrigger className="mt-1.5 w-full">
+                  <SelectValueText placeholder="Unavailable" />
+                </SelectTrigger>
+                <SelectContent>
+                  {regionOptions.items.map((item) => (
+                    <SelectItem key={item.value} item={item}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Section>
 
-        {/* ── Dialog & Menu (DESIGN.md §12 — tap, not hover, for disclosure) ── */}
+        {/* ── Dialog, Confirm & Menu (DESIGN.md §12 — tap, not hover, for disclosure) ── */}
         <Section
           id="overlays"
-          title="Dialog & Menu"
-          blurb="Disclosure happens through a deliberate tap (Section 12) — never a hover reveal, since hover isn't part of this product's input model."
+          title="Dialog, Confirm & Menu"
+          blurb="Disclosure happens through a deliberate tap (Section 12) — never a hover reveal, since hover isn't part of this product's input model. Every destructive action gates through a confirm dialog (DESIGN.md §19), no exceptions."
         >
+          <SubLabel>Generic dialog</SubLabel>
           <div className="flex flex-wrap items-center gap-3">
             <Dialog>
               <DialogTrigger asChild>
@@ -364,12 +502,13 @@ export default function StyleGuidePage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Delete Task?</DialogTitle>
-                  <DialogDescription>Delete &quot;Morning Line Check&quot;? This cannot be undone.</DialogDescription>
+                  <DialogTitle>Rename Location</DialogTitle>
+                  <DialogDescription>Set a new display name for this location.</DialogDescription>
                 </DialogHeader>
+                <Input defaultValue="Downtown — 5th Ave" />
                 <DialogFooter>
                   <Button variant="outline">Cancel</Button>
-                  <Button variant="destructive">Delete Task</Button>
+                  <Button>Save</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -382,12 +521,37 @@ export default function StyleGuidePage() {
                 <MenuItem value="edit" onClick={() => {}}>
                   <Pencil className="h-4 w-4" /> Edit
                 </MenuItem>
+                <MenuItem value="settings" onClick={() => {}}>
+                  <Settings className="h-4 w-4" /> Settings
+                </MenuItem>
+                <MenuSeparator />
                 <MenuItem value="delete" variant="destructive" onClick={() => {}}>
                   <Trash2 className="h-4 w-4" /> Delete
                 </MenuItem>
               </MenuContent>
             </Menu>
           </div>
+
+          <SubLabel>
+            <span className="mt-6 inline-block">
+              Confirm dialog — the app-wide destructive-action pattern (DESIGN.md §19: states the consequence in one short sentence, requires a second deliberate click)
+            </span>
+          </SubLabel>
+          <Button
+            variant="destructive"
+            onClick={() =>
+              confirm({
+                title: "Delete David Santos?",
+                description: "This cannot be undone.",
+                confirmLabel: "Delete User",
+                variant: "danger",
+                onConfirm: () => {},
+              })
+            }
+          >
+            <Trash2 className="h-4 w-4" /> Delete User
+          </Button>
+          <ConfirmDialog {...dialog} />
         </Section>
 
         {/* ── Tabs ── */}
@@ -410,23 +574,23 @@ export default function StyleGuidePage() {
           title="Status, Empty & Loading States"
           blurb="The user always knows: something is happening right now, what just happened, and how to get back (DESIGN.md §16 — extended 2026-06-30 to add the first leg)."
         >
+          <SubLabel>Status dots</SubLabel>
           <div className="flex flex-wrap items-center gap-6">
             <span className="flex items-center gap-2 text-sm text-foreground"><StatusDot color="emerald" /> Online</span>
             <span className="flex items-center gap-2 text-sm text-foreground"><StatusDot color="amber" pulse /> Reconnecting</span>
             <span className="flex items-center gap-2 text-sm text-foreground"><StatusDot color="red" /> Offline</span>
+            <span className="flex items-center gap-2 text-sm text-foreground"><StatusDot color="muted" /> Inactive</span>
             <span className="flex items-center gap-2 text-sm text-foreground"><StatusDot color="brand" pulse /> Live</span>
           </div>
 
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <div className="mt-8 grid gap-6 sm:grid-cols-3">
             <div>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground">Empty state</p>
-              </div>
+              <SubLabel>Empty state</SubLabel>
               <EmptyState icon={FolderOpen} title="No tasks yet" subtext="Tasks assigned to this location will show up here." bordered />
             </div>
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground">Loading state</p>
+                <p className="text-xs font-semibold text-muted-foreground">Skeleton loading</p>
                 <button
                   type="button"
                   onClick={() => setSkeletonView((v) => !v)}
@@ -440,20 +604,108 @@ export default function StyleGuidePage() {
                   <Skeleton variant="list" lines={3} />
                 </div>
               ) : (
-                <div className="flex items-center justify-center rounded-xl border border-border p-8">
-                  <Button disabled>
-                    <ClipboardList className="h-4 w-4 animate-pulse" /> Saving…
-                  </Button>
+                <div className="rounded-xl border border-border p-4">
+                  <Skeleton variant="card" />
                 </div>
               )}
+            </div>
+            <div>
+              <SubLabel>In-flight button (DESIGN.md §16)</SubLabel>
+              <div className="flex h-[88px] items-center justify-center rounded-xl border border-border p-4">
+                <Button disabled>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+                </Button>
+              </div>
             </div>
           </div>
         </Section>
 
-        {/* ── Motion (DESIGN.md §9) ── */}
+        {/* ── Feedback motion: Shake + Success Checkmark ── */}
+        <Section
+          id="feedback"
+          title="Feedback Motion"
+          blurb="A small animation on a meaningful state change confirms the action landed (DESIGN.md §9) — it marks one specific event, not ambient polish."
+        >
+          <div className="flex flex-wrap items-center gap-10">
+            <div>
+              <SubLabel>Shake — invalid input (e.g. wrong PIN)</SubLabel>
+              <Shake trigger={shakeTrigger} intensity="medium">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShakeTrigger(true);
+                    setTimeout(() => setShakeTrigger(false), 600);
+                  }}
+                >
+                  Click to shake
+                </Button>
+              </Shake>
+            </div>
+            <div>
+              <SubLabel>Success checkmark — action confirmed</SubLabel>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCheckShow(true);
+                    setTimeout(() => setCheckShow(false), 1400);
+                  }}
+                >
+                  Click to confirm
+                </Button>
+                <SuccessCheckmark show={checkShow} size="md" />
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Scroll Area ── */}
+        <Section id="scroll" title="Scroll Area" blurb="Custom scrollbar styling (Radix-based) — used anywhere a list needs to scroll within a fixed-height panel, like chat threads.">
+          <ScrollArea className="h-48 max-w-md rounded-xl border border-border p-3">
+            <div className="space-y-1">
+              {queueItems.map((item) => (
+                <div key={item} className="rounded-lg px-2 py-1.5 text-sm text-foreground">{item}</div>
+              ))}
+            </div>
+          </ScrollArea>
+        </Section>
+
+        {/* ── Pin Pad ── */}
+        <Section id="pinpad" title="Pin Pad" blurb="The kiosk login/PIN-reconfirmation keypad — large touch targets, no hover dependency.">
+          <div className="max-w-xs">
+            <p className="mb-3 text-center font-mono text-2xl tracking-[0.5em] text-foreground">
+              {pin.padEnd(4, "•").split("").map((c, i) => (i < pin.length ? "•" : "·")).join(" ")}
+            </p>
+            <PinPad
+              value={pin}
+              maxLength={4}
+              onDigit={(d) => setPin((p) => (p.length < 4 ? p + d : p))}
+              onDelete={() => setPin((p) => p.slice(0, -1))}
+              onAction={() => setPin("")}
+              actionContent="Clear"
+            />
+          </div>
+        </Section>
+
+        {/* ── Emoji ── */}
+        <Section id="emoji" title="Emoji" blurb="Renders a literal emoji character via the unified code-point lookup — used for message reactions.">
+          <div className="flex items-center gap-3">
+            {["👍", "🎉", "🔥", "✅", "👀"].map((e) => (
+              <button
+                key={e}
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors active:bg-muted"
+              >
+                <Emoji emoji={e} size={20} />
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        {/* ── Press Motion (DESIGN.md §9) ── */}
         <Section
           id="motion"
-          title="Motion"
+          title="Press Motion"
           blurb="~150-200ms ease-out governs ordinary feedback. A press state is a real transition, not an instant snap — try tapping/clicking the tile below."
         >
           <button
