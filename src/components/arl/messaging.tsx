@@ -374,7 +374,7 @@ export function Messaging() {
                       <span className="mb-1 ml-1 text-xs font-semibold text-muted-foreground">{msg.senderName}</span>
                     )}
                     <div className={cn("max-w-[75%] rounded-2xl px-4 py-2",
-                      isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
+                      isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md border border-border bg-muted text-foreground"
                     )}>
                       {msg.messageType === "voice" ? (() => {
                         const meta = parseJsonColumn<{ durationMs?: number }>(msg.metadata, {});

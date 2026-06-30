@@ -1023,7 +1023,7 @@ function ActiveConvoView({
                 )}
                 <div className={cn(
                   "rounded-2xl px-3 py-2 shadow-sm max-w-[75%]",
-                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md bg-muted text-foreground"
+                  isMe ? "rounded-br-md bg-[var(--hub-red)] text-white" : "rounded-bl-md border border-border bg-muted text-foreground"
                 )}>
                   {msg.messageType === "voice" ? (() => {
                     const meta = parseJsonColumn<{ durationMs?: number }>(msg.metadata, {});
