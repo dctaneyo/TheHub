@@ -99,7 +99,6 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
           : JSON.stringify(recurringDays)
         : null,
       biweeklyStart: isRecurring && recurringType === "biweekly" ? biweeklyStart : null,
-      points: 10,
       allowEarlyComplete,
       showInToday,
       showIn7Day,

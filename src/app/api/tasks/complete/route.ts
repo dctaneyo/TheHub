@@ -59,8 +59,6 @@ export async function POST(req: NextRequest) {
       completedAt: new Date().toISOString(),
       completedDate: targetDate,
       notes: notes || null,
-      pointsEarned: 0,
-      bonusPoints: 0,
     };
 
     db.insert(schema.taskCompletions).values(completion).run();
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Use the effective location for broadcasts (target location in mirror mode)
     const broadcastLocationId = effectiveLocationId;
     const broadcastLocationName = session.userType === "arl" ? (body.mirrorLocationName as string || session.name) : session.name;
-    broadcastTaskCompleted(broadcastLocationId, taskId, task.title, 0, broadcastLocationName, session.tenantId);
+    broadcastTaskCompleted(broadcastLocationId, taskId, task.title, broadcastLocationName, session.tenantId);
 
     // Push notification to all ARLs about the task completion
     await sendPushToAllARLs({

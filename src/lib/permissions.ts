@@ -46,9 +46,6 @@ export const PERMISSIONS = {
 
   // Analytics
   ANALYTICS_ACCESS: "analytics.access",
-
-  // Gamification (shoutouts, high-fives)
-  GAMIFICATION_SEND: "gamification.send",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -137,13 +134,6 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     description: "View analytics dashboard",
     permissions: [
       { key: PERMISSIONS.ANALYTICS_ACCESS, label: "Access" },
-    ],
-  },
-  {
-    label: "Gamification",
-    description: "Shoutouts and high-fives",
-    permissions: [
-      { key: PERMISSIONS.GAMIFICATION_SEND, label: "Send shoutouts & high-fives" },
     ],
   },
 ];

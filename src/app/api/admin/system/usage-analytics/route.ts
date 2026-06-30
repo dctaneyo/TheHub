@@ -11,7 +11,7 @@ export async function GET() {
 
   try {
     const topLocations = sqlite.prepare(`
-      SELECT l.id, l.name, l.store_number, COUNT(tc.id) as completions, SUM(tc.points_earned + tc.bonus_points) as total_points
+      SELECT l.id, l.name, l.store_number, COUNT(tc.id) as completions
       FROM locations l
       LEFT JOIN task_completions tc ON tc.location_id = l.id
       GROUP BY l.id
@@ -37,7 +37,7 @@ export async function GET() {
     `).all();
 
     const completionTrends = sqlite.prepare(`
-      SELECT completed_date, COUNT(*) as completions, SUM(points_earned + bonus_points) as points
+      SELECT completed_date, COUNT(*) as completions
       FROM task_completions
       WHERE completed_date >= date('now', '-30 days')
       GROUP BY completed_date

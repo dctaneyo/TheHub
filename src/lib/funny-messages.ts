@@ -123,7 +123,7 @@ export const CELEBRATION_MESSAGES = {
     "⚡ UNSTOPPABLE! All tasks crushed!",
   ],
   earlyCompletion: [
-    "⚡ Lightning fast! Early bird gets the points!",
+    "⚡ Lightning fast! Early bird gets it done!",
     "🚀 Speed demon! Completed ahead of schedule!",
     "💨 Blazing fast! You're on fire!",
     "⏰ Early finish! Efficiency at its finest!",

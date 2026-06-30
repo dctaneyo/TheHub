@@ -45,7 +45,6 @@ export interface TaskToast {
   id: string;
   locationName: string;
   taskTitle: string;
-  pointsEarned: number;
 }
 
 export interface ActiveMeeting {
@@ -135,14 +134,13 @@ export function applyPresenceUpdate(
  * Create a task toast from a socket event payload.
  */
 export function createTaskToast(
-  payload: { locationId: string; taskId: string; taskTitle: string; pointsEarned: number },
+  payload: { locationId: string; taskId: string; taskTitle: string },
   locationNames: Map<string, string>,
 ): TaskToast {
   return {
     id: `${payload.taskId}-${Date.now()}`,
     locationName: locationNames.get(payload.locationId) || "A location",
     taskTitle: payload.taskTitle,
-    pointsEarned: payload.pointsEarned,
   };
 }
 
@@ -359,7 +357,6 @@ export function ArlDashboardProvider({ children }: { children: ReactNode }) {
       locationId: string;
       taskId: string;
       taskTitle: string;
-      pointsEarned: number;
     }) => {
       const toast = createTaskToast(data, locationNamesRef.current);
       setToasts((prev) => [...prev, toast]);

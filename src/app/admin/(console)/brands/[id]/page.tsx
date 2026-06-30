@@ -11,7 +11,6 @@ interface Template {
   title: string;
   dueTime: string;
   priority: string;
-  points: number;
 }
 
 export default function BrandDetailPage() {

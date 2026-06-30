@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const { id: brandId } = await params;
     const body = await req.json();
-    const { title, description, type, priority, dueTime, isRecurring, recurringType, recurringDays, biweeklyStart, points } = body;
+    const { title, description, type, priority, dueTime, isRecurring, recurringType, recurringDays, biweeklyStart } = body;
 
     if (!title || !dueTime) return ApiErrors.badRequest("title and dueTime are required");
 
@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       type: type || "task", priority: priority || "normal", dueTime,
       isRecurring: isRecurring ?? false, recurringType: recurringType || null,
       recurringDays: recurringDays || null, biweeklyStart: biweeklyStart || null,
-      points: points ?? 10, createdAt: now, updatedAt: now,
+      createdAt: now, updatedAt: now,
     }).run();
 
     logAudit({ userId: auth.session.adminId, userType: "platform_admin", operation: "brand_task_template_created", entityType: "brand", payload: { brandId, templateId: id, title }, status: "success" });
@@ -62,7 +62,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id: brandId } = await params;
     const body = await req.json();
-    const { templateId, title, description, type, priority, dueTime, isRecurring, recurringType, recurringDays, biweeklyStart, points } = body;
+    const { templateId, title, description, type, priority, dueTime, isRecurring, recurringType, recurringDays, biweeklyStart } = body;
     if (!templateId) return ApiErrors.badRequest("templateId required");
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -75,7 +75,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (recurringType !== undefined) updates.recurringType = recurringType;
     if (recurringDays !== undefined) updates.recurringDays = recurringDays;
     if (biweeklyStart !== undefined) updates.biweeklyStart = biweeklyStart;
-    if (points !== undefined) updates.points = points;
 
     db.update(schema.brandTaskTemplates).set(updates).where(eq(schema.brandTaskTemplates.id, templateId)).run();
 

@@ -66,7 +66,6 @@ export function NotificationTester({ className }: NotificationTesterProps) {
         taskId: "test-task-123",
         title: "Test Task - Due Soon",
         dueTime: new Date(Date.now() + 15 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        points: 10,
       },
     },
     {
@@ -78,7 +77,6 @@ export function NotificationTester({ className }: NotificationTesterProps) {
         taskId: "test-task-456",
         title: "Overdue Test Task",
         dueTime: new Date(Date.now() - 30 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        points: 5,
       },
     },
     {
@@ -89,7 +87,6 @@ export function NotificationTester({ className }: NotificationTesterProps) {
       payload: {
         taskId: "test-task-345",
         title: "Completed Test Task",
-        pointsEarned: 10,
       },
     },
     {

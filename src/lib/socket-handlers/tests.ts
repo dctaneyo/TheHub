@@ -10,13 +10,13 @@ export function registerTestHandlers(io: SocketIOServer, socket: Socket, user: A
   if (!user || user.userType !== "arl") return;
 
   socket.on("test:task_due_soon", (data: any) => {
-    const { locationId, taskId, title, dueTime, points } = data;
-    io.to(`location:${locationId}`).emit("task:due-soon", { taskId, title, dueTime, points });
+    const { locationId, taskId, title, dueTime } = data;
+    io.to(`location:${locationId}`).emit("task:due-soon", { taskId, title, dueTime });
   });
 
   socket.on("test:task_overdue", (data: any) => {
-    const { locationId, taskId, title, dueTime, points } = data;
-    io.to(`location:${locationId}`).emit("task:overdue", { taskId, title, dueTime, points });
+    const { locationId, taskId, title, dueTime } = data;
+    io.to(`location:${locationId}`).emit("task:overdue", { taskId, title, dueTime });
   });
 
   socket.on("test:meeting_started", (data: any) => {
@@ -45,8 +45,8 @@ export function registerTestHandlers(io: SocketIOServer, socket: Socket, user: A
   });
 
   socket.on("test:task_completed", (data: any) => {
-    const { locationId, taskId, title, pointsEarned } = data;
-    io.to(`location:${locationId}`).emit("task:completed", { taskId, title, pointsEarned });
+    const { locationId, taskId, title } = data;
+    io.to(`location:${locationId}`).emit("task:completed", { taskId, title });
   });
 
   socket.on("test:custom_notification", (data: any) => {

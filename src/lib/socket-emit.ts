@@ -32,9 +32,9 @@ export function broadcastTaskUpdate(locationId?: string | null, tenantId?: strin
   emitToArls("task:updated", { locationId }, tenantId);
 }
 
-export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, pointsEarned: number, locationName?: string, tenantId?: string) {
+export function broadcastTaskCompleted(locationId: string, taskId: string, taskTitle: string, locationName?: string, tenantId?: string) {
   if (!isAvailable()) return;
-  const payload = { locationId, taskId, taskTitle, pointsEarned, locationName: locationName || "A location" };
+  const payload = { locationId, taskId, taskTitle, locationName: locationName || "A location" };
   emitToArls("task:completed", payload, tenantId);
   emitToLocations("task:completed", payload, tenantId);
   emitToLocation(locationId, "task:updated", { locationId }, tenantId);
@@ -198,12 +198,6 @@ export function broadcastMessageRead(conversationId: string, readerId: string) {
 export function broadcastUserUpdate(tenantId?: string) {
   if (!isAvailable()) return;
   emitToArls("user:updated", {}, tenantId);
-}
-
-// ── Leaderboard / gamification events ──
-export function broadcastLeaderboardUpdate(locationId: string, tenantId?: string) {
-  if (!isAvailable()) return;
-  emitToAll("leaderboard:updated", { locationId }, tenantId);
 }
 
 // ── Force session management ──

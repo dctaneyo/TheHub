@@ -27,8 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS archived_task_completions (
           id TEXT PRIMARY KEY, tenant_id TEXT, task_id TEXT, location_id TEXT,
-          completed_at TEXT, completed_date TEXT, notes TEXT,
-          points_earned INTEGER, bonus_points INTEGER, archived_at TEXT
+          completed_at TEXT, completed_date TEXT, notes TEXT, archived_at TEXT
         )
       `);
     } catch (e) {
@@ -58,8 +57,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       archived = deleted.changes;
     } else if (dataType === "task-completions") {
       sqlite.prepare(`
-        INSERT INTO archived_task_completions
-        SELECT id, ? as tenant_id, task_id, location_id, completed_at, completed_date, notes, points_earned, bonus_points, ? as archived_at
+        INSERT INTO archived_task_completions (id, tenant_id, task_id, location_id, completed_at, completed_date, notes, archived_at)
+        SELECT id, ? as tenant_id, task_id, location_id, completed_at, completed_date, notes, ? as archived_at
         FROM task_completions
         WHERE completed_date < ? AND task_id IN (SELECT id FROM tasks WHERE tenant_id = ?)
       `).run(tenantId, archivedAt, cutoff.split("T")[0], tenantId);

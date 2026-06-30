@@ -62,8 +62,8 @@ export async function POST(request: Request) {
         }
 
         const insertStmt = sqlite.prepare(`
-          INSERT INTO tasks (id, tenant_id, title, description, type, priority, due_time, due_date, is_recurring, recurring_type, recurring_days, biweekly_start, location_id, created_by, created_by_type, is_hidden, allow_early_complete, show_in_today, show_in_7day, show_in_calendar, points, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, tenant_id, title, description, type, priority, due_time, due_date, is_recurring, recurring_type, recurring_days, biweekly_start, location_id, created_by, created_by_type, is_hidden, allow_early_complete, show_in_today, show_in_7day, show_in_calendar, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const now = new Date().toISOString();
@@ -90,7 +90,6 @@ export async function POST(request: Request) {
               task.showInToday !== false ? 1 : 0,
               task.showIn7Day !== false ? 1 : 0,
               task.showInCalendar !== false ? 1 : 0,
-              task.points || 10,
               now,
               now
             );
@@ -132,7 +131,6 @@ export async function POST(request: Request) {
 
         if (updates.priority !== undefined) { setClauses.push("priority = ?"); setParams.push(updates.priority); }
         if (updates.isHidden !== undefined) { setClauses.push("is_hidden = ?"); setParams.push(updates.isHidden ? 1 : 0); }
-        if (updates.points !== undefined) { setClauses.push("points = ?"); setParams.push(updates.points); }
         if (updates.showInToday !== undefined) { setClauses.push("show_in_today = ?"); setParams.push(updates.showInToday ? 1 : 0); }
         if (updates.showIn7Day !== undefined) { setClauses.push("show_in_7day = ?"); setParams.push(updates.showIn7Day ? 1 : 0); }
         if (updates.showInCalendar !== undefined) { setClauses.push("show_in_calendar = ?"); setParams.push(updates.showInCalendar ? 1 : 0); }

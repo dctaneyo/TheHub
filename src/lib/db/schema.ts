@@ -11,7 +11,7 @@ export const tenants = sqliteTable("tenants", {
   faviconUrl: text("favicon_url"),
   appTitle: text("app_title"), // e.g. "KFC Team Hub"
   plan: text("plan").notNull().default("starter"), // 'starter' | 'pro' | 'enterprise'
-  features: text("features").notNull().default('["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]'), // JSON array
+  features: text("features").notNull().default('["messaging","tasks","forms","meetings","analytics","broadcasts"]'), // JSON array
   maxLocations: integer("max_locations").notNull().default(50),
   maxUsers: integer("max_users").notNull().default(20),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
@@ -99,7 +99,6 @@ export const tasks = sqliteTable("tasks", {
   showInToday: integer("show_in_today", { mode: "boolean" }).notNull().default(true), // show in Today's Tasks timeline
   showIn7Day: integer("show_in_7day", { mode: "boolean" }).notNull().default(true), // show in 7-day upcoming view
   showInCalendar: integer("show_in_calendar", { mode: "boolean" }).notNull().default(true), // show in full calendar
-  points: integer("points").notNull().default(10), // gamification points
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -112,8 +111,6 @@ export const taskCompletions = sqliteTable("task_completions", {
   completedAt: text("completed_at").notNull().$defaultFn(() => new Date().toISOString()),
   completedDate: text("completed_date").notNull(), // YYYY-MM-DD for easy querying
   notes: text("notes"),
-  pointsEarned: integer("points_earned").notNull().default(0),
-  bonusPoints: integer("bonus_points").notNull().default(0), // early bird bonus
 });
 
 // Messages - instant messaging
@@ -206,18 +203,6 @@ export const forms = sqliteTable("forms", {
   fileSize: integer("file_size").notNull(),
   uploadedBy: text("uploaded_by").notNull(), // ARL id
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
-
-// Daily leaderboard (points, streaks, etc.)
-export const dailyLeaderboard = sqliteTable("daily_leaderboard", {
-  id: text("id").primaryKey(),
-  tenantId: text("tenant_id").notNull().default("kazi").references(() => tenants.id),
-  locationId: text("location_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  pointsEarned: integer("points_earned").notNull().default(0),
-  tasksCompleted: integer("tasks_completed").notNull().default(0),
-  tasksMissed: integer("tasks_missed").notNull().default(0),
-  streak: integer("streak").notNull().default(0), // consecutive days with all tasks done
 });
 
 // Emergency broadcasts
@@ -567,7 +552,6 @@ export const brandTaskTemplates = sqliteTable("brand_task_templates", {
   recurringType: text("recurring_type"),
   recurringDays: text("recurring_days"),
   biweeklyStart: text("biweekly_start"),
-  points: integer("points").notNull().default(10),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

@@ -74,7 +74,7 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
             .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr(tz))))
             .get();
           if (!c) {
-            io.to(`location:${locationId}`).emit("task:due-soon", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+            io.to(`location:${locationId}`).emit("task:due-soon", { taskId: task.id, title: task.title, dueTime: task.dueTime });
             createNotification({
               userId: locationId,
               userType: "location",
@@ -96,7 +96,7 @@ export function scheduleTaskNotifications(io: SocketIOServer, locationId: string
             .where(and(eq(schema.taskCompletions.taskId, task.id), eq(schema.taskCompletions.locationId, locationId), eq(schema.taskCompletions.completedDate, todayStr(tz))))
             .get();
           if (!c) {
-            io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime, points: task.points });
+            io.to(`location:${locationId}`).emit("task:overdue", { taskId: task.id, title: task.title, dueTime: task.dueTime });
             // Try to upgrade existing due-soon notification instead of creating a duplicate
             const overdueTitle = `Overdue: ${task.title}`;
             const overdueMsg = `Task "${task.title}" was due at ${task.dueTime}`;

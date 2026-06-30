@@ -248,7 +248,7 @@ function runMigrations() {
       favicon_url TEXT,
       app_title TEXT,
       plan TEXT NOT NULL DEFAULT 'starter',
-      features TEXT NOT NULL DEFAULT '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]',
+      features TEXT NOT NULL DEFAULT '["messaging","tasks","forms","meetings","analytics","broadcasts"]',
       max_locations INTEGER NOT NULL DEFAULT 50,
       max_users INTEGER NOT NULL DEFAULT 20,
       is_active INTEGER NOT NULL DEFAULT 1,
@@ -263,7 +263,7 @@ function runMigrations() {
     s.prepare(`INSERT OR IGNORE INTO tenants (id, slug, name, app_title, plan, features, max_locations, max_users, is_active, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run("kazi", "kazi", "Kazi Franchise", "The Hub", "enterprise",
-        '["messaging","tasks","forms","gamification","meetings","analytics","broadcasts"]',
+        '["messaging","tasks","forms","meetings","analytics","broadcasts"]',
         100, 50, 1, now, now);
   });
 
@@ -362,7 +362,7 @@ function runMigrations() {
           "tasks.create","tasks.delete","tasks.edit","locations.mute","locations.reset_pin",
           "meetings.start","meetings.schedule","meetings.delete","meetings.edit",
           "emergency.access","data_management.access","forms.upload","forms.delete",
-          "ticker.create","ticker.delete","analytics.access","gamification.send"
+          "ticker.create","ticker.delete","analytics.access"
         ]),
       },
       {
@@ -372,7 +372,7 @@ function runMigrations() {
         permissions: JSON.stringify([
           "tasks.create","tasks.delete","tasks.edit","locations.mute","locations.reset_pin",
           "meetings.start","meetings.schedule","forms.upload","forms.delete",
-          "ticker.create","ticker.delete","analytics.access","gamification.send"
+          "ticker.create","ticker.delete","analytics.access"
         ]),
       },
       {
@@ -609,6 +609,16 @@ function runMigrations() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )`);
+  });
+
+  // ── Gamification removal: drop the points/streak machinery that was
+  // never fully torn out when leaderboards/achievements were removed ──
+  migrate("055_remove_gamification_points", () => {
+    s.exec(`ALTER TABLE tasks DROP COLUMN points`);
+    s.exec(`ALTER TABLE task_completions DROP COLUMN points_earned`);
+    s.exec(`ALTER TABLE task_completions DROP COLUMN bonus_points`);
+    s.exec(`ALTER TABLE brand_task_templates DROP COLUMN points`);
+    s.exec(`DROP TABLE IF EXISTS daily_leaderboard`);
   });
 
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;

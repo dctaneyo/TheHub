@@ -6,7 +6,6 @@ export interface TaskItem {
   priority: string;
   dueTime: string;
   isAllDay?: boolean;
-  points: number;
   isCompleted: boolean;
   isOverdue: boolean;
   isDueSoon: boolean;

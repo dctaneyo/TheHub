@@ -77,7 +77,6 @@ async function seed() {
       created_by TEXT NOT NULL,
       created_by_type TEXT NOT NULL DEFAULT 'arl',
       is_hidden INTEGER NOT NULL DEFAULT 0,
-      points INTEGER NOT NULL DEFAULT 10,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -88,8 +87,7 @@ async function seed() {
       location_id TEXT NOT NULL,
       completed_at TEXT NOT NULL,
       completed_date TEXT NOT NULL,
-      notes TEXT,
-      points_earned INTEGER NOT NULL DEFAULT 0
+      notes TEXT
     );
 
     CREATE TABLE IF NOT EXISTS messages (
@@ -153,16 +151,6 @@ async function seed() {
       file_size INTEGER NOT NULL,
       uploaded_by TEXT NOT NULL,
       created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS location_scores (
-      id TEXT PRIMARY KEY,
-      location_id TEXT NOT NULL,
-      date TEXT NOT NULL,
-      points_earned INTEGER NOT NULL DEFAULT 0,
-      tasks_completed INTEGER NOT NULL DEFAULT 0,
-      tasks_missed INTEGER NOT NULL DEFAULT 0,
-      streak INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS notifications (
@@ -275,7 +263,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 15,
       createdAt: now,
       updatedAt: now,
     },
@@ -289,7 +276,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 10,
       createdAt: now,
       updatedAt: now,
     },
@@ -303,7 +289,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 20,
       createdAt: now,
       updatedAt: now,
     },
@@ -317,7 +302,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 15,
       createdAt: now,
       updatedAt: now,
     },
@@ -331,7 +315,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 15,
       createdAt: now,
       updatedAt: now,
     },
@@ -345,7 +328,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 25,
       createdAt: now,
       updatedAt: now,
     },
@@ -359,7 +341,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 10,
       createdAt: now,
       updatedAt: now,
     },
@@ -373,7 +354,6 @@ async function seed() {
       isRecurring: true,
       recurringDays: JSON.stringify(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
       createdBy: adminId,
-      points: 20,
       createdAt: now,
       updatedAt: now,
     },

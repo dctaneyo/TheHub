@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, unauthorized, getEffectiveLocationIdFromBody } from "@/lib/api-helpers";
 import { db, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { broadcastTaskUpdate, broadcastTaskUncompleted, broadcastLeaderboardUpdate } from "@/lib/socket-emit";
+import { broadcastTaskUpdate, broadcastTaskUncompleted } from "@/lib/socket-emit";
 import { refreshTaskTimers } from "@/lib/task-notification-scheduler";
 import { validate, uncompleteTaskSchema } from "@/lib/validations";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
@@ -53,10 +53,9 @@ export async function POST(req: NextRequest) {
 
     broadcastTaskUpdate(effectiveLocationId, session.tenantId);
     broadcastTaskUncompleted(effectiveLocationId, taskId, session.tenantId);
-    broadcastLeaderboardUpdate(effectiveLocationId, session.tenantId);
     refreshTaskTimers();
 
-    return apiSuccess({ success: true, pointsRevoked: completion.pointsEarned });
+    return apiSuccess({ success: true });
   } catch (error) {
     console.error("Uncomplete task error:", error);
     return ApiErrors.internal();

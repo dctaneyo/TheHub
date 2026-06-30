@@ -5,12 +5,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const features = [
-  { icon: ClipboardList, title: "Tasks & Reminders", desc: "Assign, track, and complete tasks across all locations with gamification" },
+  { icon: ClipboardList, title: "Tasks & Reminders", desc: "Assign, track, and complete tasks across all locations" },
   { icon: MessageCircle, title: "Instant Messaging", desc: "Real-time chat between restaurants and leadership with read receipts" },
   { icon: CalendarDays, title: "Calendar", desc: "Visual calendar with recurring tasks, daily/weekly/monthly views" },
   { icon: Video, title: "Video Meetings", desc: "Built-in video conferencing with LiveKit — no external tools needed" },
   { icon: Store, title: "Location Management", desc: "Monitor all restaurant locations, session tracking, and online status" },
-  { icon: BarChart3, title: "Analytics", desc: "Task completion rates, messaging stats, gamification leaderboards" },
+  { icon: BarChart3, title: "Analytics", desc: "Task completion rates, messaging stats, and location activity" },
   { icon: Shield, title: "Emergency Broadcasts", desc: "Instant alerts to all locations with acknowledgment tracking" },
   { icon: Users, title: "Multi-Tenant", desc: "Each franchise gets its own branded subdomain with full data isolation" },
 ];
@@ -59,7 +59,7 @@ export default function LandingPage() {
         </h1>
         <p className="mt-6 text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
           The Hub is an all-in-one franchise management platform. Tasks, messaging,
-          video meetings, leaderboards, and analytics — unified for every location.
+          video meetings, and analytics — unified for every location.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a

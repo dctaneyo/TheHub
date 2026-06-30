@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import bcrypt from "bcryptjs";
 
-const ALL_FEATURES = ["messaging", "tasks", "forms", "gamification", "meetings", "analytics", "broadcasts"];
+const ALL_FEATURES = ["messaging", "tasks", "forms", "meetings", "analytics", "broadcasts"];
 
 const PLAN_LIMITS: Record<string, { maxLocations: number; maxUsers: number }> = {
   starter: { maxLocations: 10, maxUsers: 5 },
@@ -141,7 +141,6 @@ export async function createTenantWithFirstAdmin(input: ProvisionTenantInput): P
             createdBy: provisionedBy || adminId,
             createdByType: "brand",
             sourceBrandTaskId: template.id,
-            points: template.points,
             createdAt: now,
             updatedAt: now,
           }).run();

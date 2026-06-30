@@ -60,7 +60,6 @@ export async function POST(req: NextRequest) {
       recurringDays,
       biweeklyStart,
       locationId,
-      points,
       allowEarlyComplete,
       showInToday,
       showIn7Day,
@@ -93,7 +92,6 @@ export async function POST(req: NextRequest) {
       showInCalendar,
       createdBy: session.id,
       createdByType: session.userType,
-      points: session.userType === "location" ? 0 : points,
       createdAt: now,
       updatedAt: now,
     };
@@ -150,7 +148,6 @@ export async function PUT(req: NextRequest) {
     if (updates.showInToday !== undefined) updateData.showInToday = updates.showInToday;
     if (updates.showIn7Day !== undefined) updateData.showIn7Day = updates.showIn7Day;
     if (updates.showInCalendar !== undefined) updateData.showInCalendar = updates.showInCalendar;
-    if (updates.points !== undefined) updateData.points = updates.points;
 
     db.update(schema.tasks).set(updateData).where(eq(schema.tasks.id, id)).run();
 

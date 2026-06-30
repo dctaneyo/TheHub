@@ -2,8 +2,8 @@
  * Shared task recurrence utilities.
  *
  * Single source of truth for "does this task apply to a given date?"
- * Used by leaderboard, gamification, today's tasks, upcoming tasks,
- * and the real-time task notification scheduler.
+ * Used by today's tasks, upcoming tasks, and the real-time task
+ * notification scheduler.
  */
 
 import { parseJsonColumn } from "@/lib/json-column";

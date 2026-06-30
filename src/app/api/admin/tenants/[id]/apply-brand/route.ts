@@ -90,7 +90,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         createdBy: auth.session.adminId,
         createdByType: "brand",
         sourceBrandTaskId: template.id,
-        points: template.points,
         createdAt: now,
         updatedAt: now,
       }).run();

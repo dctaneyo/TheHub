@@ -25,41 +25,10 @@ export const handlers = [
           type: 'task',
           priority: 'normal',
           dueTime: '09:00',
-          points: 10,
           isRecurring: true,
           recurringType: 'daily',
         },
       ],
-    })
-  }),
-
-  // Gamification
-  http.get('/api/gamification', () => {
-    return HttpResponse.json({
-      points: 1250,
-      level: 5,
-      streak: 7,
-      rank: 3,
-    })
-  }),
-
-  // Achievements
-  http.get('/api/achievements', () => {
-    return HttpResponse.json({
-      ok: true,
-      badges: [
-        {
-          id: 'first_task',
-          name: 'Getting Started',
-          desc: 'Complete your first task',
-          tier: 'bronze',
-          icon: '🎯',
-          earned: true,
-          earnedDate: '2025-01-15T10:00:00Z',
-        },
-      ],
-      earnedCount: 1,
-      totalCount: 17,
     })
   }),
 

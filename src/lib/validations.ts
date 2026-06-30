@@ -15,7 +15,6 @@ export const createTaskSchema = z.object({
   recurringDays: z.union([z.string(), z.array(z.string()), z.array(z.number())]).nullable().optional(),
   biweeklyStart: z.enum(["this", "next"]).nullable().optional(),
   locationId: z.string().nullable().optional(),
-  points: z.number().int().min(0).max(10000).default(10),
   allowEarlyComplete: z.boolean().default(false),
   showInToday: z.boolean().default(true),
   showIn7Day: z.boolean().default(true),
@@ -41,7 +40,6 @@ export const updateTaskSchema = z.object({
   showInToday: z.boolean().optional(),
   showIn7Day: z.boolean().optional(),
   showInCalendar: z.boolean().optional(),
-  points: z.number().int().min(0).max(10000).optional(),
 });
 
 // ── Auth schemas ──
