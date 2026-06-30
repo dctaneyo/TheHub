@@ -6,6 +6,7 @@ import { Zap, Plus, Trash2, Clock, Send, X } from "@/lib/icons";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface TickerMessage {
@@ -162,7 +163,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+            <Card className="gap-0 rounded-2xl p-4 space-y-3">
               {/* Icon picker */}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Icon</p>
@@ -243,7 +244,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                 <Send className="h-4 w-4" />
                 {sending ? "Sending..." : "Push to All Locations"}
               </button>
-            </div>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>

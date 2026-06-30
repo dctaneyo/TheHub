@@ -8,6 +8,7 @@ import {
   Users, Lock, Globe, RefreshCw, Edit2, X, ChevronDown, Play, MoreVertical,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
@@ -286,7 +287,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+            <Card className="gap-0 rounded-xl p-5 space-y-4">
               <h3 className="font-semibold text-sm text-foreground">Create New Meeting</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -398,7 +399,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                   {creating ? "Creating..." : "Create Meeting"}
                 </Button>
               </div>
-            </div>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>

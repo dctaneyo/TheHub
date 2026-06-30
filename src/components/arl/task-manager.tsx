@@ -15,6 +15,7 @@ import {
   X,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
@@ -313,7 +314,7 @@ export function TaskManager() {
 
       {/* Bulk-action bar — visible when 1+ tasks are selected in Select mode */}
       {selectMode && selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+        <Card className="flex-row items-center gap-3 rounded-xl px-4 py-2.5">
           <span className="text-xs font-semibold text-foreground">{selectedIds.size} selected</span>
           <div className="flex-1" />
           <button
@@ -330,14 +331,14 @@ export function TaskManager() {
             <X className="h-3.5 w-3.5" />
             Deselect all
           </button>
-        </div>
+        </Card>
       )}
 
       {/* Template picker */}
       <AnimatePresence>
         {showTemplates && (
           <div className="overflow-hidden">
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <Card className="gap-0 rounded-2xl p-4">
               <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
                 <h4 className="text-sm font-semibold text-foreground">Task Templates</h4>
@@ -382,7 +383,7 @@ export function TaskManager() {
                   </button>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </AnimatePresence>

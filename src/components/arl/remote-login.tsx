@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 interface PendingSession {
   id: string;
@@ -368,7 +369,7 @@ export function RemoteLogin() {
 
       {/* Assignment panel (shown when a session is selected) */}
       {selectedSession && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <Card className="gap-0 rounded-2xl p-5">
           <div className="mb-4 flex items-center gap-3">
             <Zap className="h-5 w-5 text-[var(--hub-red)]" />
             <div>
@@ -437,7 +438,7 @@ export function RemoteLogin() {
               Activating session...
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Active Sessions — Force Management */}

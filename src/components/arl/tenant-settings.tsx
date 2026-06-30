@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant-context";
 
@@ -236,8 +237,8 @@ export function TenantSettings() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="rounded-2xl border border-border bg-card p-5"
           >
+            <Card className="rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/20">
                 <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -271,6 +272,7 @@ export function TenantSettings() {
                 </Badge>
               ))}
             </div>
+            </Card>
           </motion.div>
 
           {/* Branding — editable identity + color fields */}
@@ -278,8 +280,8 @@ export function TenantSettings() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: "easeOut", delay: 0.05 }}
-            className="rounded-2xl border border-border bg-card p-5"
           >
+            <Card className="rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 dark:bg-purple-500/20">
                 <Palette className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -390,6 +392,7 @@ export function TenantSettings() {
                 </Badge>
               </div>
             </div>
+            </Card>
           </motion.div>
         </TabsContent>
 
@@ -399,8 +402,8 @@ export function TenantSettings() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="rounded-2xl border border-border bg-card p-5"
           >
+            <Card className="rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
                 <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -474,6 +477,7 @@ export function TenantSettings() {
                 />
               </div>
             </div>
+            </Card>
           </motion.div>
         </TabsContent>
 
@@ -483,8 +487,8 @@ export function TenantSettings() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="rounded-2xl border border-border bg-card p-5"
           >
+            <Card className="rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 dark:bg-sky-500/20">
                 <Globe className="h-5 w-5 text-sky-600 dark:text-sky-400" />
@@ -511,6 +515,7 @@ export function TenantSettings() {
             <p className="text-xs text-muted-foreground mt-2">
               Task due-soon and overdue notifications fire based on this timezone
             </p>
+            </Card>
           </motion.div>
         </TabsContent>
       </Tabs>
