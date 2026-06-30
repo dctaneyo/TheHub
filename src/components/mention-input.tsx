@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export interface Mentionable {
   id: string;
@@ -132,15 +133,17 @@ export function MentionInput({ value, onChange, onKeyDown, placeholder, classNam
                   onMouseDown={(e) => { e.preventDefault(); insertMention(m); }}
                   className={cn(
                     "flex w-full items-center gap-2 px-3 py-2 text-left transition-colors",
-                    i === selectedIdx ? "bg-[var(--hub-red)]/10" : "hover:bg-muted"
+                    i === selectedIdx ? "bg-[var(--hub-red)]/10" : "hover:bg-muted active:bg-muted"
                   )}
                 >
-                  <div className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
-                    m.type === "location" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400"
-                  )}>
-                    {m.name.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar size="sm">
+                    <AvatarFallback className={cn(
+                      "text-xs font-semibold",
+                      m.type === "location" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400"
+                    )}>
+                      {m.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">@{m.name}</p>
                     <p className="text-xs text-muted-foreground">{m.type === "location" ? `Store #${m.storeNumber}` : "ARL"}</p>

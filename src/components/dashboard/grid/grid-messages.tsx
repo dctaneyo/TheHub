@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MessageCircle, ChevronRight } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
+import { Avatar, AvatarFallback, AvatarBadge } from "@/components/ui/avatar";
 
 /**
  * Messages widget for the GRID dashboard only — shows a live preview list of
@@ -129,16 +130,16 @@ export function GridMessagesWidget({
                   unread && "bg-primary/5"
                 )}
               >
-                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {c.type === "global" ? (
-                    <MessageCircle className="h-5 w-5" />
-                  ) : (
-                    initials(c.name)
-                  )}
-                  {unread && (
-                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-destructive ring-2 ring-card" />
-                  )}
-                </div>
+                <Avatar className="size-11 shrink-0">
+                  <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                    {c.type === "global" ? (
+                      <MessageCircle className="h-5 w-5" />
+                    ) : (
+                      initials(c.name)
+                    )}
+                  </AvatarFallback>
+                  {unread && <AvatarBadge className="bg-destructive ring-card" />}
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span

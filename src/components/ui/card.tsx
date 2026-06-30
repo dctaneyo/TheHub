@@ -7,7 +7,12 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        // No shadow-sm — DESIGN.md §17 names the untouched shadcn
+        // `rounded-lg border bg-card text-card-foreground shadow-sm` combo
+        // as a recognizable tell; §3 reserves shadow for true overlays
+        // (modals, dropdowns), not resting cards. rounded-xl per the
+        // app's heavy-radius house style (also §3), not the stock rounded-lg.
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6",
         className
       )}
       {...props}

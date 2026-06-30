@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { LocalParticipant, RemoteParticipant } from "livekit-client";
 import type { ParticipantMetadata } from "./types";
 import { parseJsonColumn } from "@/lib/json-column";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ParticipantPanelProps {
   participants: (LocalParticipant | RemoteParticipant)[];
@@ -90,14 +91,16 @@ export function ParticipantPanel({
           const raised = isHandRaised(p, raisedHands);
           return (
             <div key={p.identity} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/50">
-              <div
-                className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white",
-                  isLocal ? "bg-red-600" : metadata.userType === "arl" ? "bg-blue-600" : "bg-slate-600"
-                )}
-              >
-                {p.name?.charAt(0) || "?"}
-              </div>
+              <Avatar>
+                <AvatarFallback
+                  className={cn(
+                    "text-xs font-semibold text-white",
+                    isLocal ? "bg-red-600" : metadata.userType === "arl" ? "bg-blue-600" : "bg-slate-600"
+                  )}
+                >
+                  {p.name?.charAt(0) || "?"}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-white font-semibold truncate block">
                   {participantNicknames.get(p.identity) || p.name} {isLocal && "(You)"}

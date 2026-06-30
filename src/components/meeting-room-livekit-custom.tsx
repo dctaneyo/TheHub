@@ -9,6 +9,7 @@ import {
   Loader2, Timer,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
@@ -369,9 +370,9 @@ function MeetingSetup({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center">
-              <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-3">
-                <span className="text-3xl font-semibold text-white">{userName.charAt(0).toUpperCase()}</span>
-              </div>
+              <Avatar className="size-20 mb-3">
+                <AvatarFallback className="bg-slate-700 text-3xl font-semibold text-white">{userName.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
               <span className="text-sm text-slate-400">{userName}</span>
               {!hasVideoCapability && (
                 <span className="text-xs text-slate-500 mt-1">Audio only</span>
@@ -1222,9 +1223,9 @@ function MeetingUI({
                         </div>
                       ) : (
                         <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                          <div className="h-20 w-20 rounded-full bg-slate-700 flex items-center justify-center mb-2">
-                            <span className="text-3xl font-semibold text-white">{user?.name?.charAt(0) || "?"}</span>
-                          </div>
+                          <Avatar className="size-20 mb-2">
+                            <AvatarFallback className="bg-slate-700 text-3xl font-semibold text-white">{user?.name?.charAt(0) || "?"}</AvatarFallback>
+                          </Avatar>
                           <span className="text-sm text-slate-400">{user?.name} (You)</span>
                         </div>
                       )}
@@ -1255,9 +1256,11 @@ function MeetingUI({
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800">
                           <div className="text-center">
-                            <div className="h-24 w-24 rounded-full bg-red-600 flex items-center justify-center mx-auto mb-3 text-white text-3xl font-semibold">
-                              {hostParticipant.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'H'}
-                            </div>
+                            <Avatar className="size-24 mx-auto mb-3">
+                              <AvatarFallback className="bg-red-600 text-3xl font-semibold text-white">
+                                {hostParticipant.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'H'}
+                              </AvatarFallback>
+                            </Avatar>
                             <p className="text-white font-semibold">{participantNicknames.get(hostParticipant.identity) || hostParticipant.name}</p>
                             <p className="text-slate-400 text-xs mt-1">Camera off</p>
                           </div>
@@ -1315,9 +1318,9 @@ function MeetingUI({
                             />
                           ) : (
                             <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center">
-                              <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center mb-1">
-                                <span className="text-sm font-semibold text-white">{p.name?.charAt(0) || "?"}</span>
-                              </div>
+                              <Avatar size="lg" className="mb-1">
+                                <AvatarFallback className="bg-slate-700 text-sm font-semibold text-white">{p.name?.charAt(0) || "?"}</AvatarFallback>
+                              </Avatar>
                               <span className="text-xs text-slate-400">{participantNicknames.get(p.identity) || p.name}</span>
                             </div>
                           )}
@@ -1360,14 +1363,16 @@ function MeetingUI({
                 const metadata = parseJsonColumn<ParticipantMetadata>(p.metadata, {});
                 return (
                   <div key={p.identity} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 shrink-0" style={{ scrollSnapAlign: 'start' }}>
-                    <div
-                      className={cn(
-                        "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white",
-                        p.isMicrophoneEnabled ? "bg-green-600" : "bg-slate-600"
-                      )}
-                    >
-                      {p.name?.charAt(0) || "?"}
-                    </div>
+                    <Avatar>
+                      <AvatarFallback
+                        className={cn(
+                          "text-xs font-semibold text-white",
+                          p.isMicrophoneEnabled ? "bg-green-600" : "bg-slate-600"
+                        )}
+                      >
+                        {p.name?.charAt(0) || "?"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
                       <span className="text-xs text-white font-semibold truncate block max-w-[100px]">{participantNicknames.get(p.identity) || p.name}</span>
                       <span className="text-xs text-slate-400">{p.isMicrophoneEnabled ? "Speaking" : "Muted"}</span>

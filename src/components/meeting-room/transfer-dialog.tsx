@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Participant, LocalParticipant } from "livekit-client";
 import type { ParticipantMetadata } from "./types";
 import { parseJsonColumn } from "@/lib/json-column";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface TransferDialogProps {
   participants: Participant[];
@@ -41,14 +42,16 @@ export function TransferDialog({ participants, localParticipant, onTransfer, onC
               <button
                 key={p.identity}
                 onClick={() => onTransfer(p.identity, p.name)}
-                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 transition-colors text-left"
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 active:bg-slate-700/50 transition-colors text-left"
               >
-                <div className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white",
-                  metadata.userType === "arl" ? "bg-blue-600" : metadata.userType === "guest" ? "bg-purple-600" : "bg-slate-600"
-                )}>
-                  {p.name?.charAt(0) || "?"}
-                </div>
+                <Avatar>
+                  <AvatarFallback className={cn(
+                    "text-xs font-semibold text-white",
+                    metadata.userType === "arl" ? "bg-blue-600" : metadata.userType === "guest" ? "bg-purple-600" : "bg-slate-600"
+                  )}>
+                    {p.name?.charAt(0) || "?"}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-white font-semibold truncate block">{p.name}</span>
                   <span className="text-xs text-slate-400 capitalize">{metadata.userType || "participant"}</span>
