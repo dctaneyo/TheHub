@@ -5,21 +5,21 @@ An all-in-one dashboard solution for franchise restaurant operations. Designed t
 ## Features
 
 - **PinPad Login** — 4-digit User ID + 4-digit PIN, auto-detects restaurant vs ARL
-- **Restaurant Dashboard** — Fullscreen, no-scroll layout with vertical task timeline, mini calendar (7-day lookahead), completed/missed tasks, and points tracker
+- **Restaurant Dashboard** — Fullscreen, no-scroll layout with vertical task timeline, mini calendar (7-day lookahead), and completed/missed tasks
 - **Task Management** — Create, edit, and assign recurring or one-time tasks/reminders/cleaning tasks to locations
 - **Instant Messaging** — Real-time chat between restaurants and ARLs with read receipts
 - **Notifications** — Audible alerts for due-soon and overdue tasks
-- **Gamification** — Points system with confetti animations on task completion
 - **Session Tracking** — ARLs can monitor which locations are online/offline
 - **Connection Indicator** — Auto-reconnect with visual status
 - **ARL Hub** — Responsive layout (desktop/tablet/mobile) for management functions
+- **Admin Console** (`nimda.*`) — platform-admin tenant/brand management, named admin accounts, cross-tenant audit log
 - **Custom Onscreen Keyboard** — iPadOS-inspired with emoji picker
-- **Forms Repository** — PDF upload and distribution (placeholder)
+- **Forms Repository** — PDF upload and distribution, with email delivery to selected recipients
 
 ## Tech Stack
 
 - **Next.js 16** (App Router) + TypeScript
-- **TailwindCSS v4** + shadcn/ui
+- **TailwindCSS v4** + **Ark UI** (`@ark-ui/react`) for component primitives — see [DESIGN.md](DESIGN.md) §15
 - **SQLite** via better-sqlite3 + Drizzle ORM
 - **Framer Motion** for animations
 - **bcryptjs** + **jsonwebtoken** for auth
@@ -41,9 +41,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Demo Credentials
 
+These are tenant-level ARL accounts logged into via the kiosk-style PinPad
+login — not the platform Admin Console, which has its own named
+email+password+PIN accounts (see "First Admin Console account" below).
+
 | Role | User ID | PIN |
 |------|---------|-----|
-| Admin | 000001 | 123456 |
+| ARL, admin role | 000001 | 123456 |
 | ARL (Jane) | 000002 | 123456 |
 | Downtown | 100001 | 111111 |
 | Westside | 100002 | 222222 |
@@ -105,19 +109,23 @@ src/
   app/
     login/          # PinPad login page
     dashboard/      # Restaurant fullscreen dashboard
+    messages/       # Full Messages route (thread list + active thread)
+    tasks/          # Full Tasks route (browse any day, filter)
     arl/            # ARL management hub
+    admin/          # Admin Console (nimda.* subdomain) — tenants, brands, team, audit log
     api/
       auth/         # Login, logout, session check
-      tasks/        # CRUD, today, complete, upcoming
+      tasks/        # CRUD, today, complete, upcoming, bulk
       locations/    # Location management + status
       messages/     # Messaging + read receipts
+      admin/        # Platform-admin routes (tenants, brands, system, data-management)
   components/
     dashboard/      # Timeline, mini-calendar, completed/missed, notifications, chat
     arl/            # Task manager, locations manager, messaging
-    ui/             # shadcn/ui components
-    confetti.tsx    # Gamification particle animations
+    admin/          # Admin Console components
+    keyboard/       # Custom onscreen keyboard (onscreen-keyboard.tsx)
+    ui/             # Ark UI-backed shared primitives (button, card, dialog, select, etc.)
     connection-status.tsx
-    onscreen-keyboard.tsx
   lib/
     db/             # Schema, database connection, seed script
     auth.ts         # JWT helpers

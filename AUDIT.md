@@ -225,11 +225,11 @@ Fresh `wc -l` across `src/components` and `src/app` (largest files):
 
 | File | Lines | Note vs. old audit |
 |------|-------|--------------------|
-| `src/components/meeting-room-livekit-custom.tsx` | 1515 | Moved out of `meeting-room/` subdir; was cited ~1501. Still the largest. |
-| `src/app/login/page.tsx` | 1271 | **Not in old audit** — now the 2nd largest. |
+| `src/components/meeting-room-livekit-custom.tsx` | 1521 | Moved out of `meeting-room/` subdir; was cited ~1501. Still the largest. |
+| `src/app/login/page.tsx` | 1182 | **Not in old audit** — now the 2nd largest. (2026-06-30: down from 1271, narrow JSX-only edits during the Avatar/Badge sweeps, not a structural decomposition.) |
 | `src/components/dashboard/restaurant-chat.tsx` | 1170 | Moved into `dashboard/`; was cited ~1112. |
 | `src/app/meeting/page.tsx` | 983 | Grew from cited ~837. |
-| `src/components/arl/user-management.tsx` | 924 | **Not in old audit.** |
+| `src/components/arl/user-management.tsx` | 899 | **Not in old audit.** (2026-06-30: down from 924, Card/Dialog adoption sweeps.) |
 | `src/components/keyboard/onscreen-keyboard.tsx` | 819 | **Not in old audit.** |
 | `src/app/dashboard/page.tsx` | 778 | **Shrank** from cited ~1393 (already partially decomposed). |
 | `src/components/arl/scheduled-meetings.tsx` | 672 | New entrant. |
@@ -294,6 +294,19 @@ declarations).**
 ---
 
 ## 6. Testing
+
+**2026-06-30 update: this section is stale, kept for history.** Current
+count is **33 test files / 304 tests** (`npx vitest run`), not 8+1. The
+specific gaps this section called out as untested are now covered:
+`task-utils.ts` (`task-utils.test.ts`, 25 tests, §10.6), the notification
+scheduler (`task-notification-scheduler.test.ts`, 6 tests, §10.6), and the
+data-management destructive routes (16 route test files, 112 tests, §10.7
+— see that section for the relocation history). Session activate/force
+coverage not re-verified. Re-run `find src -name "*.test.ts*" | wc -l`
+before trusting any count in this file going forward — it has drifted
+twice already.
+
+Original 2026-06-28 finding, preserved for context:
 
 Fresh count: **8 unit/integration test files** + **1 e2e spec** (up from
 the cited 4 + 1):
@@ -390,22 +403,30 @@ All six obsolete scripts are now removed. Status: **resolved.**
   Status: **resolved.**
 - **Focus trap on modals**: Ark-UI-backed `ui/dialog.tsx`
   (`@ark-ui/react/dialog` + Portal) provides real focus management.
-  Adopted by ~11 ARL components (arl-calendar, group-info-modal, messaging,
-  notification-tester, scheduled-meetings, task-form-modal, task-manager,
-  task-virtual-list, tenant-settings, user-management, plus arl/layout).
-  Status: **substantially improved for the ARL surface.**
+  **2026-06-30: all 8 of the 8 genuine modal-dialog candidates identified
+  this session are now converted** — `rename-dialog.tsx`,
+  `broadcast-launcher.tsx`, `broadcast-studio.tsx`, `task-form-modal.tsx`,
+  `meeting-analytics.tsx`, `forms-repository.tsx`, and both
+  `user-management.tsx` modals (create/edit + permissions editor) — on top
+  of the previously-adopted arl-calendar/group-info-modal/messaging/
+  notification-tester/scheduled-meetings/task-manager/task-virtual-list/
+  tenant-settings/arl/layout list. Status: **resolved for every genuine
+  ARL-console modal case.**
 - **Touch-compatible labels**: `IconTip` (`ui/icon-tip.tsx`) now wraps
   title-only icon controls; recent commits added it across
   forms-repository, locations-manager, messaging, user-management,
   scheduled-meetings, swipeable-convo-row.
-- **Remaining gap**: ~8 components under `src/components/arl/` still use
-  raw `fixed inset-0 z-[…]` overlay modals rather than the Ark `Dialog`
-  primitive, so focus-trap coverage is **partial, concentrated on the ARL
-  console**. The dashboard/chat/meeting surfaces have not been
-  systematically migrated — see CODE-STYLE-AUDIT.md §2c and APP-AUDIT.md
-  Finding 3 for the broader cross-app picture. Status: **(c) improved, but
-  coverage is partial — mostly ARL, not the operator/location-facing
-  dashboard.**
+- **Remaining gap, deliberately not Dialog**: `global-search.tsx`'s Cmd+K
+  command palette has its own custom escape/outside-click/arrow-key
+  navigation logic and was judged too risky to convert blind — flagged as
+  a real but deferred follow-up, not an oversight. `notification-panel.tsx`,
+  `emergency-overlay.tsx`, `remote-viewer.tsx`,
+  `notification-settings-panel.tsx` were already correctly excluded in the
+  prior pass (slide-in panels / fullscreen takeovers, not centered modals)
+  — see CODE-STYLE-AUDIT.md §2c. Status: **(c) resolved for the ARL
+  console; one known, deferred gap remains (`global-search.tsx`); the
+  dashboard/chat/meeting surfaces' own modal patterns were not
+  re-evaluated as part of this pass.**
 
 ### 9.2 STILL OPEN — Color contrast
 

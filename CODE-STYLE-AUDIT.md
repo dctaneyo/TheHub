@@ -9,6 +9,18 @@ where those documents cover visual and UX consistency, this one covers
 files because different sessions each picked their own convention, not
 because anyone decided to vary it.
 
+**2026-06-30 update — Section 2's Card/Dialog/Badge/Avatar findings are
+resolved, not historical numbers.** A later session ran adoption sweeps for
+all four, converting the genuine hand-rolled candidates (filtering out
+false positives — table rows, dropdown panels, confirm-dialog.tsx's own
+established pattern, etc. — see commit history on `main` for the per-file
+reasoning). Current import counts: Card 13 (was 0), Dialog 9 (was 1), Badge
+13 (was 2), Avatar 6 (was 0). §6a's migration-endpoint routes are also
+confirmed deleted. The rest of this document (animation, data fetching,
+socket handling, TypeScript, file organization) was not re-verified as part
+of that pass and may still reflect 2026-06-28 reality — re-run before
+trusting those sections.
+
 **This is a full re-run, not an edit of the prior version.** The codebase
 changed substantially after the initial audit was written (02:08 on
 2026-06-28): a separate session executing `ARL-AUDIT.md` touched ~41 files,
@@ -38,7 +50,7 @@ decisions; this audit covers the *implementation* of those decisions.
 | Dimension | Verdict | Drift severity |
 |---|---|---|
 | 1. Animation implementation | Improved — the `initial`-prop bug is **fixed**; two new dead-code artifacts | **Low** (was High) |
-| 2. Shared UI primitive adoption | Mixed — 4 new primitives well-adopted in ARL but ARL-only; Card/Avatar/Dialog/Badge still near-zero codebase-wide | **High** (was Critical) |
+| 2. Shared UI primitive adoption | **Resolved 2026-06-30** — Card/Avatar/Dialog/Badge adoption sweeps completed (see update note above); 4 new primitives' ARL-only gap not re-verified | ~~High~~ → Low (unverified for the ARL-only gap) |
 | 3. Data fetching & async state | Improved in ARL but still inconsistent — error feedback is now mixed *within* files; `AbortController` still 0/47 | **High** |
 | 4. Socket event handling | Clean — consistent and correct everywhere | None |
 | 5. TypeScript conventions | Mostly clean — `any` is the only drift; ARL fix introduced new `err: any` | Low |
@@ -235,7 +247,7 @@ it.** The primitives are correct and used well where they were born; the
 rest of the codebase still hand-rolls the same patterns. These should be
 promoted from "ARL primitives" to "app primitives."
 
-### 2b. Card — still zero adoption, ~68 hand-rolled instances
+### 2b. Card — RESOLVED 2026-06-30 (13 import sites, was 0)
 
 **0 files import the `Card` primitive.** ~68 card containers (matching
 `rounded-2xl/-xl border … bg-card`) are built from raw divs — **52 of them
@@ -246,7 +258,7 @@ session did not adopt `Card` even while heavily editing ARL files.
 **Verdict: Accidental drift.** Restyling the card surface still requires
 ~68 grep-and-replace operations.
 
-### 2c. Dialog — still 1 adoption (sharpened accessibility concern)
+### 2c. Dialog — RESOLVED 2026-06-30 (9 import sites, was 1)
 
 **1 file imports `Dialog`** (`arl/group-info-modal.tsx`). The Dialog
 primitive is now Ark-UI-backed (real `aria-modal`, focus trap, portal,
@@ -267,7 +279,7 @@ palettes): `notification-panel.tsx`, `arl/notification-settings-panel.tsx`,
 higher-impact because the primitive provides accessibility the hand-rolled
 overlays lack.
 
-### 2d. Badge — still 2 adoptions, ~57 hand-rolled chips
+### 2d. Badge — RESOLVED 2026-06-30 (13 import sites, was 2)
 
 **2 files import `Badge`** (`task-virtual-list.tsx`, `group-info-modal.tsx`).
 ~57 inline status chips / count badges use `rounded-full text-xs` (26 in
@@ -276,7 +288,7 @@ ARL, 31 elsewhere: `app-header`, `notification-bell`, meeting-room panels,
 
 **Verdict: Accidental drift.** Same root cause as Card.
 
-### 2e. Avatar — still zero adoption
+### 2e. Avatar — RESOLVED 2026-06-30 (6 import sites, was 0)
 
 **0 files import the `Avatar` primitive.** ~70 avatar-style
 `rounded-full … items-center justify-center` elements (initials badges,
@@ -507,12 +519,12 @@ catches are the clearest fix targets.
 98 route files. `getAuthSession()` used in 77 protected routes;
 `getSession()` directly in 7 session-management routes (deliberate — no
 tenant wrap needed); 8 public endpoints correctly skip auth;
-`health/route.ts` public; the **2 migration endpoints**
-(`migrate-users/route.ts`, `admin/migrate-4digit/route.ts`) still have no
-auth check — see AUDIT.md §3.1, now escalated to CRITICAL there.
+`health/route.ts` public. The **2 unprotected migration endpoints**
+(`migrate-users/route.ts`, `admin/migrate-4digit/route.ts`) flagged here and
+escalated to CRITICAL in AUDIT.md §3.1 are **RESOLVED as of 2026-06-30 —
+both routes deleted**, not just protected.
 
-**Verdict: Deliberate throughout**, except the 2 unprotected migration
-endpoints (should be protected or removed).
+**Verdict: Deliberate throughout.**
 
 ### 6b. Response helper adoption — same three holdouts
 
@@ -575,17 +587,20 @@ removed from this list. §1b.)*
 
 ### High: accidental drift with a clear canonical answer
 
-2. **Card primitive: 0 adoption** — ~68 hand-rolled substitutes (52 in
-   ARL). (§2b)
-3. **Dialog primitive: 1 adoption** — ~10 true modal dialogs built with raw
-   `fixed inset-0 z-50`, now bypassing the Ark-UI-backed primitive's real
-   focus management / `aria-modal` / escape handling. (§2c)
+2. ~~**Card primitive: 0 adoption**~~ — **RESOLVED 2026-06-30**, 13 import
+   sites. (§2b)
+3. ~~**Dialog primitive: 1 adoption**~~ — **RESOLVED 2026-06-30**, 9 import
+   sites (the deliberately-excluded command-palette case, `global-search.tsx`,
+   is still raw — correctly, per this doc's own original judgment that it's
+   not a Dialog case). (§2c)
 4. **Error handling: feedback now inconsistent *within* files** — ARL fixes
    added error state on mutation paths but left list-fetch catches
    console-only; 62 empty catches and 25 ARL console-only catches remain.
-   (§3b)
-5. **Avatar primitive: 0 adoption** — ~70 hand-rolled substitutes. (§2e)
-6. **Badge primitive: 2 adoptions** — ~57 hand-rolled substitutes. (§2d)
+   (§3b) — not re-verified 2026-06-30.
+5. ~~**Avatar primitive: 0 adoption**~~ — **RESOLVED 2026-06-30**, 6 import
+   sites. (§2e)
+6. ~~**Badge primitive: 2 adoptions**~~ — **RESOLVED 2026-06-30**, 13 import
+   sites. (§2d)
 7. **New ARL primitives are ARL-only** — `StatusDot`, `EmptyState`,
    `ModalCloseButton`, `DestructiveIconButton` are well-adopted inside
    `src/components/arl/` but the same patterns are still hand-rolled across
@@ -618,10 +633,8 @@ removed from this list. §1b.)*
     codebase-wide or delete. (§3a)
 15. **`isLoading` vs `loading`** — one-file naming drift in
     `group-info-modal.tsx`. (§3e)
-16. **2 unprotected migration endpoints** — protect or remove
-    `migrate-users` and `admin/migrate-4digit`. (§6a) See AUDIT.md §3.1 —
-    this is now flagged there as the single highest-priority security
-    finding in the codebase, not just a style nit.
+16. ~~**2 unprotected migration endpoints**~~ — **RESOLVED**, both routes
+    deleted (not just protected). (§6a)
 
 ---
 
