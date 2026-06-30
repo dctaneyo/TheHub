@@ -1,5 +1,12 @@
 # Dashboard Audit — 2026-06-26
 
+**Status as of 2026-06-30: 4 of 5 findings resolved**, fixed and
+verified (`tsc`/lint/tests clean) — see DESIGN.md's Changelog for the
+corresponding entries. Finding 5 (documenting the categorical purple
+color) is a deliberate, explicit deferral, not an oversight — see its
+entry below. Kept below as a historical record, not an active punch
+list; nothing here needs action beyond that one deferred item.
+
 Audit of the live `/dashboard` surface against [DESIGN.md](DESIGN.md),
 using `npm run design:scan` plus manual review. No code changes were
 made as part of this audit — findings only, to plan the dashboard
@@ -56,9 +63,9 @@ verdict: "STRONG AI-default look"
 | `claude-default-look` | 4 | **All false positives** — fires on `bg-amber-*`, which here is legitimate semantic status/priority color, not the cream+serif tell. No serif font anywhere in the app. |
 | `emoji-as-icons` | 1 | **Minor** — a ✅ emoji inside dynamic toast/notification *text* (`page.tsx:118`), not a UI icon control. Same category as the `funny-messages.ts` false positive from the earlier audit. Low priority. |
 
-## Genuine findings
+## Genuine findings (see status note above)
 
-### 1. Hover-only feedback — the largest finding, and the scanner can't see it
+### 1. ~~Hover-only feedback~~ — **Fixed 2026-06-26**
 
 `devibe-scan.py` has no rule for this because it's specific to this
 product, not a general AI-slop pattern — but DESIGN.md Section 6 is
@@ -81,9 +88,9 @@ This is the single highest-value, lowest-risk fix available — same
 mechanical pattern as the login page sweep (move the hover treatment
 to `active:`, or drop it if there's no real press-state equivalent).
 
-### 2. Radius inconsistency
+### 2. ~~Radius inconsistency~~ — **Fixed 2026-06-30**
 
-Distribution across the 25 live files:
+Distribution across the 25 live files (at time of audit):
 
 ```
 rounded-full   92
@@ -100,7 +107,17 @@ tying them together — this is exactly the Do Not Use entry's
 house style adopted for login. The dashboard needs the same
 container/control/circle pass the login page already got.
 
-### 3. Arbitrary indigo, recurring across multiple files
+**Resolution:** audited every instance role by role rather than by
+raw distribution — most of the six scales turned out to already be a
+coherent system once grouped by role (container vs. control vs.
+circle), not unconsidered drift. Fixed the handful of real cross-file
+mismatches (icon-avatar boxes, a size badge, a remove button, a
+mini-calendar cell, three nav/close buttons, one toggle button) and
+documented the resulting tiers in DESIGN.md Section 3 so it's a
+checkable rule going forward, not an implicit pattern someone has to
+re-derive.
+
+### 3. ~~Arbitrary indigo, recurring across multiple files~~ — **Fixed 2026-06-26**
 
 Indigo shows up repeatedly with no stated semantic meaning, the same
 pattern already fixed once on the login page (the old confirm-dialog
@@ -123,7 +140,7 @@ variant, the loading spinners):
   two-state toggle. Amber is a real, established color; indigo is
   filling the "other" slot by default, not by decision.
 
-### 4. Decorative-leaning blur on small floating panels
+### 4. ~~Decorative-leaning blur on small floating panels~~ — **Fixed 2026-06-30**
 
 Most `backdrop-blur` usage on this surface is structural and correct
 (full-screen modal scrims at `bg-background/80 backdrop-blur-sm`
@@ -142,7 +159,17 @@ structural and worth a second look:
   paired with the indigo tint above — worth a deliberate look rather
   than inheriting both by default.
 
-### 5. Undocumented categorical color system
+**Resolution:** both removed. The two `grid-dashboard.tsx` dropdowns
+were already on a near-opaque `bg-card/95` so the blur was doing
+almost nothing visually, and the established `Menu`/`Select`
+dropdowns elsewhere use solid fills with no blur at all — switched to
+match. `mirror-toolbar.tsx` turned out to be stacking blur with a
+pulsing glow-ring *and* a shadow on its collapsed pill — close to the
+literal Do Not Use example for "stacking decorative effects with no
+individual justification" — blur dropped from both states, fill
+bumped to fully solid now that nothing needs blending into.
+
+### 5. Undocumented categorical color system — **deliberately deferred, not resolved**
 
 `restaurant-chat.tsx` and `forms-viewer.tsx` use purple as one entry in
 a real categorical system (conversation/department type — location =
@@ -176,7 +203,17 @@ choices.
    indigo by default throughout, not scattered arbitrary picks.
    Replaced with a deliberate `--hub-teal` token; documented in
    DESIGN.md Section 2's claimed-semantic-colors table.
-4. **Radius pass** — apply the same container/control/circle system
-   from login once the redesign reaches the dashboard.
-5. **Document the categorical color system** once the above is
-   settled, so it stops being implicit.
+4. ~~Decorative-blur cleanup~~ — **done 2026-06-30** — removed
+   `backdrop-blur` from `grid-dashboard.tsx`'s two dropdowns and
+   `mirror-toolbar.tsx`'s collapsed/expanded states (see DESIGN.md
+   Changelog).
+5. ~~Radius pass~~ — **done 2026-06-30** — applied the
+   container/control/circle system and documented it in DESIGN.md
+   Section 3 (see DESIGN.md Changelog).
+6. **Document the categorical color system** — explicitly deferred
+   2026-06-30, not scheduled. Purple turned out to carry several
+   unrelated meanings app-wide (identity/role accent, decorative
+   per-section accent, unrelated data categories), not just the one
+   dashboard use this finding originally flagged — resolving it
+   needs a real taste/policy decision, not a mechanical doc update,
+   and was explicitly punted rather than guessed at.

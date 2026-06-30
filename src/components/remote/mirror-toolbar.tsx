@@ -216,7 +216,7 @@ export function MirrorToolbar() {
             {/* Collapse */}
             <button
               onClick={() => setCollapsed(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground active:bg-accent active:text-foreground transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground active:bg-accent active:text-foreground transition-colors"
               title="Collapse toolbar"
             >
               <Minimize2 className="h-3.5 w-3.5" />

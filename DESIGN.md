@@ -572,6 +572,28 @@ fact. Reset to uniform corners when a widget is expanded, since the
 resize handle isn't shown in that state. Don't extend this asymmetry to
 modals, buttons, or other surfaces that don't have a reason for it.
 
+**The "near-uniform" radius is several tiers, not one value — tied to
+role, not to taste.** "Heavy, near-uniform" doesn't mean a single
+literal radius everywhere; it means each *role* has one settled value,
+reused everywhere that role appears, rather than a new pick every time
+a component is built. In practice:
+
+| Role | Radius | Examples |
+|---|---|---|
+| Primary/largest containers (the main card on a page, a full takeover modal) | `rounded-3xl` | Login card, `emergency-overlay.tsx`, a dashboard widget's outer frame, `grid-mobile-stack.tsx` rows |
+| Secondary containers (floating dropdowns, popovers, in-page modals) | `rounded-2xl` | `Dialog`, `Menu`/`Select` content, `grid-dashboard.tsx`'s header popovers, `connection-status.tsx`'s session panel |
+| Icon-avatar boxes and input fields (≥ `h-8`) | `rounded-xl` | Every colored icon-chip next to a title (forms, chat, widgets), `Input`/`Textarea` |
+| Small icon-only buttons (`h-6`–`h-10`, no icon-avatar fill) | `rounded-lg` | `DestructiveIconButton`, `ModalCloseButton`, every close/back/dismiss icon button app-wide |
+| Small inline category/type tags (colored text chip, not the shared `Badge`) | `rounded-md` | `arl-cursor-overlay.tsx`'s presence tag, a form's category color chip |
+| True circles — avatars, status dots, pill buttons/chips, date-number badges | `rounded-full` | `Avatar`, `StatusDot`, tab pills, a calendar's "today" badge |
+
+The check for a violation isn't "is this radius different from that
+one" — different roles are *supposed* to differ — it's "do two
+elements playing the *same* role disagree." A close-icon button that's
+`rounded-lg` in one file and `rounded-xl` in another with no stated
+reason is the violation; a modal being `rounded-2xl` while its own
+icon-avatar chip is `rounded-xl` is the system working as designed.
+
 ---
 
 ## 4. Layout
@@ -1662,3 +1684,20 @@ after it's been copied across twenty is not.
   neither had a single importer anywhere in `src`, and neither was
   exported from a barrel file or referenced by a test — both were
   built but never adopted by the components they were meant for.
+- 2026-06-30 — closed out DASHBOARD-AUDIT.md's last open finding (the
+  full "container/control/circle" radius pass). Audited every
+  `rounded-*` instance across all 25 live dashboard files role by
+  role rather than just by raw distribution count — the six-scale
+  spread the audit's scanner counted turned out to already be a
+  mostly-coherent system once grouped by role (see the new radius
+  table above), not unconsidered drift. Found and fixed the three
+  real cross-file mismatches that remained: `grid-calendar.tsx`'s
+  month-nav chevron and close buttons were `rounded-full` while the
+  identical-role buttons on ARL's own calendar (`arl-calendar.tsx`)
+  are `rounded-lg`; `grid-tasks.tsx`'s popover close button was
+  `rounded-full p-1` instead of the same `rounded-lg` every other
+  close/dismiss icon button in the app uses; `mirror-toolbar.tsx`'s
+  collapse button was `rounded-xl` while its own sibling toggle
+  buttons' icon-only counterparts elsewhere are `rounded-lg`. Documented
+  the resulting tiers in Section 3 so future additions have something
+  to check against instead of re-deriving the system from scratch.

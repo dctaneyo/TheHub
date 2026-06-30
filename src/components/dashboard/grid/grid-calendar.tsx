@@ -195,7 +195,7 @@ export function CalendarModal({
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -205,7 +205,7 @@ export function CalendarModal({
         <button
           type="button"
           onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -213,7 +213,7 @@ export function CalendarModal({
           <button
             type="button"
             onClick={onClose}
-            className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted active:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>

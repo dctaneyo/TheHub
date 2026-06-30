@@ -263,7 +263,7 @@ export function GridTasksWidget({
                 <button
                   type="button"
                   onClick={() => setMissedOpen(false)}
-                  className="rounded-full p-1 text-muted-foreground transition-colors active:text-foreground"
+                  className="rounded-lg p-1 text-muted-foreground transition-colors active:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
