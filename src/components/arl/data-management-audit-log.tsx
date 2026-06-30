@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { Card } from "@/components/ui/card";
 
 interface AuditLogEntry {
   id: string;
@@ -45,7 +46,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
       transition={{ duration: 0.2, ease: "easeOut" }}
       className="overflow-hidden"
     >
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <Card className="gap-0 rounded-2xl p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
@@ -118,7 +119,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </motion.div>
   );
 }

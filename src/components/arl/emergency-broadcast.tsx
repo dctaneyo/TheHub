@@ -8,6 +8,7 @@ import { StatusDot } from "@/components/ui/status-dot";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -293,7 +294,7 @@ export function EmergencyBroadcast() {
       </AnimatePresence>
 
       {/* Compose new message */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+      <Card className="gap-0 rounded-2xl p-5 space-y-4">
         <label className="block text-xs font-semibold text-muted-foreground">
           {activeMessage ? "Send New Broadcast (replaces current)" : "Compose Emergency Message"}
         </label>
@@ -390,7 +391,7 @@ export function EmergencyBroadcast() {
             {sending ? "Sending..." : "Broadcast"}
           </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Warning */}
       <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
@@ -402,7 +403,7 @@ export function EmergencyBroadcast() {
 
       {/* Broadcast History */}
       {history.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <Card className="gap-0 rounded-2xl py-0 overflow-hidden">
           <button
             onClick={() => setShowHistory((v) => !v)}
             className="flex w-full items-center justify-between px-5 py-4 active:bg-muted/50"
@@ -453,7 +454,7 @@ export function EmergencyBroadcast() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </Card>
       )}
       {actionError && (
         <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-600 dark:text-red-400">

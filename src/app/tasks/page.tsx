@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { AppHeader } from "@/components/app-header";
 import { taskApplies, fmtTaskTime, type CalTask } from "@/lib/task-calendar";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 /**
  * Full Tasks — the dashboard widget's modal already covers "today's
@@ -215,9 +216,9 @@ export default function TasksPage() {
               const missed = selectedIsPast && !done && !isInformation;
 
               return (
-                <div
+                <Card
                   key={task.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4"
+                  className="gap-3 rounded-2xl p-4"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <Badge className="gap-1.5 bg-muted capitalize text-muted-foreground">
@@ -280,7 +281,7 @@ export default function TasksPage() {
                       </span>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

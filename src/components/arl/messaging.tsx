@@ -16,6 +16,7 @@ import {
 } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -77,7 +78,7 @@ export function Messaging() {
   // New group modal
   if (showNewGroup) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+      <Card className="gap-0 rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => setShowNewGroup(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
             <ArrowLeft className="h-4 w-4" />
@@ -137,7 +138,7 @@ export function Messaging() {
         >
           {creatingGroup ? "Creating..." : "Create Group"}
         </Button>
-      </div>
+      </Card>
     );
   }
 
@@ -148,7 +149,7 @@ export function Messaging() {
       (p.storeNumber && p.storeNumber.includes(directSearch))
     );
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+      <Card className="gap-0 rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => { setShowNewDirect(false); setDirectSearch(""); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted">
             <ArrowLeft className="h-4 w-4" />
@@ -194,14 +195,14 @@ export function Messaging() {
             <p className="py-6 text-center text-xs text-muted-foreground">No results</p>
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 
   // Conversation list
   if (!activeConvo) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+      <Card className="gap-0 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Messages</h3>
@@ -242,7 +243,7 @@ export function Messaging() {
             <EmptyState icon={MessageCircle} title="No conversations yet" className="h-40 py-0" />
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 

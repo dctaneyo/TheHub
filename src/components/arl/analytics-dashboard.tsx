@@ -10,6 +10,7 @@ import {
   Calendar, Download, RefreshCw, Filter, ChevronDown, Users, Target,
 } from "@/lib/icons";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
@@ -45,7 +46,7 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <Card className="gap-0 rounded-2xl p-4">
       <div className="flex items-center justify-between">
         <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", colorMap[color])}>
           <Icon className="h-5 w-5" />
@@ -62,16 +63,16 @@ function StatCard({ label, value, icon: Icon, trend, trendLabel, color = "red" }
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
       {trendLabel && <p className="mt-1 text-xs text-muted-foreground">{trendLabel}</p>}
-    </div>
+    </Card>
   );
 }
 
 function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-5", className)}>
+    <Card className={cn("gap-0 rounded-2xl p-5", className)}>
       <h3 className="mb-4 text-sm font-semibold text-foreground">{title}</h3>
       {children}
-    </div>
+    </Card>
   );
 }
 

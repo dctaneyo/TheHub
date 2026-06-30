@@ -24,6 +24,7 @@ import {
   isToday,
 } from "date-fns";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { IconTip } from "@/components/ui/icon-tip";
 import { cn } from "@/lib/utils";
 import { taskAppliesToDate } from "@/lib/task-utils";
@@ -134,7 +135,7 @@ export function ArlCalendar() {
 
       <div className="flex flex-1 gap-4 overflow-hidden flex-col md:flex-row">
         {/* Calendar grid */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card min-w-0">
+        <Card className="flex flex-1 flex-col gap-0 overflow-hidden rounded-2xl py-0 min-w-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <IconTip label="Previous month">
               <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground active:bg-muted" title="Previous month"><ChevronLeft className="h-4 w-4" /></button>
@@ -190,10 +191,10 @@ export function ArlCalendar() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Day detail */}
-        <div className="w-full md:w-[260px] shrink-0 flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
+        <Card className="w-full md:w-[260px] shrink-0 flex flex-col gap-0 overflow-hidden rounded-2xl py-0">
           <div className="border-b border-border px-4 py-3">
             <h3 className="text-sm font-semibold text-foreground">{selectedDate ? format(selectedDate, "EEE, MMM d") : "Select a day"}</h3>
             <p className="text-xs text-muted-foreground">{selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}</p>
@@ -225,7 +226,7 @@ export function ArlCalendar() {
               );
             })}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
