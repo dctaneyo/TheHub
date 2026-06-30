@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Upload,
   FileText,
@@ -22,6 +22,7 @@ import { IconTip } from "@/components/ui/icon-tip";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -412,29 +413,15 @@ export function FormsRepository() {
       )}
 
       {/* Email modal */}
-      <AnimatePresence>
-        {emailForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Email Form</h3>
-                  <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm.title}</p>
-                </div>
-                <ModalCloseButton onClick={() => setEmailForm(null)} />
-              </div>
+      <Dialog open={!!emailForm} onOpenChange={(d) => !d.open && setEmailForm(null)}>
+        <DialogContent className="max-w-md" showCloseButton={false}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Email Form</h3>
+              <p className="text-xs text-muted-foreground truncate max-w-[260px]">{emailForm?.title}</p>
+            </div>
+            <ModalCloseButton onClick={() => setEmailForm(null)} />
+          </div>
 
               {emailSuccess ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -498,10 +485,8 @@ export function FormsRepository() {
                   </Button>
                 </>
               )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog {...dialog} />
     </div>
   );

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Video, Play, X, Copy, Check, Lock, Globe } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useSocket } from "@/lib/socket-context";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
@@ -101,14 +101,10 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
 
   // Setup screen
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="bg-card rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
-      >
-        {/* Header */}
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-lg overflow-hidden p-0" showCloseButton={false}>
+        {/* Header — custom red treatment, not the generic Dialog header,
+            matching broadcast-launcher.tsx's "going live" moment styling. */}
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Video className="h-6 w-6" />
@@ -117,7 +113,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               <p className="text-sm text-red-100">Create a live video meeting</p>
             </div>
           </div>
-          <button onClick={() => onClose()} className="p-2 active:bg-white/10 rounded-lg transition-colors">
+          <button onClick={() => onClose()} className="p-2 hover:bg-white/10 active:bg-white/10 rounded-lg transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -180,7 +176,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
             Start Meeting
           </Button>
         </div>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

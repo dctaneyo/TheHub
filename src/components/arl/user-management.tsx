@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Plus, Edit2, Trash2, UserCheck, UserX,
   Store, Users, Shield, Loader2, Eye, EyeOff, ShieldCheck, Settings2, MapPin, MoreVertical,
@@ -15,6 +15,7 @@ import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { IconTip } from "@/components/ui/icon-tip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { parseJsonColumn } from "@/lib/json-column";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
@@ -565,23 +566,9 @@ export function UserManagement() {
       </div>
 
       {/* Create/Edit modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
-            >
-              <div className="mb-5 flex items-center justify-between">
+      <Dialog open={showForm} onOpenChange={(d) => !d.open && setShowForm(false)}>
+        <DialogContent className="max-w-md" showCloseButton={false}>
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-foreground">
                   {editTarget ? "Edit" : "New"} {tab === "arls" ? "ARL" : "Location"}
                 </h3>
@@ -708,32 +695,16 @@ export function UserManagement() {
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (editTarget ? "Save Changes" : "Create")}
                 </Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
 
       {/* Permissions editor modal */}
-      <AnimatePresence>
-        {permissionsTarget && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-card shadow-xl"
-            >
+      <Dialog open={!!permissionsTarget} onOpenChange={(d) => !d.open && setPermissionsTarget(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0" showCloseButton={false}>
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Permissions</h3>
-                  <p className="text-xs text-muted-foreground">{permissionsTarget.name} · ID {permissionsTarget.userId}</p>
+                  <p className="text-xs text-muted-foreground">{permissionsTarget?.name} · ID {permissionsTarget?.userId}</p>
                 </div>
                 <ModalCloseButton onClick={() => setPermissionsTarget(null)} />
               </div>
@@ -920,10 +891,8 @@ export function UserManagement() {
                   Save
                 </Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog {...dialog} />
     </div>
   );
