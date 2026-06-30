@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AppHeader } from "@/components/app-header";
 import { taskApplies, fmtTaskTime, type CalTask } from "@/lib/task-calendar";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Full Tasks — the dashboard widget's modal already covers "today's
@@ -189,9 +190,9 @@ export default function TasksPage() {
             </span>
           )}
           {selectedIsPast && (
-            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            <Badge className="bg-muted text-muted-foreground">
               Past — read only
-            </span>
+            </Badge>
           )}
         </div>
       </div>
@@ -219,19 +220,19 @@ export default function TasksPage() {
                   className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold capitalize text-muted-foreground">
+                    <Badge className="gap-1.5 bg-muted capitalize text-muted-foreground">
                       <Icon className="h-3.5 w-3.5" />
                       {task.type}
-                    </span>
+                    </Badge>
                     {!isInformation && (
-                      <span
+                      <Badge
                         className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+                          "capitalize",
                           PRIORITY_BADGE[task.priority] ?? PRIORITY_BADGE.normal
                         )}
                       >
                         {task.priority}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 

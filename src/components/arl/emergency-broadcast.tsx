@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/status-dot";
 import { ConfirmDialog, useConfirmDialog } from "@/components/confirm-dialog";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
@@ -244,7 +245,7 @@ export function EmergencyBroadcast() {
                         {viewed.length} / {total} viewed
                       </span>
                       {viewed.length === total && total > 0 && (
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">All seen</span>
+                        <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">All seen</Badge>
                       )}
                     </div>
                     {showViewers ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -409,7 +410,7 @@ export function EmergencyBroadcast() {
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">Broadcast History</span>
-              <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">{history.length}</span>
+              <Badge className="bg-muted text-muted-foreground">{history.length}</Badge>
             </div>
             {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </button>
@@ -430,7 +431,7 @@ export function EmergencyBroadcast() {
                       <div key={msg.id} className="px-5 py-3 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm text-foreground whitespace-pre-wrap flex-1">{msg.message}</p>
-                          <span key={msg.id} className="inline-block rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
+                          <Badge key={msg.id} className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Archived</Badge>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>By {msg.sentByName}</span>

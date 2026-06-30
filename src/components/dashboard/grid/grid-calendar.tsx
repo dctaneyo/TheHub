@@ -12,6 +12,7 @@ import {
   subMonths,
 } from "date-fns";
 import { Calendar, ChevronLeft, ChevronRight, X, Info } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   taskApplies,
@@ -291,9 +292,9 @@ export function CalendarModal({
           <h3 className="mb-3 shrink-0 text-lg font-semibold text-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {isToday(selectedDate) && (
-              <span className="ml-2 rounded-full bg-[var(--hub-red)]/15 px-2 py-1 text-xs font-semibold text-[var(--hub-red)]">
+              <Badge className="ml-2 bg-[var(--hub-red)]/15 text-[var(--hub-red)]">
                 Today
-              </span>
+              </Badge>
             )}
           </h3>
 

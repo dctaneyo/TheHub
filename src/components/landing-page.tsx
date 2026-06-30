@@ -2,6 +2,7 @@ import {
   MessageCircle, ClipboardList, CalendarDays, Users, Store,
   Video, BarChart3, Shield, Zap, ArrowRight, ChevronRight,
 } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
 
 const features = [
   { icon: ClipboardList, title: "Tasks & Reminders", desc: "Assign, track, and complete tasks across all locations with gamification" },
@@ -48,10 +49,10 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 mb-6">
+        <Badge className="gap-2 border border-red-200 bg-red-50 px-4 py-2 text-red-700 mb-6">
           <Zap className="h-3.5 w-3.5" />
           Multi-brand franchise management
-        </div>
+        </Badge>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-[1.1]">
           Your restaurants.<br />
           <span className="text-red-600">One dashboard.</span>

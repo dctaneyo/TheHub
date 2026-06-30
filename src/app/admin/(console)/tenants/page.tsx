@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, CheckCircle2, AlertCircle } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Tenant {
   id: string;
@@ -103,9 +104,9 @@ export default function TenantsListPage() {
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       {t.brands.map((b) => (
-                        <span key={b.name} className="rounded-full px-2 py-0.5 text-xs" style={{ backgroundColor: (b.primaryColor || "#666") + "22", color: b.primaryColor || undefined }}>
+                        <Badge key={b.name} style={{ backgroundColor: (b.primaryColor || "#666") + "22", color: b.primaryColor || undefined }}>
                           {b.name}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   </td>

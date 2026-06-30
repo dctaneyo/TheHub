@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Store, Users, CheckCircle2, Loader2, RefreshCw, Zap, LogOut, ArrowRightLeft, Wifi, AlertTriangle, Bell, Hand } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
@@ -275,9 +276,9 @@ export function RemoteLogin() {
         <h3 className="mb-3 text-sm font-semibold text-foreground">
           Waiting Sessions
           {pendingSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <Badge className="ml-2 bg-amber-500/20 text-amber-700 dark:text-amber-300">
               {pendingSessions.length}
-            </span>
+            </Badge>
           )}
         </h3>
 
@@ -444,9 +445,9 @@ export function RemoteLogin() {
         <h3 className="mb-3 text-sm font-semibold text-foreground">
           Active Sessions
           {activeSessions.length > 0 && (
-            <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            <Badge className="ml-2 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
               {activeSessions.length}
-            </span>
+            </Badge>
           )}
         </h3>
 

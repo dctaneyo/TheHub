@@ -11,6 +11,7 @@ import {
   Wifi,
   WifiOff,
 } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth-context";
@@ -283,7 +284,7 @@ export function RemoteViewer({ userRole }: RemoteViewerProps) {
                   <div className="flex items-center gap-1">
                     <p className="text-sm font-semibold text-foreground truncate">{t.name}</p>
                     {t.userKind === "arl" && (
-                      <span className="shrink-0 rounded-full bg-purple-100 dark:bg-purple-950 px-2 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">ARL</span>
+                      <Badge className="shrink-0 bg-purple-100 uppercase text-purple-700 dark:bg-purple-950 dark:text-purple-300">ARL</Badge>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -391,9 +392,9 @@ function MirrorModal({
             <span className="shrink-0 text-xs text-white/40">Store #{target.storeNumber}</span>
           )}
           {!isConnecting && !isEnded && (
-            <span className="shrink-0 rounded-full bg-white/10 px-2 py-1 text-xs font-semibold text-white/60">
+            <Badge className="shrink-0 bg-white/10 text-white/60">
               Mirror
-            </span>
+            </Badge>
           )}
         </div>
 

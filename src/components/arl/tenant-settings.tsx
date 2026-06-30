@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant-context";
 
@@ -262,12 +263,12 @@ export function TenantSettings() {
             </div>
             <div className="mt-3 flex flex-wrap gap-1">
               {tenant.features.map((f: string) => (
-                <span
+                <Badge
                   key={f}
-                  className="rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
+                  className="bg-emerald-500/10 capitalize text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
                 >
                   {f}
-                </span>
+                </Badge>
               ))}
             </div>
           </motion.div>
@@ -369,24 +370,24 @@ export function TenantSettings() {
                 <span className="font-semibold text-foreground">{appTitle || `${name || "Your"} Hub`}</span>
               </div>
               <div className="flex gap-2">
-                <div
-                  className="h-7 rounded-full px-3 flex items-center text-white text-xs font-semibold"
+                <Badge
+                  className="h-7 px-3 text-white"
                   style={{ backgroundColor: primaryColor }}
                 >
                   Primary
-                </div>
-                <div
-                  className="h-7 rounded-full px-3 flex items-center text-xs font-semibold border"
+                </Badge>
+                <Badge
+                  className="h-7 border px-3"
                   style={{ borderColor: primaryColor, color: primaryColor }}
                 >
                   Secondary
-                </div>
-                <div
-                  className="h-7 rounded-full px-3 flex items-center text-xs font-semibold"
+                </Badge>
+                <Badge
+                  className="h-7 px-3"
                   style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
                 >
                   Accent
-                </div>
+                </Badge>
               </div>
             </div>
           </motion.div>

@@ -18,6 +18,7 @@ import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { parseJsonColumn } from "@/lib/json-column";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PERMISSION_GROUPS, ALL_PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -404,9 +405,9 @@ export function UserManagement() {
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-foreground">{item.name}</p>
                                 {isArl && a.role === "admin" && (
-                                  <span className="flex w-fit items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                  <Badge className="w-fit gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                     <ShieldCheck className="h-3 w-3" /> Admin
-                                  </span>
+                                  </Badge>
                                 )}
                               </div>
                             </div>
@@ -420,9 +421,9 @@ export function UserManagement() {
                           </td>
                           <td className="px-4 py-3">
                             {item.isActive ? (
-                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
+                              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Active</Badge>
                             ) : (
-                              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Inactive</span>
+                              <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -500,15 +501,15 @@ export function UserManagement() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
                         {isArl && a.role === "admin" && (
-                          <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          <Badge className="gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400">
                             <ShieldCheck className="h-3 w-3" /> Admin
-                          </span>
+                          </Badge>
                         )}
                         {isArl && a.role !== "admin" && (
-                          <span className="rounded-full bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">ARL</span>
+                          <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400">ARL</Badge>
                         )}
                         {!item.isActive && (
-                          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Inactive</span>
+                          <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">

@@ -22,6 +22,7 @@ import { IconTip } from "@/components/ui/icon-tip";
 import { DestructiveIconButton } from "@/components/ui/destructive-icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -301,9 +302,9 @@ export function FormsRepository() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                              <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
+                              <Badge className={cn("shrink-0", categoryColor(form.category))}>
                                 {categoryLabel(form.category)}
-                              </span>
+                              </Badge>
                             </div>
                             {form.description && (
                               <p className="truncate text-xs text-muted-foreground">{form.description}</p>
@@ -369,9 +370,9 @@ export function FormsRepository() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                    <span className={cn("shrink-0 rounded-full px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
+                    <Badge className={cn("shrink-0", categoryColor(form.category))}>
                       {categoryLabel(form.category)}
-                    </span>
+                    </Badge>
                   </div>
                   {form.description && (
                     <p className="mt-1 truncate text-xs text-muted-foreground">{form.description}</p>
