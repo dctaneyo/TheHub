@@ -105,6 +105,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         className="bg-card rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
       >
         {/* Header */}
@@ -141,7 +142,7 @@ export function BroadcastStudio({ isOpen, onClose, initialTitle, initialMeetingC
               <span className="text-xs text-muted-foreground font-semibold">Share with guests to join</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2 text-center">
+              <div className="flex-1 bg-card border border-border rounded-xl px-4 py-2 text-center">
                 <span className="font-mono text-2xl font-semibold text-red-600 tracking-[0.3em]">{meetingCode}</span>
               </div>
               <button onClick={copyCode}

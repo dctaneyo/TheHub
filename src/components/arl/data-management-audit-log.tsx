@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ScrollText, RefreshCw, Search } from "@/lib/icons";
+import { ScrollText, RefreshCw } from "@/lib/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -42,6 +42,7 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       className="overflow-hidden"
     >
       <div className="rounded-2xl border border-border bg-card p-6">
@@ -73,99 +74,49 @@ export function DataManagementAuditLog({ logs, loading, onClose }: Props) {
           </div>
         ) : logs.length === 0 ? (
           <EmptyState title="No audit log entries found" className="py-8" />
+        ) : filteredLogs.length === 0 ? (
+          <p className="py-8 text-center text-xs text-muted-foreground">No entries match your filter.</p>
         ) : (
-          <>
-            {/* Table — desktop (md:+). A literal audit log is a textbook
-                Section 11 case: same-shaped records (actor / action / details /
-                timestamp / IP) that a user scans to find a specific event.
-                Columns let the eye jump to "action" or "when" directly without
-                reading each blob from the left margin. */}
-            <div className="hidden md:block rounded-xl border border-border overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 z-10 bg-card">
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="px-3 py-2.5 text-left font-semibold">Actor</th>
-                      <th className="px-3 py-2.5 text-left font-semibold">Action</th>
-                      <th className="px-3 py-2.5 text-left font-semibold">Details</th>
-                      <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap">When</th>
-                      <th className="px-3 py-2.5 text-left font-semibold">IP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
-                          No entries match your filter.
-                        </td>
-                      </tr>
-                    ) : filteredLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-border last:border-b-0 active:bg-muted/30 transition-colors">
-                        <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "shrink-0 h-5 w-5 flex items-center justify-center rounded-md font-semibold",
-                              log.user_type === "arl"
-                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            )}>
-                              {log.user_type === "arl" ? "A" : "L"}
-                            </span>
-                            <span className="font-semibold text-foreground">{log.user_name}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span className="rounded bg-muted px-2 py-1 font-mono text-muted-foreground whitespace-nowrap">
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="max-w-56 px-3 py-2.5">
-                          <span className="block truncate text-muted-foreground">
-                            {log.details || <span className="text-muted-foreground/50">—</span>}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2.5 text-muted-foreground">
-                          {log.ip_address && log.ip_address !== "unknown" ? log.ip_address : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Cards — mobile fallback, same data stacked */}
-            <div className="md:hidden space-y-1 max-h-96 overflow-y-auto">
-              {filteredLogs.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">No entries match your filter.</p>
-              ) : filteredLogs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-2 text-xs">
-                  <div className={cn(
-                    "mt-1 shrink-0 h-5 w-5 flex items-center justify-center rounded-md font-semibold",
-                    log.user_type === "arl"
-                      ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  )}>
-                    {log.user_type === "arl" ? "A" : "L"}
+          /* Timeline — "what happened when" is a timeline before it's a
+             sorted table (Section 11): a flat list/table technically works,
+             but ordering by time is the actual shape of this data, so the
+             layout should show that directly rather than asking the eye to
+             infer order from a column. Same shape at every width — unlike a
+             wide table, a timeline doesn't need a separate mobile fallback. */
+          <div className="max-h-96 overflow-y-auto">
+            {filteredLogs.map((log, i) => (
+              <div key={log.id} className="relative flex gap-3">
+                <div className="relative flex w-5 shrink-0 flex-col items-center">
+                  <span
+                    className={cn(
+                      "z-10 mt-1.5 h-2.5 w-2.5 rounded-full",
+                      log.user_type === "arl"
+                        ? "bg-purple-500 dark:bg-purple-400"
+                        : "bg-emerald-500 dark:bg-emerald-400"
+                    )}
+                  />
+                  {i < filteredLogs.length - 1 && (
+                    <span className="absolute top-4 bottom-0 w-px bg-border" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 pb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-foreground">{log.user_name}</span>
+                    <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                      {log.action}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-foreground">{log.user_name}</span>
-                      <span className="rounded bg-muted px-2 py-1 font-mono text-muted-foreground">{log.action}</span>
-                      {log.details && <span className="text-muted-foreground truncate">{log.details}</span>}
-                    </div>
-                    <div className="mt-1 flex items-center gap-3 text-muted-foreground">
-                      <span>{new Date(log.created_at).toLocaleString()}</span>
-                      {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
-                    </div>
+                  {log.details && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{log.details}</p>
+                  )}
+                  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{new Date(log.created_at).toLocaleString()}</span>
+                    {log.ip_address && log.ip_address !== "unknown" && <span>IP: {log.ip_address}</span>}
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </motion.div>

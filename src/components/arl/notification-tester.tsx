@@ -188,6 +188,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
             <div className="pt-4 space-y-4">
@@ -233,7 +234,7 @@ export function NotificationTester({ className }: NotificationTesterProps) {
                       key={type.id}
                       onClick={() => sendNotification(type.id, type.payload)}
                       disabled={!selectedLocation || isSending}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg border border-border active:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-xl border border-border active:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="text-lg">{type.icon}</span>
                       <div className="flex-1 min-w-0">

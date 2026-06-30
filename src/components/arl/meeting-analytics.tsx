@@ -321,7 +321,7 @@ export function MeetingAnalyticsDashboard() {
         {meetings.length > 0 && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors"
           >
             <Trash2 className="h-4 w-4" />
             Delete All
@@ -332,7 +332,7 @@ export function MeetingAnalyticsDashboard() {
       {/* Delete confirmation dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card rounded-xl shadow-xl p-6 max-w-md mx-4 border border-border">
+          <div className="bg-card rounded-2xl shadow-xl p-6 max-w-md mx-4 border border-border">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-12 w-12 rounded-full bg-red-600/20 flex items-center justify-center">
                 <Trash2 className="h-6 w-6 text-red-400" />
@@ -354,14 +354,14 @@ export function MeetingAnalyticsDashboard() {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-muted active:bg-muted/80 text-foreground text-sm font-semibold transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-xl bg-muted active:bg-muted/80 text-foreground text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAll}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 rounded-xl bg-red-600 active:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>

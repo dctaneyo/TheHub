@@ -159,6 +159,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
             <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -206,7 +207,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                       key={String(opt.value)}
                       onClick={() => setExpiryOption(opt.value)}
                       className={cn(
-                        "rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
+                        "rounded-xl px-2 py-2 text-xs font-semibold transition-colors",
                         expiryOption === opt.value
                           ? "bg-[var(--hub-red)] text-white"
                           : "bg-muted text-muted-foreground active:bg-muted/80"
@@ -261,6 +262,7 @@ export function TickerPush({ showHeader = true }: { showHeader?: boolean }) {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
                 className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
               >
                 <span className="text-xl shrink-0">{msg.icon}</span>

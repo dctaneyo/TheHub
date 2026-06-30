@@ -129,6 +129,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
         >
           {/* Header */}

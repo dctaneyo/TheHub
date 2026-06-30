@@ -182,6 +182,7 @@ export function OverviewDashboard() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="shrink-0 flex items-center gap-3 rounded-2xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/50 px-5 py-4"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900">
@@ -203,7 +204,7 @@ export function OverviewDashboard() {
             key={card.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ duration: 0.2, ease: "easeOut", delay: i * 0.05 }}
             className={cn("rounded-2xl bg-card p-5", card.severity === "bad" ? "border-2" : "border", card.borderColor)}
           >
             <div className="flex items-start justify-between">

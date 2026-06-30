@@ -417,7 +417,7 @@ export function GroupInfoModal({
 
               {/* Add Members UI */}
               {showAddMember && (
-                <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                <div className="mb-4 p-4 border rounded-xl bg-muted/50">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold">Add Members</h4>
                     <Button
@@ -476,7 +476,7 @@ export function GroupInfoModal({
                 {groupInfo.members.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border"
+                    className="flex items-center gap-3 p-3 rounded-xl border"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex-1">

@@ -32,7 +32,7 @@ interface TaskVirtualListProps {
   onToggleSelect?: (id: string) => void;
 }
 
-const GRID_COLS = "minmax(0,1fr) 220px auto";
+const GRID_COLS = "minmax(0,1fr) 220px 72px auto";
 
 export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden, selectable, selectedIds, onToggleSelect }: TaskVirtualListProps) {
   const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
@@ -67,6 +67,7 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
         {selectable && <div className="px-3 py-2.5" />}
         <div className="px-4 py-2.5 font-semibold">Task</div>
         <div className="px-4 py-2.5 font-semibold">Schedule</div>
+        <div className="px-4 py-2.5 font-semibold text-right">Points</div>
         <div className="px-4 py-2.5 font-semibold text-right">Actions</div>
       </div>
 
@@ -150,15 +151,17 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                         {formatTime12(task.dueTime)}
                       </span>
                     )}
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      {task.points} pts
-                    </span>
                     <span>
                       {task.locationId
                         ? locations.find((l) => l.id === task.locationId)?.name || "Specific location"
                         : "All locations"}
                     </span>
+                  </div>
+                  {/* Points column — its own slot, right-aligned, so values
+                      are scannable/comparable across rows (Section 11)
+                      instead of sitting inline among unrelated facts. */}
+                  <div className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                    {task.points}
                   </div>
                   {/* Actions column */}
                   <div className="px-4 py-2.5 flex items-center gap-1">

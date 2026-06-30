@@ -76,7 +76,7 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Record Counts</p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {Object.entries(report.counts).map(([key, val]) => (
-              <div key={key} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+              <div key={key} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
                 <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
                 <span className="text-sm font-semibold text-foreground">{val.toLocaleString()}</span>
               </div>
@@ -117,7 +117,7 @@ export function DataManagementHealth({ report, integrity, duplicates }: Props) {
           </summary>
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {report.database.tables.map((t) => (
-              <div key={t.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+              <div key={t.name} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
                 <span className="text-xs text-muted-foreground truncate mr-2">{t.name}</span>
                 <span className="text-xs font-semibold text-foreground">{t.records.toLocaleString()}</span>
               </div>

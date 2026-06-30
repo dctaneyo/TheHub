@@ -190,6 +190,7 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="rounded-2xl border-2 border-[var(--hub-red)] bg-[var(--hub-red)]/10 p-5 space-y-3"
           >
             <div className="flex items-start justify-between gap-3">
@@ -254,7 +255,7 @@ export function EmergencyBroadcast() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                         className="overflow-hidden"
                       >
                         <div className="mt-2 grid grid-cols-2 gap-1">
@@ -281,6 +282,7 @@ export function EmergencyBroadcast() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="flex items-center gap-3 rounded-2xl border border-border bg-card overflow-hidden px-5 py-4"
           >
             <StatusDot color="muted" />
@@ -417,7 +419,7 @@ export function EmergencyBroadcast() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
                 className="overflow-hidden"
               >
                 <div className="divide-y divide-border border-t border-border">
@@ -428,7 +430,7 @@ export function EmergencyBroadcast() {
                       <div key={msg.id} className="px-5 py-3 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm text-foreground whitespace-pre-wrap flex-1">{msg.message}</p>
-                          <span key={msg.id} className="inline-block rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
+                          <span key={msg.id} className="inline-block rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Archived</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>By {msg.sentByName}</span>

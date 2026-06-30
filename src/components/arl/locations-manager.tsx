@@ -177,7 +177,7 @@ export function LocationsManager() {
         onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
         placeholder="New 4-digit PIN"
         autoFocus
-        className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-amber-400/50"
+        className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-amber-400/50"
       />
       <button
         onClick={() => handlePinReset(loc.id)}

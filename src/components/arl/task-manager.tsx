@@ -318,14 +318,14 @@ export function TaskManager() {
           <div className="flex-1" />
           <button
             onClick={handleBulkDelete}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-destructive transition-colors active:bg-destructive/10"
+            className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-destructive transition-colors active:bg-destructive/10"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
           </button>
           <button
             onClick={deselectAll}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
+            className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
           >
             <X className="h-3.5 w-3.5" />
             Deselect all
@@ -350,7 +350,7 @@ export function TaskManager() {
                     key={cat}
                     onClick={() => setTemplateCategory(cat)}
                     className={cn(
-                      "rounded-lg px-3 py-1 text-xs font-semibold transition-colors",
+                      "rounded-xl px-3 py-1 text-xs font-semibold transition-colors",
                       templateCategory === cat
                         ? "bg-[var(--hub-red)] text-white"
                         : "bg-muted text-muted-foreground active:bg-muted/80"

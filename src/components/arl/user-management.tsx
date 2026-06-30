@@ -404,7 +404,7 @@ export function UserManagement() {
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-foreground">{item.name}</p>
                                 {isArl && a.role === "admin" && (
-                                  <span className="flex w-fit items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                  <span className="flex w-fit items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                                     <ShieldCheck className="h-3 w-3" /> Admin
                                   </span>
                                 )}
@@ -420,9 +420,9 @@ export function UserManagement() {
                           </td>
                           <td className="px-4 py-3">
                             {item.isActive ? (
-                              <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
                             ) : (
-                              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Inactive</span>
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Inactive</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -484,7 +484,7 @@ export function UserManagement() {
                     key={item.id}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
+                    transition={{ duration: 0.2, ease: "easeOut", delay: i * 0.04 }}
                     className={cn(
                       "flex items-center gap-3 rounded-2xl border border-border bg-card p-4",
                       !item.isActive && "opacity-50"
@@ -500,15 +500,15 @@ export function UserManagement() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
                         {isArl && a.role === "admin" && (
-                          <span className="flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                             <ShieldCheck className="h-3 w-3" /> Admin
                           </span>
                         )}
                         {isArl && a.role !== "admin" && (
-                          <span className="rounded-md bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">ARL</span>
+                          <span className="rounded-full bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">ARL</span>
                         )}
                         {!item.isActive && (
-                          <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Inactive</span>
+                          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Inactive</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -570,12 +570,14 @@ export function UserManagement() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
             >
               <div className="mb-5 flex items-center justify-between">
@@ -717,12 +719,14 @@ export function UserManagement() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-card shadow-xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -761,7 +765,7 @@ export function UserManagement() {
                             type="button"
                             onClick={() => applyRoleTemplate(role.id)}
                             className={cn(
-                              "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
+                              "rounded-xl border px-2 py-2 text-xs font-semibold transition-colors",
                               editRoleId === role.id
                                 ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
                                 : "border-border text-muted-foreground active:bg-muted"
@@ -775,7 +779,7 @@ export function UserManagement() {
                           type="button"
                           onClick={() => setEditRoleId(null)}
                           className={cn(
-                            "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
+                            "rounded-xl border px-2 py-2 text-xs font-semibold transition-colors",
                             editRoleId === null
                               ? "border-purple-500 bg-purple-500 text-white"
                               : "border-border text-muted-foreground active:bg-muted"

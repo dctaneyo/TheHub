@@ -101,6 +101,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="fixed inset-0 z-[140] bg-black/30"
           onClick={() => setSidebarOpen(false)}
         />
@@ -141,7 +142,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
                 });
                 window.location.href = "/admin/tenants";
               }}
-              className="rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 active:bg-white/40 transition-colors"
+              className="rounded-xl bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 active:bg-white/40 transition-colors"
             >
               End impersonation
             </button>
@@ -307,7 +308,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Route loading skeleton — shows during navigation transitions */}
             {displayView !== activeView && (
               <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-[2px] flex flex-col p-6 gap-4 animate-in fade-in duration-150">
-                <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+                <div className="h-8 w-48 rounded-full bg-muted animate-pulse" />
                 <div className="flex gap-4 flex-1">
                   <div className="flex-1 flex flex-col gap-3">
                     <div className="h-24 rounded-xl bg-muted animate-pulse" />
@@ -404,6 +405,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
               "fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] rounded-2xl border px-5 py-3 shadow-xl text-sm font-semibold",
               notifToast.type === "success"
@@ -423,6 +425,7 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
           >
             <div className="bg-card rounded-2xl shadow-xl border border-red-200 dark:border-red-900 p-5 max-w-sm w-full">

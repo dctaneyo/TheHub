@@ -485,6 +485,7 @@ export function Messaging() {
                           initial={{ opacity: 0, scale: 0.8, y: 5 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
                           className="mt-1 flex gap-1 rounded-full bg-card shadow-lg border border-border px-2 py-2"
                         >
                           {reactions.map((emoji) => (
@@ -511,7 +512,7 @@ export function Messaging() {
           if (typingNames.length === 0) return null;
           return (
             <div className="px-2 pb-1">
-              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
+              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }} className="flex items-center gap-2">
                 <div className="flex gap-1">
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
                   <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />

@@ -283,6 +283,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
@@ -492,7 +493,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           {m.is_active && (
                             <button
                               onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
                             >
                               <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                             </button>
@@ -500,7 +501,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                           <button
                             onClick={() => handleToggleActive(m.id, m.is_active)}
                             className={cn(
-                              "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
+                              "px-2 py-1 rounded-xl text-xs font-semibold transition-colors",
                               m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 active:bg-emerald-500/20" : "bg-muted text-muted-foreground active:bg-muted/80"
                             )}
                           >
@@ -547,6 +548,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className={cn(
                     "bg-card rounded-xl border p-4 transition-colors",
                     m.is_active ? "border-border" : "border-border opacity-60"
@@ -621,7 +623,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         {m.is_active && (
                           <button
                             onClick={() => handleStartMeetingDirect(m.title, m.meeting_code, m.host_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold bg-red-600 text-white active:bg-red-700 transition-colors"
                           >
                             <Play className="h-3 w-3" />{user?.id === m.host_id ? "Start" : "Join"}
                           </button>
@@ -629,7 +631,7 @@ export function ScheduledMeetings({ onStartMeeting, onStartOnDemand }: Scheduled
                         <button
                           onClick={() => handleToggleActive(m.id, m.is_active)}
                           className={cn(
-                            "px-2 py-1 rounded-md text-xs font-semibold transition-colors",
+                            "px-2 py-1 rounded-xl text-xs font-semibold transition-colors",
                             m.is_active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 active:bg-emerald-500/20" : "bg-muted text-muted-foreground active:bg-muted/80"
                           )}
                         >

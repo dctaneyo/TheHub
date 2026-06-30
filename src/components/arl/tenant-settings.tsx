@@ -234,6 +234,7 @@ export function TenantSettings() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="rounded-2xl border border-border bg-card p-5"
           >
             <div className="flex items-center gap-3 mb-4">
@@ -263,7 +264,7 @@ export function TenantSettings() {
               {tenant.features.map((f: string) => (
                 <span
                   key={f}
-                  className="rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
+                  className="rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 capitalize"
                 >
                   {f}
                 </span>
@@ -275,7 +276,7 @@ export function TenantSettings() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+            transition={{ duration: 0.2, ease: "easeOut", delay: 0.05 }}
             className="rounded-2xl border border-border bg-card p-5"
           >
             <div className="flex items-center gap-3 mb-5">
@@ -320,7 +321,7 @@ export function TenantSettings() {
                   type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="h-10 w-14 rounded-lg cursor-pointer bg-transparent border-0"
+                  className="h-10 w-14 rounded-xl cursor-pointer bg-transparent border-0"
                 />
                 <Input
                   value={primaryColor}
@@ -369,19 +370,19 @@ export function TenantSettings() {
               </div>
               <div className="flex gap-2">
                 <div
-                  className="h-7 rounded-lg px-3 flex items-center text-white text-xs font-semibold"
+                  className="h-7 rounded-full px-3 flex items-center text-white text-xs font-semibold"
                   style={{ backgroundColor: primaryColor }}
                 >
                   Primary
                 </div>
                 <div
-                  className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold border"
+                  className="h-7 rounded-full px-3 flex items-center text-xs font-semibold border"
                   style={{ borderColor: primaryColor, color: primaryColor }}
                 >
                   Secondary
                 </div>
                 <div
-                  className="h-7 rounded-lg px-3 flex items-center text-xs font-semibold"
+                  className="h-7 rounded-full px-3 flex items-center text-xs font-semibold"
                   style={{ backgroundColor: primaryColor + "15", color: primaryColor }}
                 >
                   Accent
@@ -396,6 +397,7 @@ export function TenantSettings() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="rounded-2xl border border-border bg-card p-5"
           >
             <div className="flex items-center gap-3 mb-5">
@@ -479,6 +481,7 @@ export function TenantSettings() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="rounded-2xl border border-border bg-card p-5"
           >
             <div className="flex items-center gap-3 mb-5">

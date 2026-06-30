@@ -143,6 +143,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
       onClick={onClose}
     >
@@ -151,6 +152,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto"
         role="dialog"
@@ -262,7 +264,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => setIsAllDay(false)}
                     className={cn(
-                      "flex-1 rounded-lg py-2 transition-colors",
+                      "flex-1 rounded-xl py-2 transition-colors",
                       !isAllDay ? "bg-card text-foreground" : "text-muted-foreground"
                     )}
                   >
@@ -272,7 +274,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => setIsAllDay(true)}
                     className={cn(
-                      "flex-1 rounded-lg py-2 transition-colors",
+                      "flex-1 rounded-xl py-2 transition-colors",
                       isAllDay ? "bg-card text-foreground" : "text-muted-foreground"
                     )}
                   >
@@ -356,7 +358,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       <button
                         onClick={() => setBiweeklyStart("this")}
                         className={cn(
-                          "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          "flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
                           biweeklyStart === "this"
                             ? "bg-[var(--hub-red)] text-white"
                             : "bg-muted text-muted-foreground"
@@ -367,7 +369,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                       <button
                         onClick={() => setBiweeklyStart("next")}
                         className={cn(
-                          "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          "flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
                           biweeklyStart === "next"
                             ? "bg-[var(--hub-red)] text-white"
                             : "bg-muted text-muted-foreground"
@@ -501,7 +503,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
                     type="button"
                     onClick={() => opt.set(!opt.value)}
                     className={cn(
-                      "rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
+                      "rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
                       opt.value
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
                         : "border-border bg-card text-muted-foreground"

@@ -43,8 +43,8 @@ heavy-radius house style, mount transitions). The real signal is below.
 |---|---|---|
 | `ai-purple` | 41 | **Mixed.** Real arbitrary indigo in the remote-view feature, meeting analytics, and data-management (see Finding 3). The rest is categorical: conversation-type in `messaging`, the 8-series chart palette in `analytics-dashboard`, avatar-hash colors in `group-info-modal`, and the tenant brand-color *picker* (offering Purple/Indigo as tenant choices isn't the app defaulting to them). |
 | `claude-default-look` | 20 | **All false positives.** Fires on `bg-amber-*`/`bg-orange-*`, which here is legitimate semantic priority/status color. No serif, no cream background anywhere. |
-| `rounded-everything` | 88 | **Partly real.** ARL leans on `rounded-2xl` for cards fairly consistently, but `rounded-xl`/`rounded-lg`/`rounded-full` mix in controls without the documented container/control/circle logic the login page got. Same "needs the radius pass" conclusion as the dashboard audit, lower severity than the interaction findings. |
-| `fade-in-animations` | 41 | **Mostly mount transitions, not scroll/hover decoration.** Worth standardizing durations (Section 9), not deleting. |
+| `rounded-everything` | 88 → 97 | **Fixed 2026-06-29 — the count going up is expected, not a regression.** The real problem was the *inconsistency* (`rounded-xl`/`rounded-lg`/`rounded-md` mixed for the same role), not the heaviness — DESIGN.md §3 explicitly wants heavy, near-uniform radius. Established the actual convention from precedent already in the codebase (icon-square buttons → `rounded-lg`, matching `DestructiveIconButton`/`ModalCloseButton`; badges/pills → `rounded-full`, matching `Badge`; cards/modals → `rounded-2xl`; text-bearing controls → `rounded-xl`) and applied it consistently, including fixing the shared `Button`/`Input`/`Textarea`/`Select` primitives off shadcn's stock `rounded-md` default. The scanner can't distinguish deliberate-and-consistent from accidental, so more files correctly using heavy radius reads as *more* hits, not fewer — same false-positive shape the table already called out below. |
+| `fade-in-animations` | 41 | **Fixed 2026-06-29.** Most instances had no explicit duration at all (silently inheriting Framer Motion's 300ms default) rather than genuinely *varying* durations. Added `transition={{ duration: 0.2, ease: "easeOut" }}` (Section 9's ~150-200ms target, upper bound) to every mount-fade across ARL, merging with existing `delay`s. Spring-based entrances (toasts, the self-ping ripple, the remote-control slide-in panel) were left alone — different, deliberate motion language, not a duration inconsistency. Scanner count is unchanged for the same reason as `rounded-everything` above: it flags the presence of `initial={{ opacity` regardless of whether a standardized transition follows. |
 | `emoji-as-icons` | 2 | **Minor.** `ticker-push.tsx:17` is a user-selectable message-icon picker (content the ARL pushes to dashboards, not UI chrome); `notification-settings-panel.tsx:43` is a `✅` in notification sample data. Neither is an emoji standing in for a real UI icon. |
 | `purple-blue-gradient` | 0 | None. The only gradients are red→orange (Finding 6) and grey skeleton shimmers (not a tell). |
 | `hero-three-cards` | 1 | **False positive** — `scheduled-meetings.tsx:303` is a 3-col meeting list grid, not a hero-then-cards skeleton. |
@@ -340,15 +340,22 @@ layout/sidebar drawer (`shadow-xl`), all modals (`shadow-xl`), messaging
 receipt + reaction popovers (`shadow-lg`), analytics filter popover
 (`shadow-lg`), layout toasts (`shadow-xl`).
 
-### 11. Minor: Data-drives-UI polish (Section 11)
+### 11. ~~Minor: Data-drives-UI polish (Section 11)~~ — **Fixed 2026-06-29**
 
-- Numbers not right-aligned: `task-virtual-list.tsx:101` (points),
-  `forms-repository.tsx:278` (file size).
-- `data-management-audit-log.tsx` renders time-ordered audit data as a flat
-  list; Section 11 prefers a timeline for "what happened when."
-- `data-management.tsx:334` uses `text-xs sm:text-sm` on body copy —
-  shrinking below the 14px body floor *specifically on mobile*, the exact
-  failure mode Section 1's font-floor guards against.
+- ~~Numbers not right-aligned~~ — `task-virtual-list.tsx` points moved into
+  their own right-aligned column (was inline among unrelated Schedule
+  facts, with no fixed position to align against); `forms-repository.tsx`'s
+  Size column is now `text-right` on both header and cells.
+- ~~`data-management-audit-log.tsx` renders time-ordered audit data as a
+  flat list~~ — rebuilt as a vertical timeline (connector line + per-entry
+  marker, colored by actor type) instead of the table it had been converted
+  to in an earlier pass; "what happened when" is a timeline before it's a
+  sorted table per Section 11, and a timeline doesn't need a separate
+  mobile fallback the way the wide table did.
+- ~~`data-management.tsx:334` uses `text-xs sm:text-sm`~~ — moot:
+  `src/components/arl/data-management.tsx` had no remaining references
+  (its route now redirects to `/arl`, having been superseded by the Admin
+  Console's `/admin/tenants/[id]/data-management`) and was deleted.
 
 ## Non-findings worth noting
 
@@ -390,9 +397,19 @@ first, design decisions last:
    shadows; all remaining are true overlays at two standardized depths.
 7. ~~**Decorative gradients + silent-failure flow fixes** (Findings 6,
    9)~~ — **done 2026-06-28.**
+8. ~~**Section 11 data-polish minor items** (Finding 11)~~ — **done
+   2026-06-29.**
+9. ~~**Radius system pass**~~ — **done 2026-06-29.** Eliminated
+   `rounded-md`/inconsistent-`rounded-lg` drift across ARL and fixed the
+   shared `Button`/`Input`/`Textarea`/`Select` primitives, which had been
+   using shadcn's stock `rounded-md` rather than this app's heavy-radius
+   house style — the highest-leverage single change, since it's inherited
+   by every future consumer app-wide, not just ARL.
+10. ~~**Fade-in duration standardization**~~ — **done 2026-06-29.**
+    Explicit `duration: 0.2, ease: "easeOut"` on every mount-fade
+    (Section 9), replacing Framer Motion's implicit 300ms default.
 
-All nine numbered findings plus the elevation pass are now resolved.
-Remaining open items are the broader design decisions noted in the
-scanner table (the radius system / `rounded-everything`, fade-in
-duration standardization) and the Section 11 data-polish minor items
-(Finding 11) — these need a real design pass, not a find-and-replace.
+All eleven numbered findings, the elevation pass, the radius pass, and the
+animation-duration pass are now resolved. `scheduled-meetings.tsx`'s
+desktop-table/mobile-card conversion was verified intact (no changes
+needed). No further open items from this audit.

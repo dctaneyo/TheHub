@@ -259,7 +259,7 @@ export function FormsRepository() {
             key={cat}
             onClick={() => setFilterCat(cat)}
             className={cn(
-              "rounded-lg px-3 py-1 text-xs font-semibold capitalize transition-colors",
+              "rounded-xl px-3 py-1 text-xs font-semibold capitalize transition-colors",
               filterCat === cat
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground active:bg-muted/80"
@@ -285,7 +285,7 @@ export function FormsRepository() {
                   <tr className="border-b border-border text-xs text-muted-foreground">
                     <th className="px-4 py-2.5 text-left font-semibold">Form</th>
                     <th className="px-4 py-2.5 text-left font-semibold">File</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Size</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">Size</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Uploaded</th>
                     <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
                   </tr>
@@ -301,7 +301,7 @@ export function FormsRepository() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                              <span className={cn("shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
+                              <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold", categoryColor(form.category))}>
                                 {categoryLabel(form.category)}
                               </span>
                             </div>
@@ -314,7 +314,7 @@ export function FormsRepository() {
                       <td className="max-w-40 px-4 py-3">
                         <span className="block truncate text-xs text-muted-foreground">{form.fileName}</span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">
                         {formatBytes(form.fileSize)}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -360,7 +360,7 @@ export function FormsRepository() {
                 key={form.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
+                transition={{ duration: 0.2, ease: "easeOut", delay: i * 0.04 }}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-[var(--hub-red)]">
@@ -369,7 +369,7 @@ export function FormsRepository() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold text-foreground">{form.title}</p>
-                    <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
+                    <span className={cn("shrink-0 rounded-full px-2 py-1 text-xs font-semibold", categoryColor(form.category))}>
                       {categoryLabel(form.category)}
                     </span>
                   </div>
@@ -417,12 +417,14 @@ export function FormsRepository() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="w-full max-w-md rounded-3xl bg-card p-6 shadow-xl"
             >
               <div className="mb-4 flex items-center justify-between">

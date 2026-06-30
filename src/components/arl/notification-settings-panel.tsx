@@ -463,6 +463,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={onClose}
             className="fixed inset-0 bg-black/50 z-40"
           />
@@ -498,7 +499,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                     key={mode}
                     onClick={() => handleQuickSet(mode)}
                     className={cn(
-                      "px-3 py-2 text-sm rounded-lg transition-colors capitalize",
+                      "px-3 py-2 text-sm rounded-xl transition-colors capitalize",
                       activePreset === mode
                         ? "bg-blue-600 active:bg-blue-700 text-white"
                         : "bg-gray-200 dark:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600"
@@ -519,7 +520,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
                     className={cn(
-                      "px-3 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
+                      "px-3 py-2 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap",
                       activeCategory === category.id
                         ? "bg-blue-600 text-white"
                         : "text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
@@ -543,7 +544,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
                 onClick={savePreferences}
                 disabled={loading}
                 className={cn(
-                  "w-full py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2",
+                  "w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2",
                   loading
                     ? "bg-gray-400 cursor-not-allowed"
                     : saved
@@ -584,7 +585,7 @@ interface ToggleFieldProps {
 
 function ToggleField({ label, description, checked, onChange, icon, isCritical }: ToggleFieldProps) {
   return (
-    <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg active:bg-gray-100 dark:active:bg-gray-750 transition-colors">
+    <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl active:bg-gray-100 dark:active:bg-gray-750 transition-colors">
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon && <span className="text-xl">{icon}</span>}
