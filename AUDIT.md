@@ -430,26 +430,33 @@ contrast remain un-audited. Status: **still open as described.**
 
 6. ~~Add tests for `task-utils.ts` recurrence math~~ — done (25 tests,
    `src/lib/task-utils.test.ts`). ~~`session/activate`/`force`~~ — done
-   (13 + 19 tests). The notification scheduler
-   (`task-notification-scheduler.ts`) remains untested — it manages
-   `setTimeout` timer state directly rather than pure functions, so it
-   needs a different testing approach (fake timers) than the other two.
+   (13 + 19 tests). ~~The notification scheduler
+   (`task-notification-scheduler.ts`)~~ — done (6 tests using fake timers,
+   `src/lib/task-notification-scheduler.test.ts`, covering the
+   process-restart catch-up sweep).
 7. ~~Add safety tests for `data-management/*` destructive routes.~~ —
-   done for all 10 destructive routes (drop-tables, purge-messages,
-   purge-notifications, purge-old-tasks, purge-broadcast-data,
-   purge-conversations, clear-sessions, duplicate-check,
-   archive-old-data, bulk-tasks — 110 tests total). Every one of the 9
-   affected by §3.3a has a regression test asserting its queries carry
-   the tenant-scoping filter; `drop-tables` has 6 tests specifically
-   proving its table-name allowlist can't be bypassed (core table names,
-   a SQL-injection-shaped string). Writing the first of these
-   (`purge-messages`) is what surfaced §3.3a in the first place.
-   `orphaned-cleanup` and `vacuum` weren't given dedicated test files —
-   both are deliberately tenant-agnostic (see §3.3a) with no
-   tenant-scoping property to regression-test, and their business logic
-   is simple enough that the auth/permission/rate-limit gating they
-   share with every other route is the only thing worth asserting,
-   which the other 10 files already exercise as a pattern.
+   **done, but at a different location than this item originally
+   described** — Data Management was relocated wholesale to the Admin
+   Console mid-session (see the Admin Console work), and the original 10
+   test files were deleted along with the routes they tested without
+   being rebuilt at the new location, a real regression caught during a
+   later doc-accuracy pass and fixed 2026-06-29. Current coverage: 8
+   tenant-scoped routes under `/api/admin/tenants/[id]/data-management/*`
+   (purge-messages, purge-conversations, purge-broadcast-data,
+   purge-notifications, purge-old-tasks, clear-sessions, duplicate-check,
+   archive-old-data), 3 system-wide routes under `/api/admin/system/*`
+   (vacuum, drop-tables, orphaned-cleanup), 4 read-only report routes
+   also under `/api/admin/system/*` (export, integrity-check,
+   system-report, usage-analytics — these didn't exist as a separate
+   concern when this item was first written; they were unscoped
+   cross-tenant routes found and admin-gated during the relocation), and
+   `bulk-tasks` at its new home `/api/tasks/bulk` (stayed ARL-session-scoped,
+   not admin) — 16 route test files, 112 tests total. Every tenant-scoped
+   route has a regression test asserting its queries carry the
+   tenant-scoping filter from the route's `[id]` param (not a session,
+   since these are admin-gated now); `drop-tables` proves its table-name
+   allowlist can't be bypassed; the system-wide and report routes have
+   tests confirming they're deliberately *not* tenant-filtered.
 
 ### Medium-Term (Architecture / Performance)
 
