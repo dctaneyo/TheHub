@@ -49,7 +49,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       className={cn(
         "relative py-2.5 text-sm font-semibold text-muted-foreground transition-colors outline-none",
-        "hover:text-foreground",
+        "hover:text-foreground active:text-foreground",
         "data-[selected]:text-foreground",
         "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:rounded-sm",
         "disabled:pointer-events-none disabled:opacity-50",

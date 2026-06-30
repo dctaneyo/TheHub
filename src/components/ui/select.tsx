@@ -35,7 +35,7 @@ function SelectTrigger({
           // rounded-xl to match Input — same form-control tier, often sits
           // in the same row as a text Input (DESIGN.md §3).
           "flex w-full items-center justify-between gap-2 rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors",
-          "hover:border-ring/50",
+          "hover:border-ring/50 active:border-ring/50",
           "focus-visible:ring-2 focus-visible:ring-ring/50",
           "disabled:pointer-events-none disabled:opacity-50",
           className
