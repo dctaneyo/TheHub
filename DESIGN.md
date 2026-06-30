@@ -1513,3 +1513,46 @@ after it's been copied across twenty is not.
   in dark mode via `dark:bg-input/30`, just never extended to light)
   and drop `shadow-xs` entirely. Select's trigger was checked too and
   found already correct (`bg-background`, no shadow) — not touched.
+- 2026-06-30 — found and fixed three real defects via direct visual
+  inspection of the ARL console and kiosk dashboard, the same session
+  Dialog/Card adoption was completed in:
+  - **Dialog's z-index never accounted for this app's actual stacking
+    scale.** It shipped at shadcn's stock `z-50`; the app's real top-tier
+    overlay convention (`confirm-dialog.tsx`, the emergency overlay, the
+    onscreen keyboard, error-boundary) clusters at `z-[9997]`-
+    `z-[10000]`. `z-50` sat below the ARL header (`z-[100]`) and its
+    mobile nav overlay (`z-[140]`), so a dialog's backdrop visibly
+    stopped short of the header (header stayed undimmed) and a tall
+    dialog's content could be covered by it. Bumped to `z-[9999]`,
+    matching `confirm-dialog.tsx` exactly. Select and Menu had the same
+    `z-50` problem and are routinely used *inside* Dialog — bumped both
+    to `z-[10000]` so they render above any Dialog that contains them.
+  - **Dialog's background was the wrong elevation tier** — `bg-background`
+    (the base/page tier) instead of `bg-card`, backward from Section 8's
+    model ("base darkest, cards lighter, modals lighter still"). A modal
+    rendered at the same color as the page behind it, actually darker
+    than the cards it floated above in dark mode. Menu already correctly
+    uses `bg-card`, Select's dropdown uses `bg-popover` (same value) —
+    Dialog was the one outlier, presumably missed because it was the
+    last of the three Ark overlay primitives styled.
+  - **A virtualized table's header and rows silently disagreed on column
+    width.** `task-virtual-list.tsx`'s header row and each task row are
+    separate CSS Grid containers (the row virtualizer absolutely
+    positions rows, so they can't share one grid) — the Actions column
+    used `auto` width, which resolves independently per grid. The
+    header's "Actions" text is narrower than a row's three real icon
+    buttons, so the two grids disagreed on column 3's width, visibly
+    shifting the fixed 220px Schedule column out of alignment between
+    header and rows. Fixed width instead of auto resolves it for every
+    grid identically, regardless of content — the general lesson:
+    `auto`-sized columns are unsafe across any two elements that aren't
+    provably the same grid container, virtualized or not.
+  - **The new `/messages` route shipped with no onscreen-keyboard
+    wiring at all** — a plain `<input>`, while the older dashboard chat
+    overlay (`restaurant-chat.tsx`) already has the keyboard toggle
+    correctly. On a kiosk with no physical keyboard this meant a user
+    navigating to `/messages` had no way to type. A reminder that a new
+    route replicating an existing surface's *layout* doesn't
+    automatically replicate its kiosk-specific *input affordances* —
+    each needs to be checked against Section 6's no-pointer-input
+    premise independently, not assumed inherited.
