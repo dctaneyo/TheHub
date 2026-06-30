@@ -61,8 +61,8 @@ export async function GET(request: Request) {
   try {
     const session = await getAuthSession();
     if (!session) return ApiErrors.unauthorized();
-    const denied = await requirePermission(session, PERMISSIONS.DATA_MANAGEMENT_ACCESS);
-    if (denied) return denied;
+    // DATA_MANAGEMENT_ACCESS has been removed — gate on any authenticated ARL session
+    if (session.userType !== "arl") return ApiErrors.forbidden("ARL session required");
 
     ensureAuditTable();
 

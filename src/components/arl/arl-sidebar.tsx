@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Radio,
   Monitor,
-  Database,
   Video,
   TrendingUp,
   BarChart3,
@@ -28,7 +27,6 @@ import { VIEW_ROUTE_MAP } from "@/lib/arl-views";
 // should see them at all. Views not listed here are always visible.
 const SIDEBAR_PERM_MAP: Partial<Record<string, PermissionKey[]>> = {
   emergency: [PERMISSIONS.EMERGENCY_ACCESS],
-  "data-management": [PERMISSIONS.DATA_MANAGEMENT_ACCESS],
   analytics: [PERMISSIONS.ANALYTICS_ACCESS],
 };
 
@@ -59,7 +57,6 @@ export const navItems = [
   { id: "users" as const, label: "Users", icon: Users, group: "Administration" },
   { id: "remote" as const, label: "Remote", icon: Monitor, group: "Administration" },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp, group: "Administration" },
-  { id: "data-management" as const, label: "Data Management", icon: Database, group: "Administration" },
   { id: "tenant-settings" as const, label: "Organization", icon: Settings, group: "Administration" },
 ];
 

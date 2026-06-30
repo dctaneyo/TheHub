@@ -17,7 +17,6 @@ export type ArlView =
   | "users"
   | "leaderboard"
   | "remote"
-  | "data-management"
   | "broadcast"
   | "meetings"
   | "analytics"
@@ -35,7 +34,6 @@ export const VIEW_ROUTE_MAP: Record<ArlView, string> = {
   users: "/arl/users",
   leaderboard: "/arl/leaderboard",
   remote: "/arl/remote",
-  "data-management": "/arl/data-management",
   broadcast: "/arl/broadcast",
   meetings: "/arl/meetings",
   analytics: "/arl/analytics",

@@ -1,9 +1,11 @@
+import { NextRequest } from "next/server";
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { hashSync } from "bcryptjs";
 import { apiSuccess, ApiErrors } from "@/lib/api-response";
 import { requireAdminSession } from "@/lib/api-helpers";
+import { verifyAdminPinReconfirmation } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit-logger";
 
 // GET — list platform admins. Flat permissions: any admin can manage any
@@ -83,6 +85,42 @@ export async function PUT(req: Request) {
     return apiSuccess({ success: true });
   } catch (error) {
     console.error("Update admin error:", error);
+    return ApiErrors.internal();
+  }
+}
+
+// PATCH — change an admin's password and/or PIN. PIN re-confirmation required
+// so a hijacked session can't silently change credentials. Any admin can
+// change any other admin's credentials (flat permissions, same as the rest).
+export async function PATCH(req: NextRequest) {
+  const auth = await requireAdminSession();
+  if ("response" in auth) return auth.response;
+
+  try {
+    const { id, newPassword, newPin, confirmPin } = await req.json();
+    if (!id) return ApiErrors.badRequest("ID required");
+    if (!confirmPin) return ApiErrors.badRequest("Current PIN required to authorize credential changes");
+    if (!newPassword && !newPin) return ApiErrors.badRequest("Provide newPassword and/or newPin");
+    if (newPin && !/^\d{6}$/.test(newPin)) return ApiErrors.badRequest("PIN must be exactly 6 digits");
+
+    const pinCheck = verifyAdminPinReconfirmation(auth.session.adminId, confirmPin);
+    if (!pinCheck.ok) return ApiErrors.unauthorized();
+
+    const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+    if (newPassword) updates.passwordHash = hashSync(newPassword, 10);
+    if (newPin) updates.pinHash = hashSync(newPin, 10);
+
+    db.update(schema.platformAdmins).set(updates).where(eq(schema.platformAdmins.id, id)).run();
+
+    logAudit({
+      userId: auth.session.adminId, userType: "platform_admin", operation: "admin_credentials_changed",
+      entityType: "platform_admin",
+      payload: { targetAdminId: id, changedPassword: !!newPassword, changedPin: !!newPin }, status: "success",
+    });
+
+    return apiSuccess({ success: true });
+  } catch (error) {
+    console.error("Change credentials error:", error);
     return ApiErrors.internal();
   }
 }

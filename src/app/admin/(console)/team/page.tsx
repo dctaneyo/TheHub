@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus } from "@/lib/icons";
+import { Plus, KeyRound } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useConfirmWithPinDialog, ConfirmWithPinDialog } from "@/components/admin/confirm-with-pin-dialog";
@@ -25,6 +25,11 @@ export default function TeamPage() {
   const [result, setResult] = useState<string | null>(null);
   const { dialog, confirm } = useConfirmWithPinDialog();
 
+  // Credential-change state — tracks which admin row has the inline form open
+  const [credTarget, setCredTarget] = useState<string | null>(null);
+  const [credForm, setCredForm] = useState({ newPassword: "", newPin: "", confirmPin: "" });
+  const [credError, setCredError] = useState("");
+
   const load = useCallback(() => {
     fetch("/api/admin/team").then((r) => r.json()).then((d) => setAdmins(d.admins || []));
   }, []);
@@ -44,6 +49,23 @@ export default function TeamPage() {
       load();
     }
   }, [form, load]);
+
+  const saveCredentials = useCallback(async (id: string) => {
+    setCredError("");
+    if (!credForm.confirmPin) { setCredError("Enter your current PIN to authorize"); return; }
+    const res = await fetch("/api/admin/team", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-hub-request": "1" },
+      body: JSON.stringify({ id, newPassword: credForm.newPassword || undefined, newPin: credForm.newPin || undefined, confirmPin: credForm.confirmPin }),
+    });
+    if (res.ok) {
+      setCredTarget(null);
+      setCredForm({ newPassword: "", newPin: "", confirmPin: "" });
+    } else {
+      const d = await res.json();
+      setCredError(d.error?.message || "Failed — check your PIN");
+    }
+  }, [credForm]);
 
   const deactivate = useCallback(async (id: string) => {
     await fetch("/api/admin/team", {
@@ -81,18 +103,42 @@ export default function TeamPage() {
         <table className="w-full text-sm">
           <tbody className="divide-y divide-border">
             {admins.map((a) => (
-              <tr key={a.id} className="hover:bg-muted/30">
-                <td className="px-4 py-2.5 font-medium">{a.name}</td>
-                <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.email}</td>
-                <td className="px-4 py-2.5 text-xs">
-                  <span className={a.isActive ? "text-emerald-600" : "text-muted-foreground"}>{a.isActive ? "Active" : "Inactive"}</span>
-                </td>
-                <td className="px-4 py-2.5 text-right">
-                  {a.isActive && (
-                    <button onClick={() => deactivate(a.id)} className="text-xs text-muted-foreground hover:text-destructive">Deactivate</button>
-                  )}
-                </td>
-              </tr>
+              <>
+                <tr key={a.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-2.5 font-medium">{a.name}</td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.email}</td>
+                  <td className="px-4 py-2.5 text-xs">
+                    <span className={a.isActive ? "text-emerald-600" : "text-muted-foreground"}>{a.isActive ? "Active" : "Inactive"}</span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right space-x-3">
+                    <button
+                      onClick={() => { setCredTarget(credTarget === a.id ? null : a.id); setCredForm({ newPassword: "", newPin: "", confirmPin: "" }); setCredError(""); }}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" /> Credentials
+                    </button>
+                    {a.isActive && (
+                      <button onClick={() => deactivate(a.id)} className="text-xs text-muted-foreground hover:text-destructive">Deactivate</button>
+                    )}
+                  </td>
+                </tr>
+                {credTarget === a.id && (
+                  <tr key={`${a.id}-cred`} className="bg-muted/20">
+                    <td colSpan={4} className="px-4 py-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input type="password" placeholder="New password (leave blank to keep)" value={credForm.newPassword} onChange={(e) => setCredForm((f) => ({ ...f, newPassword: e.target.value }))} />
+                        <Input placeholder="New PIN (6 digits)" value={credForm.newPin} onChange={(e) => setCredForm((f) => ({ ...f, newPin: e.target.value.replace(/\D/g, "").slice(0, 6) }))} />
+                        <Input placeholder="Your current PIN to authorize" value={credForm.confirmPin} onChange={(e) => setCredForm((f) => ({ ...f, confirmPin: e.target.value.replace(/\D/g, "").slice(0, 6) }))} />
+                      </div>
+                      {credError && <p className="mt-1 text-xs text-destructive">{credError}</p>}
+                      <div className="mt-2 flex gap-2">
+                        <Button size="sm" onClick={() => saveCredentials(a.id)}>Save</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setCredTarget(null); setCredError(""); }}>Cancel</Button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>

@@ -1,11 +1,9 @@
-"use client";
-
-import { DataManagement } from "@/components/arl/data-management";
+// Data Management has been relocated to the Admin Console.
+// Tenant staff no longer have self-service access to destructive data
+// operations — platform admins perform them from /admin/tenants/[id]/data-management.
+// Redirect any bookmarked link back to the ARL overview.
+import { redirect } from "next/navigation";
 
 export default function DataManagementPage() {
-  return (
-    <div className="flex-1 overflow-y-auto overscroll-contain p-4">
-      <DataManagement />
-    </div>
-  );
+  redirect("/arl");
 }

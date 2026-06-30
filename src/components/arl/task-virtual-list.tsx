@@ -12,6 +12,8 @@ import {
   Eye,
   EyeOff,
   MoreVertical,
+  CheckSquare,
+  Square,
 } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
@@ -25,11 +27,14 @@ interface TaskVirtualListProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onToggleHidden: (task: Task) => void;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
 const GRID_COLS = "minmax(0,1fr) 220px auto";
 
-export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden }: TaskVirtualListProps) {
+export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden, selectable, selectedIds, onToggleSelect }: TaskVirtualListProps) {
   const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -39,6 +44,8 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
     gap: 0,
     overscan: 5,
   });
+
+  const gridCols = selectable ? `32px ${GRID_COLS}` : GRID_COLS;
 
   if (sorted.length === 0) {
     return <div className="py-8 text-center text-sm text-muted-foreground">No tasks match your filter.</div>;
@@ -55,8 +62,9 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
       {/* Desktop column header */}
       <div
         className="hidden md:grid text-xs text-muted-foreground border-b border-border bg-card sticky top-0 z-10"
-        style={{ gridTemplateColumns: GRID_COLS }}
+        style={{ gridTemplateColumns: gridCols }}
       >
+        {selectable && <div className="px-3 py-2.5" />}
         <div className="px-4 py-2.5 font-semibold">Task</div>
         <div className="px-4 py-2.5 font-semibold">Schedule</div>
         <div className="px-4 py-2.5 font-semibold text-right">Actions</div>
@@ -78,8 +86,21 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
                 {/* Desktop grid row */}
                 <div
                   className="hidden md:grid items-center border-b border-border bg-card"
-                  style={{ gridTemplateColumns: GRID_COLS }}
+                  style={{ gridTemplateColumns: gridCols }}
                 >
+                  {selectable && (
+                    <div className="px-3 py-2.5 flex items-center justify-center">
+                      <button
+                        onClick={() => onToggleSelect?.(task.id)}
+                        className="flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors"
+                        aria-label={selectedIds?.has(task.id) ? "Deselect task" : "Select task"}
+                      >
+                        {selectedIds?.has(task.id)
+                          ? <CheckSquare className="h-4 w-4 text-[var(--hub-red)]" />
+                          : <Square className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  )}
                   {/* Task column — Type/Priority are finite-vocabulary fields, so
                       they live here as chips next to the title (Section 11)
                       rather than in their own mostly-empty columns; Recurring
@@ -174,6 +195,17 @@ export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHi
 
                 {/* Mobile card */}
                 <div className="md:hidden flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+                  {selectable && (
+                    <button
+                      onClick={() => onToggleSelect?.(task.id)}
+                      className="shrink-0 self-center flex items-center justify-center text-muted-foreground transition-colors"
+                      aria-label={selectedIds?.has(task.id) ? "Deselect task" : "Select task"}
+                    >
+                      {selectedIds?.has(task.id)
+                        ? <CheckSquare className="h-5 w-5 text-[var(--hub-red)]" />
+                        : <Square className="h-5 w-5" />}
+                    </button>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-foreground">{task.title}</span>

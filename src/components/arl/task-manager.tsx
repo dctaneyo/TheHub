@@ -11,6 +11,8 @@ import {
   Clock,
   ClipboardList,
   Trash2,
+  CheckSquare,
+  X,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
@@ -40,6 +42,10 @@ export function TaskManager() {
 
   // Form initial values for pre-filling from templates or editing
   const [formInitial, setFormInitial] = useState<any>(undefined);
+
+  // Bulk-select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
     try {
@@ -168,6 +174,42 @@ export function TaskManager() {
     }
   };
 
+  const toggleSelectMode = () => {
+    setSelectMode((v) => !v);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelectId = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const deselectAll = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Delete ${ids.length} task${ids.length > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch("/api/tasks/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-hub-request": "1" },
+        body: JSON.stringify({ action: "delete-tasks-bulk", payload: { taskIds: ids } }),
+      });
+      if (res.ok) {
+        setSelectedIds(new Set());
+        setSelectMode(false);
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Bulk delete error:", err);
+    }
+  };
+
   // Bulk completion clearing — moved here from the old ARL Data Management
   // page (now relocated/admin-only for the genuinely destructive
   // operations). This is routine tenant self-service work, not a nuclear
@@ -242,6 +284,18 @@ export function TaskManager() {
             </MenuContent>
           </Menu>
           <button
+            onClick={toggleSelectMode}
+            className={cn(
+              "flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors",
+              selectMode
+                ? "border-[var(--hub-red)] bg-[var(--hub-red)] text-white"
+                : "border-border bg-card text-muted-foreground active:bg-muted"
+            )}
+          >
+            <CheckSquare className="h-3.5 w-3.5" />
+            {selectMode ? "Done" : "Select"}
+          </button>
+          <button
             onClick={() => setShowTemplates((t) => !t)}
             className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground active:bg-muted transition-colors"
           >
@@ -256,6 +310,28 @@ export function TaskManager() {
           </Button>
         </div>
       </div>
+
+      {/* Bulk-action bar — visible when 1+ tasks are selected in Select mode */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+          <span className="text-xs font-semibold text-foreground">{selectedIds.size} selected</span>
+          <div className="flex-1" />
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-destructive transition-colors active:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+          <button
+            onClick={deselectAll}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
+          >
+            <X className="h-3.5 w-3.5" />
+            Deselect all
+          </button>
+        </div>
+      )}
 
       {/* Template picker */}
       <AnimatePresence>
@@ -318,6 +394,9 @@ export function TaskManager() {
         onEdit={openEdit}
         onDelete={handleDelete}
         onToggleHidden={handleToggleHidden}
+        selectable={selectMode}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelectId}
       />
 
       {/* Create/Edit Form Modal */}

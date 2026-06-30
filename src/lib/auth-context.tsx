@@ -13,6 +13,8 @@ export interface User {
   permissions?: string[]; // ARL permission keys (null/undefined = all)
   locationId?: string;
   storeNumber?: string;
+  impersonatedBy?: string;       // platform admin id — set only on impersonation sessions
+  impersonationExpiresAt?: string; // ISO timestamp — banner uses this for countdown
 }
 
 interface AuthContextType {

@@ -112,7 +112,6 @@ describe('Permissions', () => {
   describe('VIEW_PERMISSIONS', () => {
     it('maps expected views to permissions', () => {
       expect(VIEW_PERMISSIONS['emergency']).toBe(PERMISSIONS.EMERGENCY_ACCESS)
-      expect(VIEW_PERMISSIONS['data-management']).toBe(PERMISSIONS.DATA_MANAGEMENT_ACCESS)
       expect(VIEW_PERMISSIONS['analytics']).toBe(PERMISSIONS.ANALYTICS_ACCESS)
     })
 

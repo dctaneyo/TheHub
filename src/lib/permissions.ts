@@ -36,9 +36,6 @@ export const PERMISSIONS = {
   // Emergency Broadcast
   EMERGENCY_ACCESS: "emergency.access",
 
-  // Data Management
-  DATA_MANAGEMENT_ACCESS: "data_management.access",
-
   // Forms Repository
   FORMS_UPLOAD: "forms.upload",
   FORMS_DELETE: "forms.delete",
@@ -120,13 +117,6 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
-    label: "Data Management",
-    description: "Bulk operations, import/export",
-    permissions: [
-      { key: PERMISSIONS.DATA_MANAGEMENT_ACCESS, label: "Access" },
-    ],
-  },
-  {
     label: "Forms Repository",
     description: "Upload and manage form PDFs",
     permissions: [
@@ -197,7 +187,6 @@ export function hasPermission(
  */
 export const VIEW_PERMISSIONS: Record<string, PermissionKey> = {
   emergency: PERMISSIONS.EMERGENCY_ACCESS,
-  "data-management": PERMISSIONS.DATA_MANAGEMENT_ACCESS,
   analytics: PERMISSIONS.ANALYTICS_ACCESS,
 };
 

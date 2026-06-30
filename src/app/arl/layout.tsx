@@ -124,6 +124,29 @@ function ArlLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Impersonation banner — shown when a platform admin is viewing as
+            this ARL. Sticky at top of the content area, amber treatment so
+            it's impossible to miss. "End" calls the impersonate/end route
+            and returns the admin to the admin console. */}
+        {user?.impersonatedBy && (
+          <div className="shrink-0 flex items-center justify-between gap-3 bg-amber-500 px-4 py-2 text-sm text-white">
+            <span className="font-medium">
+              Admin impersonation — viewing as <strong>{user.name}</strong>
+            </span>
+            <button
+              onClick={async () => {
+                await fetch("/api/admin/impersonate/end", {
+                  method: "POST",
+                  headers: { "x-hub-request": "1" },
+                });
+                window.location.href = "/admin/tenants";
+              }}
+              className="rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 active:bg-white/40 transition-colors"
+            >
+              End impersonation
+            </button>
+          </div>
+        )}
         {/* Top bar - hide on mobile when in meeting */}
         {!joiningMeeting && activeView !== "broadcast" && (
           <header className={cn(
