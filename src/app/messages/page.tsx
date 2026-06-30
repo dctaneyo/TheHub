@@ -5,9 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/lib/auth-context";
-import { MessageCircle, Globe, Users, Store, Send } from "@/lib/icons";
+import { MessageCircle, Globe, Users, Store, Send, Keyboard } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AppHeader } from "@/components/app-header";
+import { OnscreenKeyboard } from "@/components/keyboard/onscreen-keyboard";
 import type { Message, Conversation } from "@/components/dashboard/restaurant-chat";
 
 /**
@@ -49,6 +50,7 @@ function MessagesPageContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -194,7 +196,29 @@ function MessagesPageContent() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              {showKeyboard && (
+                <OnscreenKeyboard
+                  value={draft}
+                  onChange={setDraft}
+                  onSubmit={draft.trim() && !sending ? handleSend : undefined}
+                  onDismiss={() => setShowKeyboard(false)}
+                  placeholder="Message..."
+                />
+              )}
               <div className="flex shrink-0 items-center gap-2 border-t border-border p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowKeyboard((k) => !k)}
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    showKeyboard
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground active:bg-muted/80"
+                  )}
+                  title="Onscreen keyboard"
+                >
+                  <Keyboard className="h-4 w-4" />
+                </button>
                 <input
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}

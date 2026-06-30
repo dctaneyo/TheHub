@@ -34,7 +34,13 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 data-[state=closed]:hidden",
+        // z-[9999], not shadcn's stock z-50 — this app's top-tier overlays
+        // (confirm-dialog.tsx, emergency-overlay, the onscreen keyboard,
+        // error-boundary) all cluster at z-[9997]-z-[10000]. z-50 sat below
+        // the ARL header (z-[100]) and its mobile nav overlay (z-[140]), so
+        // a dialog rendered with its backdrop visually stopping short of —
+        // and its content able to be covered by — the page chrome above it.
+        "fixed inset-0 z-[9999] bg-black/50 data-[state=closed]:hidden",
         className
       )}
       {...props}
@@ -57,11 +63,17 @@ function DialogContent({
   return (
     <Portal>
       <DialogOverlay />
-      <DialogPrimitive.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <DialogPrimitive.Positioner className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            "relative grid w-full max-w-lg gap-4 rounded-2xl border border-border bg-background p-6 shadow-lg outline-none",
+            // bg-card, not bg-background — DESIGN.md §8's elevation model is
+            // base darkest, cards lighter, modals lighter still; bg-background
+            // put a modal at the *base* tier, the same color as the page
+            // behind the backdrop (worse than wrong in dark mode, where it's
+            // actually darker than the cards it's floating above). Matches
+            // Menu's dropdown (bg-card) and Select's (bg-popover, same value).
+            "relative grid w-full max-w-lg gap-4 rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-lg outline-none",
             className
           )}
           {...props}

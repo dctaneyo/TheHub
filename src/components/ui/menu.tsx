@@ -35,7 +35,10 @@ function MenuContent({
         <MenuPrimitive.Content
           data-slot="menu-content"
           className={cn(
-            "z-50 min-w-[168px] overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg outline-none",
+            // z-[10000], not shadcn's stock z-50 — Menu can be used inside
+            // Dialog (now z-[9999], see dialog.tsx), so it needs a strictly
+            // higher z-index than the dialog that might contain it.
+            "z-[10000] min-w-[168px] overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg outline-none",
             className
           )}
           {...props}

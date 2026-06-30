@@ -69,7 +69,11 @@ function SelectContent({
         <SelectPrimitive.Content
           data-slot="select-content"
           className={cn(
-            "z-50 min-w-[var(--reference-width)] overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+            // z-[10000], not shadcn's stock z-50 — Select is frequently used
+            // inside Dialog (now z-[9999], see dialog.tsx), so its dropdown
+            // needs a strictly higher z-index to render above the dialog
+            // that contains it, not just above the page header.
+            "z-[10000] min-w-[var(--reference-width)] overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
             className
           )}
           {...props}

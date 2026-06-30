@@ -31,7 +31,16 @@ interface TaskVirtualListProps {
   onToggleSelect?: (id: string) => void;
 }
 
-const GRID_COLS = "minmax(0,1fr) 220px auto";
+// Actions column is a fixed width, not auto — the header row and each task
+// row are separate CSS Grid containers (the virtualizer absolutely positions
+// rows, so they can't share one grid), and `auto` track sizing resolves
+// independently per grid. The header's "Actions" text is narrower than the
+// row's three icon buttons, so an auto column let the two grids disagree on
+// where column 3 starts, which visibly shifted the fixed 220px Schedule
+// column out of alignment between the header and the rows beneath it. A
+// fixed width (3 h-7 buttons + 2 gap-1 gaps + px-4 padding both sides) keeps
+// every grid's column boundaries identical regardless of content.
+const GRID_COLS = "minmax(0,1fr) 220px 124px";
 
 export function TaskVirtualList({ tasks, locations, onEdit, onDelete, onToggleHidden, selectable, selectedIds, onToggleSelect }: TaskVirtualListProps) {
   const sorted = useMemo(() => [...tasks].sort((a, b) => a.dueTime.localeCompare(b.dueTime)), [tasks]);
