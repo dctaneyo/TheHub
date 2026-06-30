@@ -107,7 +107,7 @@ export function GridUpcomingWidget({
               className="flex items-center gap-3 border-b border-border/40 px-3 py-3"
             >
               {/* Date badge */}
-              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
+              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted">
                 <span className="text-xs font-semibold uppercase leading-none text-muted-foreground">
                   {format(date, "EEE")}
                 </span>

@@ -412,7 +412,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
                 </div>
                 <div className="px-6 pb-6">
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleDismissOverdue}
-                    className="w-full rounded-2xl border-2 border-border py-4 text-lg font-semibold text-muted-foreground hover:bg-muted transition-colors">
+                    className="w-full rounded-2xl border-2 border-border py-4 text-lg font-semibold text-muted-foreground hover:bg-muted active:bg-muted transition-colors">
                     Acknowledge &amp; Dismiss
                   </motion.button>
                 </div>
@@ -431,7 +431,7 @@ export function NotificationBell({ className, tasks = [], currentTime = "", soun
             "relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
             totalActive > 0
               ? "bg-red-50 dark:bg-red-950/50 text-[var(--hub-red)]"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-muted-foreground hover:text-foreground active:text-foreground",
             open && "text-foreground",
             hasUrgent && "animate-pulse",
             className

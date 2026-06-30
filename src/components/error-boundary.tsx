@@ -79,13 +79,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="px-6 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors"
+                className="px-6 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 active:bg-red-600 transition-colors"
               >
                 Retry Now
               </button>
               <button
                 onClick={this.handleReload}
-                className="px-6 py-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                className="px-6 py-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-300 dark:hover:bg-slate-600 active:bg-slate-300 dark:active:bg-slate-600 transition-colors"
               >
                 Reload Page
               </button>

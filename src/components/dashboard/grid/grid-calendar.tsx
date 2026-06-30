@@ -120,7 +120,7 @@ export function GridCalendarWidget() {
               type="button"
               onClick={() => openCalendar(date)}
               className={cn(
-                "flex flex-col items-center gap-px rounded-lg py-1 transition-colors active:bg-muted/60",
+                "flex flex-col items-center gap-px rounded-xl py-1 transition-colors active:bg-muted/60",
                 !inMonth && "pointer-events-none opacity-25",
                 selected && inMonth && !today && "bg-muted/40",
               )}

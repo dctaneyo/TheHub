@@ -207,7 +207,7 @@ export function WidgetContainer({
             </span>
             <span
               className={cn(
-                "shrink-0 rounded px-2 py-1 text-xs font-semibold",
+                "shrink-0 rounded-full px-2 py-1 text-xs font-semibold",
                 active && blocked
                   ? "bg-destructive/15 text-destructive"
                   : "bg-muted text-muted-foreground"
@@ -221,7 +221,7 @@ export function WidgetContainer({
             <button
               type="button"
               onClick={() => removeWidget(widget.id)}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors active:bg-destructive/10 active:text-destructive"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-destructive/10 active:text-destructive"
               title="Remove"
             >
               <X className="h-4 w-4" />

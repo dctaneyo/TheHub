@@ -98,7 +98,7 @@ export function MirrorToolbar() {
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "flex items-center gap-2 rounded-full border px-3 py-2 backdrop-blur-xl shadow-lg",
+              "flex items-center gap-2 rounded-full border px-3 py-2 shadow-lg",
               "bg-[var(--hub-teal)]/90 border-[var(--hub-teal)]/50"
             )}
           >
@@ -133,7 +133,7 @@ export function MirrorToolbar() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-3 rounded-2xl border border-[var(--hub-teal)]/30 bg-card/95 backdrop-blur-xl shadow-2xl px-4 py-2"
+            className="flex items-center gap-3 rounded-2xl border border-[var(--hub-teal)]/30 bg-card shadow-2xl px-4 py-2"
           >
             {/* Status indicator */}
             <div className="flex items-center gap-2">

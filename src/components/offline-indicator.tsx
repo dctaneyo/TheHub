@@ -18,7 +18,7 @@ export function OfflineIndicator() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         className={cn(
-          "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full px-4 py-2 shadow-lg backdrop-blur-md text-xs font-semibold",
+          "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full px-4 py-2 shadow-lg text-xs font-semibold",
           isOnline
             ? "bg-amber-500/90 text-white"
             : "bg-red-600/90 text-white"

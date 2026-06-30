@@ -139,7 +139,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
       {/* Search trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent transition-colors"
+        className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground hover:bg-accent active:bg-accent transition-colors"
       >
         <Search className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Search...</span>
@@ -177,7 +177,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                     className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                   />
                   {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                  <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-accent">
+                  <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-accent active:bg-accent">
                     <X className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </div>
@@ -190,7 +190,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                       onClick={() => setFilter(f.id)}
                       className={cn(
                         "rounded-lg px-2 py-1 text-xs font-semibold transition-colors",
-                        filter === f.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+                        filter === f.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent active:bg-accent"
                       )}
                     >
                       {f.label}
@@ -218,7 +218,7 @@ export function GlobalSearch({ onNavigate }: { onNavigate?: (type: string, id: s
                           onMouseEnter={() => setSelectedIndex(i)}
                           className={cn(
                             "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
-                            selectedIndex === i ? "bg-accent" : "hover:bg-accent/50"
+                            selectedIndex === i ? "bg-accent" : "hover:bg-accent/50 active:bg-accent/50"
                           )}
                         >
                           <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", typeColors[result.type])}>

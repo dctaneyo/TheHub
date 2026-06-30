@@ -19,15 +19,15 @@ export interface ConfirmDialogProps {
 const variantStyles = {
   danger: {
     icon: "bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400",
-    btn: "bg-red-600 hover:bg-red-700 text-white",
+    btn: "bg-red-600 hover:bg-red-700 active:bg-red-700 text-white",
   },
   warning: {
     icon: "bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400",
-    btn: "bg-amber-600 hover:bg-amber-700 text-white",
+    btn: "bg-amber-600 hover:bg-amber-700 active:bg-amber-700 text-white",
   },
   info: {
     icon: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
-    btn: "bg-slate-600 hover:bg-slate-700 text-white",
+    btn: "bg-slate-600 hover:bg-slate-700 active:bg-slate-700 text-white",
   },
 };
 
@@ -91,7 +91,7 @@ export function ConfirmDialog({
               </div>
               <button
                 onClick={onCancel}
-                className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted active:bg-muted transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -101,7 +101,7 @@ export function ConfirmDialog({
               <button
                 ref={cancelRef}
                 onClick={onCancel}
-                className="rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent transition-colors"
+                className="rounded-xl bg-muted px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent active:bg-accent transition-colors"
               >
                 {cancelLabel}
               </button>

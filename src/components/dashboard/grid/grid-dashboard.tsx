@@ -142,7 +142,7 @@ export function SettingsPanel({
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
-                className="absolute right-0 top-full z-[60] mt-1 w-52 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur-md"
+                className="absolute right-0 top-full z-[60] mt-1 w-52 rounded-2xl border border-border bg-card p-2 shadow-lg"
               >
                 {WIDGET_CATALOG.map((item) => {
                   const used = usedTypes.has(item.type);
@@ -227,7 +227,7 @@ export function SettingsPanel({
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur-md"
+            className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card p-2 shadow-lg"
           >
             <button
               type="button"

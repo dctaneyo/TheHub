@@ -119,7 +119,7 @@ export function MobileDashboard({
             className="flex shrink-0 items-center gap-3 rounded-3xl border border-border bg-card px-4 py-4 text-left transition-colors active:bg-muted"
           >
             {Icon && (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Icon className="h-4 w-4 text-primary" />
               </div>
             )}

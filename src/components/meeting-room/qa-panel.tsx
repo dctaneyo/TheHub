@@ -31,7 +31,7 @@ export function QAPanel({
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         <h3 className="text-white font-semibold text-sm">Q&A</h3>
-        <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
+        <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 active:bg-slate-700 text-slate-400 sm:hidden">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -46,7 +46,7 @@ export function QAPanel({
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => onUpvote(q.id)}
-                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-400"
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-400 active:text-yellow-400"
                 >
                   <ThumbsUp className="h-3 w-3" />
                   <span>{q.upvotes}</span>
@@ -61,7 +61,7 @@ export function QAPanel({
                   {isHostOrCohost && !q.isAnswered && (
                     <button
                       onClick={() => onMarkAnswered(q.id)}
-                      className="text-xs text-green-400 hover:text-green-300 font-semibold"
+                      className="text-xs text-green-400 hover:text-green-300 active:text-green-300 font-semibold"
                     >
                       Mark Answered
                     </button>
@@ -82,7 +82,7 @@ export function QAPanel({
           placeholder="Ask a question..."
           className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
         />
-        <Button onClick={onSendQuestion} disabled={!newQuestion.trim()} size="icon" className="bg-yellow-600 hover:bg-yellow-700 h-9 w-9 shrink-0" aria-label="Submit question">
+        <Button onClick={onSendQuestion} disabled={!newQuestion.trim()} size="icon" className="bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-700 h-9 w-9 shrink-0" aria-label="Submit question">
           <Send className="h-3.5 w-3.5" />
         </Button>
       </div>

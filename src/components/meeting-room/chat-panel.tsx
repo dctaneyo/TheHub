@@ -35,7 +35,7 @@ export function ChatPanel({
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         <h3 className="text-white font-semibold text-sm">Chat</h3>
-        <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 sm:hidden">
+        <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 active:bg-slate-700 text-slate-400 sm:hidden">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -70,7 +70,7 @@ export function ChatPanel({
             onClick={onToggleKeyboard}
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-              showKeyboard ? "bg-red-600/20 text-red-400" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+              showKeyboard ? "bg-red-600/20 text-red-400" : "bg-slate-700 text-slate-400 hover:bg-slate-600 active:bg-slate-600"
             )}
             title="Onscreen keyboard"
           >
@@ -86,7 +86,7 @@ export function ChatPanel({
           placeholder="Type a message..."
           className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-sm"
         />
-        <Button onClick={onSend} disabled={!newMessage.trim()} size="icon" className="bg-red-600 hover:bg-red-700 h-9 w-9 shrink-0" aria-label="Send chat message">
+        <Button onClick={onSend} disabled={!newMessage.trim()} size="icon" className="bg-red-600 hover:bg-red-700 active:bg-red-700 h-9 w-9 shrink-0" aria-label="Send chat message">
           <Send className="h-3.5 w-3.5" />
         </Button>
       </div>

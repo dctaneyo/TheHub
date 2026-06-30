@@ -433,8 +433,8 @@ function MeetingSetup({
             className={cn(
               "flex items-center gap-2 h-11 px-5 rounded-full transition-colors font-semibold text-sm",
               micOn
-                ? "bg-slate-700 hover:bg-slate-600 text-white"
-                : "bg-red-600 hover:bg-red-700 text-white"
+                ? "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
+                : "bg-red-600 hover:bg-red-700 active:bg-red-700 text-white"
             )}
           >
             {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
@@ -448,8 +448,8 @@ function MeetingSetup({
               className={cn(
                 "flex items-center gap-2 h-11 px-5 rounded-full transition-colors font-semibold text-sm",
                 cameraOn
-                  ? "bg-slate-700 hover:bg-slate-600 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white"
+                  ? "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
+                  : "bg-red-600 hover:bg-red-700 active:bg-red-700 text-white"
               )}
             >
               {cameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
@@ -462,13 +462,13 @@ function MeetingSetup({
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={onCancel}
-            className="h-11 px-6 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-colors"
+            className="h-11 px-6 rounded-full bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white text-sm font-semibold transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleJoin}
-            className="h-11 px-8 rounded-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition-colors"
+            className="h-11 px-8 rounded-full bg-green-600 hover:bg-green-700 active:bg-green-700 text-white text-sm font-semibold transition-colors"
           >
             Join Meeting
           </button>
@@ -1017,7 +1017,7 @@ function MeetingUI({
           <p className="text-xs text-slate-500 mb-6">You&apos;ll be connected automatically</p>
           <button
             onClick={() => onLeave()}
-            className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-colors"
+            className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white text-sm font-semibold transition-colors"
           >
             Leave
           </button>
@@ -1058,7 +1058,7 @@ function MeetingUI({
           >
             {notification.type === 'success' && <Crown className="h-4 w-4" />}
             {notification.message}
-            <button onClick={() => setNotification(null)} className="ml-2 p-1 hover:bg-white/20 rounded">
+            <button onClick={() => setNotification(null)} className="ml-2 p-1 hover:bg-white/20 active:bg-white/20 rounded">
               <X className="h-3.5 w-3.5" />
             </button>
           </motion.div>
@@ -1067,7 +1067,7 @@ function MeetingUI({
 
       {/* Host-left countdown banner */}
       {hostHasLeft && hostLeftCountdown !== null && hostLeftCountdown > 0 && (
-        <div className="bg-orange-600/90 backdrop-blur-sm px-4 py-2 flex items-center justify-center gap-2 shrink-0">
+        <div className="bg-orange-600/90 px-4 py-2 flex items-center justify-center gap-2 shrink-0">
           <Timer className="h-4 w-4 text-white animate-pulse" />
           <span className="text-white text-sm font-semibold">
             Host has left — meeting ends in {Math.floor(hostLeftCountdown / 60)}:{String(hostLeftCountdown % 60).padStart(2, "0")}
@@ -1120,7 +1120,7 @@ function MeetingUI({
               setShowChat(false);
               setShowQA(false);
             }}
-            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showParticipants ? "bg-slate-600" : "hover:bg-slate-700")}
+            className={cn("p-2 rounded-lg transition-colors text-slate-300 relative", showParticipants ? "bg-slate-600" : "hover:bg-slate-700 active:bg-slate-700")}
             title="Participants"
           >
             <Users className="h-4 w-4" />
@@ -1137,7 +1137,7 @@ function MeetingUI({
             }}
             className={cn(
               "p-2 rounded-lg transition-colors text-slate-300 relative",
-              showChat ? "bg-slate-600" : "hover:bg-slate-700",
+              showChat ? "bg-slate-600" : "hover:bg-slate-700 active:bg-slate-700",
               hasUnreadChat && !showChat && "animate-pulse ring-2 ring-green-400/60 bg-green-500/20"
             )}
             title="Chat"
@@ -1154,7 +1154,7 @@ function MeetingUI({
             }}
             className={cn(
               "p-2 rounded-lg transition-colors text-slate-300 relative",
-              showQA ? "bg-slate-600" : "hover:bg-slate-700",
+              showQA ? "bg-slate-600" : "hover:bg-slate-700 active:bg-slate-700",
               hasUnreadQA && !showQA && "animate-pulse ring-2 ring-yellow-400/60 bg-yellow-500/20"
             )}
             title="Q&A"
@@ -1417,7 +1417,7 @@ function MeetingUI({
               <button
                 key={emoji}
                 onClick={() => sendReaction(emoji)}
-                className="text-lg hover:scale-125 transition-transform p-1 hover:bg-white/10 rounded-full"
+                className="text-lg active:scale-125 transition-transform p-1 hover:bg-white/10 active:bg-white/10 rounded-full"
               >
                 {emoji}
               </button>

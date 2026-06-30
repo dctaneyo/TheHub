@@ -45,7 +45,7 @@ function LauncherTile({
         onClick={onClick}
         className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 p-4 text-center transition-colors active:bg-muted/60"
       >
-        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
           <Icon className="h-7 w-7 text-primary" />
         </div>
         <p className="text-xs text-muted-foreground">{hint}</p>

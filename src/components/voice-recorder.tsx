@@ -122,7 +122,7 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
     return (
       <button
         onClick={startRecording}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors dark:bg-red-900 dark:text-red-400 dark:hover:bg-red-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 active:bg-red-200 transition-colors dark:bg-red-900 dark:text-red-400 dark:hover:bg-red-800 dark:active:bg-red-800"
         title="Record voice message"
       >
         <Mic className="h-4 w-4" />
@@ -137,10 +137,10 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
         <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
         <span className="text-xs font-semibold text-red-700 dark:text-red-300 tabular-nums">{formatTime(currentTime)}</span>
         <div className="mx-1 h-4 w-px bg-red-200 dark:bg-red-800" />
-        <button onClick={stopRecording} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors" title="Stop recording">
+        <button onClick={stopRecording} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 active:bg-red-700 transition-colors" title="Stop recording">
           <Square className="h-3 w-3" />
         </button>
-        <button onClick={cleanup} className="flex h-7 w-7 items-center justify-center rounded-full text-red-400 hover:text-red-600 hover:bg-red-100 transition-colors dark:hover:bg-red-900" title="Cancel">
+        <button onClick={cleanup} className="flex h-7 w-7 items-center justify-center rounded-full text-red-400 hover:text-red-600 hover:bg-red-100 active:text-red-600 active:bg-red-100 transition-colors dark:hover:bg-red-900 dark:active:bg-red-900" title="Cancel">
           <Trash2 className="h-3 w-3" />
         </button>
       </div>
@@ -152,17 +152,17 @@ export function VoiceRecorder({ onSend, disabled, maxDurationMs = 60000 }: Voice
     <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 dark:bg-blue-950">
       <button
         onClick={playing ? pausePlayback : playRecording}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-700 transition-colors"
         title={playing ? "Pause" : "Play"}
       >
         {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-1" />}
       </button>
       <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 tabular-nums">{formatTime(playing ? currentTime : duration)}</span>
       <div className="mx-1 h-4 w-px bg-blue-200 dark:bg-blue-800" />
-      <button onClick={cleanup} className="flex h-7 w-7 items-center justify-center rounded-full text-blue-400 hover:text-red-500 hover:bg-blue-100 transition-colors dark:hover:bg-blue-900" title="Delete">
+      <button onClick={cleanup} className="flex h-7 w-7 items-center justify-center rounded-full text-blue-400 hover:text-red-500 hover:bg-blue-100 active:text-red-500 active:bg-blue-100 transition-colors dark:hover:bg-blue-900 dark:active:bg-blue-900" title="Delete">
         <Trash2 className="h-3 w-3" />
       </button>
-      <button onClick={handleSend} className="flex h-7 w-7 items-center justify-center rounded-full bg-green-600 text-white hover:bg-green-700 transition-colors" title="Send voice message">
+      <button onClick={handleSend} className="flex h-7 w-7 items-center justify-center rounded-full bg-green-600 text-white hover:bg-green-700 active:bg-green-700 transition-colors" title="Send voice message">
         <Send className="h-3 w-3" />
       </button>
     </div>
@@ -197,7 +197,7 @@ export function VoiceMessagePlayer({ audioUrl, duration }: { audioUrl: string; d
 
   return (
     <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 dark:bg-blue-950">
-      <button onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+      <button onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-700 transition-colors">
         {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-1" />}
       </button>
       <div className="flex-1">

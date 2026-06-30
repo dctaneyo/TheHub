@@ -44,8 +44,8 @@ export function ControlsBar({
           className={cn(
             "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
             localParticipant.isMicrophoneEnabled
-              ? "bg-slate-700 hover:bg-slate-600 text-white"
-              : "bg-red-600 hover:bg-red-700 text-white"
+              ? "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
+              : "bg-red-600 hover:bg-red-700 active:bg-red-700 text-white"
           )}
           title={localParticipant.isMicrophoneEnabled ? "Mute" : "Unmute"}
         >
@@ -59,8 +59,8 @@ export function ControlsBar({
             className={cn(
               "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
               localParticipant.isCameraEnabled
-                ? "bg-slate-700 hover:bg-slate-600 text-white"
-                : "bg-red-600 hover:bg-red-700 text-white"
+                ? "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
+                : "bg-red-600 hover:bg-red-700 active:bg-red-700 text-white"
             )}
             title={localParticipant.isCameraEnabled ? "Turn off camera" : "Turn on camera"}
           >
@@ -75,8 +75,8 @@ export function ControlsBar({
             className={cn(
               "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
               localParticipant.isScreenShareEnabled
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-slate-700 hover:bg-slate-600 text-white"
+                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white"
+                : "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
             )}
             title={localParticipant.isScreenShareEnabled ? "Stop sharing" : "Share screen"}
           >
@@ -90,8 +90,8 @@ export function ControlsBar({
           className={cn(
             "flex items-center justify-center h-10 px-4 rounded-full transition-colors",
             noiseSuppression
-              ? "bg-green-600 hover:bg-green-700 text-white"
-              : "bg-slate-700 hover:bg-slate-600 text-white"
+              ? "bg-green-600 hover:bg-green-700 active:bg-green-700 text-white"
+              : "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white"
           )}
           title={noiseSuppression ? "RNNoise: ON (click to disable)" : "RNNoise: OFF (click to enable)"}
         >
@@ -102,7 +102,7 @@ export function ControlsBar({
         {myRole !== "host" && (
           <button
             onClick={onToggleHand}
-            className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white")}
+            className={cn("flex items-center justify-center h-10 px-4 rounded-full transition-colors", handRaised ? "bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-700 text-white" : "bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white")}
             title={handRaised ? "Lower hand" : "Raise hand"}
           >
             <Hand className="h-5 w-5" />
@@ -114,7 +114,7 @@ export function ControlsBar({
           <>
             <button
               onClick={onShowTransferDialog}
-              className="flex items-center gap-1 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-4 rounded-full bg-purple-600 hover:bg-purple-700 active:bg-purple-700 text-white transition-colors"
               title="Transfer host role to another participant"
             >
               <ArrowRightLeft className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function ControlsBar({
             </button>
             <button
               onClick={onLeaveMeeting}
-              className="flex items-center gap-1 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-4 rounded-full bg-slate-700 hover:bg-slate-600 active:bg-slate-600 text-white transition-colors"
               title="Leave meeting (meeting continues)"
             >
               <LogOut className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function ControlsBar({
             </button>
             <button
               onClick={onEndMeeting}
-              className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+              className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-700 text-white transition-colors"
               title="End meeting for all"
             >
               <PhoneOff className="h-5 w-5" />
@@ -140,7 +140,7 @@ export function ControlsBar({
         ) : (
           <button
             onClick={onLeaveMeeting}
-            className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+            className="flex items-center gap-1 h-10 px-5 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-700 text-white transition-colors"
             title="Leave meeting"
           >
             <PhoneOff className="h-5 w-5" />

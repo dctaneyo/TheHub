@@ -193,7 +193,7 @@ export default function SignupPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
-            className="rounded-2xl bg-white/5 border border-white/10 p-8 shadow-2xl backdrop-blur-sm"
+            className="rounded-2xl bg-white/10 border border-white/10 p-8 shadow-2xl"
           >
             {/* ── Step 1: Organization ── */}
             {currentStep === "org" && (

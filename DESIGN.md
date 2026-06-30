@@ -1556,3 +1556,109 @@ after it's been copied across twenty is not.
     automatically replicate its kiosk-specific *input affordances* —
     each needs to be checked against Section 6's no-pointer-input
     premise independently, not assumed inherited.
+- 2026-06-30 — fixed inconsistent radius values inside the dashboard
+  grid widgets (`src/components/dashboard/grid/`), the exact
+  no-stated-logic pattern Section 3's Do Not Use entry warns about.
+  The outer widget card frame's pinched bottom-right corner (Section 3's
+  stated exception) was already correct; the drift was in peer elements
+  *inside* that frame — icon-avatar boxes used `rounded-lg`/`rounded-2xl`
+  interchangeably for the same role (`grid-upcoming.tsx`,
+  `widget-renderer.tsx`, `grid-mobile-stack.tsx`) instead of the
+  `rounded-xl` every icon box elsewhere in the app already uses; the
+  remove-widget button used `rounded-md` instead of the `rounded-lg`
+  `DestructiveIconButton`/`ModalCloseButton` convention; the widget-size
+  badge ("3×2") used bare `rounded` instead of `rounded-full` like the
+  shared `Badge` component and every other small text chip; and the
+  compact mini-calendar's day cell used `rounded-lg` while the identical
+  full-calendar-modal day cell two hundred lines below it used
+  `rounded-xl`. All converged onto the values already established
+  elsewhere in the app rather than picking new ones.
+- 2026-06-30 — swept the codebase for Section 6's stated violation
+  ("any `hover:` class with no corresponding active/press treatment")
+  and paired every found instance with an `active:` equivalent, across
+  `confirm-dialog.tsx`, `notification-panel.tsx`, `notification-bell.tsx`,
+  `live-activity-feed.tsx`, `voice-recorder.tsx`,
+  `emoji-quick-replies.tsx`, `error-boundary.tsx`, `global-search.tsx`,
+  and the meeting-room surface (`meeting-room-livekit-custom.tsx`,
+  `meeting-room/controls-bar.tsx`, `chat-panel.tsx`, `qa-panel.tsx`,
+  `zoomable-video.tsx`) — `confirm-dialog.tsx` and the meeting-room
+  controls bar were the highest-impact instances, since every
+  destructive confirmation in the app and every mic/camera/end-call
+  control in a live meeting previously gave zero visual feedback on an
+  actual touchscreen tap. Two instances were a stronger bug than a
+  missing pairing: `notification-panel.tsx`'s per-row dismiss buttons
+  used `opacity-0 group-hover:opacity-100`, making them permanently
+  invisible (not just unfeedback-ed) on touch — fixed by making them
+  always visible, matching the "tap or an always-visible affordance,
+  never hover reveal" rule already stated for disclosure elsewhere in
+  this doc. `live-activity-feed.tsx`'s activity rows had a hover
+  background despite having no `onClick` at all — a false affordance
+  implying tappability that didn't exist — fixed by removing the hover
+  styling rather than adding a meaningless active state.
+  `meeting-room/chat-panel.tsx`'s send button also had a latent color
+  bug from this: its custom `hover:bg-red-700` override left the
+  shared `Button` component's own default-variant `active:bg-primary/90`
+  in place underneath (different Tailwind state variants don't conflict
+  via twMerge), so the button would have flashed primary-color on press
+  instead of red — fixed by adding the matching `active:bg-red-700`
+  override. Admin Console files (`admin/admin-sidebar.tsx`,
+  `admin/confirm-with-pin-dialog.tsx`) and `landing-page.tsx` were
+  deliberately left out of this pass — the former is a desk-only tool
+  with no stated touch use case (per the Admin Console rebuild plan),
+  the latter is a pre-login marketing page, neither sharing this
+  product's kiosk premise; if either later gains a stated touch
+  use case this should be revisited.
+- 2026-06-30 — removed decorative `backdrop-blur-md` from the
+  dashboard's two header dropdown menus (`grid-dashboard.tsx`'s "Add
+  widget" and settings/cog popovers). Both already sat on a
+  near-opaque `bg-card/95`, so the blur was doing almost nothing
+  visually — and per Section 11's Do Not Use entry, these don't sit
+  over actively scrolling content, so the blur was decorative, not
+  structural (the structural case — a header staying legible over
+  content scrolling beneath it — doesn't apply to a self-contained
+  floating menu). Also inconsistent with this app's actual dropdown
+  convention: the shared `Menu`/`Select` primitives both use a solid
+  `bg-card`/`bg-popover` with no blur at all (`ui/menu.tsx`,
+  `ui/select.tsx`) — these two were the only dropdowns in the app
+  reaching for glassmorphism. Switched both to plain `bg-card` to
+  match.
+- 2026-06-30 — swept the rest of the app for the same decorative-blur
+  pattern (prompted directly by "is there any glassmorphism left?").
+  Audited every remaining `backdrop-blur` in the codebase against
+  Section 11's structural-vs-decorative test. Left alone as genuinely
+  structural: every full-screen modal backdrop (`confirm-dialog.tsx`,
+  `admin/confirm-with-pin-dialog.tsx`, `global-search.tsx`,
+  `inactivity-warning.tsx`, both `login/page.tsx` overlays) — Section
+  3's "blur reserved for true overlays" rule; the style guide's own
+  sticky header and `landing-page.tsx`'s sticky nav — legible-over-
+  scrolling-content, the named structural exception; `arl/layout.tsx`'s
+  route-transition loading skeleton — a light 2px blur tied to a real
+  transitional state, not permanent decoration; `arl/layout.tsx`'s
+  mobile bottom nav bar — same scrolling-content case as the sticky
+  headers; and every meeting-room HUD badge (participant name tags,
+  reaction bar, `broadcast-launcher.tsx`'s viewer count) — these float
+  over a live, constantly-changing video feed, the closest analogue
+  to "scrolling content" this app has. Found and fixed four real
+  violations: `app/signup/page.tsx`'s step card was a textbook
+  glassmorphism treatment (`bg-white/5` + `border-white/10` +
+  `backdrop-blur-sm` on a dark gradient page) with nothing scrolling
+  behind it — bumped the fill to `bg-white/10` and dropped the blur.
+  `offline-indicator.tsx`'s toast and `meeting-room-livekit-custom.tsx`'s
+  host-left banner both blurred a background that was already 90%
+  opaque (the banner sits in normal document flow, not even layered
+  over anything) — blur dropped, opacity unchanged, no visible
+  difference. `remote/mirror-toolbar.tsx`'s collapsed pill stacked
+  `backdrop-blur-xl` with a pulsing glow-ring *and* a shadow on one
+  small element — almost the literal example Section 11's Do Not Use
+  list gives for "stacking more than one decorative effect with no
+  individual justification" — and its expanded toolbar paired
+  `backdrop-blur-xl` with an already-95%-opaque `bg-card/95`; both
+  dropped the blur, the expanded toolbar's fill bumped to fully solid
+  `bg-card` to match the standard surface convention now that nothing
+  needs blending into.
+- 2026-06-30 — deleted two dead files: `src/lib/motion.ts` (shared
+  Framer Motion timing constants) and `src/hooks/use-swr-fetch.ts`
+  (a stale-while-revalidate fetch hook). Confirmed via grep that
+  neither had a single importer anywhere in `src`, and neither was
+  exported from a barrel file or referenced by a test — both were
+  built but never adopted by the components they were meant for.

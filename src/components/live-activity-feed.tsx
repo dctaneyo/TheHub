@@ -128,7 +128,7 @@ export function LiveActivityFeed({ maxItems = 10, showHeader = true }: { maxItem
         )}
         <button
           onClick={() => { setActivities([]); localStorage.removeItem('live-activity-feed'); }}
-          className="ml-auto p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="ml-auto p-1 rounded-md text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 active:text-red-500 dark:active:text-red-400 active:bg-red-500/10 transition-colors"
           title="Clear all activity"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -144,7 +144,7 @@ export function LiveActivityFeed({ maxItems = 10, showHeader = true }: { maxItem
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.02 }}
-              className="flex items-start gap-2 rounded-lg bg-card border border-border p-2 hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-2 rounded-lg bg-card border border-border p-2"
             >
               <div className="shrink-0 mt-1">
                 {getIcon(activity)}
