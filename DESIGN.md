@@ -826,7 +826,7 @@ recorded with the alternatives it beat:
 | Primitive | Decision | Why |
 |---|---|---|
 | Tabs | **Underline** indicator | Correction: an earlier pass claimed this matched a "line" variant already in production — false, re-verified directly, every real Tabs usage renders shadcn's default segmented-pill style and the line variant has zero production usage. Underline was re-confirmed anyway (lower visual noise) with that premise corrected — it's a real visual change to `tenant-settings.tsx`, `meetings/page.tsx`, and `user-management.tsx`'s hand-rolled switcher, not a no-op port. Beat segmented-pill (what's actually live today) and top-accent-border. |
-| Text inputs | **Bordered** (full border) | Matches the existing shadcn Input default already in production — ports as-is. Beat filled-surface and underline-only. |
+| Text inputs | **Bordered + filled** (full border, `bg-input`) | Initially ported the shadcn default as-is (bordered, `bg-transparent`, `shadow-xs`) without independent evaluation. Corrected 2026-06-30: `bg-transparent` left light-mode inputs separated from their surface by border alone, which Section 3 argues against ("prefer fill-color contrast over shadow"); `shadow-xs` is a resting-element shadow Section 3 also reserves for true overlays only. Fix: `bg-input` (the existing `--input` token, already used correctly in dark mode via `dark:bg-input/30`, just never extended to light) replaces `bg-transparent`, and `shadow-xs` is dropped — matching the precedent already set when Card's `shadow-sm` was removed. Beat filled-surface (i.e. `bg-muted`, no border) and underline-only. |
 | Select (replaces all 7 native `<select>`s) | **Ark Select everywhere**, including the kiosk | One consistent custom-styled dropdown on every surface beats relying on the OS picker on touch — accepted the trade-off of losing the native touch picker for visual consistency. |
 | Dropdown/kebab menus (replaces 3 ad hoc implementations) | **Ark Menu**, one shared primitive | Was hand-rolled three separate times with no shared keyboard/focus handling; one primitive styled once matches the Dialog/Tabs/Select approach. |
 | Dialog | Ark Dialog | Already prototyped; styled per Section 3's heavy-uniform radius, shadow reserved for this overlay. |
@@ -1497,3 +1497,19 @@ after it's been copied across twenty is not.
   those citations for no benefit. Verified line-for-line before and
   after that no existing content was dropped or altered, only
   relocated, connective part-headers added, and Section 18 introduced.
+- 2026-06-30 — corrected Input/Textarea's background and shadow,
+  prompted by a direct question about whether the transparent background
+  and visible box-shadow on bordered fields were ever a considered
+  choice (they weren't — both were inherited unmodified from shadcn's
+  default and the Section 15 decision table's own wording said so:
+  "ports as-is"). `bg-transparent` meant light-mode fields were
+  separated from their surface by border alone, the opposite of Section
+  3's stated preference for fill-color contrast over shadow; `shadow-xs`
+  is a resting-element shadow, which Section 3 reserves for true
+  overlays only — the same issue already found and fixed for Card's
+  `shadow-sm` earlier this pass, just not revisited for its sibling
+  form controls. Fix: both now use `bg-input` (the existing `--input`
+  token — `#e2e8f0` light / `#2e2e2e` dark — already applied correctly
+  in dark mode via `dark:bg-input/30`, just never extended to light)
+  and drop `shadow-xs` entirely. Select's trigger was checked too and
+  found already correct (`bg-background`, no shadow) — not touched.
