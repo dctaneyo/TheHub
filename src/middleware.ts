@@ -28,7 +28,7 @@ export function buildCspHeader(nonce: string): string {
   ].join("; ");
 }
 
-const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token", "/design-preview"];
+const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/tenants/signup", "/meeting", "/api/meetings/join", "/api/livekit/token", "/design-preview", "/style-guide"];
 const hubDomains = ["meetthehub.com"];
 
 // Edge-compatible JWT decode (no crypto verification — cookie is httpOnly,
@@ -113,8 +113,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "localhost";
 
-  // ── Design preview: permissive CSP (Ark UI needs inline styles) ──
-  if (pathname.startsWith("/design-preview")) {
+  // ── Design preview / style guide: permissive CSP (Ark UI needs inline styles) ──
+  if (pathname.startsWith("/design-preview") || pathname.startsWith("/style-guide")) {
     const response = NextResponse.next();
     response.headers.set("Content-Security-Policy", [
       "default-src 'self'",
@@ -309,6 +309,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/design-preview") ||
+    pathname.startsWith("/style-guide") ||
     pathname.includes(".")
   ) {
     return applyCsp(NextResponse.next());

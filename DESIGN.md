@@ -97,6 +97,17 @@ anyone's thought about what's actually being shown.
 - An avatar or icon next to an identity column isn't decoration — it's
   a faster lookup path than reading a name, because the eye matches
   shapes/colors faster than it reads text.
+- **A table's structure is decided by what the user is doing with it,
+  same as everything else in this section** — ask first whether a given
+  table is for *scanning* (most rows glanced at, few acted on —
+  left-align text, right-align numbers, minimal separators so the eye
+  moves fast), *comparing* (numbers across rows is the actual task —
+  monospace figures, as Section 1 already establishes for IDs/
+  timestamps), or *acting* (each row has real per-row controls — this is
+  where Section 12's tap-not-hover disclosure rule applies, not a
+  table-specific exception to it: per-row actions reveal on a deliberate
+  tap or an always-visible affordance, never on hover, for the same
+  reason header controls already do).
 
 ---
 
@@ -158,14 +169,15 @@ just a `title` attribute and hoping.
 
 ## 16. User Flow
 
-A flow is correct when two things are always true: the user knows what just
-happened, and the user knows how to get back. Most "this feels unfinished"
-reports trace to one of those breaking somewhere, not to a single screen
-looking wrong. This section is grounded in an actual audit of this app's
-flows (login, signup, dashboard edit mode, task completion, remote view,
-connection loss, forms/messages) — not general UX advice — and gets
-extended the same way: trace a real flow, cite the file/line, fix or state
-the exception.
+A flow is correct when three things are always true: the user knows
+something is happening right now, the user knows what just happened, and
+the user knows how to get back. Most "this feels unfinished" reports trace
+to one of those breaking somewhere, not to a single screen looking wrong.
+This section is grounded in an actual audit of this app's flows (login,
+signup, dashboard edit mode, task completion, remote view, connection
+loss, forms/messages) — not general UX advice — and gets extended the
+same way: trace a real flow, cite the file/line, fix or state the
+exception.
 
 **Found and fixed before this section existed:** the dashboard's edit-mode
 entry/exit (Section 12's settings-cog rework), the default-layout fallback
@@ -190,6 +202,21 @@ quote/clock widgets losing an expand button that led nowhere useful.
   kiosk left running overnight against a dead backend sits in
   "Reconnecting…" forever with no different message at 10 seconds vs. 10
   hours.
+- **A user-triggered action can fire twice because nothing shows it's in
+  flight.** `task-form-modal.tsx`'s Create/Update Task button only disables
+  when the title is empty — never while the save request is actually in
+  flight, so a fast double-tap fires duplicate POSTs. Same gap in
+  `forms-repository.tsx`'s delete-confirm button and the duplicate-check
+  action on `/admin/tenants/[id]/data-management`. Not a uniform problem —
+  `user-management.tsx`'s own `handleSave` and `tenant-settings.tsx`
+  already wire `saving`/`Loader2` correctly elsewhere in the same files;
+  the fix is closing the specific gaps, not inventing a new pattern.
+- **The most common single action in the kiosk UI fails silently.**
+  `dashboard/page.tsx`'s task-completion checkbox — tapped more than
+  anything else on this surface — reverts the optimistic checkmark on a
+  failed request by just re-fetching, with no error shown either on the
+  failure branch or in the catch block. A user who taps a checkbox during
+  a flaky connection sees it un-check itself with no explanation.
 
 **Found, and a stated exception rather than a defect:** the remote-view/
 mirroring flow (`remote-view-banner.tsx`) auto-starts when an ARL user
@@ -211,7 +238,9 @@ Section 12 already covers it as forward guidance, not a found defect.
 this fails right now, what does the user see?" If the answer is "nothing,"
 that's the same class of bug as `handleSave`'s empty catch — find it the
 same way (grep for empty `catch` blocks around `await` calls that update
-UI state on success).
+UI state on success). Separately, ask "if this takes three seconds, does
+the user know it's working?" If the trigger control looks identical
+mid-request and at rest, that's the same class of gap.
 
 **Widgets are quick access; routes are the full version — not a choice
 between them.** A "widget," by the term's own ordinary meaning, implies a
@@ -1431,6 +1460,28 @@ after it's been copied across twenty is not.
   ("already said it," "genre default") rather than a single vague
   "avoid bloat" rule, matching this doc's existing falsifiable-check
   convention.
+- 2026-06-30 — extended Section 16 (User Flow) and Section 11 (Data
+  Drives the UI) after reviewing four external UX articles for gaps.
+  Deliberately did not adopt their content directly — most of it
+  duplicated existing sections (hover/active states, motion timing,
+  destructive-action confirmation) and one recommendation (reveal
+  per-row table actions on hover) directly conflicts with this doc's
+  no-hover model and was rejected rather than imported. Before writing
+  anything, ran an audit for real instances in this codebase, per this
+  doc's own standing rule of citing found defects rather than asserting
+  generic advice — a third candidate (in-context format hints on
+  focused inputs) didn't turn up a real gap and was dropped rather than
+  added anyway. Section 16's two-part flow rule ("knows what just
+  happened," "knows how to get back") became three parts, adding "knows
+  something is happening right now," grounded in real findings:
+  `task-form-modal.tsx`'s and `forms-repository.tsx`'s save/delete
+  buttons firing twice on a fast double-tap with no in-flight state, and
+  `dashboard/page.tsx`'s task-completion checkbox — the single most-used
+  control on the kiosk surface — silently reverting on a failed request
+  with no error shown anywhere. Section 11 gained a table-structure
+  paragraph that explicitly routes per-row action disclosure through
+  Section 12's existing tap-not-hover rule rather than treating tables
+  as a hover-pattern exception to it.
 
   Restructured the whole document into Section 0 (a universal gate)
   followed by two explicit parts — Part A (UX: Sections 11, 12, 13, 16,
