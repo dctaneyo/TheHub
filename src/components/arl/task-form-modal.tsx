@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 import { SprayCan, Clock, ClipboardList } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
 import { Select, SelectTrigger, SelectValueText, SelectContent, SelectItem, createListCollection } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useFocusTrap } from "@/hooks/use-focus-trap";
 import {
   RECURRING_TYPES,
   DAYS,
@@ -46,7 +45,6 @@ interface TaskFormModalProps {
 }
 
 export function TaskFormModal({ editingTask, locations, onClose, onSaved, initialValues }: TaskFormModalProps) {
-  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [type, setType] = useState(initialValues?.type ?? "task");
@@ -139,24 +137,10 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        ref={trapRef}
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        showCloseButton={false}
         aria-label={editingTask ? "Edit task" : "Create new task"}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -539,7 +523,7 @@ export function TaskFormModal({ editingTask, locations, onClose, onSaved, initia
             </Button>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </DialogContent>
+    </Dialog>
   );
 }

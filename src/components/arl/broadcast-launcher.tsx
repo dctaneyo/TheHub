@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Radio, Play, X, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusDot } from "@/components/ui/status-dot";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useSocket } from "@/lib/socket-context";
 import { MeetingRoomLiveKitCustom as MeetingRoom } from "@/components/meeting-room-livekit-custom";
 
@@ -123,60 +123,53 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
 
   // Setup screen
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Radio className="h-6 w-6" />
-              <div>
-                <h2 className="text-lg font-semibold">Go Live</h2>
-                <p className="text-sm text-red-100">Broadcast to all online locations</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 active:bg-white/10 rounded-lg transition-colors">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-6 space-y-5">
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md overflow-hidden p-0" showCloseButton={false}>
+        {/* Header — custom red treatment, not the generic Dialog header,
+            since this is a "going live" moment, not a routine form modal. */}
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Radio className="h-6 w-6" />
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Broadcast Title</label>
-              <Input
-                value={title}
-                onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
-                placeholder="e.g. Morning Huddle, Important Update..."
-                className={`text-base ${titleError ? "border-red-500 ring-red-500/20 ring-2" : ""}`}
-                onKeyDown={(e) => { if (e.key === "Enter") goLive(); }}
-                autoFocus
-              />
+              <h2 className="text-lg font-semibold">Go Live</h2>
+              <p className="text-sm text-red-100">Broadcast to all online locations</p>
             </div>
-
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                This will automatically open on all online restaurant screens. Locations that come online during the broadcast will also see it immediately.
-              </p>
-            </div>
-
-            <Button
-              onClick={goLive}
-              disabled={!title.trim()}
-              className="w-full bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white h-12 text-lg font-semibold rounded-xl"
-            >
-              <Radio className="h-5 w-5 mr-2" />
-              Go Live
-            </Button>
           </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 active:bg-white/10 rounded-lg transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2">Broadcast Title</label>
+            <Input
+              value={title}
+              onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
+              placeholder="e.g. Morning Huddle, Important Update..."
+              className={`text-base ${titleError ? "border-red-500 ring-red-500/20 ring-2" : ""}`}
+              onKeyDown={(e) => { if (e.key === "Enter") goLive(); }}
+              autoFocus
+            />
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              This will automatically open on all online restaurant screens. Locations that come online during the broadcast will also see it immediately.
+            </p>
+          </div>
+
+          <Button
+            onClick={goLive}
+            disabled={!title.trim()}
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white h-12 text-lg font-semibold rounded-xl"
+          >
+            <Radio className="h-5 w-5 mr-2" />
+            Go Live
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
