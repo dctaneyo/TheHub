@@ -74,7 +74,7 @@ export function ArlCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [tasks, setTasks] = useState<CalTask[]>([]);
   const [locations, setLocations] = useState<Array<{ id: string; name: string; storeNumber: string }>>([]);
-  const [filterLocationId, setFilterLocationId] = useState<string>("all");
+  const [filterLocationId, setFilterLocationId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [loading, setLoading] = useState(true);
 
@@ -86,12 +86,12 @@ export function ArlCalendar() {
     });
   }, []);
 
-  const filteredTasks = filterLocationId === "all"
-    ? tasks
-    : tasks.filter((t) => t.locationId === null || t.locationId === filterLocationId);
+  const filteredTasks = filterLocationId
+    ? tasks.filter((t) => t.locationId === null || t.locationId === filterLocationId)
+    : [];
 
   const locationOptions = useMemo(() => createListCollection({
-    items: [{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l.id, label: `${l.name} (#${l.storeNumber})` }))],
+    items: locations.map((l) => ({ value: l.id, label: `${l.name} (#${l.storeNumber})` })),
   }), [locations]);
 
   const getTasksForDate = (date: Date) =>
@@ -119,11 +119,11 @@ export function ArlCalendar() {
         <label className="text-xs font-semibold text-muted-foreground shrink-0">Filter by location:</label>
         <Select
           collection={locationOptions}
-          value={[filterLocationId]}
-          onValueChange={(d) => setFilterLocationId(d.value[0])}
+          value={filterLocationId ? [filterLocationId] : []}
+          onValueChange={(d) => setFilterLocationId(d.value[0] ?? null)}
         >
           <SelectTrigger className="w-auto text-sm">
-            <SelectValueText />
+            <SelectValueText placeholder="Select a location" />
           </SelectTrigger>
           <SelectContent>
             {locationOptions.items.map((item) => (
@@ -201,7 +201,8 @@ export function ArlCalendar() {
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {loading && <div className="flex h-20 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-[var(--hub-red)]" /></div>}
-            {!loading && selectedTasks.length === 0 && <p className="py-8 text-center text-xs text-muted-foreground">No tasks this day</p>}
+            {!loading && !filterLocationId && <p className="py-8 text-center text-xs text-muted-foreground">Select a location above to view its calendar</p>}
+            {!loading && filterLocationId && selectedTasks.length === 0 && <p className="py-8 text-center text-xs text-muted-foreground">No tasks this day</p>}
             {selectedTasks.map((task) => {
               const Icon = calTypeIcons[task.type] || ClipboardList;
               const loc = locations.find((l) => l.id === task.locationId);
