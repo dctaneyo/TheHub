@@ -9,7 +9,6 @@ import {
   Clock,
   MapPin,
   Mail,
-  Monitor,
   Volume2,
   VolumeX,
   KeyRound,
@@ -316,25 +315,16 @@ export function LocationsManager() {
                     </td>
                     <td className="max-w-48 px-4 py-3">
                       {loc.address ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{loc.address}</span>
-                        </div>
+                        <span className="block truncate text-xs text-muted-foreground">{loc.address}</span>
                       ) : <span className="text-xs text-muted-foreground">—</span>}
                     </td>
                     <td className="max-w-40 px-4 py-3">
                       {loc.email ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{loc.email}</span>
-                        </div>
+                        <span className="block truncate text-xs text-muted-foreground">{loc.email}</span>
                       ) : <span className="text-xs text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Monitor className="h-3 w-3 shrink-0" />
-                        {loc.userId}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{loc.userId}</span>
                     </td>
                     <td className="px-4 py-3">
                       <RowActions loc={loc} />
@@ -409,9 +399,7 @@ export function LocationsManager() {
                   <Mail className="h-3 w-3 shrink-0" /><span className="truncate">{loc.email}</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Monitor className="h-3 w-3 shrink-0" />User ID: {loc.userId}
-              </div>
+              <div className="text-xs text-muted-foreground">User ID: {loc.userId}</div>
             </div>
             {resetPinId === loc.id && <div className="mt-3"><PinResetRow loc={loc} /></div>}
             {pinSuccess === loc.id && (

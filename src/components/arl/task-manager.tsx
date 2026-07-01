@@ -340,7 +340,6 @@ export function TaskManager() {
           <div className="overflow-hidden">
             <Card className="gap-0 rounded-2xl p-4">
               <div className="mb-3 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-[var(--hub-red)]" />
                 <h4 className="text-sm font-semibold text-foreground">Task Templates</h4>
                 <p className="text-xs text-muted-foreground">Click to pre-fill the form</p>
               </div>

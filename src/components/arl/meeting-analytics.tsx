@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  BarChart3, Users, Clock, MessageCircle, Hand, ThumbsUp,
+  Users, Clock, MessageCircle, Hand, ThumbsUp,
   HelpCircle, TrendingUp, Video, ChevronRight, ChevronLeft,
   Calendar, Loader2, ArrowLeft, Trash2,
 } from "@/lib/icons";
@@ -314,10 +314,7 @@ export function MeetingAnalyticsDashboard() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          Meeting Analytics
-        </h2>
+        <h2 className="text-lg font-semibold text-foreground">Meeting Analytics</h2>
         {meetings.length > 0 && (
           <button
             onClick={() => setShowDeleteConfirm(true)}

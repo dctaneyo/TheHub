@@ -800,10 +800,36 @@ across the codebase and worth keeping true on purpose rather than by accident.
   doesn't make a control self-explanatory by itself; it still needs a
   touch-compatible label (`IconTip`, not `title`).
 
-**Check:** grep for `lucide-react` or `@phosphor-icons/react` outside
-`src/lib/icons.tsx` — any hit is a violation. Grep for a given action's icon
-(e.g. `X` for remove/close) and confirm every screen using that action uses
-the same one.
+**Icons must earn their place — Section 18 applied specifically to icons.**
+An icon isn't automatically "free" polish; it costs visual weight and
+attention like any other element on screen, so the same earned-presence
+test applies:
+
+- **Does it communicate something the label/color/position doesn't
+  already?** A trash icon next to "Delete" is fine — it's a faster visual
+  lookup path than reading the word. A generic icon glued onto plain body
+  text or a section heading that already says what it means in words adds
+  nothing beyond "this section has an icon now."
+- **Is it functional or decorative?** An icon inside a colored icon-avatar
+  box next to a title is establishing identity, the same pattern Section
+  15 documents for list rows and section headers. A stray icon dropped
+  into a sentence, a bullet list, or next to a label purely because the
+  layout felt bare without one is decoration wearing a communication
+  costume.
+- **Would removing it lose the user anything?** Apply Section 18's
+  "already said it" test directly: if this icon disappeared, would the
+  user lose information, a faster lookup path, or a signifier they can't
+  get from the text/color/position already there? If the honest answer is
+  "no, it would just look plainer," that's a decoration problem to solve
+  with layout/type/color — not with an icon.
+
+**Check:** for every icon usage, name in one sentence what it communicates
+that the surrounding text/color/position doesn't. If the only honest
+answer is "it looked incomplete without one," it's decorative and should
+be cut, not kept for "visual balance." Also grep for `lucide-react` or
+`@phosphor-icons/react` outside `src/lib/icons.tsx` — any hit is a
+violation. Grep for a given action's icon (e.g. `X` for remove/close) and
+confirm every screen using that action uses the same one.
 
 ---
 
@@ -1701,3 +1727,45 @@ after it's been copied across twenty is not.
   buttons' icon-only counterparts elsewhere are `rounded-lg`. Documented
   the resulting tiers in Section 3 so future additions have something
   to check against instead of re-deriving the system from scratch.
+- 2026-07-01 — added an icon-specific earned-presence check to Section
+  14, prompted by a direct question: "do we have anything about
+  overuse of icons?" The answer was that Section 18's generic
+  earned-presence test ("does this element's absence lose the user
+  anything?") already covered the principle, but nothing in the doc
+  ever pointed it at icons specifically — Section 14 only had
+  consistency rules (one library, same icon = same meaning, one size
+  scale), never a should-this-icon-exist-at-all check. Added one,
+  applying Section 18's test directly to icons with a concrete
+  one-sentence check: name what the icon communicates that the
+  surrounding text/color/position doesn't; if the only honest answer
+  is "it looked incomplete without one," it's decorative and should be
+  cut. A codebase audit against this new rule is the next pass.
+- 2026-07-01 — ran that audit and fixed the highest-confidence
+  findings. Two patterns:
+  - **Section-header icons restating the heading text right next to
+    them** — `meeting-analytics.tsx`'s `BarChart3` inside "Meeting
+    Analytics", `notification-settings-panel.tsx`'s `Settings` inside
+    "Notification Settings", `task-manager.tsx`'s `BookOpen` inside
+    "Task Templates". Each icon sat directly beside a heading that
+    already said the exact same thing in words — the literal case the
+    new rule names.
+  - **Per-row table-cell icons restating an exact-match column
+    header** — `locations-manager.tsx`'s `MapPin`/`Mail`/`Monitor`
+    icons repeated on every row of the Address/Email/User ID columns,
+    where the column header already stated the field on every row at
+    once. Removed from the table view; kept in the same file's mobile
+    card view (no column headers exist there, so the icon is
+    disambiguating a bare value, not restating an adjacent label) —
+    except one instance (`Monitor` beside "User ID: {loc.userId}"),
+    where the visible text label made it redundant there too.
+  - **False positives caught before editing** — a sub-agent's initial
+    pass over-flagged button icons (`Trash2` beside "Delete",
+    `BookOpen` beside a "Templates" button) that the new rule
+    explicitly protects (the rule's own example is "a trash icon next
+    to 'Delete' is fine"), and flagged `arl-calendar.tsx`'s inline
+    `Clock`/`Repeat` metadata icons despite there being no adjacent
+    label for them to restate. Left `scheduled-meetings.tsx`'s stacked
+    `Calendar`/`Clock`/`Globe`/`Lock` icons in one "Schedule" column as
+    a deliberate non-fix — they disambiguate *between* several
+    unlabeled lines stacked in one cell, which is different from
+    restating a header that's already right there.

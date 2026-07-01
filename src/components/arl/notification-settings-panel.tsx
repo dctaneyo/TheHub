@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, BellOff, Settings, CheckCircle2, AlertCircle } from "@/lib/icons";
+import { Bell, BellOff, CheckCircle2, AlertCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
 
@@ -479,10 +479,7 @@ export function NotificationSettingsPanel({ open, onClose, userType = "arl" }: N
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Settings className="w-6 h-6" />
-                  Notification Settings
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Settings</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Choose what gets pushed to your phone
                 </p>
