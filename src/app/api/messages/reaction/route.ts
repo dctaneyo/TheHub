@@ -40,18 +40,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Toggle: if user already reacted with this emoji, remove it; otherwise add it
+    // One reaction per user per message. Find any existing reaction from
+    // this user on this message (any emoji).
     const existing = db.select().from(schema.messageReactions)
       .where(and(
         eq(schema.messageReactions.messageId, messageId),
         eq(schema.messageReactions.userId, session.id),
-        eq(schema.messageReactions.emoji, emoji),
       )).get();
 
     if (existing) {
+      // Same emoji → toggle off. Different emoji → remove old and add new below.
       db.delete(schema.messageReactions).where(eq(schema.messageReactions.id, existing.id)).run();
-      broadcastConversationUpdate(message.conversationId);
-      return apiSuccess({ success: true, action: "removed" });
+      if (existing.emoji === emoji) {
+        broadcastConversationUpdate(message.conversationId);
+        return apiSuccess({ success: true, action: "removed" });
+      }
     }
 
     db.insert(schema.messageReactions).values({

@@ -1,28 +1,22 @@
 "use client";
 
-import { Emoji as EmojiComponent } from "emoji-picker-react";
-
 interface EmojiProps {
   emoji: string;
   size?: number;
 }
 
-// Convert emoji character to unified code point
-function emojiToUnified(emoji: string): string {
-  const codePoints = [];
-  for (let i = 0; i < emoji.length; i++) {
-    const code = emoji.codePointAt(i);
-    if (code) {
-      codePoints.push(code.toString(16));
-      // Skip the next character if this is a surrogate pair
-      if (code > 0xFFFF) i++;
-    }
-  }
-  return codePoints.join('-');
-}
-
+// Renders a native Unicode emoji at the requested size. We previously used
+// emoji-picker-react's Emoji component (image-based, requires CDN) which
+// rendered as placeholder boxes when images failed to load. Native rendering
+// is reliable on Chrome/Safari (the kiosk runtime) and needs no network fetch.
 export function Emoji({ emoji, size = 22 }: EmojiProps) {
-  const unified = emojiToUnified(emoji);
-  
-  return <EmojiComponent unified={unified} size={size} />;
+  return (
+    <span
+      role="img"
+      style={{ fontSize: size, lineHeight: 1 }}
+      className="select-none"
+    >
+      {emoji}
+    </span>
+  );
 }
