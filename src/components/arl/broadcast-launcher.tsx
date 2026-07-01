@@ -132,7 +132,7 @@ export function BroadcastLauncher({ isOpen, onClose }: BroadcastLauncherProps) {
             <Radio className="h-6 w-6" />
             <div>
               <h2 className="text-lg font-semibold">Go Live</h2>
-              <p className="text-sm text-red-100">Broadcast to all online locations</p>
+              <p className="text-sm text-red-100">One-way broadcast to all online locations — locations can view, not respond</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 active:bg-white/10 rounded-lg transition-colors">
