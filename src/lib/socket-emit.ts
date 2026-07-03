@@ -46,24 +46,16 @@ export function broadcastTaskUncompleted(locationId: string, taskId: string, ten
   emitToLocations("task:uncompleted", { locationId, taskId }, tenantId);
 }
 
-// ── Grid layout events ──
-// Notify all of an account's other devices that the saved dashboard layout
-// changed, so they can update live. `sourceDeviceId` lets the originating
-// device ignore its own echo.
-export function broadcastGridLayoutUpdate(
-  userType: "location" | "arl",
-  userId: string,
-  tenantId: string,
-  layout: unknown,
-  sourceDeviceId?: string
-) {
+// ── Dashboard layout events ──
+// Notify every location and ARL in a tenant that the shared dashboard layout
+// changed (edited via the ARL Console), so kiosks update live without a
+// manual refresh. There's no per-device echo to skip — the edit always comes
+// from a different surface (ARL Console) than the kiosks receiving it.
+export function broadcastDashboardLayoutUpdate(tenantId: string, layout: unknown) {
   if (!isAvailable()) return;
-  const payload = { layout, sourceDeviceId };
-  if (userType === "location") {
-    emitToLocation(userId, "grid-layout:updated", payload, tenantId);
-  } else {
-    emitToArl(userId, "grid-layout:updated", payload, tenantId);
-  }
+  const payload = { layout };
+  emitToLocations("dashboard-layout:updated", payload, tenantId);
+  emitToArls("dashboard-layout:updated", payload, tenantId);
 }
 
 // ── Message events ──

@@ -1934,3 +1934,93 @@ is reachable immediately, not gated behind the flourish finishing.
   doesn't fire on mount if the day was already complete when the widget
   loaded, doesn't replay for the same completion, and the ring stays
   fully clickable/navigable throughout — nothing gates behind it.
+- 2026-07-01 — dashboard widget customization moved from per-location/
+  per-ARL to tenant-wide, editable only via a new ARL Console page
+  (Dashboard Layout). Prompted by a direct concern: free-form per-kiosk
+  customization (drag/resize/add/remove widgets, persisted separately
+  per location *and* per ARL account) meant an ARL overseeing several
+  locations could see a different arrangement at every one, and the
+  data model already allowed exactly that (`locations.gridLayout` and
+  `arls.gridLayout` were two entirely separate saved layouts). Considered
+  and explicitly rejected a middle option — multiple tenant-defined
+  layouts, ARL-assignable per location, to accommodate tenants with
+  multiple brands — because no concrete need for brand-differentiated
+  dashboards exists yet (every current widget is universal restaurant-
+  ops tooling), and because it wouldn't have actually shrunk anything:
+  something still has to let a tenant *build* each of those layouts,
+  meaning the full editor stays either way. One layout per tenant gets
+  the stated goal (no more per-location drift) without building
+  speculative multi-layout machinery for a need that hasn't shown up —
+  matches the Admin Console plan's own precedent of naming and cutting
+  speculative brand-level features rather than building them ahead of
+  demand.
+
+  **Schema**: `gridLayout` moved from `locations`/`arls` to `tenants`
+  (migration `056_tenant_wide_dashboard_layout` in `db/index.ts`, plus
+  a mirrored `drizzle/0007_tenant_wide_dashboard_layout.sql` — this
+  codebase runs two separate migration systems, `scripts/migrate.js`
+  applying `drizzle/*.sql` in production startup and `db/index.ts`'s
+  own hand-rolled `migrate()` applying lazily on first DB access in the
+  running app; found by tracing why the previous per-location column
+  was added by a drizzle migration with no hand-rolled counterpart,
+  discovered mid-verification when a local dev DB — which only ever
+  runs the hand-rolled path, never `scripts/migrate.js` — turned out to
+  be missing that column entirely, and separately missing `tenants.
+  timezone` for the identical reason. That drift between the two
+  systems predates this change and wasn't introduced by it; flagging it
+  here since it's a real gap, not fixing it now since it's a separate,
+  riskier cleanup. Deliberately did not mirror the `DROP COLUMN`
+  statements into the drizzle file — confirmed live that `scripts/
+  migrate.js`'s error-tolerance only forgives "duplicate column"/
+  "already exists", not "no such column," so an untested DROP on a
+  column that was never added via that path would throw; the hand-
+  rolled migration's own catch-and-mark-applied-anyway wrapper already
+  handles this safely (verified live against the real dev DB: `ADD
+  COLUMN tenants.grid_layout` succeeded, both `DROP COLUMN` statements
+  correctly no-opped with "no such column" caught and swallowed, all
+  three the same operations `055_remove_gamification_points` already
+  proved safe for this exact pattern).
+
+  **API**: `/api/preferences/grid-layout` (per-location/per-ARL) deleted
+  outright; new `/api/dashboard-layout` (GET — any authenticated tenant
+  session, since kiosks need to read it; PUT — admin/superadmin ARL
+  only, same gate `/api/tenants/settings` already uses) reads/writes
+  `tenants.gridLayout` and broadcasts `dashboard-layout:updated` to
+  every location and ARL in the tenant on save, via a new
+  `broadcastDashboardLayoutUpdate` (replacing the old per-device-echo-
+  aware `broadcastGridLayoutUpdate`, since there's no self-echo case
+  left to guard against — the edit always comes from a different
+  surface than the kiosks receiving it).
+
+  **Kiosk** (`dashboard/page.tsx`): the settings cog, edit mode, and all
+  drag/resize/add/remove UI removed entirely — the dashboard is now a
+  pure read-only consumer of the tenant's layout. This also let the
+  embed/mirror-view layout fetch drop its location-specific query
+  params, since the layout is now identical regardless of which
+  location's screen is being mirrored.
+
+  **ARL Console**: new "Dashboard Layout" page (`/arl/dashboard-layout`,
+  standalone nav item under Administration, `arl-sidebar.tsx`/
+  `arl-views.ts`), reusing the *same* grid-editing components the kiosk
+  used to host (`GridProvider`/`GridSurface`/`SettingsPanel`/
+  `WidgetContainer`) rather than duplicating them — editing didn't get
+  deleted, it got relocated to the one place it now belongs.
+  `SettingsPanel` itself simplified from a browsing/editing toggle (cog
+  → popover → "Customize widgets") to always-editing, since editing is
+  now this page's entire purpose rather than a mode someone opts into
+  from a kiosk. The editor previews widgets with empty/no-op stub data
+  (`PREVIEW_DATA`) rather than real task/message content — widget
+  bodies are already dimmed and non-interactive during editing
+  (`widget-container.tsx`), so accuracy there was never the point, only
+  size/position.
+
+  **Known deliberate gap, not fixed in this pass**: the remote-view
+  mirror system's embed-side "ARL edited the layout inside the mirror
+  iframe, push it back to the target" path (`GridMirrorSync` in
+  `grid-dashboard.tsx`) is now unreachable dead code — nothing edits
+  `layout` from inside an embed anymore, since `SettingsPanel` no
+  longer renders there. Left in place rather than torn out in the same
+  pass, since it's interleaved with the *target → embed* view-sync
+  effects in the same function (still needed, unrelated) in ways that
+  deserve a careful, separate look rather than a rushed cut next to a
+  schema migration. Flagged in-code at the top of `GridMirrorSync`.

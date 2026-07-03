@@ -30,11 +30,12 @@ import type { WidgetData } from "./widget-data";
  * whole row instead of a corner icon, since there's no room to spare for a
  * separate affordance here.
  *
- * View + act only: this app's edit mode (drag position, resize footprint)
- * doesn't mean anything once everything is forced full-width in one column,
- * so customizing is intentionally not available here — see SettingsPanel's
- * mobile branch, which points back to a larger screen instead of trying to
- * build a parallel reorder/show-hide editor for v1.
+ * View + act only, by design as well as by necessity: dashboard layout
+ * editing no longer happens on this surface at all (it's tenant-wide now,
+ * set once via the ARL Console's Dashboard Layout page — see DESIGN.md,
+ * 2026-07-01), and even before that change, edit mode (drag position,
+ * resize footprint) wouldn't have meant anything once everything is forced
+ * full-width in one column.
  */
 
 const ROW_ICON: Partial<Record<WidgetType, typeof CheckSquare>> = {

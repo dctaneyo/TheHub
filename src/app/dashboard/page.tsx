@@ -21,10 +21,8 @@ import { playTaskSound } from "@/lib/sound-effects";
 import type { RemoteCaptureManager } from "@/lib/remote-capture";
 import type { TaskItem } from "@/components/dashboard/timeline";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useDeviceType } from "@/hooks/use-device-type";
 import {
   GridProvider,
-  SettingsPanel,
   GridSurface,
   GridSync,
   GridMirrorSync,
@@ -50,27 +48,16 @@ function localParams(mirrorLocationId?: string | null) {
   return { localDate, localTime, query };
 }
 
-// Wraps <AppHeader> with the two things only available inside GridProvider:
+// Wraps <AppHeader> with the one thing only available inside GridProvider:
 // whether the Clock widget is already on the grid (hides the header clock to
-// avoid showing time twice) and the widget-customize cog. A plain prop on
-// AppHeader can't reach useGrid() itself since AppHeader renders outside
-// GridProvider on every other route.
-function DashboardHeader({ onSave }: { onSave: (layout: GridLayout) => Promise<void> | void }) {
+// avoid showing time twice). A plain prop on AppHeader can't reach useGrid()
+// itself since AppHeader renders outside GridProvider on every other route.
+// No settings/customize cog here anymore — the dashboard layout is tenant-wide
+// and editable only via the ARL Console (Dashboard Layout), not per-location.
+function DashboardHeader() {
   const { widgets } = useGrid();
   const hasClockWidget = widgets.some((w) => w.type === "clock");
-  const deviceType = useDeviceType();
-  return (
-    <AppHeader
-      title="Dashboard"
-      hasClockWidget={hasClockWidget}
-      settingsSlot={
-        // Widget customization has no meaning on the mobile stack (no grid
-        // to position/resize within), so the cog itself doesn't render
-        // there at all rather than opening to a popover with nothing useful.
-        deviceType !== "mobile" ? <SettingsPanel onSave={onSave} /> : undefined
-      }
-    />
-  );
+  return <AppHeader title="Dashboard" hasClockWidget={hasClockWidget} />;
 }
 
 // ── Grid Ticker ──────────────────────────────────────────────────────────────
@@ -338,12 +325,6 @@ function GridDashboardPage() {
   // ── Stream viewer ──
   const [activeStream, setActiveStream] = useState<{ broadcastId: string; meetingId: string; arlName: string; title: string } | null>(null);
 
-  const deviceIdRef = useRef<string>(
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `dev-${Math.random().toString(36).slice(2)}-${Date.now()}`,
-  );
-
   // ── Midnight day-reset ────────────────────────────────────────────────────
   // Tracks date string; on rollover emits client:day-reset so the server
   // reschedules timers. fetchTasks is called immediately as a local fallback.
@@ -395,20 +376,16 @@ function GridDashboardPage() {
     } catch { /* non-fatal */ }
   }, []);
 
-  // Load persisted grid layout
-  // In embed/mirror mode, pass the location ID + session ID so the API returns
-  // the *location's* layout instead of the ARL's own saved layout.
+  // Load the tenant-wide dashboard layout. Same for every location under the
+  // tenant, so the embed/mirror path no longer needs the target location's ID
+  // — it's the same layout regardless of which location is being viewed.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     (async () => {
       let resolved: GridLayout | null = null;
       try {
-        let url = "/api/preferences/grid-layout";
-        if (isEmbed && mirrorLocationId && mirrorSessionId) {
-          url += `?locationId=${encodeURIComponent(mirrorLocationId)}&sessionId=${encodeURIComponent(mirrorSessionId)}`;
-        }
-        const res = await fetch(url);
+        const res = await fetch("/api/dashboard-layout");
         if (res.ok) {
           const json = await res.json();
           if (json?.layout && Array.isArray(json.layout.widgets)) resolved = json.layout as GridLayout;
@@ -417,7 +394,7 @@ function GridDashboardPage() {
       if (!cancelled) setInitialLayout(resolved ?? DEFAULT_LAYOUT);
     })();
     return () => { cancelled = true; };
-  }, [user, isEmbed, mirrorLocationId, mirrorSessionId]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -532,16 +509,6 @@ function GridDashboardPage() {
       console.error("Failed to early-uncomplete task:", err);
     }
   }, [fetchTasks]);
-
-  // ── Save grid layout ──────────────────────────────────────────────────────
-  const saveLayout = useCallback(async (layout: GridLayout) => {
-    const res = await fetch("/api/preferences/grid-layout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ layout: layout.isCustom ? layout : null, deviceId: deviceIdRef.current }),
-    });
-    if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-  }, []);
 
   // ── Mirror: sync view state from target → ARL ─────────────────────────────
   const mirrorSyncingRef = useRef(false);
@@ -699,7 +666,7 @@ function GridDashboardPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   const dashboardContent = (
     <GridProvider initialLayout={initialLayout}>
-      <GridSync socket={socket} deviceId={deviceIdRef.current} />
+      <GridSync socket={socket} />
       {/* Layout sync for remote-view / mirror: broadcasts target's layout to embed, applies it in embed */}
       <GridMirrorSync
         isEmbed={isEmbed}
@@ -710,7 +677,7 @@ function GridDashboardPage() {
         sendViewChange={sendViewChange}
       />
       <div className="flex h-screen flex-col bg-background">
-        <DashboardHeader onSave={saveLayout} />
+        <DashboardHeader />
 
         <motion.div layout className="min-h-0 flex-1">
           <GridSurface data={widgetData} />

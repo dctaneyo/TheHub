@@ -621,6 +621,16 @@ function runMigrations() {
     s.exec(`DROP TABLE IF EXISTS daily_leaderboard`);
   });
 
+  // ── Dashboard layout moves from per-location/per-ARL to tenant-wide ──
+  // Every location in a tenant now shares one grid layout, editable only via
+  // the ARL Console (Dashboard Layout). Per-location/per-ARL customization is
+  // removed entirely rather than just unused, so it can't silently drift back.
+  migrate("056_tenant_wide_dashboard_layout", () => {
+    s.exec(`ALTER TABLE tenants ADD COLUMN grid_layout TEXT`);
+    s.exec(`ALTER TABLE locations DROP COLUMN grid_layout`);
+    s.exec(`ALTER TABLE arls DROP COLUMN grid_layout`);
+  });
+
   const count = (s.prepare(`SELECT COUNT(*) as c FROM _migrations`).get() as any).c;
   console.log(`✅ Migrations complete (${count} applied)`);
 }

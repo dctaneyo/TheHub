@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid,
   Plus,
-  Settings,
   RefreshCw,
   Save,
   X,
   Loader2,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { IconTip } from "@/components/ui/icon-tip";
 import { useGrid } from "./grid-context";
 import { WidgetContainer } from "./widget-container";
 import { WidgetRenderer } from "./widget-renderer";
@@ -28,22 +26,16 @@ import { useDeviceType } from "@/hooks/use-device-type";
 const PILL = "pill flex h-9 items-center gap-1 rounded-full px-3 text-xs font-semibold text-muted-foreground active:text-foreground";
 
 /**
- * SettingsPanel — desktop/tablet only (see dashboard/page.tsx, which doesn't
- * render this at all on mobile: there's no widget customization on a single
- * stacked column, so there's nothing for this panel to offer there). Two
- * distinct surfaces depending on mode, not one cog that always reveals the
- * same six actions inline (the bento-style "everything equally prominent"
- * problem DESIGN.md Section 12 calls out by name):
+ * SettingsPanel — the dashboard layout editor toolbar, used only on the ARL
+ * Console's Dashboard Layout page (src/components/arl/dashboard-layout-settings.tsx).
+ * The dashboard layout is tenant-wide (DESIGN.md, 2026-07-01 decision) —
+ * kiosks never edit it, so this component no longer has a "browsing" cog/
+ * popover mode at all; it's always in edit mode from the moment it mounts.
+ * Add/Cancel/Save/Reset stay inline and fully visible, since editing is the
+ * entire point of the page this renders on, not a mode someone opts into.
  *
- * - Browsing: the cog opens a single bounded popover with exactly two
- *   actions — customize widgets, reset to default — one step deeper, not
- *   pills sliding into the header's flow. There's no layout picker because
- *   there's no longer a set of presets to pick from: every location starts
- *   on the same default layout and customizes from there.
- * - Editing: Add/Cancel/Save stay inline and fully visible, since those are
- *   primary actions a mid-edit user needs immediately.
- *
- * Must be rendered inside <GridProvider>.
+ * Must be rendered inside <GridProvider>, after calling beginEdit()+
+ * setEditMode(true) once on mount (the ARL Console page does this).
  */
 export function SettingsPanel({
   onSave,
@@ -53,52 +45,26 @@ export function SettingsPanel({
   const {
     layout,
     widgets,
-    editMode,
-    setEditMode,
     addWidget,
     replaceLayout,
     beginEdit,
-    commitEdit,
     cancelEdit,
   } = useGrid();
 
-  const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // Auto-close on an outside click/tap — same pattern as ConnectionStatus's
-  // popdown, rather than requiring a second tap on the cog to dismiss.
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
 
   const usedTypes = new Set(widgets.map((w) => w.type));
-
-  const startEditing = () => {
-    beginEdit();
-    setEditMode(true);
-    setShowAdd(false);
-    setOpen(false);
-  };
 
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
       await onSave?.(layout);
-      commitEdit();
-      setEditMode(false);
+      beginEdit(); // re-snapshot so a later Cancel reverts to what was just saved
       setShowAdd(false);
     } catch {
-      // stay in edit mode
+      // stay in edit mode, nothing saved
     } finally {
       setSaving(false);
     }
@@ -106,29 +72,24 @@ export function SettingsPanel({
 
   const handleCancel = () => {
     cancelEdit();
-    setEditMode(false);
     setShowAdd(false);
   };
 
   const handleReset = () => {
     replaceLayout(DEFAULT_LAYOUT);
-    setOpen(false);
-    void onSave?.(DEFAULT_LAYOUT);
+    setShowAdd(false);
   };
 
   // Panel items reveal together as one group — no per-item stagger/spring/
-  // scale choreography. This is a settings menu, not a moment to perform.
+  // scale choreography. This is a settings toolbar, not a moment to perform.
   const pillVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.12 } },
     exit: { opacity: 0, transition: { duration: 0.1 } },
   };
 
-  // Edit-mode toolbar only — browsing-mode actions live in the popover below.
-  const panelItems: { key: string; node: React.ReactNode }[] = [];
-
-  if (editMode) {
-    panelItems.push({
+  const panelItems: { key: string; node: React.ReactNode }[] = [
+    {
       key: "add",
       node: (
         <div className="relative">
@@ -164,8 +125,17 @@ export function SettingsPanel({
           </AnimatePresence>
         </div>
       ),
-    });
-    panelItems.push({
+    },
+    {
+      key: "reset",
+      node: (
+        <button type="button" onClick={handleReset} disabled={saving} className={cn(PILL, "disabled:opacity-50")}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Reset</span>
+        </button>
+      ),
+    },
+    {
       key: "cancel",
       node: (
         <button type="button" onClick={handleCancel} disabled={saving} className={cn(PILL, "disabled:opacity-50")}>
@@ -173,8 +143,8 @@ export function SettingsPanel({
           Cancel
         </button>
       ),
-    });
-    panelItems.push({
+    },
+    {
       key: "save",
       node: (
         <button type="button" onClick={handleSave} disabled={saving} className="flex h-9 items-center gap-1 rounded-full bg-primary px-3 shadow-sm text-xs font-semibold text-primary-foreground transition-colors active:bg-primary/90 disabled:opacity-60">
@@ -182,71 +152,17 @@ export function SettingsPanel({
           {saving ? "Saving…" : "Save"}
         </button>
       ),
-    });
-  }
+    },
+  ];
 
-  if (editMode) {
-    // Editing toolbar — Add/Cancel/Save stay inline, always visible; no cog
-    // to toggle, since there's nothing to "open" mid-edit.
-    return (
-      <div className="flex items-center gap-2">
-        <AnimatePresence initial={false}>
-          {panelItems.map(({ key, node }) => (
-            <motion.div key={key} variants={pillVariants} initial="hidden" animate="visible" exit="exit">
-              {node}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // Browsing — cog opens one bounded popover (customize, reset to default)
-  // instead of pills sliding out into the header's flow.
   return (
-    <div className="relative" ref={panelRef}>
-      <IconTip label="Settings">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className={cn(PILL, open && "bg-card text-foreground")}
-        >
-          <motion.span
-            animate={{ rotate: open ? 90 : 0 }}
-            transition={{ type: "spring", stiffness: 120, damping: 22 }}
-            className="inline-flex"
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </motion.span>
-        </button>
-      </IconTip>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            className="absolute right-0 top-full z-[60] mt-1 w-56 rounded-2xl border border-border bg-card p-2 shadow-lg"
-          >
-            <button
-              type="button"
-              onClick={startEditing}
-              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
-            >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-              Customize widgets
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold text-foreground transition-colors active:bg-muted"
-            >
-              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-              Reset dashboard to default
-            </button>
+    <div className="flex items-center gap-2">
+      <AnimatePresence initial={false}>
+        {panelItems.map(({ key, node }) => (
+          <motion.div key={key} variants={pillVariants} initial="hidden" animate="visible" exit="exit">
+            {node}
           </motion.div>
-        )}
+        ))}
       </AnimatePresence>
     </div>
   );
@@ -257,39 +173,31 @@ export function SettingsPanel({
 // anywhere in the app, confirmed via grep before deletion.
 
 /**
- * Listens for layout changes saved on other devices for the same account and
- * applies them live (so all of a location's screens stay in sync). Ignores
- * updates that originated from this device and never clobbers an in-progress
- * edit. Must be rendered inside a <GridProvider>.
+ * Listens for the tenant-wide dashboard layout changing (an ARL saved a new
+ * one via the ARL Console) and applies it live, so every kiosk updates
+ * without a manual refresh. Never clobbers an in-progress edit — only
+ * relevant on the ARL Console page itself, where an admin could be mid-edit
+ * in one tab while another admin saves from a different one. Must be
+ * rendered inside a <GridProvider>.
  */
-export function GridSync({
-  socket,
-  deviceId,
-}: {
-  socket: Socket | null;
-  deviceId: string;
-}) {
+export function GridSync({ socket }: { socket: Socket | null }) {
   const { replaceLayout, editMode } = useGrid();
   const editingRef = useRef(editMode);
   editingRef.current = editMode;
 
   useEffect(() => {
     if (!socket) return;
-    const handler = (payload: {
-      layout: GridLayout | null;
-      sourceDeviceId?: string;
-    }) => {
-      if (payload.sourceDeviceId && payload.sourceDeviceId === deviceId) return;
+    const handler = (payload: { layout: GridLayout | null }) => {
       if (editingRef.current) return; // don't overwrite an active edit session
       if (payload.layout && Array.isArray(payload.layout.widgets)) {
         replaceLayout(payload.layout);
       }
     };
-    socket.on("grid-layout:updated", handler);
+    socket.on("dashboard-layout:updated", handler);
     return () => {
-      socket.off("grid-layout:updated", handler);
+      socket.off("dashboard-layout:updated", handler);
     };
-  }, [socket, deviceId, replaceLayout]);
+  }, [socket, replaceLayout]);
 
   return null;
 }
@@ -304,7 +212,8 @@ export function GridSurface({ data }: { data: WidgetData }) {
   // Below the mobile breakpoint, the 12x12 free-form grid is replaced
   // entirely rather than shrunk — a two-directional layout doesn't become
   // readable by scaling it down, see DESIGN.md's User Flow / mobile notes.
-  // Tablet and desktop keep the customizable grid unchanged.
+  // Tablet and desktop keep the free-form grid unchanged (still not
+  // editable here on the kiosk — layout editing lives in the ARL Console).
   if (deviceType === "mobile") {
     return <MobileDashboard widgets={widgets} data={data} />;
   }
@@ -374,6 +283,15 @@ export function GridSurface({ data }: { data: WidgetData }) {
  * EMBED side (ARL's iframe):
  *   When mirrorViewState.gridLayout arrives from the target, calls replaceLayout()
  *   to apply the exact widget arrangement inside this GridProvider instance.
+ *
+ * KNOWN DEAD PATH as of 2026-07-01: the "EMBED side: when ARL changes layout
+ * locally" effect below (pushing an edit made inside the mirror embed back to
+ * the target) can no longer fire — SettingsPanel no longer renders inside the
+ * dashboard embed at all, so nothing edits `layout` from within an embed
+ * anymore. Left in place rather than torn out in the same pass that removed
+ * kiosk-side editing, since it's interleaved with the TARGET→EMBED view-sync
+ * effects below (still needed, unrelated) in ways that deserve a careful,
+ * separate look rather than a rushed cut.
  */
 export function GridMirrorSync({
   isEmbed,

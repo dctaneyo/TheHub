@@ -15,6 +15,7 @@ import {
   TrendingUp,
   BarChart3,
   Settings,
+  LayoutGrid,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ModalCloseButton } from "@/components/ui/modal-close-button";
@@ -58,6 +59,7 @@ export const navItems = [
   { id: "remote" as const, label: "Remote", icon: Monitor, group: "Administration" },
   { id: "analytics" as const, label: "Analytics", icon: TrendingUp, group: "Administration" },
   { id: "tenant-settings" as const, label: "Organization", icon: Settings, group: "Administration" },
+  { id: "dashboard-layout" as const, label: "Dashboard Layout", icon: LayoutGrid, group: "Administration" },
 ];
 
 interface ArlSidebarProps {
