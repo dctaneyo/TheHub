@@ -2080,3 +2080,18 @@ is reachable immediately, not gated behind the flourish finishing.
   destructive action); the user chose to ship on static verification
   alone rather than resolve the seed data. Worth a manual check in a
   real browser before treating the visual result as confirmed.
+- 2026-07-03 — that manual check happened, and it caught exactly the
+  kind of bug static checks can't: the stacked-card fan was completely
+  invisible on the real kiosk. The peek cards were offset 8px down but
+  also 8px shorter, so their bottom edges landed flush with the
+  full-height front card's — perfectly hidden behind it. A screenshot
+  with six pending tasks showed one lone card and no stack at all.
+  Fixed per the user's direction: the front card no longer fills the
+  widget — it gives up 16px of height per peek card (`PEEK_DROP`), and
+  each peek sits that much lower and 14px narrower per level
+  (`PEEK_INSET`), so the fan visibly pokes out below the front card's
+  bottom edge, matching the reference designs the redesign was based
+  on. The lesson worth keeping: "renders without errors" says nothing
+  about "the depth cue is actually visible" — layered/occluded UI
+  needs eyes on real pixels, which is why the previous entry's
+  verification caveat existed in the first place.

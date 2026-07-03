@@ -56,6 +56,13 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+// Stack fan geometry — how far each peek card pokes out below the card
+// above it, and how much narrower it gets per level. The front card
+// reserves peeks.length * PEEK_DROP of the widget's height so the fan is
+// actually visible (see the peek-cards comment in the render below).
+const PEEK_DROP = 16;
+const PEEK_INSET = 14;
+
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
 
@@ -238,22 +245,32 @@ export function GridTasksWidget({
             </motion.div>
           ) : (
             <div key="stack" className="relative h-full">
-              {/* Peek cards — static depth cue, not interactive */}
+              {/* Peek cards — static depth cue, not interactive. The front
+                  card deliberately does NOT fill the widget: it gives up
+                  PEEK_DROP px of height per peek card, and each peek sits
+                  that much lower (and PEEK_INSET px narrower per level)
+                  than the card above it, so the stack visibly fans out
+                  below the front card's bottom edge. The first version
+                  skipped the reserved space and the full-height front card
+                  covered the fan entirely — flush bottom edges, invisible
+                  stack (caught on a real kiosk screenshot, 2026-07-03). */}
               {peeks.map((task, i) => (
                 <div
                   key={task.id}
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-2 top-0 rounded-2xl border border-border bg-card"
+                  className="pointer-events-none absolute rounded-2xl border border-border bg-card"
                   style={{
-                    height: "calc(100% - 8px)",
-                    transform: `translateY(${(i + 1) * 8}px) scale(${1 - (i + 1) * 0.04})`,
-                    opacity: 0.5 - i * 0.15,
+                    left: (i + 1) * PEEK_INSET,
+                    right: (i + 1) * PEEK_INSET,
+                    top: (i + 1) * PEEK_DROP,
+                    height: `calc(100% - ${peeks.length * PEEK_DROP}px)`,
+                    opacity: 0.55 - i * 0.25,
                     zIndex: 1 - i,
                   }}
                 />
               ))}
 
-              {/* Front card */}
+              {/* Front card — shorter than the widget by the fan's height */}
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.div
                   key={front.id}
@@ -262,7 +279,8 @@ export function GridTasksWidget({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  className="relative z-10 flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  className="relative z-10 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  style={{ height: `calc(100% - ${peeks.length * PEEK_DROP}px)` }}
                 >
                   {/* Progress bar across the top edge — the one signal for
                       today's completion fraction (replaces the old ring). */}
