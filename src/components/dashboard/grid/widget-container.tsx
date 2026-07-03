@@ -12,7 +12,7 @@ import {
   MIN_W,
   MIN_H,
   fits,
-  isAmbientWidget,
+  hidesOwnFrame,
   isOutlineWidget,
   type Widget,
 } from "./grid-engine";
@@ -36,14 +36,13 @@ export function WidgetContainer({
   const [blocked, setBlocked] = useState(false);
   const { w: width, h: height } = widget;
 
-  // Ambient/glanceable widgets (a giant clock, a quote) don't need a card
-  // boundary — they read fine sitting directly on the grid background, and
-  // boxing them identically to data-dense widgets (Tasks, Calendar,
-  // Messages) is exactly the "every feature crammed into a rounded box"
-  // sameness that reads as generic (DESIGN.md Section 11, Non-Tells).
-  // Still gets full chrome while editing/dragging, since the user needs a
-  // visible boundary to grab or resize it then.
-  const isAmbient = isAmbientWidget(widget.type);
+  // Ambient widgets (Clock) and self-bounding ones (Tasks — its own cards
+  // already supply a boundary) don't need a second outer card frame; boxing
+  // everything identically is the "every feature crammed into a rounded box"
+  // sameness that reads as generic (DESIGN.md Section 11, Non-Tells). Still
+  // gets full chrome while editing/dragging, since the user needs a visible
+  // boundary to grab or resize it then.
+  const hidesFrame = hidesOwnFrame(widget.type);
   const isOutline = isOutlineWidget(widget.type);
 
   // Latest widgets snapshot for collision checks inside pointer handlers
@@ -160,13 +159,13 @@ export function WidgetContainer({
     zIndex: active ? 40 : undefined,
   };
 
-  // Ambient widgets only need their card boundary while there's a reason to
-  // see one: editing (to grab/resize it) or an active drag/resize.
+  // Frame-hiding widgets only need the outer boundary while there's a reason
+  // to see one: editing (to grab/resize it) or an active drag/resize.
   // Otherwise no border, no fill, no shadow — content sits straight on the
-  // grid. Outline widgets (just the quote, for now) always show the
-  // boundary — see isOutlineWidget — so this is "ambient" only in the
-  // narrower sense of never gating it off.
-  const showChrome = !isAmbient || editMode || active;
+  // grid (Clock) or supplies its own boundary already (Tasks' cards).
+  // Outline widgets (just the quote, for now) always show the boundary —
+  // see isOutlineWidget — so frame-hiding never gates that off.
+  const showChrome = !hidesFrame || editMode || active;
   // While editing/dragging, the outline widget temporarily fills like a
   // normal card too — same reasoning as ambient widgets gaining full chrome
   // then: a flat outline is harder to grab/see feedback on mid-drag.

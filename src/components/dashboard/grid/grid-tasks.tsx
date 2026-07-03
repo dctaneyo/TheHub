@@ -3,20 +3,50 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckSquare, ChevronRight, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
+import {
+  CheckSquare,
+  ChevronRight,
+  X,
+  XCircle,
+  Info,
+  CheckCircle2,
+  ClipboardList,
+  SprayCan,
+  Clock,
+} from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { IconTip } from "@/components/ui/icon-tip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { TaskItem } from "@/components/dashboard/timeline";
 
 /**
- * Minimal Today's Tasks widget — the only tasks widget in the app.
+ * Today's Tasks widget — redesigned 2026-07-01 from a flat scrolling list to
+ * a stacked-card, one-at-a-time interface: user request, discussed against
+ * DESIGN.md before building (see Changelog for the full reasoning and the
+ * four questions it raised — task ordering, the progress signal, the
+ * expanded view's relationship to /tasks, and the widget's own frame).
  *
- * - Completion ring + remaining/completed counts at the top
- * - One-line bold task rows with a checkbox to complete
- * - Overdue tasks shown in red; completed tasks drop out of the list
- * - Clicking the ring navigates to /tasks (the full multi-day/history/
- *   filtering view — see that route) instead of opening a same-page modal.
+ * - Tasks are shown one at a time, front card first (soonest due), with up
+ *   to two peek cards fanned behind to show more remain — dueTime order is a
+ *   soft, practical sequence (checklists usually run in due-time order), not
+ *   an enforced one: tapping the front card opens a grid of every task today,
+ *   completable directly, for the out-of-order case.
+ * - A horizontal progress bar sits across the top edge of the front card
+ *   ("N/M tasks complete") — replaces the old completion ring; Section 18
+ *   only gets one signal for this fact, not two.
+ * - The widget's own outer frame is gone (see hidesOuterFrame in
+ *   grid-engine.ts) — each card already supplies its own boundary, so a
+ *   second frame around the whole widget restated one already given by the
+ *   cards themselves. The icon+title header stays, unlike the fully-ambient
+ *   widgets (Clock, Quote): a stack of cards isn't as self-evidently
+ *   "Today's Tasks" as a giant clock is self-evidently a clock.
  */
+
+const TYPE_ICON: Partial<Record<string, typeof ClipboardList>> = {
+  task: ClipboardList,
+  cleaning: SprayCan,
+  reminder: Clock,
+  information: Info,
+};
 
 function formatTime(time: string, isAllDay?: boolean): string {
   if (isAllDay) return "All Day";
@@ -29,96 +59,65 @@ function formatTime(time: string, isAllDay?: boolean): string {
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
 
-// Earned Delight instance (DESIGN.md Section 20) — trigger: remainingCount
-// crosses from >0 to 0 while the widget is mounted (never on initial mount
-// already-complete, so reopening the widget after finishing doesn't replay
-// it). Effect: the ring holds a distinct filled checkmark state for ~2.5s,
-// then settles back to the normal 100%/COMPLETE display — now in green
-// (pct === 100) instead of red, which is a correctness change, not part of
-// the flourish. One instance only, per Section 20's own scope cap.
-function CompletionRing({
-  pct,
-  justCompleted,
-  onClick,
-}: {
-  pct: number;
-  justCompleted: boolean;
-  onClick?: () => void;
-}) {
-  const size = 104;
-  const stroke = 11;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - pct / 100);
-  const ringColor = pct === 100 ? "var(--hub-green)" : "var(--hub-red)";
-
+// One task's content, shared by the front card, the peek cards behind it,
+// and the expanded grid — only how it's wrapped differs per use.
+function TaskCardBody({ task }: { task: TaskItem }) {
+  const Icon = TYPE_ICON[task.type] ?? ClipboardList;
   return (
-    <IconTip label="View all tasks for today">
-    <motion.button
-      type="button"
-      onClick={onClick}
-      title="View all tasks for today"
-      whileTap={{ scale: 0.97 }}
-      animate={justCompleted ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="relative inline-flex shrink-0 items-center justify-center rounded-full"
-      style={{ width: size, height: size }}
-    >
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="var(--border)"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={ringColor}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.5s ease, stroke 0.5s ease" }}
-        />
-      </svg>
-      <AnimatePresence mode="wait" initial={false}>
-        {justCompleted ? (
-          <motion.span
-            key="celebrate"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="absolute flex flex-col items-center leading-none"
-          >
-            <CheckCircle2 className="h-9 w-9" style={{ color: "var(--hub-green)" }} />
-            <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
-              ALL DONE
-            </span>
-          </motion.span>
-        ) : (
-          <motion.span
-            key="percent"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="absolute flex flex-col items-center leading-none"
-          >
-            <span className="text-3xl font-black text-foreground">{pct}%</span>
-            <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
-              COMPLETE
-            </span>
-          </motion.span>
+    <div className="flex min-w-0 flex-1 items-start gap-3">
+      <div
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          task.isOverdue ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]" : "bg-primary/10 text-primary"
         )}
-      </AnimatePresence>
-    </motion.button>
-    </IconTip>
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={cn("truncate text-xs font-semibold tabular-nums", task.isOverdue ? "text-[var(--hub-red)]" : "text-muted-foreground")}>
+          {formatTime(task.dueTime, task.isAllDay)}{task.isOverdue ? " · Overdue" : ""}
+        </p>
+        <p className="mt-0.5 truncate text-base font-semibold text-foreground">{task.title}</p>
+      </div>
+    </div>
+  );
+}
+
+// Earned Delight instance (DESIGN.md Section 20) — same approved trigger and
+// effect as before (remainingCount crosses >0 → 0 while mounted, never on an
+// already-complete mount), relocated onto the redesigned stack rather than
+// proposed as a second instance: the ring it used to live on is gone, but
+// the event and response are unchanged, just re-homed to a card in the
+// stack's position instead of a ring's center label.
+function AllDoneCard() {
+  return (
+    <motion.div
+      key="all-done"
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.25 }}
+      className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-6 text-center shadow-sm"
+    >
+      <motion.div
+        animate={{ scale: [1, 1.12, 1] }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <CheckCircle2 className="h-10 w-10" style={{ color: "var(--hub-green)" }} />
+      </motion.div>
+      <p className="text-sm font-semibold text-foreground">All done for today</p>
+    </motion.div>
+  );
+}
+
+function EmptyStack({ total }: { total: number }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+      <CheckCircle2 className="h-8 w-8" style={{ color: "var(--hub-green)" }} />
+      <p className="text-sm font-semibold text-muted-foreground">
+        {total === 0 ? "No tasks today" : "All tasks complete"}
+      </p>
+    </div>
   );
 }
 
@@ -135,28 +134,34 @@ export function GridTasksWidget({
   const [missedOpen, setMissedOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
   const missedBtnRef = useRef<HTMLButtonElement>(null);
+  const [expandOpen, setExpandOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [prevRemaining, setPrevRemaining] = useState<number | null>(null);
+  // Information tasks have no persistent complete state (see TaskCardBody's
+  // type icon and the widget doc comment) — "Got it" only dismisses one from
+  // *this* viewing session's stack, same as the old list always re-showing
+  // it after a reload.
+  const [dismissedInfoIds, setDismissedInfoIds] = useState<Set<string>>(new Set());
 
-  const { total, completedCount, remainingCount, pct, pending } =
+  const { total, completedCount, remainingCount, pending, allToday } =
     useMemo(() => {
-      // Information tasks are not actionable — exclude from all counts/progress
+      // Information tasks are not actionable — excluded from progress counts
       const actionable = tasks.filter((t) => t.type !== "information");
       const total = actionable.length;
       const completedCount = actionable.filter((t) => t.isCompleted).length;
       const remainingCount = total - completedCount;
-      const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
-      // Pending list still shows information tasks (with info icon, no checkmark)
-      const pending = tasks.filter((t) => !t.isCompleted).slice().sort(byDueTime);
-      return { total, completedCount, remainingCount, pct, pending };
-    }, [tasks]);
+      const allToday = tasks.slice().sort(byDueTime);
+      const pending = tasks
+        .filter((t) => !t.isCompleted && !dismissedInfoIds.has(t.id))
+        .slice()
+        .sort(byDueTime);
+      return { total, completedCount, remainingCount, pending, allToday };
+    }, [tasks, dismissedInfoIds]);
 
-  // Earned Delight trigger (DESIGN.md Section 20) — fires only on a genuine
-  // >0 → 0 transition observed while mounted, never when the widget mounts
-  // already at 0 (so reopening after finishing today doesn't replay it).
-  // Derived during render (React's documented pattern for state depending on
-  // a prop change) rather than in an effect, since the detection itself is
-  // synchronous — the effect below only owns the timer, a real side effect.
+  // Earned Delight trigger — unchanged logic from the ring version, derived
+  // during render rather than in an effect (state-from-a-prop-change is the
+  // documented React pattern; avoids the react-hooks/set-state-in-effect
+  // cascading-render warning the original ring implementation hit).
   if (prevRemaining !== remainingCount) {
     const justFinished = prevRemaining !== null && prevRemaining > 0 && remainingCount === 0 && total > 0;
     setPrevRemaining(remainingCount);
@@ -169,141 +174,149 @@ export function GridTasksWidget({
     return () => clearTimeout(timer);
   }, [justCompleted]);
 
+  const front = pending[0];
+  const peeks = pending.slice(1, 3);
+  const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+  const handleFrontAction = (task: TaskItem) => {
+    if (task.type === "information") {
+      setDismissedInfoIds((prev) => new Set(prev).add(task.id));
+    } else {
+      onComplete(task.id);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
-      {/* Header — same icon+title pattern as every other data widget
-          (Messages, Upcoming, Calendar), so the widget identifies itself
-          instead of relying on the ring below to imply "this is tasks."
-          Tapping it navigates to /tasks — the chevron is the signifier that
-          it's tappable, replacing the old floating corner Expand button
-          (one bigger, consistent touch target instead of a separate icon). */}
+      {/* Header — tapping it navigates to /tasks, same as every other data
+          widget. The stack below has its own tap-to-expand, so the header
+          stays the "go to the full route" affordance, the card the
+          "see just today" one — two different scopes, not duplicated. */}
       <button
         type="button"
         onClick={() => router.push("/tasks")}
-        className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-3 text-left transition-colors active:bg-muted/60"
+        className="flex shrink-0 items-center gap-2 px-3 pb-1 pt-3 text-left transition-colors active:bg-muted/60"
       >
         <CheckSquare className="h-4 w-4 text-primary" />
         <h2 className="flex-1 text-lg font-semibold text-foreground">Today&apos;s Tasks</h2>
         <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
       </button>
 
-      {/* Ring + counts */}
-      <div className="flex shrink-0 flex-col items-center gap-3 px-3 pb-3">
-        <CompletionRing pct={pct} justCompleted={justCompleted} onClick={() => router.push("/tasks")} />
-
-        <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 font-semibold text-foreground">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: "var(--hub-green)" }}
-              />
-              Completed:
-            </span>
-            <span className="font-semibold tabular-nums text-foreground">
-              {completedCount} {completedCount === 1 ? "task" : "tasks"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 font-semibold text-foreground">
-              <span
-                className="h-2.5 w-2.5 rounded-full bg-yellow-400"
-              />
-              Remaining:
-            </span>
-            <span className="font-semibold tabular-nums text-foreground">
-              {remainingCount} {remainingCount === 1 ? "task" : "tasks"}
-            </span>
-          </div>
-          {/* Missed Yesterday — clickable row that opens a popover */}
-          <button
-            ref={missedBtnRef}
-            type="button"
-            onClick={() => {
-              if (missedBtnRef.current) {
-                const r = missedBtnRef.current.getBoundingClientRect();
-                setPopoverPos({ top: r.bottom + 6, left: r.left, width: r.width });
-              }
-              setMissedOpen((o) => !o);
-            }}
-            className="flex w-full items-center justify-between rounded-lg px-0 py-1 transition-colors active:text-[var(--hub-red)]"
-          >
-            <span className="flex items-center gap-2 font-semibold text-foreground">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: "var(--hub-red)" }}
-              />
-              Missed (Yesterday):
-            </span>
-            <span className={cn("font-semibold tabular-nums", missedYesterday.length > 0 ? "text-[var(--hub-red)]" : "text-foreground")}>
-              {missedYesterday.length} {missedYesterday.length === 1 ? "task" : "tasks"}
-            </span>
-          </button>
-        </div>
+      {/* Missed Yesterday — compact pill, own popover, unrelated to today's
+          stack/progress so it stays out of that math entirely. */}
+      <div className="flex shrink-0 justify-end px-3 pb-2">
+        <button
+          ref={missedBtnRef}
+          type="button"
+          onClick={() => {
+            if (missedBtnRef.current) {
+              const r = missedBtnRef.current.getBoundingClientRect();
+              setPopoverPos({ top: r.bottom + 6, left: r.left, width: r.width });
+            }
+            setMissedOpen((o) => !o);
+          }}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+            missedYesterday.length > 0
+              ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)] active:bg-[var(--hub-red)]/15"
+              : "text-muted-foreground active:bg-muted"
+          )}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--hub-red)" }} />
+          Missed yesterday: {missedYesterday.length}
+        </button>
       </div>
 
-      {/* Pending list (completed tasks are removed entirely) */}
-      <div className="min-h-0 flex-1 overflow-y-auto border-t border-border/60 px-3 pb-3 pt-2">
-        {pending.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
-            <CheckCircle2
-              className="h-8 w-8"
-              style={{ color: "var(--hub-green)" }}
-            />
-            <p className="text-sm font-semibold text-muted-foreground">
-              {total === 0 ? "No tasks today" : "All tasks complete"}
-            </p>
-          </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {pending.map((task) => (
-              <motion.div
-                key={task.id}
-                layout
-                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                className="flex items-center gap-3 border-b border-border/40 py-3"
-              >
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 truncate text-sm font-semibold",
-                    task.isOverdue ? "text-[var(--hub-red)]" : "text-foreground"
-                  )}
+      {/* The stack */}
+      <div className="relative min-h-0 flex-1 px-3 pb-3">
+        <AnimatePresence mode="wait">
+          {justCompleted ? (
+            <AllDoneCard />
+          ) : !front ? (
+            <motion.div key="empty" className="h-full">
+              <EmptyStack total={total} />
+            </motion.div>
+          ) : (
+            <div key="stack" className="relative h-full">
+              {/* Peek cards — static depth cue, not interactive */}
+              {peeks.map((task, i) => (
+                <div
+                  key={task.id}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-2 top-0 rounded-2xl border border-border bg-card"
+                  style={{
+                    height: "calc(100% - 8px)",
+                    transform: `translateY(${(i + 1) * 8}px) scale(${1 - (i + 1) * 0.04})`,
+                    opacity: 0.5 - i * 0.15,
+                    zIndex: 1 - i,
+                  }}
+                />
+              ))}
+
+              {/* Front card */}
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.div
+                  key={front.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  className="relative z-10 flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
                 >
-                  [{formatTime(task.dueTime, task.isAllDay)}] {task.title}
-                </span>
-                {task.type === "information" ? (
-                  /* Information tasks are not actionable — show a static info icon */
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center">
-                    <Info className="h-6 w-6 text-blue-400" />
-                  </span>
-                ) : (
-                  /* Touch-friendly complete button */
-                  <IconTip label="Mark complete">
+                  {/* Progress bar across the top edge — the one signal for
+                      today's completion fraction (replaces the old ring). */}
+                  <div className="h-1.5 w-full shrink-0 bg-muted">
+                    <div
+                      className="h-full rounded-r-full transition-[width] duration-500"
+                      style={{ width: `${pct}%`, background: "var(--hub-green)" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExpandOpen(true)}
+                    className="flex items-center justify-between gap-2 px-4 pt-3 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
+                  >
+                    <span className="tabular-nums">{completedCount}/{total} tasks complete</span>
+                    <span className="flex items-center gap-1">
+                      View all today
+                      <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandOpen(true)}
+                    className="flex flex-1 items-start px-4 pt-3 text-left"
+                  >
+                    <TaskCardBody task={front} />
+                  </button>
+
+                  <div className="p-3 pt-0">
                     <button
                       type="button"
-                      onClick={() => onComplete(task.id)}
-                      title="Mark complete"
-                      className="group/cb flex h-11 w-11 shrink-0 items-center justify-center"
+                      onClick={(e) => { e.stopPropagation(); handleFrontAction(front); }}
+                      className={cn(
+                        "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-colors active:opacity-90",
+                      )}
+                      style={{ background: front.type === "information" ? "var(--primary)" : "var(--hub-green)" }}
                     >
-                      <CheckCircle2 className="h-7 w-7 text-muted-foreground/25 transition-colors group-active/cb:text-[var(--hub-green)]" />
+                      <CheckCircle2 className="h-4 w-4" />
+                      {front.type === "information" ? "Got it" : "Complete"}
                     </button>
-                  </IconTip>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Missed Yesterday popover — fixed so it escapes the overflow-hidden card */}
+      {/* Missed Yesterday popover */}
       <AnimatePresence>
         {missedOpen && (
           <>
-            {/* Backdrop — click anywhere to close */}
-            <div
-              className="fixed inset-0 z-[300]"
-              onClick={() => setMissedOpen(false)}
-            />
+            <div className="fixed inset-0 z-[300]" onClick={() => setMissedOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -6, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -352,6 +365,74 @@ export function GridTasksWidget({
           </>
         )}
       </AnimatePresence>
+
+      {/* Expanded view — today only, a quick grid, not a second /tasks.
+          Every card here is completable directly, the escape hatch for
+          completing something out of the stack's due-time order. */}
+      <Dialog open={expandOpen} onOpenChange={(d) => setExpandOpen(d.open)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Today&apos;s Tasks</DialogTitle>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {allToday.map((task) => {
+                const Icon = TYPE_ICON[task.type] ?? ClipboardList;
+                return (
+                  <div
+                    key={task.id}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl border p-3",
+                      task.isCompleted ? "border-border bg-muted/40" : "border-border bg-card"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                        task.isOverdue && !task.isCompleted ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]" : "bg-primary/10 text-primary"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn("truncate text-sm font-semibold", task.isCompleted ? "text-muted-foreground line-through" : "text-foreground")}>
+                        {task.title}
+                      </p>
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {formatTime(task.dueTime, task.isAllDay)}
+                      </p>
+                    </div>
+                    {task.type !== "information" && (
+                      <button
+                        type="button"
+                        onClick={() => onComplete(task.id)}
+                        disabled={task.isCompleted}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors active:bg-muted disabled:opacity-40"
+                      >
+                        <CheckCircle2
+                          className="h-5 w-5"
+                          style={{ color: task.isCompleted ? "var(--hub-green)" : "var(--muted-foreground)" }}
+                        />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {allToday.length === 0 && (
+                <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No tasks today</p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setExpandOpen(false); router.push("/tasks"); }}
+            className="flex h-10 w-full shrink-0 items-center justify-center gap-1 rounded-xl bg-muted text-sm font-semibold text-foreground transition-colors active:bg-muted/80"
+          >
+            Open full Tasks history
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

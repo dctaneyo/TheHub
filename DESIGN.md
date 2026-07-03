@@ -2024,3 +2024,59 @@ is reachable immediately, not gated behind the flourish finishing.
   effects in the same function (still needed, unrelated) in ways that
   deserve a careful, separate look rather than a rushed cut next to a
   schema migration. Flagged in-code at the top of `GridMirrorSync`.
+- 2026-07-01 — Today's Tasks widget rebuilt from a flat scrolling list
+  to a stacked card, one-task-at-a-time interface. User-proposed;
+  checked against this doc *before* building, per Section 20's own
+  precedent (agree the specifics first) even though this isn't an
+  Earned Delight instance itself — it's a Section 0/11/16 layout
+  redesign that happens to make routine completion less monotonous,
+  a different category of change than a rare-event micro-interaction,
+  so it doesn't count against Section 20's one-instance cap. Four
+  concrete questions got resolved before any code was written:
+
+  - **Task ordering**: `dueTime` is a soft, practical sequence (most
+    tasks — food-safety checklists, shift routines — genuinely run in
+    that order), not a hard dependency the data model enforces. The
+    stack shows the soonest-due task first; tapping it opens a grid of
+    every task today, each directly completable, as the escape hatch
+    for the out-of-order case — this closed the gap between "the UI
+    implies strict order" and "the data doesn't have one."
+  - **Progress signal**: the old completion ring is gone, replaced by
+    one horizontal bar across the top edge of the front card
+    ("N/M tasks complete"). Section 18 only gets one signal for this
+    fact now, not two competing ones.
+  - **Expanded view vs. `/tasks`**: the tap-to-expand grid is scoped to
+    *today only* — a quick, low-friction glance from the stack, not a
+    second full-history browser. `/tasks` (multi-day, filterable)
+    keeps that job entirely; the expanded grid has a button out to it,
+    not a duplicate of it. Different scope, not a redundant surface.
+  - **The widget's own frame**: removed. Added `hidesOwnFrame` to
+    `grid-engine.ts` — a third category alongside `isAmbientWidget`
+    (Clock: no header, no border, glanceable) and `isOutlineWidget`
+    (Quote: border always, never filled) for a widget whose *content*
+    already supplies a boundary (each stacked card is its own bordered,
+    shadowed object), so a second outer frame around the whole widget
+    restated one the cards already gave — the same "don't say it twice"
+    reasoning Section 18 applies to data, applied here to chrome. Tasks
+    keeps its icon+title header, unlike Clock — a card stack isn't as
+    self-evidently "Today's Tasks" as a giant clock is self-evidently a
+    clock. `widget-container.tsx` and `grid-mobile-stack.tsx` (which
+    now gives Tasks the real card stack inline on mobile, not a
+    tappable summary row, since it's the primary daily-use widget, not
+    a glanceable aside) both switched from checking `isAmbientWidget`
+    to `hidesOwnFrame` so the two presentations stay in agreement.
+
+  The Earned Delight "ALL DONE" flourish (Changelog, earlier
+  2026-07-01 entry) moved from the old ring onto a dedicated card in
+  the new stack — same approved trigger and 2.5s effect, relocated
+  rather than re-proposed, since the surface it lived on no longer
+  exists.
+
+  **Verification note**: static checks only (`tsc`/lint/304 tests/
+  `next build` all clean) — a live browser walkthrough was attempted
+  but blocked on this local dev DB having no seeded location account
+  (and fixing that required clearing 2 partially-seeded ARL rows,
+  which the permission system correctly stopped as an unrequested
+  destructive action); the user chose to ship on static verification
+  alone rather than resolve the seed data. Worth a manual check in a
+  real browser before treating the visual result as confirmed.

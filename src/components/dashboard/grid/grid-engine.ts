@@ -73,6 +73,20 @@ export function isOutlineWidget(type: WidgetType): boolean {
   return type === "quote";
 }
 
+/** A third case, distinct from "ambient" (Clock — passive, glanceable, no
+ *  header needed) and "outline" (Quote — border always, never filled): a
+ *  widget whose own content already supplies a visual boundary, so a second,
+ *  outer widget frame around the whole thing would just restate one the
+ *  content already gives (the same "don't say it twice" reasoning Section
+ *  18 applies to data; this is that reasoning applied to chrome). Tasks
+ *  (2026-07-01 stacked-card redesign) is the first case: each card in the
+ *  stack is already bordered/shadowed on its own. Unlike Clock, it keeps its
+ *  icon+title header — a stack of task cards isn't as self-evidently
+ *  "Today's Tasks" as a giant clock is self-evidently a clock. */
+export function hidesOwnFrame(type: WidgetType): boolean {
+  return isAmbientWidget(type) || type === "tasks";
+}
+
 export interface GridLayout {
   id: string;
   name: string;
