@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckSquare, ChevronRight, X, CheckCircle2, XCircle, Info } from "@/lib/icons";
@@ -29,11 +29,20 @@ function formatTime(time: string, isAllDay?: boolean): string {
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
 
+// Earned Delight instance (DESIGN.md Section 20) — trigger: remainingCount
+// crosses from >0 to 0 while the widget is mounted (never on initial mount
+// already-complete, so reopening the widget after finishing doesn't replay
+// it). Effect: the ring holds a distinct filled checkmark state for ~2.5s,
+// then settles back to the normal 100%/COMPLETE display — now in green
+// (pct === 100) instead of red, which is a correctness change, not part of
+// the flourish. One instance only, per Section 20's own scope cap.
 function CompletionRing({
   pct,
+  justCompleted,
   onClick,
 }: {
   pct: number;
+  justCompleted: boolean;
   onClick?: () => void;
 }) {
   const size = 104;
@@ -41,14 +50,18 @@ function CompletionRing({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - pct / 100);
+  const ringColor = pct === 100 ? "var(--hub-green)" : "var(--hub-red)";
 
   return (
     <IconTip label="View all tasks for today">
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       title="View all tasks for today"
-      className="relative inline-flex shrink-0 items-center justify-center rounded-full transition-transform active:scale-[0.97]"
+      whileTap={{ scale: 0.97 }}
+      animate={justCompleted ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="relative inline-flex shrink-0 items-center justify-center rounded-full"
       style={{ width: size, height: size }}
     >
       <svg width={size} height={size} className="-rotate-90">
@@ -65,21 +78,46 @@ function CompletionRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--hub-red)"
+          stroke={ringColor}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.5s ease" }}
+          style={{ transition: "stroke-dashoffset 0.5s ease, stroke 0.5s ease" }}
         />
       </svg>
-      <span className="absolute flex flex-col items-center leading-none">
-        <span className="text-3xl font-black text-foreground">{pct}%</span>
-        <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
-          COMPLETE
-        </span>
-      </span>
-    </button>
+      <AnimatePresence mode="wait" initial={false}>
+        {justCompleted ? (
+          <motion.span
+            key="celebrate"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute flex flex-col items-center leading-none"
+          >
+            <CheckCircle2 className="h-9 w-9" style={{ color: "var(--hub-green)" }} />
+            <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
+              ALL DONE
+            </span>
+          </motion.span>
+        ) : (
+          <motion.span
+            key="percent"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute flex flex-col items-center leading-none"
+          >
+            <span className="text-3xl font-black text-foreground">{pct}%</span>
+            <span className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground">
+              COMPLETE
+            </span>
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
     </IconTip>
   );
 }
@@ -97,6 +135,8 @@ export function GridTasksWidget({
   const [missedOpen, setMissedOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 0 });
   const missedBtnRef = useRef<HTMLButtonElement>(null);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const [prevRemaining, setPrevRemaining] = useState<number | null>(null);
 
   const { total, completedCount, remainingCount, pct, pending } =
     useMemo(() => {
@@ -110,6 +150,24 @@ export function GridTasksWidget({
       const pending = tasks.filter((t) => !t.isCompleted).slice().sort(byDueTime);
       return { total, completedCount, remainingCount, pct, pending };
     }, [tasks]);
+
+  // Earned Delight trigger (DESIGN.md Section 20) — fires only on a genuine
+  // >0 → 0 transition observed while mounted, never when the widget mounts
+  // already at 0 (so reopening after finishing today doesn't replay it).
+  // Derived during render (React's documented pattern for state depending on
+  // a prop change) rather than in an effect, since the detection itself is
+  // synchronous — the effect below only owns the timer, a real side effect.
+  if (prevRemaining !== remainingCount) {
+    const justFinished = prevRemaining !== null && prevRemaining > 0 && remainingCount === 0 && total > 0;
+    setPrevRemaining(remainingCount);
+    if (justFinished) setJustCompleted(true);
+  }
+
+  useEffect(() => {
+    if (!justCompleted) return;
+    const timer = setTimeout(() => setJustCompleted(false), 2500);
+    return () => clearTimeout(timer);
+  }, [justCompleted]);
 
   return (
     <div className="flex h-full flex-col">
@@ -131,7 +189,7 @@ export function GridTasksWidget({
 
       {/* Ring + counts */}
       <div className="flex shrink-0 flex-col items-center gap-3 px-3 pb-3">
-        <CompletionRing pct={pct} onClick={() => router.push("/tasks")} />
+        <CompletionRing pct={pct} justCompleted={justCompleted} onClick={() => router.push("/tasks")} />
 
         <div className="flex w-full max-w-[240px] flex-col gap-1 text-sm">
           <div className="flex items-center justify-between">

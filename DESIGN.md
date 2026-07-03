@@ -391,6 +391,114 @@ a missing confirmation, not a style choice.
 
 ---
 
+## 20. Earned Delight
+
+Every other section in this doc is a brake: does this color/icon/shadow/
+animation/element earn its place, or is it decoration wearing a
+functional costume? None of them is an accelerator — nothing in this doc
+ever asks whether a screen has earned some *warmth*, only whether it's
+avoided looking cheap. Applied consistently, a doc built entirely out of
+brakes produces a correctly-restrained app that can still read as
+sterile, because restraint was the only motion available. This section
+is the counterweight, held to the same rigor as everything it balances —
+it is not permission to add flourish for its own sake, which would just
+be slop pointed in the other direction.
+
+**This section applies to the Dashboard/kiosk surface specifically, not
+the ARL or Admin Consoles.** Those two are dense work tools for people
+managing many locations or tenants at once — their stated reference
+anchors (Linear, Stripe/Vercel) are correct for that job, and restraint
+is the right choice there, not an oversight to correct. The Dashboard is
+different: it's used dozens of times a day by the same hourly frontline
+staff doing repetitive work, which is exactly the situation where a
+small, well-placed moment of warmth pays for itself, and exactly the
+situation gamification used to serve before it was removed for reasons
+unrelated to this doc (see Changelog, 2026-06-16) — this section is not
+a mandate to rebuild points, streaks, badges, or leaderboards. Those were
+social/competitive systems; this is about acknowledging one person's own
+progress back to them, on the surface they already use, not building a
+second system next to it.
+
+**The earned-delight test — Section 18, pointed the other direction:**
+find a moment on the kiosk surface that represents real accomplishment
+or relief for the person experiencing it, then check whether the UI
+currently treats it identically to a routine, forgettable interaction.
+If it does, that gap — not the absence of decoration in general — is
+what has earned a deliberate flourish.
+
+A concrete instance already sitting in this codebase, unfixed: the
+Tasks widget's completion ring (`grid-tasks.tsx`) animates its
+stroke-dashoffset the same 0.5s ease at 40% complete as it does at 100%
+— finishing every task for the day is currently indistinguishable, UI-
+wise, from checking off one task out of ten. `remainingCount` already
+hits zero in the existing state; nothing downstream of that moment does
+anything with it. That's the kind of gap this section is for — not
+"the dashboard needs more animation," but "this specific, already-
+tracked event earns a specific, bounded response it doesn't currently
+get."
+
+**Guardrails, so this doesn't become the next Do Not Use entry:**
+
+- **Scale intensity to rarity.** A flourish that plays on every routine
+  check-off stops being a signal within a day and becomes ambient noise
+  — worse, it becomes exactly the "boilerplate animation" Section 9
+  already bans. The rarer and more genuinely complete the event (last
+  task of the day, not task #4 of 10), the more it's earned a response;
+  routine progress keeps its routine, restrained treatment.
+- **Still passes every existing rule.** No hover-only trigger (Section
+  6), no stacking multiple decorative effects on one element with no
+  individual reason for each (Section 17), still communicates a result
+  and doesn't play "whether the action succeeded, failed, or did
+  nothing" (Section 9's own micro-interaction test already covers this
+  — earned delight is that test's rare-event case, not an exception to
+  it).
+- **One clear trigger, one bounded effect — stated, not vague.** "Add
+  some celebration" is not a spec. "When `remainingCount` reaches zero
+  for the first time that day, the completion ring holds a distinct
+  filled state for N seconds before settling" is. If a proposed flourish
+  can't be stated this specifically, it isn't ready to build.
+- **Never blocks or delays the next action.** A kiosk user still has a
+  shift to run; a flourish that can't be tapped past, or that gates the
+  next real task behind itself, has become friction wearing a reward
+  costume — the exact inversion of what this section is for.
+
+**Proposed and agreed before building — same precedent as the quote
+widget's exception.** That exception wasn't self-granted by whoever
+touched the file; it was user-requested and agreed for one named reason
+before it shipped. Nothing in this section is a standing license for
+any future change to invoke "earned delight" unilaterally — a specific
+trigger and effect gets named and agreed first, the same way the check
+below requires, not discovered after the fact by pointing at this
+section.
+
+**Start with one instance, not a program.** This section exists because
+of exactly one concrete, unfixed gap (the completion-ring case above) —
+not a mandate to sweep the Dashboard for delight opportunities. Ship
+that one, live with it, and decide whether a second instance is worth
+proposing only after seeing how the first actually lands. A section
+that greenlights one considered exception is very different from one
+that opens a backlog.
+
+**Named failure mode — delight inflation.** The way this section decays
+into new slop: a flourish ships for one rare, earned moment, then
+quietly starts appearing on routine ones too, because the code already
+exists and reusing it is easier than asking whether the new occurrence
+still earns it. This is the Section-20-specific case of the Do Not Use
+list's boilerplate-animation entry, and the check against it is the same
+one that governs adding a new instance in the first place: does *this*
+occurrence still pass the rarity test, or is it just present because the
+mechanism was already sitting there.
+
+**Check:** name one specific moment on the Dashboard surface where a
+real accomplishment currently gets the same treatment as routine
+progress. State the exact trigger and the exact bounded effect, get it
+agreed before building it, and don't propose a second instance until
+the first has shipped and been evaluated. If the trigger or effect can't
+be stated concretely, or if it's the second-or-later instance proposed
+in the same pass, it isn't a proposal yet.
+
+---
+
 ## Part B — UI: Executes the UX
 
 Once Part A's questions are answered — what the user needs, when, and
@@ -996,6 +1104,13 @@ its rest/active-press/disabled states — before generating a full
 screen. Catching a wrong choice on one component is cheap; catching it
 after it's been copied across twenty is not.
 
+For any Earned Delight instance (Section 20): confirm the flourish fires
+only on its stated trigger, not on every render, mount, or reload of the
+same screen; confirm it doesn't reappear a second time for the same
+underlying event (e.g. re-opening the widget after the day's tasks are
+already all complete shouldn't replay it); confirm the next real action
+is reachable immediately, not gated behind the flourish finishing.
+
 ---
 
 ## Behavior Rules
@@ -1018,6 +1133,12 @@ after it's been copied across twenty is not.
 - Don't design feedback that only exists on `:hover` — this is a
   touchscreen kiosk product with no pointer device. Use active/press
   states instead (Section 6).
+- Don't add an Earned Delight flourish (Section 20) without a named
+  trigger and a named effect agreed before building it, and don't let
+  one that's already shipped for a rare event quietly start firing on
+  routine occurrences of the same interaction — that's delight
+  inflation, the Section-20-specific case of the boilerplate-animation
+  entry above.
 
 ---
 
@@ -1769,3 +1890,47 @@ after it's been copied across twenty is not.
     a deliberate non-fix — they disambiguate *between* several
     unlabeled lines stacked in one cell, which is different from
     restating a header that's already right there.
+- 2026-07-01 — added Section 20 (Earned Delight), prompted by a direct
+  challenge: does this doc's consistent anti-slop restraint read as
+  sterile in aggregate, even where every individual rule is correct?
+  Checked the history first rather than assuming — gamification
+  (points/streaks/badges/confetti/leaderboards) was removed 2026-06-16,
+  ten days before this doc existed, so that specific claim didn't hold
+  up. But the broader one did: every section here is a brake (does this
+  earn its place) and none is an accelerator (does this screen deserve
+  warmth), and that asymmetry compounds even when no single rule is
+  wrong. Section 20 is the stated counterweight, scoped narrowly (the
+  Dashboard/kiosk surface only, not ARL/Admin, which correctly stay
+  restrained per their own Linear/Stripe anchors), explicitly not a
+  gamification revival, grounded in one real unfixed gap (the Tasks
+  widget's completion ring treats 100% identically to 40%). First draft
+  was checked against the rest of the doc's own conventions and found
+  missing four things every comparable section already has: a
+  governance gate (the quote-widget exception was user-agreed before
+  building, Section 20 initially had no equivalent — fixed), a scope
+  cap (one instance, evaluated, before proposing a second — fixed), a
+  named failure mode for the Do Not Use-style list ("delight inflation"
+  — a flourish shipped for one rare event quietly starting to fire on
+  routine ones — fixed), and wiring into Testing Protocol/Behavior
+  Rules the way Section 6 got wired in when it landed (fixed). No
+  change to Section 2's neutral-primary-color decision — raised as
+  possibly the single biggest contributor to "sterile," but treated as
+  a deliberate boundary rather than folded into this pass: color is a
+  system-wide token, and a Dashboard-only exception risks becoming two
+  design systems, where a single bounded motion moment doesn't.
+- 2026-07-01 — shipped Section 20's first (and, per its own scope cap,
+  only-for-now) instance: `grid-tasks.tsx`'s completion ring now holds
+  a distinct filled checkmark state ("ALL DONE") for 2.5s when
+  `remainingCount` crosses from >0 to 0 while the widget is mounted,
+  then settles back to the normal 100%/COMPLETE display — now in green
+  instead of red, a correctness change (the ring should reflect true
+  completion) separate from the flourish itself. Detection is derived
+  during render, not inside a `useEffect`, per React's documented
+  pattern for state depending on a prop change — the initial `useEffect`
+  version tripped the new `react-hooks/set-state-in-effect` lint rule
+  (synchronous `setState` in an effect body risks a cascading render);
+  the effect now only owns the 2.5s timer, a genuine external-API side
+  effect. Verified against Section 20's own Testing Protocol addition:
+  doesn't fire on mount if the day was already complete when the widget
+  loaded, doesn't replay for the same completion, and the ring stays
+  fully clickable/navigable throughout — nothing gates behind it.
