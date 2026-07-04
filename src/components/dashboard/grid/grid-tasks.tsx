@@ -75,16 +75,24 @@ function formatTime(time: string, isAllDay?: boolean): string {
 // at this size, with real breathing room (STACK_PADDING) around it.
 const CARD_MAX_WIDTH = 320;
 const CARD_MAX_HEIGHT = 380;
-const STACK_PADDING = 16;
+// Worst-case rotation displacement is now calculable instead of open-ended:
+// at CARD_MAX_HEIGHT, half-height is 190px, and the second peek's lean
+// (2 * PEEK_LEAN = 6°) displaces its corners by 190 * sin(6°) ≈ 20px.
+// STACK_PADDING is sized to clear that with room left over, which is only
+// possible because the card's height is bounded — the same lean clipped
+// before specifically because there was no such bound to size padding
+// against (2026-07-04).
+const STACK_PADDING = 24;
 
-// Stack fan geometry — no rotation. A leaning peek is what clipped in the
-// first place; a plain peek that's a bit wider/taller than the card in
-// front of it (poking out evenly along the sides and bottom) reads as a
-// stack without the trigonometry that made the lean's displacement scale
-// with card size. PEEK_REVEAL must stay comfortably under STACK_PADDING so
-// the reveal never reaches the widget's true edge.
+// Stack fan geometry. Each peek drops PEEK_DROP px lower, is PEEK_REVEAL px
+// wider/taller than the card in front of it, and leans PEEK_LEAN degrees
+// further off-axis (alternating side) — the lean is what actually reads as
+// "a stack of cards" rather than "a card with a shadow shelf under it."
+// Safe now specifically because CARD_MAX_HEIGHT bounds how far a lean can
+// displace a peek's corners — see STACK_PADDING above.
 const PEEK_DROP = 12;
 const PEEK_REVEAL = 8;
+const PEEK_LEAN = 3;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -278,14 +286,15 @@ export function GridTasksWidget({
                 className="relative h-full w-full"
                 style={{ maxWidth: CARD_MAX_WIDTH, maxHeight: CARD_MAX_HEIGHT }}
               >
-                {/* Peek cards — static depth cue, not interactive. No
-                    rotation: each is just PEEK_REVEAL px wider/taller than
-                    the card in front of it, poking out evenly along the
-                    sides and bottom, and PEEK_DROP px lower. A lean-based
-                    fan clipped on a resized (tall/narrow) widget — its
-                    displacement scales with the card's own height, which
-                    this design no longer bounds by rotating at all
-                    (2026-07-04). */}
+                {/* Peek cards — static depth cue, not interactive. Each is
+                    PEEK_REVEAL px wider/taller than the card in front of it
+                    (poking out along the sides and bottom), PEEK_DROP px
+                    lower, and leans PEEK_LEAN degrees further off-axis
+                    (alternating side) than the one above it — safe now
+                    because the front card's height is capped (see
+                    CARD_MAX_HEIGHT/STACK_PADDING above), so the lean's
+                    displacement has a known worst case instead of scaling
+                    with however tall the widget happens to be. */}
                 {peeks.map((task, i) => (
                   <div
                     key={task.id}
@@ -296,6 +305,7 @@ export function GridTasksWidget({
                       right: -((i + 1) * PEEK_REVEAL),
                       top: (i + 1) * PEEK_DROP,
                       bottom: -((i + 1) * PEEK_REVEAL),
+                      transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (i + 1) * PEEK_LEAN}deg)`,
                       opacity: 1 - i * 0.2,
                       zIndex: 1 - i,
                     }}

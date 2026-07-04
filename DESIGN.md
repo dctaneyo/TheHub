@@ -2206,3 +2206,24 @@ is reachable immediately, not gated behind the flourish finishing.
   actual padding around it (`p-4 pb-0`) instead of being flush against
   the top edge — the fix the original complaint asked for, just
   applied to the one boundary that's actually visible on this widget.
+
+  This was verified for real this time, not just eyeballed: connected
+  Railway CLI access, confirmed the exact commit deployed live, then
+  logged into the actual production tenant via Playwright (with the
+  user's explicit go-ahead, since the tenant isn't in live use yet)
+  and screenshotted the real widget with its real data — same result
+  as the local repro. First time this session a fix was confirmed on
+  the live deployment rather than a local stand-in.
+
+  With the card's height now bounded, the peek lean came back:
+  `PEEK_LEAN` (3°, alternating side) was the thing that clipped
+  originally specifically because the card's height was unbounded —
+  a lean's corner displacement scales with the card's own height, and
+  there was no card-size limit to bound that scaling against. Now
+  that `CARD_MAX_HEIGHT` puts a hard ceiling on it, the worst case is
+  calculable (half-height 190px × sin(6°) for the second peek ≈ 20px)
+  instead of open-ended, so `STACK_PADDING` was raised 16px → 24px to
+  clear it with room to spare, and the lean was reintroduced knowing
+  it can no longer blow past the container. Reverified locally against
+  both a tall/narrow widget (the shape that broke before) and the
+  default wide/short one — no clipping either way.
