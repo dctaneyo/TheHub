@@ -2143,3 +2143,24 @@ is reachable immediately, not gated behind the flourish finishing.
     narrower. Peek fill changed from an opacity-faded copy of the
     card's own background to a solid `bg-muted`, which reads as a
     distinct layer instead of a translucent ghost of the front card.
+
+  Both of those shipped full-bleed (front card and peeks spanning the
+  widget's full width) and broke on the next kiosk screenshot: a
+  leaning card has nowhere to swing into when its edges already touch
+  the widget's own overflow-hidden boundary, so the peeks' rotated
+  corners were hard-clipped — visible as jagged cut edges rather than
+  a clean lean. The floating bar had the same full-bleed problem for a
+  different reason: spanning edge-to-edge made it read as a strip that
+  belonged to the whole widget, not to the card sitting below it —
+  "floating" was taken more literally than intended. Fixed by giving
+  the front card real margin on every side instead of filling the
+  widget: `CARD_INSET_X_PCT` (15% each side) horizontally, plus
+  `CARD_INSET_TOP`/`CARD_INSET_BOTTOM` (10px/14px) reserved above and
+  below the fan. That margin does double duty — it's the breathing
+  room the card was missing, and it's the room the leaning peeks
+  (whose own inset now starts from the card's margin, stepping in
+  `PEEK_INSET_STEP` further per level) actually swing into without
+  clipping. The progress bar now shares the card's own horizontal
+  margin instead of spanning the full widget, so it reads as sitting
+  above *that card* rather than as an unrelated strip across the top
+  of the widget.

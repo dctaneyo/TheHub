@@ -58,23 +58,39 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+// The front card is deliberately smaller than the widget, not full-bleed —
+// CARD_INSET_X is a percentage of the widget's width, so the card floats
+// with real margin on both sides. Two reasons: (1) breathing room, so the
+// stack doesn't feel like it's wedged edge-to-edge into its grid cell, and
+// (2) leaning peek cards (below) swing sideways as they rotate, and that
+// margin is what keeps them from being clipped by the widget's own
+// overflow-hidden boundary — a full-width leaning card has nowhere to swing
+// into and gets its corners cut off (caught on a real kiosk screenshot,
+// 2026-07-04). CARD_INSET_TOP/BOTTOM add further breathing room above and
+// below the fan, on top of what the bar and peek-drop already reserve.
+const CARD_INSET_X_PCT = 15;
+const CARD_INSET_TOP = 10;
+const CARD_INSET_BOTTOM = 14;
+
 // Stack fan geometry. Each peek card drops PEEK_DROP px lower than the one
-// above it and leans PEEK_LEAN degrees further off-axis, alternating side —
-// a slight lean (rather than a straight vertical offset) is what actually
-// reads as "a stack of cards" instead of "a card with a shadow shelf under
-// it" (reference screenshot, 2026-07-04: the card behind leans, its corners
-// poke out past the front card's edges rather than staying perfectly
-// concentric). PEEK_INSET stays small on purpose — most of the reveal comes
-// from the lean, not from the peek being narrower.
+// above it, leans PEEK_LEAN degrees further off-axis (alternating side),
+// and narrows by another PEEK_INSET_STEP px per level on top of the card's
+// own margin above — a lean (rather than a straight vertical offset) is
+// what actually reads as "a stack of cards" instead of "a card with a
+// shadow shelf under it."
 const PEEK_DROP = 20;
 const PEEK_LEAN = 3;
-const PEEK_INSET = 8;
+const PEEK_INSET_STEP = 18;
 
-// Floating progress bar geometry — sits clear above the front card rather
-// than flush against it (reference screenshot, 2026-07-04), so the stack
-// reserves BAR_HEIGHT + BAR_GAP of height above the card for it.
+// Floating progress bar geometry — sits clear above the front card, and
+// shares the card's own horizontal margin (CARD_INSET_X_PCT) so it reads as
+// belonging to the card beneath it rather than as an unrelated strip
+// spanning the full widget (the first pass at "floating" did exactly that
+// — full-bleed and far from the card, per the 2026-07-04 screenshot
+// feedback). The stack reserves BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP above
+// the card for it.
 const BAR_HEIGHT = 6;
-const BAR_GAP = 10;
+const BAR_GAP = 8;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -264,14 +280,14 @@ export function GridTasksWidget({
             </motion.div>
           ) : (
             <div key="stack" className="relative h-full">
-              {/* Progress bar — floats clear above the front card (a real
-                  gap, not flush against its top edge) rather than living
-                  inside it; the stack below reserves BAR_HEIGHT + BAR_GAP of
-                  height for it. */}
+              {/* Progress bar — floats clear above the front card, sharing
+                  its horizontal margin (CARD_INSET_X_PCT) so it reads as
+                  attached to the card rather than as an unrelated strip
+                  spanning the whole widget. */}
               <div
                 aria-hidden
-                className="absolute left-0 right-0 top-0 z-20 overflow-hidden rounded-full bg-muted"
-                style={{ height: BAR_HEIGHT }}
+                className="absolute top-0 z-20 overflow-hidden rounded-full bg-muted"
+                style={{ left: `${CARD_INSET_X_PCT}%`, right: `${CARD_INSET_X_PCT}%`, height: BAR_HEIGHT }}
               >
                 <div
                   className="h-full rounded-full transition-[width] duration-500"
@@ -280,22 +296,25 @@ export function GridTasksWidget({
               </div>
 
               {/* Peek cards — static depth cue, not interactive. Each one
-                  drops PEEK_DROP px lower and leans PEEK_LEAN degrees
-                  further off-axis (alternating side) than the card above
-                  it, so it reads as a leaning stack rather than a straight
-                  vertical offset — corners poke out past the front card's
-                  edges instead of staying perfectly concentric with it
-                  (reference screenshot, 2026-07-04). */}
+                  drops PEEK_DROP px lower, leans PEEK_LEAN degrees further
+                  off-axis (alternating side), and narrows by another
+                  PEEK_INSET_STEP px than the card above it, so it reads as
+                  a leaning stack rather than a straight vertical offset.
+                  Inset starts from the front card's own margin
+                  (CARD_INSET_X_PCT) — the margin is what gives the lean
+                  room to swing without its corners clipping against the
+                  widget's own edge (2026-07-04 kiosk screenshot: a
+                  full-width leaning card has nowhere to swing into). */}
               {peeks.map((task, i) => (
                 <div
                   key={task.id}
                   aria-hidden
                   className="pointer-events-none absolute rounded-2xl border border-border bg-muted"
                   style={{
-                    left: PEEK_INSET,
-                    right: PEEK_INSET,
-                    top: BAR_HEIGHT + BAR_GAP + (i + 1) * PEEK_DROP,
-                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + (i + 1) * PEEK_DROP}px)`,
+                    left: `calc(${CARD_INSET_X_PCT}% + ${(i + 1) * PEEK_INSET_STEP}px)`,
+                    right: `calc(${CARD_INSET_X_PCT}% + ${(i + 1) * PEEK_INSET_STEP}px)`,
+                    top: BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + (i + 1) * PEEK_DROP,
+                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + CARD_INSET_BOTTOM + (i + 1) * PEEK_DROP}px)`,
                     transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (i + 1) * PEEK_LEAN}deg)`,
                     opacity: 1 - i * 0.2,
                     zIndex: 1 - i,
@@ -303,8 +322,9 @@ export function GridTasksWidget({
                 />
               ))}
 
-              {/* Front card — pushed down clear of the floating bar, and
-                  shorter than the widget by the fan's height below it. */}
+              {/* Front card — inset from the widget's edges on every side
+                  (breathing room + swing room for the leaning peeks behind
+                  it), pushed down clear of the floating bar. */}
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.div
                   key={front.id}
@@ -313,10 +333,11 @@ export function GridTasksWidget({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  className="relative z-10 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  className="relative z-10 mx-auto flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
                   style={{
-                    marginTop: BAR_HEIGHT + BAR_GAP,
-                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + peeks.length * PEEK_DROP}px)`,
+                    width: `${100 - 2 * CARD_INSET_X_PCT}%`,
+                    marginTop: BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP,
+                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + CARD_INSET_BOTTOM + peeks.length * PEEK_DROP}px)`,
                   }}
                 >
                   <button
