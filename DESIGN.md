@@ -2164,3 +2164,45 @@ is reachable immediately, not gated behind the flourish finishing.
   margin instead of spanning the full widget, so it reads as sitting
   above *that card* rather than as an unrelated strip across the top
   of the widget.
+
+  That fix didn't hold either — reported as still clipping, plus "the
+  progress bar didn't change" and "make the cards smaller, A LOT
+  smaller." Debugged properly this time instead of tuning by eye:
+  logged into a local dev copy as a real location session, resized the
+  Tasks widget to a tall/narrow footprint (the shape actually reported
+  — the default demo layout is wide/short and never would have shown
+  this), and captured real screenshots via Playwright rather than
+  reasoning about CSS in the abstract. That reproduced it immediately
+  and revealed two actual root causes, neither of which was "not
+  enough margin":
+  1. **The front card had no size cap** — it filled 100% of whatever
+     height the widget happened to have. On a tall/narrow widget that
+     makes the card very tall, and a leaning peek's corner
+     displacement scales with the card's own height (rotating a
+     500px-tall card by even a few degrees swings its corners tens of
+     pixels sideways) — no amount of fixed-percentage margin fixes
+     that, because the displacement grows with the card, not with the
+     margin. The percentage-inset fix from earlier the same day
+     patched the symptom on one specific screenshot's proportions
+     without fixing the actual scaling problem.
+  2. **The bar was floating in a void with no visible edges.** Tasks
+     hides its own outer frame (`hidesOwnFrame` — no border or fill
+     around the widget itself, see the redesign's original entry
+     above), so "float the bar above the card, with a gap" landed in
+     empty page background with nothing to be visibly padded *from*.
+     Geometrically the bar did move; perceptually there was nothing
+     there to read it against, so it looked unchanged.
+  Fixed by removing the trigonometry instead of feeding it more
+  margin: `CARD_MAX_WIDTH`/`CARD_MAX_HEIGHT` (320/380px) cap the front
+  card regardless of the widget's actual grid size, so its height —
+  and therefore any rotation-driven displacement — is bounded no
+  matter how the widget is resized. Peek cards dropped rotation
+  entirely: each is now just `PEEK_REVEAL` (8px) wider/taller than the
+  card in front of it, poking out evenly along the sides and bottom,
+  which reads as a stack without any displacement that scales with
+  card size. The stack centers this capped card in whatever space the
+  widget provides via flexbox, with `STACK_PADDING` (16px) as real
+  breathing room. The progress bar moved back inside the card, with
+  actual padding around it (`p-4 pb-0`) instead of being flush against
+  the top edge — the fix the original complaint asked for, just
+  applied to the one boundary that's actually visible on this widget.

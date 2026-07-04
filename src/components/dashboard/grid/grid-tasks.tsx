@@ -30,11 +30,15 @@ import type { TaskItem } from "@/components/dashboard/timeline";
  *   soft, practical sequence (checklists usually run in due-time order), not
  *   an enforced one: tapping the front card opens a grid of every task today,
  *   completable directly, for the out-of-order case.
- * - A horizontal progress bar floats above the front card (a gap between the
- *   two, not flush against its top edge — reference: a rounded pill-shaped
- *   track sitting clear of the card it belongs to, 2026-07-04) — replaces
- *   the old completion ring; Section 18 only gets one signal for this fact,
- *   not two.
+ * - A horizontal progress bar sits inside the front card, with real padding
+ *   around it rather than flush against the card's top edge — replaces the
+ *   old completion ring; Section 18 only gets one signal for this fact, not
+ *   two. (2026-07-04: a first pass moved the bar entirely outside the card,
+ *   into the empty space above it — but this widget hides its own outer
+ *   frame (see hidesOwnFrame below), so that space has no visible boundary
+ *   at all. "Floating" without anything to float *in* just reads as
+ *   unrelated empty space, not as padding. The bar belongs inside the one
+ *   boundary that actually exists: the card.)
  * - The widget's own outer frame is gone (see hidesOuterFrame in
  *   grid-engine.ts) — each card already supplies its own boundary, so a
  *   second frame around the whole widget restated one already given by the
@@ -58,39 +62,29 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-// The front card is deliberately smaller than the widget, not full-bleed —
-// CARD_INSET_X is a percentage of the widget's width, so the card floats
-// with real margin on both sides. Two reasons: (1) breathing room, so the
-// stack doesn't feel like it's wedged edge-to-edge into its grid cell, and
-// (2) leaning peek cards (below) swing sideways as they rotate, and that
-// margin is what keeps them from being clipped by the widget's own
-// overflow-hidden boundary — a full-width leaning card has nowhere to swing
-// into and gets its corners cut off (caught on a real kiosk screenshot,
-// 2026-07-04). CARD_INSET_TOP/BOTTOM add further breathing room above and
-// below the fan, on top of what the bar and peek-drop already reserve.
-const CARD_INSET_X_PCT = 15;
-const CARD_INSET_TOP = 10;
-const CARD_INSET_BOTTOM = 14;
+// The front card has a hard size cap, not just "fill the widget." Without
+// one, a widget resized tall and narrow (a real case — the dashboard grid
+// lets any widget be reshaped) stretches the card to match, and a very tall
+// card makes even a small peek-card lean rotate into a huge pixel
+// displacement at its corners (displacement scales with the card's own
+// height) — exactly what caused a real clipping bug on a resized kiosk
+// widget, 2026-07-04. Capping both dimensions keeps the geometry below
+// bounded and predictable regardless of how the widget itself is shaped,
+// and is also just what "make the cards smaller" (the same feedback) asked
+// for directly. The stack centers within whatever space it's given, capped
+// at this size, with real breathing room (STACK_PADDING) around it.
+const CARD_MAX_WIDTH = 320;
+const CARD_MAX_HEIGHT = 380;
+const STACK_PADDING = 16;
 
-// Stack fan geometry. Each peek card drops PEEK_DROP px lower than the one
-// above it, leans PEEK_LEAN degrees further off-axis (alternating side),
-// and narrows by another PEEK_INSET_STEP px per level on top of the card's
-// own margin above — a lean (rather than a straight vertical offset) is
-// what actually reads as "a stack of cards" instead of "a card with a
-// shadow shelf under it."
-const PEEK_DROP = 20;
-const PEEK_LEAN = 3;
-const PEEK_INSET_STEP = 18;
-
-// Floating progress bar geometry — sits clear above the front card, and
-// shares the card's own horizontal margin (CARD_INSET_X_PCT) so it reads as
-// belonging to the card beneath it rather than as an unrelated strip
-// spanning the full widget (the first pass at "floating" did exactly that
-// — full-bleed and far from the card, per the 2026-07-04 screenshot
-// feedback). The stack reserves BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP above
-// the card for it.
-const BAR_HEIGHT = 6;
-const BAR_GAP = 8;
+// Stack fan geometry — no rotation. A leaning peek is what clipped in the
+// first place; a plain peek that's a bit wider/taller than the card in
+// front of it (poking out evenly along the sides and bottom) reads as a
+// stack without the trigonometry that made the lean's displacement scale
+// with card size. PEEK_REVEAL must stay comfortably under STACK_PADDING so
+// the reveal never reaches the widget's true edge.
+const PEEK_DROP = 12;
+const PEEK_REVEAL = 8;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -279,107 +273,101 @@ export function GridTasksWidget({
               <EmptyStack total={total} />
             </motion.div>
           ) : (
-            <div key="stack" className="relative h-full">
-              {/* Progress bar — floats clear above the front card, sharing
-                  its horizontal margin (CARD_INSET_X_PCT) so it reads as
-                  attached to the card rather than as an unrelated strip
-                  spanning the whole widget. */}
+            <div key="stack" className="flex h-full items-center justify-center" style={{ padding: STACK_PADDING }}>
               <div
-                aria-hidden
-                className="absolute top-0 z-20 overflow-hidden rounded-full bg-muted"
-                style={{ left: `${CARD_INSET_X_PCT}%`, right: `${CARD_INSET_X_PCT}%`, height: BAR_HEIGHT }}
+                className="relative h-full w-full"
+                style={{ maxWidth: CARD_MAX_WIDTH, maxHeight: CARD_MAX_HEIGHT }}
               >
-                <div
-                  className="h-full rounded-full transition-[width] duration-500"
-                  style={{ width: `${pct}%`, background: "var(--hub-green)" }}
-                />
-              </div>
+                {/* Peek cards — static depth cue, not interactive. No
+                    rotation: each is just PEEK_REVEAL px wider/taller than
+                    the card in front of it, poking out evenly along the
+                    sides and bottom, and PEEK_DROP px lower. A lean-based
+                    fan clipped on a resized (tall/narrow) widget — its
+                    displacement scales with the card's own height, which
+                    this design no longer bounds by rotating at all
+                    (2026-07-04). */}
+                {peeks.map((task, i) => (
+                  <div
+                    key={task.id}
+                    aria-hidden
+                    className="pointer-events-none absolute rounded-2xl border border-border bg-muted"
+                    style={{
+                      left: -((i + 1) * PEEK_REVEAL),
+                      right: -((i + 1) * PEEK_REVEAL),
+                      top: (i + 1) * PEEK_DROP,
+                      bottom: -((i + 1) * PEEK_REVEAL),
+                      opacity: 1 - i * 0.2,
+                      zIndex: 1 - i,
+                    }}
+                  />
+                ))}
 
-              {/* Peek cards — static depth cue, not interactive. Each one
-                  drops PEEK_DROP px lower, leans PEEK_LEAN degrees further
-                  off-axis (alternating side), and narrows by another
-                  PEEK_INSET_STEP px than the card above it, so it reads as
-                  a leaning stack rather than a straight vertical offset.
-                  Inset starts from the front card's own margin
-                  (CARD_INSET_X_PCT) — the margin is what gives the lean
-                  room to swing without its corners clipping against the
-                  widget's own edge (2026-07-04 kiosk screenshot: a
-                  full-width leaning card has nowhere to swing into). */}
-              {peeks.map((task, i) => (
-                <div
-                  key={task.id}
-                  aria-hidden
-                  className="pointer-events-none absolute rounded-2xl border border-border bg-muted"
-                  style={{
-                    left: `calc(${CARD_INSET_X_PCT}% + ${(i + 1) * PEEK_INSET_STEP}px)`,
-                    right: `calc(${CARD_INSET_X_PCT}% + ${(i + 1) * PEEK_INSET_STEP}px)`,
-                    top: BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + (i + 1) * PEEK_DROP,
-                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + CARD_INSET_BOTTOM + (i + 1) * PEEK_DROP}px)`,
-                    transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (i + 1) * PEEK_LEAN}deg)`,
-                    opacity: 1 - i * 0.2,
-                    zIndex: 1 - i,
-                  }}
-                />
-              ))}
-
-              {/* Front card — inset from the widget's edges on every side
-                  (breathing room + swing room for the leaning peeks behind
-                  it), pushed down clear of the floating bar. */}
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.div
-                  key={front.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.96, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  className="relative z-10 mx-auto flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-                  style={{
-                    width: `${100 - 2 * CARD_INSET_X_PCT}%`,
-                    marginTop: BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP,
-                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + CARD_INSET_TOP + CARD_INSET_BOTTOM + peeks.length * PEEK_DROP}px)`,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setExpandOpen(true)}
-                    className="flex items-center justify-between gap-2 px-4 pt-3 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
+                {/* Front card — capped size (see CARD_MAX_WIDTH/HEIGHT),
+                    centered in whatever space the widget gives it. */}
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.div
+                    key={front.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    className="relative z-10 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                    style={{ height: `calc(100% - ${peeks.length * PEEK_DROP}px)` }}
                   >
-                    <span className="tabular-nums">{completedCount}/{total} tasks complete</span>
-                    <span className="flex items-center gap-1">
-                      View all today
-                      <ChevronRight className="h-3 w-3" />
-                    </span>
-                  </button>
+                    {/* Progress bar — inside the card, with real padding
+                        around it rather than flush against the card's
+                        rounded top edge. */}
+                    <div className="p-4 pb-0">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full transition-[width] duration-500"
+                          style={{ width: `${pct}%`, background: "var(--hub-green)" }}
+                        />
+                      </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setExpandOpen(true)}
-                    className="flex flex-1 items-start px-4 pt-3 text-left"
-                  >
-                    <TaskCardBody task={front} />
-                  </button>
-
-                  <div className="p-3 pt-0">
-                    {completeError && (
-                      <p className="mb-2 text-center text-xs font-semibold text-[var(--hub-red)]">
-                        {completeError}
-                      </p>
-                    )}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleFrontAction(front); }}
-                      className={cn(
-                        "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-colors active:opacity-90",
-                      )}
-                      style={{ background: front.type === "information" ? "var(--primary)" : "var(--hub-green)" }}
+                      onClick={() => setExpandOpen(true)}
+                      className="flex items-center justify-between gap-2 px-4 pt-3 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
                     >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {front.type === "information" ? "Got it" : "Complete"}
+                      <span className="tabular-nums">{completedCount}/{total} tasks complete</span>
+                      <span className="flex items-center gap-1">
+                        View all today
+                        <ChevronRight className="h-3 w-3" />
+                      </span>
                     </button>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandOpen(true)}
+                      className="flex flex-1 items-start px-4 pt-3 text-left"
+                    >
+                      <TaskCardBody task={front} />
+                    </button>
+
+                    <div className="p-3 pt-0">
+                      {completeError && (
+                        <p className="mb-2 text-center text-xs font-semibold text-[var(--hub-red)]">
+                          {completeError}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleFrontAction(front); }}
+                        className={cn(
+                          "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-colors active:opacity-90",
+                        )}
+                        style={{ background: front.type === "information" ? "var(--primary)" : "var(--hub-green)" }}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {front.type === "information" ? "Got it" : "Complete"}
+                      </button>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
           )}
         </AnimatePresence>
