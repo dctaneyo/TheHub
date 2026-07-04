@@ -30,9 +30,11 @@ import type { TaskItem } from "@/components/dashboard/timeline";
  *   soft, practical sequence (checklists usually run in due-time order), not
  *   an enforced one: tapping the front card opens a grid of every task today,
  *   completable directly, for the out-of-order case.
- * - A horizontal progress bar sits across the top edge of the front card
- *   ("N/M tasks complete") — replaces the old completion ring; Section 18
- *   only gets one signal for this fact, not two.
+ * - A horizontal progress bar floats above the front card (a gap between the
+ *   two, not flush against its top edge — reference: a rounded pill-shaped
+ *   track sitting clear of the card it belongs to, 2026-07-04) — replaces
+ *   the old completion ring; Section 18 only gets one signal for this fact,
+ *   not two.
  * - The widget's own outer frame is gone (see hidesOuterFrame in
  *   grid-engine.ts) — each card already supplies its own boundary, so a
  *   second frame around the whole widget restated one already given by the
@@ -56,14 +58,23 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-// Stack fan geometry — how far each peek card pokes out below the card
-// above it, and how much narrower it gets per level. The front card
-// reserves peeks.length * PEEK_DROP of the widget's height so the fan is
-// actually visible (see the peek-cards comment in the render below).
-// Tuned on the real kiosk: 16/14 read as barely-there slivers at that
-// screen size and viewing distance.
-const PEEK_DROP = 28;
-const PEEK_INSET = 22;
+// Stack fan geometry. Each peek card drops PEEK_DROP px lower than the one
+// above it and leans PEEK_LEAN degrees further off-axis, alternating side —
+// a slight lean (rather than a straight vertical offset) is what actually
+// reads as "a stack of cards" instead of "a card with a shadow shelf under
+// it" (reference screenshot, 2026-07-04: the card behind leans, its corners
+// poke out past the front card's edges rather than staying perfectly
+// concentric). PEEK_INSET stays small on purpose — most of the reveal comes
+// from the lean, not from the peek being narrower.
+const PEEK_DROP = 20;
+const PEEK_LEAN = 3;
+const PEEK_INSET = 8;
+
+// Floating progress bar geometry — sits clear above the front card rather
+// than flush against it (reference screenshot, 2026-07-04), so the stack
+// reserves BAR_HEIGHT + BAR_GAP of height above the card for it.
+const BAR_HEIGHT = 6;
+const BAR_GAP = 10;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -253,32 +264,47 @@ export function GridTasksWidget({
             </motion.div>
           ) : (
             <div key="stack" className="relative h-full">
-              {/* Peek cards — static depth cue, not interactive. The front
-                  card deliberately does NOT fill the widget: it gives up
-                  PEEK_DROP px of height per peek card, and each peek sits
-                  that much lower (and PEEK_INSET px narrower per level)
-                  than the card above it, so the stack visibly fans out
-                  below the front card's bottom edge. The first version
-                  skipped the reserved space and the full-height front card
-                  covered the fan entirely — flush bottom edges, invisible
-                  stack (caught on a real kiosk screenshot, 2026-07-03). */}
+              {/* Progress bar — floats clear above the front card (a real
+                  gap, not flush against its top edge) rather than living
+                  inside it; the stack below reserves BAR_HEIGHT + BAR_GAP of
+                  height for it. */}
+              <div
+                aria-hidden
+                className="absolute left-0 right-0 top-0 z-20 overflow-hidden rounded-full bg-muted"
+                style={{ height: BAR_HEIGHT }}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-500"
+                  style={{ width: `${pct}%`, background: "var(--hub-green)" }}
+                />
+              </div>
+
+              {/* Peek cards — static depth cue, not interactive. Each one
+                  drops PEEK_DROP px lower and leans PEEK_LEAN degrees
+                  further off-axis (alternating side) than the card above
+                  it, so it reads as a leaning stack rather than a straight
+                  vertical offset — corners poke out past the front card's
+                  edges instead of staying perfectly concentric with it
+                  (reference screenshot, 2026-07-04). */}
               {peeks.map((task, i) => (
                 <div
                   key={task.id}
                   aria-hidden
-                  className="pointer-events-none absolute rounded-2xl border border-border bg-card"
+                  className="pointer-events-none absolute rounded-2xl border border-border bg-muted"
                   style={{
-                    left: (i + 1) * PEEK_INSET,
-                    right: (i + 1) * PEEK_INSET,
-                    top: (i + 1) * PEEK_DROP,
-                    height: `calc(100% - ${peeks.length * PEEK_DROP}px)`,
-                    opacity: 0.7 - i * 0.25,
+                    left: PEEK_INSET,
+                    right: PEEK_INSET,
+                    top: BAR_HEIGHT + BAR_GAP + (i + 1) * PEEK_DROP,
+                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + (i + 1) * PEEK_DROP}px)`,
+                    transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (i + 1) * PEEK_LEAN}deg)`,
+                    opacity: 1 - i * 0.2,
                     zIndex: 1 - i,
                   }}
                 />
               ))}
 
-              {/* Front card — shorter than the widget by the fan's height */}
+              {/* Front card — pushed down clear of the floating bar, and
+                  shorter than the widget by the fan's height below it. */}
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.div
                   key={front.id}
@@ -288,16 +314,11 @@ export function GridTasksWidget({
                   exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                   className="relative z-10 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-                  style={{ height: `calc(100% - ${peeks.length * PEEK_DROP}px)` }}
+                  style={{
+                    marginTop: BAR_HEIGHT + BAR_GAP,
+                    height: `calc(100% - ${BAR_HEIGHT + BAR_GAP + peeks.length * PEEK_DROP}px)`,
+                  }}
                 >
-                  {/* Progress bar across the top edge — the one signal for
-                      today's completion fraction (replaces the old ring). */}
-                  <div className="h-1.5 w-full shrink-0 bg-muted">
-                    <div
-                      className="h-full rounded-r-full transition-[width] duration-500"
-                      style={{ width: `${pct}%`, background: "var(--hub-green)" }}
-                    />
-                  </div>
                   <button
                     type="button"
                     onClick={() => setExpandOpen(true)}

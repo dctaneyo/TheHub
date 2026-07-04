@@ -2098,3 +2098,48 @@ is reachable immediately, not gated behind the flourish finishing.
   after a second kiosk screenshot: 16px drop / 14px inset read as
   barely-there slivers at real kiosk scale and viewing distance —
   now 28px / 22px with higher peek opacity (0.7/0.45).
+
+  Separately: a report that "Complete doesn't stick — it flashes
+  complete then reverts" turned up no provable bug in the completion/
+  refetch data flow itself (location-id resolution, socket timing, and
+  date/timezone handling were all traced and found consistent), but
+  did turn up a real, adjacent one — the failure path was completely
+  silent. `handleComplete` (`dashboard/page.tsx`) already reconciled
+  with the server on both success *and* failure by refetching, which
+  is correct, but a failed completion and a successful one were
+  visually identical: both ended in a refetch, so a rejected request
+  looked exactly like an inexplicable revert, with no way to tell
+  which had happened. `onComplete`'s contract changed from
+  `(taskId) => void` to `(taskId) => Promise<boolean>`, threaded
+  through `WidgetData`, so the widget can tell "moved on because it's
+  done" apart from "the request failed" — on failure it now shows an
+  inline "Couldn't mark that complete — try again," and the real HTTP
+  status/body is logged to the console instead of vanishing. Whether
+  this fixed the original revert or the original report was a
+  transient/environmental issue that resolved on its own is genuinely
+  unclear — the user confirmed completions now stick, but no failure
+  message or console error was ever observed to confirm the mechanism.
+  Documented as a known-good fix for a real bug (the silence) alongside
+  an open question about a different, never-reproduced one (the revert).
+- 2026-07-04 — two more passes on the stack's visual design, both
+  against a reference screenshot of a different app's card-stack/
+  progress-bar pattern:
+  - **Progress bar now floats above the front card** instead of living
+    flush against its top edge inside it — a real gap (`BAR_GAP`,
+    10px), not touching. The stack reserves `BAR_HEIGHT + BAR_GAP` of
+    height above the front card for it; the in-card bar strip is gone
+    entirely, replaced by a `position: absolute` pill-shaped track at
+    the top of the stack container.
+  - **Peek cards now lean instead of just dropping straight down.**
+    Uniform vertical offset plus width-narrowing (the 2026-07-03 fix)
+    made a visible fan, but a fan of perfectly concentric rectangles
+    still reads as "a card sitting on a shadow shelf," not "a stack of
+    cards" — the reference's back card visibly leans, its corners
+    poking out past the front card's edges rather than staying
+    centered under it. Each peek now rotates `PEEK_LEAN` (3°) further
+    off-axis per level, alternating side, on top of the existing
+    drop — `PEEK_INSET` shrunk from 22px to 8px accordingly, since most
+    of the reveal now comes from the lean rather than the peek being
+    narrower. Peek fill changed from an opacity-faded copy of the
+    card's own background to a solid `bg-muted`, which reads as a
+    distinct layer instead of a translucent ghost of the front card.
