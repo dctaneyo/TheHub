@@ -17,7 +17,11 @@ export interface UpcomingTask {
 export interface WidgetData {
   // tasks / timeline
   tasks: TaskItem[];
-  onComplete: (taskId: string) => void;
+  // Resolves to whether the completion actually succeeded — the stacked-card
+  // widget needs this to tell "the task moved on because it's done" apart
+  // from "the request failed and the optimistic update got reverted," which
+  // used to look identical (a silent revert with zero explanation).
+  onComplete: (taskId: string) => Promise<boolean>;
   onUncomplete: (taskId: string) => void;
 
   // calendar

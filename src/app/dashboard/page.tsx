@@ -431,7 +431,7 @@ function GridDashboardPage() {
   }, [socket, fetchTasks, fetchChatUnread]);
 
   // ── Task handlers ─────────────────────────────────────────────────────────
-  const handleComplete = useCallback(async (taskId: string) => {
+  const handleComplete = useCallback(async (taskId: string): Promise<boolean> => {
     const { localDate } = localParams(mirrorLocationId);
     setData((prev) => prev ? {
       ...prev,
@@ -453,12 +453,18 @@ function GridDashboardPage() {
         const task = data?.tasks.find((t) => t.id === taskId);
         if (soundEnabled && task) playTaskSound(task.type as Parameters<typeof playTaskSound>[0]);
         await fetchTasks();
-      } else {
-        await fetchTasks();
+        return true;
       }
+      // Log the actual reason so a failure is diagnosable instead of just
+      // silently reverting the optimistic update with no explanation.
+      const body = await res.text().catch(() => "");
+      console.error(`Failed to complete task ${taskId}: HTTP ${res.status} ${body}`);
+      await fetchTasks();
+      return false;
     } catch (err) {
       console.error("Failed to complete task:", err);
       await fetchTasks();
+      return false;
     }
   }, [fetchTasks, mirrorLocationId, mirrorLocationName, soundEnabled, data]);
 

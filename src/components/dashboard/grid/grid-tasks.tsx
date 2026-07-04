@@ -137,7 +137,7 @@ export function GridTasksWidget({
 }: {
   tasks: TaskItem[];
   missedYesterday: TaskItem[];
-  onComplete: (taskId: string) => void;
+  onComplete: (taskId: string) => Promise<boolean>;
 }) {
   const router = useRouter();
   const [missedOpen, setMissedOpen] = useState(false);
@@ -146,6 +146,10 @@ export function GridTasksWidget({
   const [expandOpen, setExpandOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [prevRemaining, setPrevRemaining] = useState<number | null>(null);
+  // Set when a completion actually fails, so a reverted card reads as "that
+  // didn't work, try again" instead of silently un-completing itself with
+  // no explanation (the bug this was added to fix, 2026-07-03).
+  const [completeError, setCompleteError] = useState<string | null>(null);
   // Information tasks have no persistent complete state (see TaskCardBody's
   // type icon and the widget doc comment) — "Got it" only dismisses one from
   // *this* viewing session's stack, same as the old list always re-showing
@@ -187,12 +191,14 @@ export function GridTasksWidget({
   const peeks = pending.slice(1, 3);
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
-  const handleFrontAction = (task: TaskItem) => {
+  const handleFrontAction = async (task: TaskItem) => {
     if (task.type === "information") {
       setDismissedInfoIds((prev) => new Set(prev).add(task.id));
-    } else {
-      onComplete(task.id);
+      return;
     }
+    setCompleteError(null);
+    const ok = await onComplete(task.id);
+    if (!ok) setCompleteError("Couldn't mark that complete — try again.");
   };
 
   return (
@@ -313,6 +319,11 @@ export function GridTasksWidget({
                   </button>
 
                   <div className="p-3 pt-0">
+                    {completeError && (
+                      <p className="mb-2 text-center text-xs font-semibold text-[var(--hub-red)]">
+                        {completeError}
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); handleFrontAction(front); }}
@@ -425,7 +436,7 @@ export function GridTasksWidget({
                     {task.type !== "information" && (
                       <button
                         type="button"
-                        onClick={() => onComplete(task.id)}
+                        onClick={() => { void onComplete(task.id); }}
                         disabled={task.isCompleted}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors active:bg-muted disabled:opacity-40"
                       >

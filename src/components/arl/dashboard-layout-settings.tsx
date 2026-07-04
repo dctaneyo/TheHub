@@ -26,7 +26,7 @@ import {
 // so real task/message data isn't needed here.
 const PREVIEW_DATA: WidgetData = {
   tasks: [],
-  onComplete: () => {},
+  onComplete: async () => false,
   onUncomplete: () => {},
   upcomingTasks: {},
   onEarlyComplete: () => {},
