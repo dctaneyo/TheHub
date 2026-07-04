@@ -60,8 +60,10 @@ function formatTime(time: string, isAllDay?: boolean): string {
 // above it, and how much narrower it gets per level. The front card
 // reserves peeks.length * PEEK_DROP of the widget's height so the fan is
 // actually visible (see the peek-cards comment in the render below).
-const PEEK_DROP = 16;
-const PEEK_INSET = 14;
+// Tuned on the real kiosk: 16/14 read as barely-there slivers at that
+// screen size and viewing distance.
+const PEEK_DROP = 28;
+const PEEK_INSET = 22;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -264,7 +266,7 @@ export function GridTasksWidget({
                     right: (i + 1) * PEEK_INSET,
                     top: (i + 1) * PEEK_DROP,
                     height: `calc(100% - ${peeks.length * PEEK_DROP}px)`,
-                    opacity: 0.55 - i * 0.25,
+                    opacity: 0.7 - i * 0.25,
                     zIndex: 1 - i,
                   }}
                 />

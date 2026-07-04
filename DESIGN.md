@@ -2094,4 +2094,7 @@ is reachable immediately, not gated behind the flourish finishing.
   on. The lesson worth keeping: "renders without errors" says nothing
   about "the depth cue is actually visible" — layered/occluded UI
   needs eyes on real pixels, which is why the previous entry's
-  verification caveat existed in the first place.
+  verification caveat existed in the first place. Tuned once more
+  after a second kiosk screenshot: 16px drop / 14px inset read as
+  barely-there slivers at real kiosk scale and viewing distance —
+  now 28px / 22px with higher peek opacity (0.7/0.45).
