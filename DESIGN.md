@@ -2262,3 +2262,40 @@ is reachable immediately, not gated behind the flourish finishing.
   plus an actual complete-and-advance click through Playwright
   (confirmed the front card swaps and the Next row updates correctly,
   not just that it renders).
+- 2026-07-14 — Now/Next's content-sized-and-centered layout (the entry
+  above) turned out to have the same problem in reverse: on a widget
+  resized tall — a real, already-in-use layout, not a hypothetical —
+  the card stayed small and most of the height went unused. Two
+  options were on the table: shrink the widget to match the content,
+  or make the content scale up to use the space. Went with scaling.
+  `containerType: "size"` on the centering wrapper turns CSS
+  `cqw`/`cqh` units into "percent of this widget" instead of "percent
+  of the viewport," so icon size, title/meta/button text, button
+  height, progress-bar thickness, and inter-element gaps all grow with
+  the widget itself — clamped between the original fixed-size values
+  (the floor) and a hero-sized ceiling (so it doesn't blow up on an
+  enormous widget), via `SCALE_VARS`.
+  First pass sized text purely off container *height* (`cqh`) and
+  broke immediately on the tall-*and-narrow* case: text grew fast
+  enough that the task title truncated to "Morning ..." and the header
+  row wrapped awkwardly, because nothing was checking whether the
+  width could actually fit what the height said to render. Fixed by
+  sizing text as `clamp(min, min(Xcqh, Ycqw), max)` — bounded by
+  whichever dimension is more restrictive — so a narrow widget can't
+  grow text past what its own width allows, regardless of how much
+  height is available. Bar thickness and gaps stayed height-only
+  (a bar just spans the width at whatever thickness; a gap has no
+  content to overflow, so there's nothing for width to protect
+  against).
+  Separately, the task title's `truncate` (single-line ellipsis)
+  became `line-clamp-2`: at hero scale, on a tall widget, insisting on
+  one line was the thing forcing truncation in the first place — the
+  same vertical space this change exists to use is exactly what a
+  second line needs, so wrapping costs nothing and loses no
+  information, versus an ellipsis that quietly drops the end of a
+  task's actual name.
+  Reverified on both widget shapes after the width-bounding fix: the
+  tall/narrow case now shows the full title across two lines at a
+  visibly larger scale with no wrapping/truncation defects in the
+  header row, and the default wide/short case scales modestly (already
+  near its floor) with no regression from before.

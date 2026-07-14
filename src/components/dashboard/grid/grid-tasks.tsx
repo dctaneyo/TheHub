@@ -63,34 +63,72 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-// The front card + Next row sit in a fixed-width column, centered in
-// whatever space the widget gives them, rather than stretching to fill it —
-// no stacking geometry means no reason to force a height, but a sane max
-// width keeps text from stretching absurdly wide on a very wide widget.
-const CARD_MAX_WIDTH = 320;
+// The front card + Next row scale with the widget's own size instead of
+// staying a small fixed box centered in a lot of empty space (2026-07-14:
+// a widget resized tall — a real, already-in-use case, not hypothetical —
+// left most of its height unused once the stack's fan stopped needing that
+// room). `containerType: size` on the centering wrapper below turns cqw/cqh
+// units into "% of this widget," not "% of the viewport," so every size
+// here scales with the widget itself, clamped between what the old fixed
+// stacked-card design used (the min) and a sane hero-sized ceiling (the
+// max) so it doesn't blow up on an enormous widget.
+//
+// Text/icon sizes use `min(Xcqh, Ycqw)` rather than height alone — a widget
+// resized tall *and* narrow (the real layout this was tuned against) grew
+// text fast enough on height alone to truncate the task title and wrap the
+// header row, since nothing was checking whether the width could actually
+// fit it. Bar thickness and gaps don't carry that risk (a bar just spans
+// the width at whatever thickness; a gap has no content to overflow), so
+// those stay height-only.
+const SCALE_VARS: React.CSSProperties = {
+  ["--now-icon" as string]: "clamp(40px, min(18cqh, 20cqw), 140px)",
+  ["--now-title" as string]: "clamp(16px, min(7cqh, 7cqw), 46px)",
+  ["--now-meta" as string]: "clamp(12px, min(3.4cqh, 3.4cqw), 26px)",
+  ["--now-btn-h" as string]: "clamp(44px, 14cqh, 96px)",
+  ["--now-btn-text" as string]: "clamp(14px, min(4.2cqh, 5cqw), 28px)",
+  ["--now-bar-h" as string]: "clamp(6px, 2cqh, 16px)",
+  ["--now-pad" as string]: "clamp(16px, 4cqw, 32px)",
+  ["--now-icon-gap" as string]: "clamp(12px, 3cqw, 24px)",
+  ["--now-gap" as string]: "clamp(12px, 4cqh, 40px)",
+  ["--next-title" as string]: "clamp(14px, min(4.6cqh, 4.6cqw), 32px)",
+  ["--next-meta" as string]: "clamp(11px, min(3cqh, 3cqw), 22px)",
+  ["--next-pad-y" as string]: "clamp(8px, 2.4cqh, 24px)",
+  ["--next-pad-x" as string]: "clamp(12px, 3cqw, 20px)",
+  maxWidth: "clamp(280px, 70cqw, 560px)",
+};
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
 
-// One task's content, shared by the front card, the peek cards behind it,
-// and the expanded grid — only how it's wrapped differs per use.
+// The current task's content — sized via the --now-* scale variables (see
+// SCALE_VARS) so it grows with the widget instead of staying fixed while
+// the widget around it grows. Only used for the front "Now" card; the
+// expand-all modal has its own fixed-size row, deliberately not scaled —
+// that grid's row count varies with how many tasks there are today, not
+// with the widget's size, so a "hero" treatment there would fight itself.
 function TaskCardBody({ task }: { task: TaskItem }) {
   const Icon = TYPE_ICON[task.type] ?? ClipboardList;
   return (
-    <div className="flex min-w-0 flex-1 items-start gap-3">
+    <div className="flex min-w-0 flex-1 items-start" style={{ gap: "var(--now-icon-gap)" }}>
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          "flex shrink-0 items-center justify-center rounded-xl",
           task.isOverdue ? "bg-[var(--hub-red)]/10 text-[var(--hub-red)]" : "bg-primary/10 text-primary"
         )}
+        style={{ width: "var(--now-icon)", height: "var(--now-icon)" }}
       >
-        <Icon className="h-5 w-5" />
+        <Icon style={{ width: "50%", height: "50%" }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={cn("truncate text-xs font-semibold tabular-nums", task.isOverdue ? "text-[var(--hub-red)]" : "text-muted-foreground")}>
+        <p
+          className={cn("truncate font-semibold tabular-nums", task.isOverdue ? "text-[var(--hub-red)]" : "text-muted-foreground")}
+          style={{ fontSize: "var(--now-meta)" }}
+        >
           {formatTime(task.dueTime, task.isAllDay)}{task.isOverdue ? " · Overdue" : ""}
         </p>
-        <p className="mt-0.5 truncate text-base font-semibold text-foreground">{task.title}</p>
+        <p className="mt-0.5 line-clamp-2 font-semibold leading-tight text-foreground" style={{ fontSize: "var(--now-title)" }}>
+          {task.title}
+        </p>
       </div>
     </div>
   );
@@ -256,12 +294,15 @@ export function GridTasksWidget({
               <EmptyStack total={total} />
             </motion.div>
           ) : (
-            <div key="now-next" className="flex h-full w-full flex-col items-center justify-center gap-3">
-              <div className="flex w-full flex-col gap-3" style={{ maxWidth: CARD_MAX_WIDTH }}>
-                {/* Now — the current task, prominent. Sized to its own
-                    content rather than stretched to fill the widget; no
-                    stacking geometry behind it means no reason to force a
-                    height. */}
+            <div
+              key="now-next"
+              className="flex h-full w-full flex-col items-center justify-center gap-3"
+              style={{ containerType: "size" } as React.CSSProperties}
+            >
+              <div className="flex w-full flex-col" style={{ ...SCALE_VARS, gap: "var(--now-gap)" }}>
+                {/* Now — the current task, prominent. Scales with the
+                    widget's own size (see SCALE_VARS) instead of staying a
+                    small fixed box centered in unused space. */}
                 <AnimatePresence initial={false} mode="popLayout">
                   <motion.div
                     key={front.id}
@@ -275,8 +316,11 @@ export function GridTasksWidget({
                     {/* Progress bar — inside the card, with real padding
                         around it rather than flush against the card's
                         rounded top edge. */}
-                    <div className="p-4 pb-0">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div style={{ padding: "var(--now-pad)", paddingBottom: 0 }}>
+                      <div
+                        className="w-full overflow-hidden rounded-full bg-muted"
+                        style={{ height: "var(--now-bar-h)" }}
+                      >
                         <div
                           className="h-full rounded-full transition-[width] duration-500"
                           style={{ width: `${pct}%`, background: "var(--hub-green)" }}
@@ -287,38 +331,45 @@ export function GridTasksWidget({
                     <button
                       type="button"
                       onClick={() => setExpandOpen(true)}
-                      className="flex items-center justify-between gap-2 px-4 pt-3 text-xs font-semibold text-muted-foreground transition-colors active:text-foreground"
+                      className="flex items-center justify-between gap-2 pt-3 text-left font-semibold text-muted-foreground transition-colors active:text-foreground"
+                      style={{ paddingLeft: "var(--now-pad)", paddingRight: "var(--now-pad)", fontSize: "var(--now-meta)" }}
                     >
                       <span className="tabular-nums">{completedCount}/{total} tasks complete</span>
                       <span className="flex items-center gap-1">
                         View all today
-                        <ChevronRight className="h-3 w-3" />
+                        <ChevronRight className="h-[1em] w-[1em]" />
                       </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setExpandOpen(true)}
-                      className="flex items-start px-4 pt-3 text-left"
+                      className="flex items-start pt-3 text-left"
+                      style={{ paddingLeft: "var(--now-pad)", paddingRight: "var(--now-pad)" }}
                     >
                       <TaskCardBody task={front} />
                     </button>
 
-                    <div className="p-3 pt-0">
+                    <div style={{ padding: "var(--now-pad)", paddingTop: "calc(var(--now-pad) * 0.75)" }}>
                       {completeError && (
-                        <p className="mb-2 text-center text-xs font-semibold text-[var(--hub-red)]">
+                        <p
+                          className="mb-2 text-center font-semibold text-[var(--hub-red)]"
+                          style={{ fontSize: "var(--now-meta)" }}
+                        >
                           {completeError}
                         </p>
                       )}
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleFrontAction(front); }}
-                        className={cn(
-                          "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-colors active:opacity-90",
-                        )}
-                        style={{ background: front.type === "information" ? "var(--primary)" : "var(--hub-green)" }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl font-semibold text-white transition-colors active:opacity-90"
+                        style={{
+                          height: "var(--now-btn-h)",
+                          fontSize: "var(--now-btn-text)",
+                          background: front.type === "information" ? "var(--primary)" : "var(--hub-green)",
+                        }}
                       >
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 className="h-[1em] w-[1em]" />
                         {front.type === "information" ? "Got it" : "Complete"}
                       </button>
                     </div>
@@ -327,7 +378,10 @@ export function GridTasksWidget({
 
                 {/* Next — one quieter row for the task after this one, not
                     a running list of everything remaining. Absent entirely
-                    when there's nothing after the current task. */}
+                    when there's nothing after the current task. Scales more
+                    modestly than the Now card (its own, smaller --next-*
+                    variables) so it stays visually subordinate even as the
+                    widget grows. */}
                 <AnimatePresence initial={false} mode="popLayout">
                   {next && (
                     <motion.button
@@ -339,11 +393,16 @@ export function GridTasksWidget({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                      className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-left transition-colors active:bg-muted"
+                      className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 text-left transition-colors active:bg-muted"
+                      style={{ padding: "var(--next-pad-y) var(--next-pad-x)" }}
                     >
-                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">Next</span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{next.title}</span>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      <span className="shrink-0 font-semibold text-muted-foreground" style={{ fontSize: "var(--next-meta)" }}>
+                        Next
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium text-foreground" style={{ fontSize: "var(--next-title)" }}>
+                        {next.title}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground" style={{ fontSize: "var(--next-meta)" }}>
                         {formatTime(next.dueTime, next.isAllDay)}
                       </span>
                     </motion.button>
