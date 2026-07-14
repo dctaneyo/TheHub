@@ -2227,3 +2227,38 @@ is reachable immediately, not gated behind the flourish finishing.
   it can no longer blow past the container. Reverified locally against
   both a tall/narrow widget (the shape that broke before) and the
   default wide/short one — no clipping either way.
+- 2026-07-14 — the stacked-card interface itself got replaced, not
+  tuned again. After the lean was safely working, the user's own
+  read on it: "the change in way that we display Today's Tasks
+  doesn't feel right." That's a different kind of feedback than any
+  single bug report this widget had gotten — every prior fix this
+  widget needed (invisible fan, too subtle, clipping, disconnected
+  bar, oversized card) was geometry triage on the same underlying
+  shape. Five rounds of that on one widget is itself a signal: a
+  leaning card-fan wants a fixed, generous canvas to read as a stack
+  (the onboarding-wizard mockup it was modeled on has exactly that),
+  and this widget doesn't have one — it lives in an arbitrarily
+  resizable dashboard grid cell. Every fix made the geometry survive a
+  given widget shape; none of them addressed that the metaphor itself
+  fights the container.
+  Replaced with a **Now/Next** two-tier display instead of proposing a
+  sixth geometry fix: the current (soonest-due) task shown prominently
+  with its progress bar and Complete button, unchanged from before,
+  and a single quieter row underneath showing just the next task after
+  it — no stack, no peeks, no rotation, no size caps. "How many remain"
+  stays visible via the existing `N/total tasks complete` count; "what's
+  coming" is now one plain row instead of implied by a fan of card
+  edges. Chosen over other options discussed (a redesigned flat
+  checklist, a plain remaining-count badge) because it's the smallest
+  change that keeps the part of the original redesign that was
+  probably the actual point — one task, one decision, at a time — while
+  dropping the part that kept breaking.
+  `CARD_MAX_WIDTH` (320px) is the only geometry constant left, kept
+  only so text doesn't stretch absurdly wide on a very wide widget —
+  the card and Next row now size to their own content and center in
+  whatever space the widget provides, instead of being stretched or
+  capped to fill it.
+  Verified locally on both a tall/narrow and default wide/short widget,
+  plus an actual complete-and-advance click through Playwright
+  (confirmed the front card swaps and the Next row updates correctly,
+  not just that it renders).

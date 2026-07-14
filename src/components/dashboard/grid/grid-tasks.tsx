@@ -19,32 +19,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { TaskItem } from "@/components/dashboard/timeline";
 
 /**
- * Today's Tasks widget — redesigned 2026-07-01 from a flat scrolling list to
- * a stacked-card, one-at-a-time interface: user request, discussed against
- * DESIGN.md before building (see Changelog for the full reasoning and the
- * four questions it raised — task ordering, the progress signal, the
- * expanded view's relationship to /tasks, and the widget's own frame).
+ * Today's Tasks widget — a "Now/Next" two-tier display (2026-07-04,
+ * replacing an earlier stacked-card redesign — see Changelog for why: a
+ * leaning card-fan needs a fixed, generous canvas to read as a stack of
+ * cards, which fights a widget that lives in an arbitrarily resizable grid
+ * cell. Every fix to that design was margin/geometry triage; the fan itself
+ * was the wrong shape for this container).
  *
- * - Tasks are shown one at a time, front card first (soonest due), with up
- *   to two peek cards fanned behind to show more remain — dueTime order is a
- *   soft, practical sequence (checklists usually run in due-time order), not
- *   an enforced one: tapping the front card opens a grid of every task today,
- *   completable directly, for the out-of-order case.
- * - A horizontal progress bar sits inside the front card, with real padding
- *   around it rather than flush against the card's top edge — replaces the
- *   old completion ring; Section 18 only gets one signal for this fact, not
- *   two. (2026-07-04: a first pass moved the bar entirely outside the card,
- *   into the empty space above it — but this widget hides its own outer
- *   frame (see hidesOwnFrame below), so that space has no visible boundary
- *   at all. "Floating" without anything to float *in* just reads as
- *   unrelated empty space, not as padding. The bar belongs inside the one
- *   boundary that actually exists: the card.)
- * - The widget's own outer frame is gone (see hidesOuterFrame in
- *   grid-engine.ts) — each card already supplies its own boundary, so a
- *   second frame around the whole widget restated one already given by the
- *   cards themselves. The icon+title header stays, unlike the fully-ambient
- *   widgets (Clock, Quote): a stack of cards isn't as self-evidently
- *   "Today's Tasks" as a giant clock is self-evidently a clock.
+ * - The current (soonest-due, uncompleted) task is shown prominently, with
+ *   its own progress bar, icon/time/title, and a Complete button.
+ * - A single quieter row below shows what's next — not a running list of
+ *   everything remaining, just the one task after the current one — so
+ *   "what's coming" reads at a glance without any stacking/depth chrome.
+ *   Tapping the front card or the Next row opens a grid of every task
+ *   today, completable directly — the escape hatch for the out-of-order
+ *   case (dueTime order is a soft, practical sequence, not an enforced
+ *   one).
+ * - A horizontal progress bar sits inside the front card, with real
+ *   padding around it rather than flush against its top edge — replaces
+ *   the old completion ring; Section 18 only gets one signal for this
+ *   fact, not two.
+ * - The widget's own outer frame is gone (see hidesOwnFrame in
+ *   grid-engine.ts) — the front card already supplies its own boundary, so
+ *   a second frame around the whole widget would restate one already
+ *   given by the card. The icon+title header stays, unlike the
+ *   fully-ambient widgets (Clock, Quote): a task card isn't as
+ *   self-evidently "Today's Tasks" as a giant clock is self-evidently a
+ *   clock.
  */
 
 const TYPE_ICON: Partial<Record<string, typeof ClipboardList>> = {
@@ -62,37 +63,11 @@ function formatTime(time: string, isAllDay?: boolean): string {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-// The front card has a hard size cap, not just "fill the widget." Without
-// one, a widget resized tall and narrow (a real case — the dashboard grid
-// lets any widget be reshaped) stretches the card to match, and a very tall
-// card makes even a small peek-card lean rotate into a huge pixel
-// displacement at its corners (displacement scales with the card's own
-// height) — exactly what caused a real clipping bug on a resized kiosk
-// widget, 2026-07-04. Capping both dimensions keeps the geometry below
-// bounded and predictable regardless of how the widget itself is shaped,
-// and is also just what "make the cards smaller" (the same feedback) asked
-// for directly. The stack centers within whatever space it's given, capped
-// at this size, with real breathing room (STACK_PADDING) around it.
+// The front card + Next row sit in a fixed-width column, centered in
+// whatever space the widget gives them, rather than stretching to fill it —
+// no stacking geometry means no reason to force a height, but a sane max
+// width keeps text from stretching absurdly wide on a very wide widget.
 const CARD_MAX_WIDTH = 320;
-const CARD_MAX_HEIGHT = 380;
-// Worst-case rotation displacement is now calculable instead of open-ended:
-// at CARD_MAX_HEIGHT, half-height is 190px, and the second peek's lean
-// (2 * PEEK_LEAN = 6°) displaces its corners by 190 * sin(6°) ≈ 20px.
-// STACK_PADDING is sized to clear that with room left over, which is only
-// possible because the card's height is bounded — the same lean clipped
-// before specifically because there was no such bound to size padding
-// against (2026-07-04).
-const STACK_PADDING = 24;
-
-// Stack fan geometry. Each peek drops PEEK_DROP px lower, is PEEK_REVEAL px
-// wider/taller than the card in front of it, and leans PEEK_LEAN degrees
-// further off-axis (alternating side) — the lean is what actually reads as
-// "a stack of cards" rather than "a card with a shadow shelf under it."
-// Safe now specifically because CARD_MAX_HEIGHT bounds how far a lean can
-// displace a peek's corners — see STACK_PADDING above.
-const PEEK_DROP = 12;
-const PEEK_REVEAL = 8;
-const PEEK_LEAN = 3;
 
 const byDueTime = (a: TaskItem, b: TaskItem) =>
   a.dueTime < b.dueTime ? -1 : a.dueTime > b.dueTime ? 1 : 0;
@@ -217,7 +192,7 @@ export function GridTasksWidget({
   }, [justCompleted]);
 
   const front = pending[0];
-  const peeks = pending.slice(1, 3);
+  const next = pending[1];
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
   const handleFrontAction = async (task: TaskItem) => {
@@ -281,39 +256,12 @@ export function GridTasksWidget({
               <EmptyStack total={total} />
             </motion.div>
           ) : (
-            <div key="stack" className="flex h-full items-center justify-center" style={{ padding: STACK_PADDING }}>
-              <div
-                className="relative h-full w-full"
-                style={{ maxWidth: CARD_MAX_WIDTH, maxHeight: CARD_MAX_HEIGHT }}
-              >
-                {/* Peek cards — static depth cue, not interactive. Each is
-                    PEEK_REVEAL px wider/taller than the card in front of it
-                    (poking out along the sides and bottom), PEEK_DROP px
-                    lower, and leans PEEK_LEAN degrees further off-axis
-                    (alternating side) than the one above it — safe now
-                    because the front card's height is capped (see
-                    CARD_MAX_HEIGHT/STACK_PADDING above), so the lean's
-                    displacement has a known worst case instead of scaling
-                    with however tall the widget happens to be. */}
-                {peeks.map((task, i) => (
-                  <div
-                    key={task.id}
-                    aria-hidden
-                    className="pointer-events-none absolute rounded-2xl border border-border bg-muted"
-                    style={{
-                      left: -((i + 1) * PEEK_REVEAL),
-                      right: -((i + 1) * PEEK_REVEAL),
-                      top: (i + 1) * PEEK_DROP,
-                      bottom: -((i + 1) * PEEK_REVEAL),
-                      transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (i + 1) * PEEK_LEAN}deg)`,
-                      opacity: 1 - i * 0.2,
-                      zIndex: 1 - i,
-                    }}
-                  />
-                ))}
-
-                {/* Front card — capped size (see CARD_MAX_WIDTH/HEIGHT),
-                    centered in whatever space the widget gives it. */}
+            <div key="now-next" className="flex h-full w-full flex-col items-center justify-center gap-3">
+              <div className="flex w-full flex-col gap-3" style={{ maxWidth: CARD_MAX_WIDTH }}>
+                {/* Now — the current task, prominent. Sized to its own
+                    content rather than stretched to fill the widget; no
+                    stacking geometry behind it means no reason to force a
+                    height. */}
                 <AnimatePresence initial={false} mode="popLayout">
                   <motion.div
                     key={front.id}
@@ -322,8 +270,7 @@ export function GridTasksWidget({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, x: 60, scale: 0.95, transition: { duration: 0.2 } }}
                     transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                    className="relative z-10 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-                    style={{ height: `calc(100% - ${peeks.length * PEEK_DROP}px)` }}
+                    className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
                   >
                     {/* Progress bar — inside the card, with real padding
                         around it rather than flush against the card's
@@ -352,7 +299,7 @@ export function GridTasksWidget({
                     <button
                       type="button"
                       onClick={() => setExpandOpen(true)}
-                      className="flex flex-1 items-start px-4 pt-3 text-left"
+                      className="flex items-start px-4 pt-3 text-left"
                     >
                       <TaskCardBody task={front} />
                     </button>
@@ -376,6 +323,31 @@ export function GridTasksWidget({
                       </button>
                     </div>
                   </motion.div>
+                </AnimatePresence>
+
+                {/* Next — one quieter row for the task after this one, not
+                    a running list of everything remaining. Absent entirely
+                    when there's nothing after the current task. */}
+                <AnimatePresence initial={false} mode="popLayout">
+                  {next && (
+                    <motion.button
+                      key={next.id}
+                      layout
+                      type="button"
+                      onClick={() => setExpandOpen(true)}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
+                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                      className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-left transition-colors active:bg-muted"
+                    >
+                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">Next</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{next.title}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {formatTime(next.dueTime, next.isAllDay)}
+                      </span>
+                    </motion.button>
+                  )}
                 </AnimatePresence>
               </div>
             </div>
